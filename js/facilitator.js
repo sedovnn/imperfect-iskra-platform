@@ -28,6 +28,10 @@
   var detailName = document.getElementById('facDetailName');
   var detailBody = document.getElementById('facDetailBody');
   var detailClose = document.getElementById('facDetailClose');
+  var sortScoreHeader = document.getElementById('facSortScore');
+
+  var sortState = { key: 'bib', dir: 1 };
+  var lastParticipants = [];
 
   function escapeHtml(s) {
     var div = document.createElement('div');
@@ -111,32 +115,77 @@
     return { text: 'не начата', cls: 'is-none' };
   }
 
+  function formatScore(p) {
+    if (typeof p.station1.score === 'number') return p.station1.score + '/16';
+    return p.station1.finished ? 'не оценено' : '—';
+  }
+
+  function sortParticipants(participants) {
+    var dir = sortState.dir;
+    return participants.slice().sort(function (a, b) {
+      if (sortState.key === 'score') {
+        var av = typeof a.station1.score === 'number' ? a.station1.score : -1;
+        var bv = typeof b.station1.score === 'number' ? b.station1.score : -1;
+        return (av - bv) * dir;
+      }
+      return (Number(a.bib) - Number(b.bib)) * dir;
+    });
+  }
+
   function renderParticipants(participants) {
-    participants = participants || [];
+    lastParticipants = participants || [];
+    participants = sortParticipants(lastParticipants);
     countEl.textContent = participants.length + ' ' + pluralParticipants(participants.length);
     tableBody.innerHTML = '';
     empty.style.display = participants.length ? 'none' : '';
     table.style.display = participants.length ? '' : 'none';
 
-    participants
-      .slice()
-      .sort(function (a, b) { return Number(a.bib) - Number(b.bib); })
-      .forEach(function (p) {
-        var status = stationStatusLabel(p);
-        var tr = document.createElement('tr');
-        tr.innerHTML =
-          '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
-          '<td>' + escapeHtml(p.firstName + ' ' + p.lastName) + '</td>' +
-          '<td>' + escapeHtml(p.email) + '</td>' +
-          '<td>' + escapeHtml(WAVE_LABELS[p.wave] || p.wave) + '</td>' +
-          '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
-          '<td><span class="fac-pill ' + status.cls + '">' + status.text + '</span></td>' +
-          '<td>' + p.station1.appxReviewedCount + '/8 · ' + p.station1.cardCount + ' карт.</td>' +
-          '<td>' + escapeHtml(formatDate(p.station1.updatedAt)) + '</td>';
-        tr.addEventListener('click', function () { openDetail(p); });
-        tableBody.appendChild(tr);
+    participants.forEach(function (p) {
+      var status = stationStatusLabel(p);
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
+        '<td>' + escapeHtml(p.firstName + ' ' + p.lastName) + '</td>' +
+        '<td>' + escapeHtml(p.email) + '</td>' +
+        '<td>' + escapeHtml(WAVE_LABELS[p.wave] || p.wave) + '</td>' +
+        '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
+        '<td><span class="fac-pill ' + status.cls + '">' + status.text + '</span></td>' +
+        '<td>' + p.station1.appxReviewedCount + '/8 · ' + p.station1.cardCount + ' карт.</td>' +
+        '<td>' + escapeHtml(formatDate(p.station1.updatedAt)) + '</td>' +
+        '<td class="fac-score-cell">' + escapeHtml(formatScore(p)) +
+          ' <button class="fac-recalc-btn" data-bib="' + escapeHtml(String(p.bib)) + '" title="Пересчитать балл">↻</button></td>';
+      tr.addEventListener('click', function () { openDetail(p); });
+      tr.querySelector('.fac-recalc-btn').addEventListener('click', function (e) {
+        e.stopPropagation();
+        recalcScore(p.bib, e.currentTarget);
       });
+      tableBody.appendChild(tr);
+    });
   }
+
+  function recalcScore(bib, btn) {
+    btn.disabled = true;
+    btn.textContent = '…';
+    window.imp.callApi('judgeStation1', { password: currentPassword(), bib: bib }).then(function (res) {
+      if (res && res.ok) {
+        refresh();
+      } else {
+        btn.disabled = false;
+        btn.textContent = '↻';
+        window.alert('Не удалось пересчитать балл: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
+      }
+    });
+  }
+
+  sortScoreHeader.addEventListener('click', function () {
+    if (sortState.key === 'score') {
+      sortState.dir = sortState.dir * -1;
+    } else {
+      sortState.key = 'score';
+      sortState.dir = -1;
+    }
+    renderParticipants(lastParticipants);
+  });
 
   function pluralParticipants(n) {
     var mod10 = n % 10, mod100 = n % 100;
@@ -160,6 +209,40 @@
     });
   }
 
+  function renderScoreHtml(s1) {
+    if (typeof s1.score !== 'number') {
+      return '<h4>Оценка судьи</h4><p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
+    }
+    var html = '<h4>Оценка судьи — ' + s1.score + '/16</h4>';
+    var matched = s1.matchedProblems || {};
+    var problemIds = Object.keys(matched);
+    html += '<p class="fac-detail-text">Совпавшие проблемы: ' +
+      (problemIds.length
+        ? problemIds.map(function (id) { return '№' + id + ' (' + (matched[id] === 1 ? 'точно' : 'неточно') + ')'; }).join(', ')
+        : 'нет') + '</p>';
+    html += '<p class="fac-detail-text">Ложные следы, принятые за проблему: ' +
+      ((s1.falseLeadsCaught || []).length ? (s1.falseLeadsCaught || []).join(', ') : 'нет') + '</p>';
+    html += '<p class="fac-detail-text">Бонус за структуру: ' + (s1.structureBonusAwarded ? 'да' : 'нет') + '</p>';
+    if (s1.judgeReasoning && s1.judgeReasoning.cardJudgments) {
+      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи по карточкам</summary>';
+      s1.judgeReasoning.cardJudgments.forEach(function (cj) {
+        var card = (s1.cards || [])[cj.cardIndex - 1];
+        html += '<div class="fac-card">' +
+          '<p>' + (card ? escapeHtml(card.text || '(без формулировки)') : 'карточка #' + cj.cardIndex) + '</p>' +
+          '<div class="fac-card-meta"><span>' +
+            (cj.problemId ? '№' + cj.problemId + ' · ' + escapeHtml(cj.quality) : (cj.falseLeadId !== 'none' ? 'ложный след ' + escapeHtml(cj.falseLeadId) : 'не по ключу')) +
+          '</span></div>' +
+          '<p class="fac-card-warn">' + escapeHtml(cj.reasoning || '') + '</p>' +
+          '</div>';
+      });
+      if (s1.judgeReasoning.structureBonus) {
+        html += '<p class="fac-detail-text">Структура: ' + escapeHtml(s1.judgeReasoning.structureBonus.reasoning || '') + '</p>';
+      }
+      html += '</details>';
+    }
+    return html;
+  }
+
   function renderDetailHtml(registration, s1) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
@@ -173,6 +256,8 @@
       '<span>волна ' + escapeHtml(WAVE_LABELS[registration.wave] || registration.wave) + '</span>' +
       '<span>' + (s1.finished ? 'завершена ' + escapeHtml(formatDate(s1.finishedAt)) : 'в процессе') + '</span>' +
       '</div>';
+
+    html += renderScoreHtml(s1);
 
     if (s1.rationale) {
       html += '<h4>Как структурировал карту</h4><p class="fac-detail-text">' + escapeHtml(s1.rationale) + '</p>';

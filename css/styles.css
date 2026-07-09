@@ -1197,15 +1197,25 @@ footer {
 }
 
 .station-intro {
-  flex: none;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
   background: #f7ffe8;
-  border-bottom: 1px solid #dcf5ad;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
 }
 
 .station-intro-inner {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 24px 24px;
+  max-width: 720px;
+  width: 100%;
+  margin: auto;
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 40px 44px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
 }
 
 .station-intro-inner p { font-size: 14.5px; line-height: 1.6; color: var(--muted); margin: 0 0 14px; }
@@ -2035,6 +2045,31 @@ table mark.hl {
 }
 
 .fac-card-warn { color: #c4362b; }
+
+.fac-sortable { cursor: pointer; user-select: none; }
+.fac-sortable:hover { color: var(--ink); }
+
+.fac-score-cell { display: flex; align-items: center; gap: 8px; }
+
+.fac-recalc-btn {
+  background: none;
+  border: 1px solid #d8dadd;
+  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  line-height: 1;
+  font-size: 12px;
+  color: var(--muted-soft);
+  cursor: pointer;
+  flex: none;
+}
+
+.fac-recalc-btn:hover { color: var(--ink); border-color: var(--ink); }
+.fac-recalc-btn:disabled { opacity: 0.5; cursor: default; }
+
+.fac-judge-reasoning { margin-top: 10px; }
+.fac-judge-reasoning summary { cursor: pointer; font-size: 12.5px; color: var(--muted-soft); margin-bottom: 10px; }
+.fac-judge-reasoning .fac-card { margin-bottom: 10px; }
 
 /* ---------- responsive ---------- */
 
