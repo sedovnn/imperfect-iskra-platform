@@ -1131,6 +1131,17 @@ footer {
   padding: 24px;
 }
 
+/* переход перед комнатами — структурно самый крупный стык раунда 1
+   (конец эталонных станций, начало рубрики ходов), поэтому темнее и
+   тяжелее остальных лёгких gate-экранов */
+.gate-finish { background: var(--ink); }
+.gate-finish .gate-card { background: var(--ink); border: 1px solid rgba(255, 255, 255, 0.14); }
+.gate-finish .gate-card .kicker { color: var(--lime); }
+.gate-finish .gate-card h2 { color: var(--paper); }
+.gate-finish .gate-card .section-lead { color: rgba(255, 255, 255, 0.68); }
+.gate-finish .gate-card .btn-ghost { color: var(--paper); border-color: rgba(255, 255, 255, 0.5); }
+.gate-finish .gate-card .btn-ghost:hover { box-shadow: 6px 6px 0 var(--paper); }
+
 .gate-card {
   background: var(--paper);
   border-radius: var(--radius);
@@ -1852,32 +1863,6 @@ table mark.hl {
   border-color: var(--lime-dim);
   background: #f7ffe8;
 }
-
-.finish-summary {
-  border: 1.5px solid var(--ink);
-  border-radius: var(--radius);
-  padding: 24px;
-  background: #f7ffe8;
-}
-
-.finish-summary h4 {
-  font-family: var(--ff-display);
-  font-size: 17px;
-  margin: 0 0 10px;
-}
-
-.finish-summary ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  font-size: 13.5px;
-  color: var(--muted);
-}
-
-.finish-summary ul li b { color: var(--ink); }
 
 /* ---------- facilitator cabinet ---------- */
 

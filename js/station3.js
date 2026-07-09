@@ -171,6 +171,11 @@
 
     renderDialogue();
 
+    function showFinishOverlay() {
+      document.getElementById('stationRoot').style.display = 'none';
+      document.getElementById('finishOverlay').style.display = 'flex';
+    }
+
     function finishStation() {
       state.finished = true;
       state.finishedAt = new Date().toISOString();
@@ -181,18 +186,17 @@
       finishBtn.setAttribute('disabled', 'disabled');
       finishBtn.textContent = 'Станция завершена';
 
-      var summary = document.createElement('div');
-      summary.className = 'finish-summary';
-      summary.innerHTML =
-        '<h4>Станция 3 завершена</h4>' +
-        '<p style="font-size:13px; color:var(--muted); margin:0;">Разговор сохранён. Оценивает его судья-ИИ — вердикт виден только фасилитатору. Раунд 1 продолжается комнатой 4.</p>';
-      dialogueScroll.appendChild(summary);
+      showFinishOverlay();
     }
 
     finishBtn.addEventListener('click', finishStation);
+    document.getElementById('finishOverlayReview').addEventListener('click', function () {
+      document.getElementById('finishOverlay').style.display = 'none';
+      document.getElementById('stationRoot').style.display = '';
+    });
 
     if (state.finished) {
-      // re-run finish rendering (locked state + summary) after reload — same pattern as station1/2
+      // re-run finish rendering (locked state + overlay) after reload — same pattern as station1/2
       state.finished = false;
       finishStation();
     }

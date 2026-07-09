@@ -538,13 +538,6 @@
     return 'ек';
   }
 
-  function pluralGroups(n) {
-    var mod10 = n % 10, mod100 = n % 100;
-    if (mod10 === 1 && mod100 !== 11) return 'группа';
-    if ([2, 3, 4].indexOf(mod10) !== -1 && [12, 13, 14].indexOf(mod100) === -1) return 'группы';
-    return 'групп';
-  }
-
   document.getElementById('addCardBtn').addEventListener('click', function () {
     state.cards.push({ id: uid(), text: '', anchor: '', group: '' });
     saveState();
@@ -560,6 +553,11 @@
   });
 
   // ---------- finish ----------
+
+  function showFinishOverlay() {
+    document.getElementById('stationRoot').style.display = 'none';
+    document.getElementById('finishOverlay').style.display = 'flex';
+  }
 
   function finishStation() {
     if (state.cards.length === 0) {
@@ -579,22 +577,14 @@
     renderGroups();
     renderCards();
 
-    var n = countableAppxIds.filter(function (id) { return state.appxReviewed[id]; }).length;
-    var summary = document.createElement('div');
-    summary.className = 'finish-summary';
-    summary.innerHTML =
-      '<h4>Станция 1 завершена</h4>' +
-      '<ul>' +
-        '<li><b>' + state.cards.length + '</b> карточ' + pluralCards(state.cards.length) + ' в карте</li>' +
-        '<li><b>' + n + '/' + APPX_TOTAL + '</b> приложений изучено до конца (вторичный сигнал, не в балл)</li>' +
-        '<li><b>' + state.groups.length + '</b> ' + pluralGroups(state.groups.length) + ' введено в структуру карты</li>' +
-      '</ul>' +
-      '<p style="font-size:13px; color:var(--muted); margin:0 0 14px;">Сверка с ключом «Искры» и подсчёт сплита делает судья-ИИ — балл виден только фасилитатору, не вам. Карта сохранена.</p>' +
-      '<a class="btn btn-primary" href="station2.html">Перейти к станции 2 →</a>';
-    document.getElementById('workScroll').insertBefore(summary, document.getElementById('workScroll').firstChild);
+    showFinishOverlay();
   }
 
   document.getElementById('finishBtn').addEventListener('click', finishStation);
+  document.getElementById('finishOverlayReview').addEventListener('click', function () {
+    document.getElementById('finishOverlay').style.display = 'none';
+    document.getElementById('stationRoot').style.display = '';
+  });
 
   // ---------- init render ----------
 
@@ -605,7 +595,7 @@
   saveState(); // persist any reconciled highlights right away
 
   if (state.finished) {
-    // re-run finish rendering (locked state + summary) after reload
+    // re-run finish rendering (locked state + overlay) after reload
     state.finished = false; // temporarily so finishStation() re-applies lock cleanly
     finishStation();
   }

@@ -213,6 +213,11 @@
 
     // ---------- finish ----------
 
+    function showFinishOverlay() {
+      document.getElementById('stationRoot').style.display = 'none';
+      document.getElementById('finishOverlay').style.display = 'flex';
+    }
+
     function finishStation() {
       if (state.rootConnections.length === 0 || !state.forkChoice) {
         if (!window.confirm('Связки или развилка не заполнены. Завершить станцию всё равно?')) return;
@@ -233,23 +238,17 @@
       document.getElementById('finishBtn').setAttribute('disabled', 'disabled');
       document.getElementById('finishBtn').textContent = 'Станция завершена';
 
-      var summary = document.createElement('div');
-      summary.className = 'finish-summary';
-      summary.innerHTML =
-        '<h4>Станция 2 завершена</h4>' +
-        '<ul>' +
-          '<li><b>' + state.rootConnections.length + '</b> корневых связок</li>' +
-          '<li>развилка: <b>' + (state.forkChoice ? 'выбрана' : 'не выбрана') + '</b></li>' +
-        '</ul>' +
-        '<p style="font-size:13px; color:var(--muted); margin:0 0 14px;">Сверка с ключом делает судья-ИИ — балл виден только фасилитатору.</p>' +
-        '<a class="btn btn-primary" href="station3.html">Перейти к станции 3 →</a>';
-      document.getElementById('workScroll').insertBefore(summary, document.getElementById('workScroll').firstChild);
+      showFinishOverlay();
     }
 
     document.getElementById('finishBtn').addEventListener('click', finishStation);
+    document.getElementById('finishOverlayReview').addEventListener('click', function () {
+      document.getElementById('finishOverlay').style.display = 'none';
+      document.getElementById('stationRoot').style.display = '';
+    });
 
     if (state.finished) {
-      // re-run finish rendering (locked state + summary) after reload — same pattern as station1.js
+      // re-run finish rendering (locked state + overlay) after reload — same pattern as station1.js
       state.finished = false;
       finishStation();
     }
