@@ -160,6 +160,7 @@
   }
 
   function renderWavesPanel() {
+    if (!wavesListEl) return;
     wavesListEl.innerHTML = '';
     waves.forEach(function (w) {
       var chip = document.createElement('span');
@@ -180,6 +181,7 @@
   }
 
   function renderWaveFilterOptions() {
+    if (!waveFilterSelect) return;
     var current = waveFilterSelect.value;
     var ids = waves.map(function (w) { return w.id; });
     lastParticipants.forEach(function (p) {
@@ -195,24 +197,31 @@
     if (ids.indexOf(current) !== -1) waveFilterSelect.value = current;
   }
 
-  waveAddForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var label = waveLabelInput.value.trim();
-    if (!label) return;
-    window.imp.callApi('addWave', { password: currentPassword(), label: label }).then(function (res) {
-      if (res && res.ok) {
-        waveLabelInput.value = '';
-        loadWaves();
-      } else {
-        window.alert('Не удалось добавить поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
-      }
+  // Элементы волн — самые новые в разметке; если у кого-то в браузере закешировалась
+  // старая версия facilitator.html без них, эти проверки не дают упавшему обращению
+  // к null сломать вообще всю страницу (включая рендер таблицы участников ниже).
+  if (waveAddForm) {
+    waveAddForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var label = waveLabelInput.value.trim();
+      if (!label) return;
+      window.imp.callApi('addWave', { password: currentPassword(), label: label }).then(function (res) {
+        if (res && res.ok) {
+          waveLabelInput.value = '';
+          loadWaves();
+        } else {
+          window.alert('Не удалось добавить поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
+        }
+      });
     });
-  });
+  }
 
-  waveFilterSelect.addEventListener('change', function () {
-    waveFilterValue = waveFilterSelect.value;
-    renderParticipants(lastParticipants);
-  });
+  if (waveFilterSelect) {
+    waveFilterSelect.addEventListener('change', function () {
+      waveFilterValue = waveFilterSelect.value;
+      renderParticipants(lastParticipants);
+    });
+  }
 
   // ---------- participants table ----------
 
@@ -282,7 +291,7 @@
     return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
 
-  exportBtn.addEventListener('click', function () {
+  if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
       ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Балл', 'Дата оценки']
     ];
@@ -328,7 +337,7 @@
     });
   }
 
-  sortScoreHeader.addEventListener('click', function () {
+  if (sortScoreHeader) sortScoreHeader.addEventListener('click', function () {
     if (sortState.key === 'score') {
       sortState.dir = sortState.dir * -1;
     } else {
