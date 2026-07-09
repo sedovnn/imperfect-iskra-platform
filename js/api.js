@@ -7,7 +7,7 @@
   window.imp = window.imp || {};
 
   // Вставьте сюда URL из backend/README.md (Deploy > Web app), когда задеплоите.
-  var API_URL = '';
+  var API_URL = 'https://script.google.com/macros/s/AKfycbxLVJJpoMSewMgilTZEyO8h8wJPhIg-WhfJgwUBZ9RtRt4lufzB2kjwunwbMH3oXm4s1w/exec';
 
   window.imp.isApiConfigured = function () {
     return Boolean(API_URL);
