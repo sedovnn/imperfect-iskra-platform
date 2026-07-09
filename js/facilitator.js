@@ -34,6 +34,8 @@
   var detailBody = document.getElementById('facDetailBody');
   var detailClose = document.getElementById('facDetailClose');
   var sortScoreHeader = document.getElementById('facSortScore');
+  var sortScore2Header = document.getElementById('facSortScore2');
+  var sortTotalHeader = document.getElementById('facSortTotal');
   var wavesListEl = document.getElementById('facWavesList');
   var waveAddForm = document.getElementById('facWaveAddForm');
   var waveLabelInput = document.getElementById('facWaveLabelInput');
@@ -123,24 +125,42 @@
     loadWaves();
   });
 
-  function stationStatusLabel(p) {
-    if (p.station1.finished) return { text: 'завершена', cls: 'is-done' };
-    if (p.station1.started) return { text: 'в процессе', cls: 'is-progress' };
+  function stationStatusLabel(p, key) {
+    var s = p[key];
+    if (!s) return { text: 'не начата', cls: 'is-none' };
+    if (s.finished) return { text: 'завершена', cls: 'is-done' };
+    if (s.started) return { text: 'в процессе', cls: 'is-progress' };
     return { text: 'не начата', cls: 'is-none' };
   }
 
-  function formatScore(p) {
-    if (typeof p.station1.score === 'number') return p.station1.score + '/16';
-    return p.station1.finished ? 'не оценено' : '—';
+  function formatScore(p, key, max) {
+    var s = p[key];
+    if (typeof s.score === 'number') return s.score + '/' + max;
+    return s.finished ? 'не оценено' : '—';
+  }
+
+  function totalScore(p) {
+    var s1 = p.station1.score, s2 = p.station2.score;
+    return (typeof s1 === 'number' && typeof s2 === 'number') ? s1 + s2 : null;
+  }
+
+  function formatTotal(p) {
+    var t = totalScore(p);
+    return typeof t === 'number' ? t + '/20' : '—';
   }
 
   function sortParticipants(participants) {
     var dir = sortState.dir;
     return participants.slice().sort(function (a, b) {
-      if (sortState.key === 'score') {
-        var av = typeof a.station1.score === 'number' ? a.station1.score : -1;
-        var bv = typeof b.station1.score === 'number' ? b.station1.score : -1;
+      if (sortState.key === 'score' || sortState.key === 'score2') {
+        var stationKey = sortState.key === 'score' ? 'station1' : 'station2';
+        var av = typeof a[stationKey].score === 'number' ? a[stationKey].score : -1;
+        var bv = typeof b[stationKey].score === 'number' ? b[stationKey].score : -1;
         return (av - bv) * dir;
+      }
+      if (sortState.key === 'total') {
+        var at = totalScore(a), bt = totalScore(b);
+        return ((at === null ? -1 : at) - (bt === null ? -1 : bt)) * dir;
       }
       return (Number(a.bib) - Number(b.bib)) * dir;
     });
@@ -242,7 +262,8 @@
     table.style.display = view.length ? '' : 'none';
 
     view.forEach(function (p) {
-      var status = stationStatusLabel(p);
+      var status1 = stationStatusLabel(p, 'station1');
+      var status2 = stationStatusLabel(p, 'station2');
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
@@ -250,16 +271,25 @@
         '<td>' + escapeHtml(p.email) + '</td>' +
         '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + '</td>' +
         '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
-        '<td><span class="fac-pill ' + status.cls + '">' + status.text + '</span></td>' +
+        '<td><span class="fac-pill ' + status1.cls + '">' + status1.text + '</span></td>' +
+        '<td><span class="fac-pill ' + status2.cls + '">' + status2.text + '</span></td>' +
         '<td>' + p.station1.appxReviewedCount + '/8 · ' + p.station1.cardCount + ' карт.</td>' +
         '<td>' + escapeHtml(formatDate(p.station1.updatedAt)) + '</td>' +
-        '<td class="fac-score-cell">' + escapeHtml(formatScore(p)) +
-          ' <button class="fac-recalc-btn" title="Пересчитать балл">↻</button></td>' +
+        '<td class="fac-score-cell">' + escapeHtml(formatScore(p, 'station1', 16)) +
+          ' <button class="fac-recalc-btn" data-station="1" title="Пересчитать балл станции 1">↻</button></td>' +
+        '<td class="fac-score-cell">' + escapeHtml(formatScore(p, 'station2', 4)) +
+          ' <button class="fac-recalc-btn" data-station="2" title="Пересчитать балл станции 2">↻</button></td>' +
+        '<td>' + escapeHtml(formatTotal(p)) + '</td>' +
         '<td><button class="fac-delete-btn" title="Удалить участника">✕</button></td>';
       tr.addEventListener('click', function () { openDetail(p); });
-      tr.querySelector('.fac-recalc-btn').addEventListener('click', function (e) {
+      var recalcBtns = tr.querySelectorAll('.fac-recalc-btn');
+      recalcBtns[0].addEventListener('click', function (e) {
         e.stopPropagation();
-        recalcScore(p.bib, e.currentTarget);
+        recalcScore(p.bib, e.currentTarget, 1);
+      });
+      recalcBtns[1].addEventListener('click', function (e) {
+        e.stopPropagation();
+        recalcScore(p.bib, e.currentTarget, 2);
       });
       tr.querySelector('.fac-delete-btn').addEventListener('click', function (e) {
         e.stopPropagation();
@@ -272,7 +302,7 @@
   function deleteParticipant(p, btn) {
     var confirmed = window.confirm(
       'Удалить участника ' + formatBib(p.bib) + ' (' + p.firstName + ' ' + p.lastName + ')?\n' +
-      'Это удалит и регистрацию, и весь прогресс по станции 1. Действие необратимо.'
+      'Это удалит регистрацию и весь прогресс по станциям 1 и 2. Действие необратимо.'
     );
     if (!confirmed) return;
     btn.disabled = true;
@@ -293,7 +323,7 @@
 
   if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
-      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Балл', 'Дата оценки']
+      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Балл 1', 'Статус станции 2', 'Балл 2', 'Итого']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -303,11 +333,13 @@
         p.email,
         waveLabelMap[p.wave] || p.wave,
         formatDate(p.registeredAt),
-        stationStatusLabel(p).text,
+        stationStatusLabel(p, 'station1').text,
         p.station1.cardCount,
         p.station1.appxReviewedCount,
         typeof p.station1.score === 'number' ? p.station1.score : '',
-        formatDate(p.station1.judgedAt)
+        stationStatusLabel(p, 'station2').text,
+        typeof p.station2.score === 'number' ? p.station2.score : '',
+        totalScore(p) === null ? '' : totalScore(p)
       ]);
     });
     // BOM — иначе Excel показывает кириллицу в CSV как кашу
@@ -323,10 +355,11 @@
     URL.revokeObjectURL(url);
   });
 
-  function recalcScore(bib, btn) {
+  function recalcScore(bib, btn, station) {
+    var action = station === 2 ? 'judgeStation2' : 'judgeStation1';
     btn.disabled = true;
     btn.textContent = '…';
-    window.imp.callApi('judgeStation1', { password: currentPassword(), bib: bib }).then(function (res) {
+    window.imp.callApi(action, { password: currentPassword(), bib: bib }).then(function (res) {
       if (res && res.ok) {
         refresh();
       } else {
@@ -337,15 +370,22 @@
     });
   }
 
-  if (sortScoreHeader) sortScoreHeader.addEventListener('click', function () {
-    if (sortState.key === 'score') {
-      sortState.dir = sortState.dir * -1;
-    } else {
-      sortState.key = 'score';
-      sortState.dir = -1;
-    }
-    renderParticipants(lastParticipants);
-  });
+  function bindSortHeader(headerEl, key, defaultDir) {
+    if (!headerEl) return;
+    headerEl.addEventListener('click', function () {
+      if (sortState.key === key) {
+        sortState.dir = sortState.dir * -1;
+      } else {
+        sortState.key = key;
+        sortState.dir = defaultDir;
+      }
+      renderParticipants(lastParticipants);
+    });
+  }
+
+  bindSortHeader(sortScoreHeader, 'score', -1);
+  bindSortHeader(sortScore2Header, 'score2', -1);
+  bindSortHeader(sortTotalHeader, 'total', -1);
 
   function pluralParticipants(n) {
     var mod10 = n % 10, mod100 = n % 100;
@@ -365,7 +405,7 @@
         detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить — попробуйте «Обновить» и открыть снова.</p>';
         return;
       }
-      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1);
+      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2);
     });
   }
 
@@ -403,7 +443,57 @@
     return html;
   }
 
-  function renderDetailHtml(registration, s1) {
+  var FORK_LABELS = { fortress: '«Крепость»', second_curve: '«Вторая кривая»', both_incomplete: 'обе позиции неполны' };
+
+  function renderScore2Html(s2) {
+    if (!s2) {
+      return '<h4>Станция 2</h4><p class="fac-detail-text">Ещё не начата.</p>';
+    }
+    var html = '<h4>Станция 2 — ' + (s2.finished ? 'завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'в процессе') + '</h4>';
+    if (typeof s2.score !== 'number') {
+      html += '<p class="fac-detail-text">Не оценено' + (s2.finished ? ' — используйте «↻» в таблице.' : '.') + '</p>';
+    } else {
+      var matched = s2.matchedConnections || {};
+      var connIds = Object.keys(matched);
+      html += '<p class="fac-detail-text"><b>Оценка судьи — ' + s2.score + '/4</b></p>';
+      html += '<p class="fac-detail-text">Совпавшие связки: ' +
+        (connIds.length
+          ? connIds.map(function (id) { return '№' + id + ' (' + (matched[id] === 1 ? 'точно' : 'неточно') + ')'; }).join(', ')
+          : 'нет') + '</p>';
+      html += '<p class="fac-detail-text">Бонус за развилку (рекомендация + честная цена): ' + (s2.forkBonusAwarded ? 'да' : 'нет') + '</p>';
+    }
+    html += '<p class="fac-detail-text">Развилка: <b>' + (FORK_LABELS[s2.forkChoice] || s2.forkChoice || 'не выбрана') + '</b></p>';
+    if (s2.forkRationale) {
+      html += '<p class="fac-detail-text">' + escapeHtml(s2.forkRationale) + '</p>';
+    }
+    if (s2.forkCriteria1 || s2.forkCriteria2) {
+      html += '<p class="fac-detail-text">Критерии: ' + escapeHtml(s2.forkCriteria1 || '—') + ' · ' + escapeHtml(s2.forkCriteria2 || '—') + '</p>';
+    }
+    if ((s2.rootConnections || []).length) {
+      html += '<div class="fac-cards">';
+      s2.rootConnections.forEach(function (c) {
+        html += '<div class="fac-card"><p>' + escapeHtml(c.problems || '(не указано)') + '</p>' +
+          (c.mechanism ? '<div class="fac-card-meta"><span>' + escapeHtml(c.mechanism) + '</span></div>' : '') +
+          '</div>';
+      });
+      html += '</div>';
+    }
+    if (s2.judgeReasoning && s2.judgeReasoning.connectionJudgments) {
+      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи по связкам и развилке</summary>';
+      s2.judgeReasoning.connectionJudgments.forEach(function (cj) {
+        html += '<div class="fac-card"><div class="fac-card-meta"><span>' +
+          (cj.matchedConnectionId ? '№' + cj.matchedConnectionId + ' · ' + escapeHtml(cj.quality) : 'не по ключу') +
+          '</span></div><p class="fac-card-warn">' + escapeHtml(cj.reasoning || '') + '</p></div>';
+      });
+      if (s2.judgeReasoning.forkJudgment) {
+        html += '<p class="fac-detail-text">Развилка: ' + escapeHtml(s2.judgeReasoning.forkJudgment.reasoning || '') + '</p>';
+      }
+      html += '</details>';
+    }
+    return html;
+  }
+
+  function renderDetailHtml(registration, s1, s2) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
@@ -455,6 +545,8 @@
       });
       html += '</div>';
     }
+
+    html += renderScore2Html(s2);
 
     return html;
   }

@@ -1557,6 +1557,15 @@ table mark.hl {
   margin-bottom: 10px;
 }
 
+.fork-options {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.fork-options .consent { margin: 0; }
+
 .group-chip {
   display: inline-flex;
   align-items: center;

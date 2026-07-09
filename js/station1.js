@@ -589,7 +589,8 @@
         '<li><b>' + n + '/' + APPX_TOTAL + '</b> приложений изучено до конца (вторичный сигнал, не в балл)</li>' +
         '<li><b>' + state.groups.length + '</b> ' + pluralGroups(state.groups.length) + ' введено в структуру карты</li>' +
       '</ul>' +
-      '<p style="font-size:13px; color:var(--muted); margin:0;">Сверка с ключом «Искры» и подсчёт сплита делает судья-ИИ — этот шаг ещё не подключён (оркестратор в разработке). Карта сохранена локально на этом устройстве. Дальше по маршруту — станция 2: приоритизация и развилка «Крепость» / «Вторая кривая», её экран ещё не собран.</p>';
+      '<p style="font-size:13px; color:var(--muted); margin:0 0 14px;">Сверка с ключом «Искры» и подсчёт сплита делает судья-ИИ — балл виден только фасилитатору, не вам. Карта сохранена.</p>' +
+      '<a class="btn btn-primary" href="station2.html">Перейти к станции 2 →</a>';
     document.getElementById('workScroll').insertBefore(summary, document.getElementById('workScroll').firstChild);
   }
 
