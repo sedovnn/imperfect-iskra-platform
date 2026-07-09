@@ -40,6 +40,23 @@
     </header>
 
     <div class="fac-body">
+
+      <div class="fac-waves" id="facWaves">
+        <span class="fac-waves-label">Потоки</span>
+        <div class="fac-waves-list" id="facWavesList"></div>
+        <form class="fac-wave-add" id="facWaveAddForm">
+          <input type="text" id="facWaveLabelInput" placeholder="напр. 25 июля, 11:00" />
+          <button type="submit" class="btn btn-ghost">+ поток</button>
+        </form>
+      </div>
+
+      <div class="fac-toolbar">
+        <select id="facWaveFilter" class="fac-select">
+          <option value="">Все потоки</option>
+        </select>
+        <button class="btn btn-ghost" id="facExportBtn">Скачать CSV</button>
+      </div>
+
       <table class="fac-table" id="facTable">
         <thead>
           <tr>
@@ -52,6 +69,7 @@
             <th>Приложения</th>
             <th>Обновлено</th>
             <th id="facSortScore" class="fac-sortable" title="Сортировать по баллу">Балл ▾</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="facTableBody"></tbody>

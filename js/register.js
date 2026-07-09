@@ -24,6 +24,27 @@
   updateDeviceWarning();
   window.addEventListener('resize', updateDeviceWarning);
 
+  // Список волн переехал в бэкенд (лист Waves) — фасилитатор управляет им
+  // из кабинета. Если бэкенд недоступен/не настроен, остаются 3 опции,
+  // зашитые прямо в register.html — страница не должна ломаться без сети.
+  function loadWaves() {
+    if (!window.imp.isApiConfigured()) return;
+    window.imp.callApi('listWaves', {}).then(function (res) {
+      if (!res || !res.ok || !res.waves || !res.waves.length) return;
+      var select = form.wave;
+      Array.prototype.slice.call(select.options).forEach(function (opt) {
+        if (opt.value) select.removeChild(opt);
+      });
+      res.waves.forEach(function (w) {
+        var opt = document.createElement('option');
+        opt.value = w.id;
+        opt.textContent = w.label + ' — раунд 1 + раунд 2';
+        select.appendChild(opt);
+      });
+    });
+  }
+  loadWaves();
+
   function isValid(data) {
     return Boolean(data.firstName && data.lastName && data.email && data.wave && data.consent);
   }

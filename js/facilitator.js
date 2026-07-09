@@ -5,11 +5,16 @@
 (function () {
   var PASSWORD_KEY = 'imp_facilitator_password';
 
-  var WAVE_LABELS = {
+  // Заполняется из бэкенда (лист Waves) через loadWaves() — эти три записи
+  // только временный фолбэк, пока первый запрос не отработал.
+  var waves = [];
+  var waveLabelMap = {
     w1: '15 июля, 11:00',
     w2: '18 июля, 15:00',
     w3: '22 июля, 11:00'
   };
+  var waveFilterValue = '';
+  var currentView = [];
 
   var gate = document.getElementById('gatePassword');
   var facRoot = document.getElementById('facRoot');
@@ -29,6 +34,11 @@
   var detailBody = document.getElementById('facDetailBody');
   var detailClose = document.getElementById('facDetailClose');
   var sortScoreHeader = document.getElementById('facSortScore');
+  var wavesListEl = document.getElementById('facWavesList');
+  var waveAddForm = document.getElementById('facWaveAddForm');
+  var waveLabelInput = document.getElementById('facWaveLabelInput');
+  var waveFilterSelect = document.getElementById('facWaveFilter');
+  var exportBtn = document.getElementById('facExportBtn');
 
   var sortState = { key: 'bib', dir: 1 };
   var lastParticipants = [];
@@ -67,6 +77,7 @@
         gate.style.display = 'none';
         facRoot.style.display = '';
         renderParticipants(res.participants);
+        loadWaves();
         return true;
       }
       var msg = !window.imp.isApiConfigured()
@@ -107,7 +118,10 @@
     });
   }
 
-  refreshBtn.addEventListener('click', refresh);
+  refreshBtn.addEventListener('click', function () {
+    refresh();
+    loadWaves();
+  });
 
   function stationStatusLabel(p) {
     if (p.station1.finished) return { text: 'завершена', cls: 'is-done' };
@@ -132,36 +146,173 @@
     });
   }
 
+  // ---------- waves ----------
+
+  function loadWaves() {
+    window.imp.callApi('listWaves', {}).then(function (res) {
+      if (!res || !res.ok || !res.waves) return;
+      waves = res.waves;
+      waveLabelMap = {};
+      waves.forEach(function (w) { waveLabelMap[w.id] = w.label; });
+      renderWavesPanel();
+      renderParticipants(lastParticipants);
+    });
+  }
+
+  function renderWavesPanel() {
+    wavesListEl.innerHTML = '';
+    waves.forEach(function (w) {
+      var chip = document.createElement('span');
+      chip.className = 'fac-wave-chip';
+      chip.innerHTML = escapeHtml(w.label) + ' <button class="fac-wave-remove" title="Убрать поток">✕</button>';
+      chip.querySelector('.fac-wave-remove').addEventListener('click', function () {
+        if (!window.confirm('Убрать поток «' + w.label + '»? Уже зарегистрированные на него участники сохранят запись — поток просто исчезнет из выбора для новых регистраций.')) return;
+        window.imp.callApi('removeWave', { password: currentPassword(), id: w.id }).then(function (res) {
+          if (res && res.ok) {
+            loadWaves();
+          } else {
+            window.alert('Не удалось убрать поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
+          }
+        });
+      });
+      wavesListEl.appendChild(chip);
+    });
+  }
+
+  function renderWaveFilterOptions() {
+    var current = waveFilterSelect.value;
+    var ids = waves.map(function (w) { return w.id; });
+    lastParticipants.forEach(function (p) {
+      if (ids.indexOf(p.wave) === -1) ids.push(p.wave);
+    });
+    waveFilterSelect.innerHTML = '<option value="">Все потоки</option>';
+    ids.forEach(function (id) {
+      var opt = document.createElement('option');
+      opt.value = id;
+      opt.textContent = waveLabelMap[id] || id;
+      waveFilterSelect.appendChild(opt);
+    });
+    if (ids.indexOf(current) !== -1) waveFilterSelect.value = current;
+  }
+
+  waveAddForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var label = waveLabelInput.value.trim();
+    if (!label) return;
+    window.imp.callApi('addWave', { password: currentPassword(), label: label }).then(function (res) {
+      if (res && res.ok) {
+        waveLabelInput.value = '';
+        loadWaves();
+      } else {
+        window.alert('Не удалось добавить поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
+      }
+    });
+  });
+
+  waveFilterSelect.addEventListener('change', function () {
+    waveFilterValue = waveFilterSelect.value;
+    renderParticipants(lastParticipants);
+  });
+
+  // ---------- participants table ----------
+
   function renderParticipants(participants) {
     lastParticipants = participants || [];
-    participants = sortParticipants(lastParticipants);
-    countEl.textContent = participants.length + ' ' + pluralParticipants(participants.length);
-    tableBody.innerHTML = '';
-    empty.style.display = participants.length ? 'none' : '';
-    table.style.display = participants.length ? '' : 'none';
+    renderWaveFilterOptions();
 
-    participants.forEach(function (p) {
+    var filtered = waveFilterValue
+      ? lastParticipants.filter(function (p) { return String(p.wave) === String(waveFilterValue); })
+      : lastParticipants;
+    var view = sortParticipants(filtered);
+    currentView = view;
+
+    countEl.textContent = view.length + ' ' + pluralParticipants(view.length) +
+      (waveFilterValue && view.length !== lastParticipants.length ? ' из ' + lastParticipants.length : '');
+    tableBody.innerHTML = '';
+    empty.style.display = view.length ? 'none' : '';
+    table.style.display = view.length ? '' : 'none';
+
+    view.forEach(function (p) {
       var status = stationStatusLabel(p);
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
         '<td>' + escapeHtml(p.firstName + ' ' + p.lastName) + '</td>' +
         '<td>' + escapeHtml(p.email) + '</td>' +
-        '<td>' + escapeHtml(WAVE_LABELS[p.wave] || p.wave) + '</td>' +
+        '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + '</td>' +
         '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
         '<td><span class="fac-pill ' + status.cls + '">' + status.text + '</span></td>' +
         '<td>' + p.station1.appxReviewedCount + '/8 · ' + p.station1.cardCount + ' карт.</td>' +
         '<td>' + escapeHtml(formatDate(p.station1.updatedAt)) + '</td>' +
         '<td class="fac-score-cell">' + escapeHtml(formatScore(p)) +
-          ' <button class="fac-recalc-btn" data-bib="' + escapeHtml(String(p.bib)) + '" title="Пересчитать балл">↻</button></td>';
+          ' <button class="fac-recalc-btn" title="Пересчитать балл">↻</button></td>' +
+        '<td><button class="fac-delete-btn" title="Удалить участника">✕</button></td>';
       tr.addEventListener('click', function () { openDetail(p); });
       tr.querySelector('.fac-recalc-btn').addEventListener('click', function (e) {
         e.stopPropagation();
         recalcScore(p.bib, e.currentTarget);
       });
+      tr.querySelector('.fac-delete-btn').addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteParticipant(p, e.currentTarget);
+      });
       tableBody.appendChild(tr);
     });
   }
+
+  function deleteParticipant(p, btn) {
+    var confirmed = window.confirm(
+      'Удалить участника ' + formatBib(p.bib) + ' (' + p.firstName + ' ' + p.lastName + ')?\n' +
+      'Это удалит и регистрацию, и весь прогресс по станции 1. Действие необратимо.'
+    );
+    if (!confirmed) return;
+    btn.disabled = true;
+    window.imp.callApi('deleteParticipant', { password: currentPassword(), bib: p.bib }).then(function (res) {
+      if (res && res.ok) {
+        refresh();
+      } else {
+        btn.disabled = false;
+        window.alert('Не удалось удалить участника: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
+      }
+    });
+  }
+
+  function csvEscape(v) {
+    var s = v == null ? '' : String(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  exportBtn.addEventListener('click', function () {
+    var rows = [
+      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Балл', 'Дата оценки']
+    ];
+    currentView.forEach(function (p) {
+      rows.push([
+        p.bib,
+        p.firstName,
+        p.lastName,
+        p.email,
+        waveLabelMap[p.wave] || p.wave,
+        formatDate(p.registeredAt),
+        stationStatusLabel(p).text,
+        p.station1.cardCount,
+        p.station1.appxReviewedCount,
+        typeof p.station1.score === 'number' ? p.station1.score : '',
+        formatDate(p.station1.judgedAt)
+      ]);
+    });
+    // BOM — иначе Excel показывает кириллицу в CSV как кашу
+    var csv = '﻿' + rows.map(function (row) { return row.map(csvEscape).join(','); }).join('\r\n');
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'imperfect-uchastniki-' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
 
   function recalcScore(bib, btn) {
     btn.disabled = true;
@@ -253,7 +404,7 @@
     var html = '';
     html += '<div class="fac-detail-meta">' +
       '<span>' + escapeHtml(registration.email) + '</span>' +
-      '<span>волна ' + escapeHtml(WAVE_LABELS[registration.wave] || registration.wave) + '</span>' +
+      '<span>волна ' + escapeHtml(waveLabelMap[registration.wave] || registration.wave) + '</span>' +
       '<span>' + (s1.finished ? 'завершена ' + escapeHtml(formatDate(s1.finishedAt)) : 'в процессе') + '</span>' +
       '</div>';
 
