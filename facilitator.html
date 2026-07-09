@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Кабинет фасилитатора — i(m)perfect · «Искра»</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="gatePassword" class="gate">
+  <div class="gate-card">
+    <p class="kicker">Кабинет фасилитатора</p>
+    <h2>Введите пароль</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Пароль задан в Script Properties вашего Apps Script проекта — см. <code>backend/README.md</code>.</p>
+    <div class="field">
+      <label for="facPassword">Пароль</label>
+      <input type="password" id="facPassword" autocomplete="current-password" />
+    </div>
+    <div class="form-error" id="facAuthError">Неверный пароль.</div>
+    <button class="btn btn-primary btn-block" id="facLoginBtn">Войти →</button>
+    <p class="field-hint" id="facApiHint" style="margin-top:16px;"></p>
+  </div>
+</div>
+
+<div class="frame station-frame" id="facRoot" style="display:none;">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
+        <span class="station-sep">/</span>
+        <span class="station-name">Кабинет фасилитатора</span>
+      </div>
+      <div class="station-header-right">
+        <span class="station-hint" id="facCount">0 участников</span>
+        <button class="btn btn-ghost" id="facRefreshBtn" style="padding:11px 20px; font-size:14px;">Обновить</button>
+      </div>
+    </header>
+
+    <div class="fac-body">
+      <table class="fac-table" id="facTable">
+        <thead>
+          <tr>
+            <th>№</th>
+            <th>ФИО</th>
+            <th>Email</th>
+            <th>Волна</th>
+            <th>Регистрация</th>
+            <th>Станция 1</th>
+            <th>Приложения</th>
+            <th>Обновлено</th>
+          </tr>
+        </thead>
+        <tbody id="facTableBody"></tbody>
+      </table>
+      <div class="fac-empty" id="facEmpty" style="display:none;">Пока никто не зарегистрировался.</div>
+    </div>
+
+  </div>
+</div>
+
+<div class="fac-detail" id="facDetail">
+  <div class="fac-detail-panel">
+    <div class="fac-detail-head">
+      <div>
+        <div class="bib" id="facDetailBib" style="margin-bottom:8px;">№ 000</div>
+        <h3 id="facDetailName">—</h3>
+      </div>
+      <button class="fac-detail-close" id="facDetailClose" title="Закрыть">✕</button>
+    </div>
+    <div class="fac-detail-body" id="facDetailBody"></div>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/api.js"></script>
+<script src="js/facilitator.js"></script>
+</body>
+</html>

@@ -1,0 +1,611 @@
+// i(m)perfect — станция 1 «Вычитка и карта проблем» (кейс «Искра»).
+// Полностью фронтовая заглушка: судейство против ключа (LLM-судья) не подключено —
+// экран честно показывает это на финише вместо баллов.
+
+(function () {
+  var APPX_TOTAL = 8;
+  var session = null;
+  var state = null; // { cards, groups, rationale, appxOpened, highlights, finished, startedAt }
+
+  function storageKey(bib) { return 'imp_station1_' + bib; }
+  function htmlKey(bib) { return 'imp_station1_html_' + bib; }
+
+  function loadSession() {
+    try {
+      return JSON.parse(localStorage.getItem('imp_current_session') || 'null');
+    } catch (e) { return null; }
+  }
+
+  function loadState(bib) {
+    try {
+      var raw = localStorage.getItem(storageKey(bib));
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (!parsed.highlights) parsed.highlights = [];
+        if (!parsed.appxOpened) parsed.appxOpened = {};
+        if (!parsed.appxReviewed) parsed.appxReviewed = {};
+        return parsed;
+      }
+    } catch (e) {}
+    return {
+      cards: [],
+      groups: [],
+      rationale: '',
+      appxOpened: {},   // explicitly clicked open at least once
+      appxReviewed: {}, // opened AND scrolled through to the end — the real "read it" signal
+      highlights: [],
+      finished: false,
+      startedAt: new Date().toISOString()
+    };
+  }
+
+  var backendSyncTimer = null;
+
+  function saveState() {
+    localStorage.setItem(storageKey(session.bib), JSON.stringify(state));
+    scheduleBackendSync();
+  }
+
+  // localStorage stays the instant, synchronous source of truth for the UI;
+  // the backend sync is a best-effort background mirror for the facilitator
+  // dashboard, debounced so we're not firing a request on every keystroke.
+  function scheduleBackendSync() {
+    if (!window.imp.isApiConfigured()) return;
+    clearTimeout(backendSyncTimer);
+    backendSyncTimer = setTimeout(syncStateToBackend, 3000);
+  }
+
+  function syncStateToBackend() {
+    if (!window.imp.isApiConfigured()) return;
+    window.imp.callApi('saveStation1', { bib: session.bib, state: state });
+  }
+
+  function saveCaseHtml() {
+    localStorage.setItem(htmlKey(session.bib), document.getElementById('caseContent').innerHTML);
+  }
+
+  function uid() { return 'id_' + Math.random().toString(36).slice(2, 10); }
+
+  function escapeHtml(s) {
+    var div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  // ---------- gate ----------
+
+  session = loadSession();
+  if (!session || !session.bib) {
+    document.getElementById('gate').style.display = 'flex';
+    return;
+  }
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('stationRoot').style.display = '';
+  document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(3, '0');
+
+  state = loadState(session.bib);
+
+  var caseContent = document.getElementById('caseContent');
+
+  // restore reading panel (highlights/notes survive reload)
+  (function restoreCaseHtml() {
+    var saved = localStorage.getItem(htmlKey(session.bib));
+    if (saved) caseContent.innerHTML = saved;
+  })();
+
+  // rebuild state.highlights from marks already in the DOM if they predate this field,
+  // or if a mark and its record ever drift apart
+  (function reconcileHighlights() {
+    var known = state.highlights.map(function (h) { return h.id; });
+    caseContent.querySelectorAll('mark.hl').forEach(function (markEl) {
+      var id = markEl.dataset.hlId;
+      if (!id) { id = uid(); markEl.dataset.hlId = id; }
+      if (known.indexOf(id) === -1) {
+        var article = markEl.closest('article[id]');
+        state.highlights.push({
+          id: id,
+          note: markEl.title || '',
+          sectionId: article ? article.id : '',
+          snippet: markEl.textContent.slice(0, 140)
+        });
+        known.push(id);
+      }
+    });
+  })();
+
+  // ---------- intro dismiss ----------
+
+  var introKey = 'imp_station1_intro_seen_' + session.bib;
+  var introEl = document.getElementById('stationIntro');
+  if (localStorage.getItem(introKey)) introEl.style.display = 'none';
+  document.getElementById('dismissIntro').addEventListener('click', function () {
+    introEl.style.display = 'none';
+    localStorage.setItem(introKey, '1');
+  });
+
+  // ---------- appendix tracking: must be explicitly opened AND scrolled to the end ----------
+  // Appendices are collapsed <details> by default. A stray scroll-past can no longer
+  // "read" one for you — opening takes a click, and "изучено" only lands once the
+  // sentinel at the bottom of that appendix's body has actually been seen while it's open.
+
+  // "справка по терминам" is a glossary, not one of the 8 numbered appendices —
+  // it still gets tracked and checked off in the nav, just excluded from the /8 count.
+  var countableAppxIds = ['1', '2', '3', '4', '5', '6', '7', '8'];
+  var trackedAppxIds = ['terms'].concat(countableAppxIds);
+
+  var appxLinks = {};
+  document.querySelectorAll('.case-nav-link[data-appx]').forEach(function (link) {
+    appxLinks[link.dataset.appx] = link;
+  });
+
+  var appxDetails = {};
+  trackedAppxIds.forEach(function (id) {
+    var article = document.getElementById('appx-' + id);
+    if (article) appxDetails[id] = article.querySelector('details.appx-doc');
+  });
+
+  function updateAppxProgress() {
+    var n = countableAppxIds.filter(function (id) { return state.appxReviewed[id]; }).length;
+    document.getElementById('appxProgress').textContent = n + '/' + APPX_TOTAL + ' приложений изучено';
+  }
+
+  function refreshAppxUi(id) {
+    var badge = document.querySelector('.appx-doc-badge[data-badge-for="' + id + '"]');
+    var link = appxLinks[id];
+    if (state.appxReviewed[id]) {
+      if (badge) { badge.textContent = '✓ изучено'; badge.className = 'appx-doc-badge is-reviewed'; }
+      if (link) { link.classList.add('is-opened'); link.classList.remove('is-partial'); }
+    } else if (state.appxOpened[id]) {
+      if (badge) { badge.textContent = 'открыто · дочитайте до конца'; badge.className = 'appx-doc-badge is-opened'; }
+      if (link) { link.classList.add('is-partial'); link.classList.remove('is-opened'); }
+    } else {
+      if (badge) { badge.textContent = 'не открыто'; badge.className = 'appx-doc-badge'; }
+      if (link) { link.classList.remove('is-opened', 'is-partial'); }
+    }
+  }
+
+  trackedAppxIds.forEach(refreshAppxUi);
+  updateAppxProgress();
+
+  var sentinelObserver = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry) {
+      if (!entry.isIntersecting) return;
+      var id = entry.target.dataset.sentinelFor;
+      var details = appxDetails[id];
+      if (!details || !details.open || state.appxReviewed[id]) return;
+      state.appxReviewed[id] = true;
+      refreshAppxUi(id);
+      updateAppxProgress();
+      saveState();
+      sentinelObserver.unobserve(entry.target);
+    });
+  }, { root: caseContent, threshold: 0 });
+
+  trackedAppxIds.forEach(function (id) {
+    var details = appxDetails[id];
+    if (!details) return;
+
+    if (details.open) requestAnimationFrame(function () {
+      sentinelObserver.observe(document.querySelector('.appx-sentinel[data-sentinel-for="' + id + '"]'));
+    });
+
+    details.addEventListener('toggle', function () {
+      if (!details.open) return;
+      if (!state.appxOpened[id]) {
+        state.appxOpened[id] = true;
+        refreshAppxUi(id);
+        saveState();
+      }
+      if (!state.appxReviewed[id]) {
+        requestAnimationFrame(function () {
+          var sentinel = document.querySelector('.appx-sentinel[data-sentinel-for="' + id + '"]');
+          if (sentinel) sentinelObserver.observe(sentinel);
+        });
+      }
+    });
+  });
+
+  // clicking a nav link for an appendix also opens it — jumping to a closed card
+  // without opening it would be a dead end
+  document.querySelectorAll('.case-nav-link[data-appx]').forEach(function (link) {
+    link.addEventListener('click', function () {
+      var details = appxDetails[link.dataset.appx];
+      if (details) details.open = true;
+    });
+  });
+
+  // ---------- section labels (used as anchor tokens dragged onto cards) ----------
+
+  function articleIdFor(node) {
+    var el = node.nodeType === 3 ? node.parentElement : node;
+    var article = el && el.closest ? el.closest('article[id]') : null;
+    return article ? article.id : '';
+  }
+
+  function shortAnchorLabel(articleId) {
+    if (!articleId) return '';
+    if (articleId.indexOf('appx-') === 0) {
+      var key = articleId.replace('appx-', '');
+      return key === 'terms' ? 'справка по терминам' : 'П' + key;
+    }
+    if (articleId === 'sec-intro') return 'перед чтением';
+    if (articleId === 'sec-7') return 'письмо Агеева';
+    if (articleId === 'sec-8') return 'задание';
+    if (articleId.indexOf('sec-') === 0) return 'раздел ' + articleId.replace('sec-', '');
+    return articleId;
+  }
+
+  // ---------- highlight + note: one action, optional note, click to edit/remove ----------
+
+  var toolbar = document.getElementById('selToolbar');
+  var popover = document.getElementById('hlPopover');
+  var noteInput = document.getElementById('hlNoteInput');
+  var activeRange = null;
+  var popoverHlId = null;
+
+  function hideToolbar() { toolbar.classList.remove('show'); activeRange = null; }
+  function closePopover() { popover.classList.remove('show'); popoverHlId = null; }
+
+  document.addEventListener('mouseup', function (e) {
+    if (toolbar.contains(e.target) || popover.contains(e.target)) return;
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || sel.rangeCount === 0) { hideToolbar(); return; }
+    var range = sel.getRangeAt(0);
+    if (!caseContent.contains(range.commonAncestorContainer)) { hideToolbar(); return; }
+    if (range.toString().trim().length === 0) { hideToolbar(); return; }
+    activeRange = range;
+    var rect = range.getBoundingClientRect();
+    toolbar.style.top = Math.max(8, rect.top - 46) + 'px';
+    toolbar.style.left = Math.max(8, rect.left) + 'px';
+    toolbar.classList.add('show');
+  });
+
+  document.addEventListener('mousedown', function (e) {
+    if (popover.classList.contains('show') && !popover.contains(e.target) && !(e.target.closest && e.target.closest('mark.hl'))) {
+      closePopover();
+    }
+  });
+
+  window.addEventListener('scroll', function () { hideToolbar(); closePopover(); }, true);
+
+  function wrapRange(range, id) {
+    var mark = document.createElement('mark');
+    mark.className = 'hl';
+    mark.dataset.hlId = id;
+    try {
+      range.surroundContents(mark);
+    } catch (e) {
+      mark.appendChild(range.extractContents());
+      range.insertNode(mark);
+    }
+    return mark;
+  }
+
+  function openPopover(markEl, id, currentNote) {
+    popoverHlId = id;
+    noteInput.value = currentNote || '';
+    var rect = markEl.getBoundingClientRect();
+    popover.style.top = Math.min(window.innerHeight - 160, rect.bottom + 8) + 'px';
+    popover.style.left = Math.max(8, Math.min(window.innerWidth - 280, rect.left)) + 'px';
+    popover.classList.add('show');
+    noteInput.focus();
+  }
+
+  document.getElementById('hlBtn').addEventListener('click', function () {
+    if (!activeRange) return;
+    var sectionId = articleIdFor(activeRange.commonAncestorContainer);
+    var id = uid();
+    var mark = wrapRange(activeRange, id);
+    var snippet = mark.textContent.slice(0, 140);
+    window.getSelection().removeAllRanges();
+    hideToolbar();
+    state.highlights.push({ id: id, note: '', sectionId: sectionId, snippet: snippet });
+    saveState();
+    saveCaseHtml();
+    renderNotesList();
+    openPopover(mark, id, '');
+  });
+
+  caseContent.addEventListener('click', function (e) {
+    var markEl = e.target.closest ? e.target.closest('mark.hl') : null;
+    if (!markEl) return;
+    var sel = window.getSelection();
+    if (sel && !sel.isCollapsed && sel.toString().length > 0) return;
+    var h = state.highlights.filter(function (x) { return x.id === markEl.dataset.hlId; })[0];
+    openPopover(markEl, markEl.dataset.hlId, h ? h.note : (markEl.title || ''));
+  });
+
+  function removeHighlight(id) {
+    var markEl = caseContent.querySelector('mark[data-hl-id="' + id + '"]');
+    if (markEl) {
+      var parent = markEl.parentNode;
+      while (markEl.firstChild) parent.insertBefore(markEl.firstChild, markEl);
+      parent.removeChild(markEl);
+      parent.normalize();
+    }
+    state.highlights = state.highlights.filter(function (x) { return x.id !== id; });
+    saveState();
+    saveCaseHtml();
+    renderNotesList();
+  }
+
+  document.getElementById('hlSaveBtn').addEventListener('click', function () {
+    if (!popoverHlId) return;
+    var note = noteInput.value.trim();
+    var markEl = caseContent.querySelector('mark[data-hl-id="' + popoverHlId + '"]');
+    var h = state.highlights.filter(function (x) { return x.id === popoverHlId; })[0];
+    if (h) h.note = note;
+    if (markEl) {
+      markEl.className = note ? 'hl has-note' : 'hl';
+      markEl.title = note || '';
+    }
+    saveState();
+    saveCaseHtml();
+    renderNotesList();
+    closePopover();
+  });
+
+  document.getElementById('hlDeleteBtn').addEventListener('click', function () {
+    if (!popoverHlId) return;
+    removeHighlight(popoverHlId);
+    closePopover();
+  });
+
+  // ---------- notes drawer ----------
+
+  var notesDrawer = document.getElementById('notesDrawer');
+  document.getElementById('notesToggleBtn').addEventListener('click', function () {
+    notesDrawer.classList.toggle('show');
+  });
+  document.getElementById('notesCloseBtn').addEventListener('click', function () {
+    notesDrawer.classList.remove('show');
+  });
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function () {});
+      return;
+    }
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  function renderNotesList() {
+    document.getElementById('notesCount').textContent = state.highlights.length;
+    var list = document.getElementById('notesList');
+    list.innerHTML = '';
+    if (state.highlights.length === 0) {
+      list.innerHTML = '<div class="notes-empty">Пока нет отметок. Выделите текст слева и нажмите «отметить».</div>';
+      return;
+    }
+    state.highlights.slice().reverse().forEach(function (h) {
+      var label = shortAnchorLabel(h.sectionId);
+      var item = document.createElement('div');
+      item.className = 'note-item';
+      item.draggable = true;
+      item.innerHTML =
+        '<div class="note-item-top">' +
+          '<span class="note-item-label">' + escapeHtml(label) + '</span>' +
+          '<button class="note-item-del" title="Удалить">✕</button>' +
+        '</div>' +
+        '<div class="note-item-snippet">«' + escapeHtml(h.snippet) + '»</div>' +
+        (h.note ? '<div class="note-item-note">' + escapeHtml(h.note) + '</div>' : '') +
+        '<button class="note-item-copy">скопировать якорь</button>';
+
+      item.querySelector('.note-item-del').addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        removeHighlight(h.id);
+      });
+      item.querySelector('.note-item-copy').addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        copyToClipboard(label);
+        var btn = ev.target;
+        var old = btn.textContent;
+        btn.textContent = 'скопировано';
+        setTimeout(function () { btn.textContent = old; }, 1200);
+      });
+      item.addEventListener('dragstart', function (ev) {
+        ev.dataTransfer.setData('text/plain', label);
+        ev.dataTransfer.effectAllowed = 'copy';
+      });
+      item.addEventListener('click', function () {
+        var markEl = caseContent.querySelector('mark[data-hl-id="' + h.id + '"]');
+        if (markEl) {
+          markEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          markEl.classList.add('flash');
+          setTimeout(function () { markEl.classList.remove('flash'); }, 900);
+        }
+      });
+      list.appendChild(item);
+    });
+  }
+
+  // ---------- groups ----------
+
+  function renderGroups() {
+    var row = document.getElementById('groupsRow');
+    row.innerHTML = '';
+    state.groups.forEach(function (g) {
+      var chip = document.createElement('span');
+      chip.className = 'group-chip';
+      chip.textContent = g.name;
+      if (!state.finished) {
+        var del = document.createElement('button');
+        del.textContent = '×';
+        del.title = 'Удалить группу';
+        del.addEventListener('click', function () {
+          state.groups = state.groups.filter(function (x) { return x.id !== g.id; });
+          state.cards.forEach(function (c) { if (c.group === g.id) c.group = ''; });
+          saveState();
+          renderGroups();
+          renderCards();
+        });
+        chip.appendChild(del);
+      }
+      row.appendChild(chip);
+    });
+  }
+
+  document.getElementById('addGroupBtn').addEventListener('click', function () {
+    var name = window.prompt('Название группы (например: «стратегия», «до 1 года», «культура»):', '');
+    if (!name) return;
+    state.groups.push({ id: uid(), name: name.trim() });
+    saveState();
+    renderGroups();
+    renderCards();
+  });
+
+  // ---------- cards ----------
+
+  function groupOptionsHtml(selected) {
+    var html = '<option value="">без группы</option>';
+    state.groups.forEach(function (g) {
+      html += '<option value="' + g.id + '"' + (g.id === selected ? ' selected' : '') + '>' + escapeHtml(g.name) + '</option>';
+    });
+    return html;
+  }
+
+  function renderCards() {
+    var list = document.getElementById('cardsList');
+    list.innerHTML = '';
+    state.cards.forEach(function (card) {
+      var el = document.createElement('div');
+      el.className = 'card' + (state.finished ? ' is-locked' : '');
+      el.innerHTML =
+        '<label>Формулировка проблемы (одно предложение)</label>' +
+        '<textarea rows="2" data-field="text" placeholder="например: юнит-экономика «Миры+» отрицательная пять лет подряд">' + escapeHtml(card.text) + '</textarea>' +
+        '<div class="card-row">' +
+          '<div><label>Якорь в материалах</label><input type="text" data-field="anchor" value="' + escapeHtml(card.anchor) + '" placeholder="перетащите отметку сюда или впишите: раздел 2 / П1" /></div>' +
+          '<div><label>Группа</label><select data-field="group">' + groupOptionsHtml(card.group) + '</select></div>' +
+        '</div>';
+      if (!state.finished) {
+        var rm = document.createElement('button');
+        rm.className = 'card-remove';
+        rm.textContent = '✕';
+        rm.title = 'Удалить';
+        rm.addEventListener('click', function () {
+          state.cards = state.cards.filter(function (c) { return c.id !== card.id; });
+          saveState();
+          renderCards();
+          updateCardCount();
+        });
+        el.appendChild(rm);
+      }
+      el.querySelector('[data-field="text"]').addEventListener('input', function (e) {
+        card.text = e.target.value; saveState();
+      });
+      var anchorInput = el.querySelector('[data-field="anchor"]');
+      anchorInput.addEventListener('input', function (e) {
+        card.anchor = e.target.value; saveState();
+      });
+      if (!state.finished) {
+        anchorInput.addEventListener('dragover', function (e) {
+          e.preventDefault();
+          anchorInput.classList.add('is-drop-target');
+        });
+        anchorInput.addEventListener('dragleave', function () {
+          anchorInput.classList.remove('is-drop-target');
+        });
+        anchorInput.addEventListener('drop', function (e) {
+          e.preventDefault();
+          anchorInput.classList.remove('is-drop-target');
+          var text = e.dataTransfer.getData('text/plain');
+          if (!text) return;
+          card.anchor = card.anchor ? card.anchor + ' · ' + text : text;
+          anchorInput.value = card.anchor;
+          saveState();
+        });
+      }
+      el.querySelector('[data-field="group"]').addEventListener('change', function (e) {
+        card.group = e.target.value; saveState();
+      });
+      list.appendChild(el);
+    });
+  }
+
+  function updateCardCount() {
+    document.getElementById('cardCount').textContent = state.cards.length + ' карточ' + pluralCards(state.cards.length);
+  }
+
+  function pluralCards(n) {
+    var mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'ка';
+    if ([2, 3, 4].indexOf(mod10) !== -1 && [12, 13, 14].indexOf(mod100) === -1) return 'ки';
+    return 'ек';
+  }
+
+  function pluralGroups(n) {
+    var mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'группа';
+    if ([2, 3, 4].indexOf(mod10) !== -1 && [12, 13, 14].indexOf(mod100) === -1) return 'группы';
+    return 'групп';
+  }
+
+  document.getElementById('addCardBtn').addEventListener('click', function () {
+    state.cards.push({ id: uid(), text: '', anchor: '', group: '' });
+    saveState();
+    renderCards();
+    updateCardCount();
+    var textareas = document.querySelectorAll('#cardsList textarea');
+    if (textareas.length) textareas[textareas.length - 1].focus();
+  });
+
+  document.getElementById('rationale').value = state.rationale || '';
+  document.getElementById('rationale').addEventListener('input', function (e) {
+    state.rationale = e.target.value; saveState();
+  });
+
+  // ---------- finish ----------
+
+  function finishStation() {
+    if (state.cards.length === 0) {
+      if (!window.confirm('Карта пуста — ни одной карточки. Завершить станцию всё равно?')) return;
+    }
+    state.finished = true;
+    state.finishedAt = new Date().toISOString();
+    saveState();
+    clearTimeout(backendSyncTimer);
+    syncStateToBackend(); // finish shouldn't wait out the debounce — facilitator should see it now
+
+    document.getElementById('addCardBtn').style.display = 'none';
+    document.getElementById('addGroupBtn').style.display = 'none';
+    document.getElementById('rationale').setAttribute('readonly', 'readonly');
+    document.getElementById('finishBtn').setAttribute('disabled', 'disabled');
+    document.getElementById('finishBtn').textContent = 'Станция завершена';
+    renderGroups();
+    renderCards();
+
+    var n = countableAppxIds.filter(function (id) { return state.appxReviewed[id]; }).length;
+    var summary = document.createElement('div');
+    summary.className = 'finish-summary';
+    summary.innerHTML =
+      '<h4>Станция 1 завершена</h4>' +
+      '<ul>' +
+        '<li><b>' + state.cards.length + '</b> карточ' + pluralCards(state.cards.length) + ' в карте</li>' +
+        '<li><b>' + n + '/' + APPX_TOTAL + '</b> приложений изучено до конца (вторичный сигнал, не в балл)</li>' +
+        '<li><b>' + state.groups.length + '</b> ' + pluralGroups(state.groups.length) + ' введено в структуру карты</li>' +
+      '</ul>' +
+      '<p style="font-size:13px; color:var(--muted); margin:0;">Сверка с ключом «Искры» и подсчёт сплита делает судья-ИИ — этот шаг ещё не подключён (оркестратор в разработке). Карта сохранена локально на этом устройстве. Дальше по маршруту — станция 2: приоритизация и развилка «Крепость» / «Вторая кривая», её экран ещё не собран.</p>';
+    document.getElementById('workScroll').insertBefore(summary, document.getElementById('workScroll').firstChild);
+  }
+
+  document.getElementById('finishBtn').addEventListener('click', finishStation);
+
+  // ---------- init render ----------
+
+  renderGroups();
+  renderCards();
+  updateCardCount();
+  renderNotesList();
+  saveState(); // persist any reconciled highlights right away
+
+  if (state.finished) {
+    // re-run finish rendering (locked state + summary) after reload
+    state.finished = false; // temporarily so finishStation() re-applies lock cleanly
+    finishStation();
+  }
+})();
