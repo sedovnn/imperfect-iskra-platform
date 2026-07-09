@@ -241,7 +241,8 @@
           '<li><b>' + state.rootConnections.length + '</b> корневых связок</li>' +
           '<li>развилка: <b>' + (state.forkChoice ? 'выбрана' : 'не выбрана') + '</b></li>' +
         '</ul>' +
-        '<p style="font-size:13px; color:var(--muted); margin:0;">Сверка с ключом делает судья-ИИ — балл виден только фасилитатору. Раунд 1 продолжается станцией 3.</p>';
+        '<p style="font-size:13px; color:var(--muted); margin:0 0 14px;">Сверка с ключом делает судья-ИИ — балл виден только фасилитатору.</p>' +
+        '<a class="btn btn-primary" href="station3.html">Перейти к станции 3 →</a>';
       document.getElementById('workScroll').insertBefore(summary, document.getElementById('workScroll').firstChild);
     }
 

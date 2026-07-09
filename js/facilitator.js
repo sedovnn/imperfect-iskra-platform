@@ -149,6 +149,18 @@
     return typeof t === 'number' ? t + '/20' : '—';
   }
 
+  var VERDICT_LABELS = {
+    held: { text: 'удержал', cls: 'is-done' },
+    recovered_recall: { text: 'вернулся', cls: 'is-progress' },
+    not_defended: { text: 'не защитил', cls: 'is-none' }
+  };
+
+  function verdictLabel(p) {
+    var v = p.station3 && p.station3.verdict;
+    if (v && VERDICT_LABELS[v]) return VERDICT_LABELS[v];
+    return { text: p.station3 && p.station3.finished ? 'не оценено' : '—', cls: 'is-none' };
+  }
+
   function sortParticipants(participants) {
     var dir = sortState.dir;
     return participants.slice().sort(function (a, b) {
@@ -264,6 +276,8 @@
     view.forEach(function (p) {
       var status1 = stationStatusLabel(p, 'station1');
       var status2 = stationStatusLabel(p, 'station2');
+      var status3 = stationStatusLabel(p, 'station3');
+      var verdict = verdictLabel(p);
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
@@ -273,6 +287,9 @@
         '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
         '<td><span class="fac-pill ' + status1.cls + '">' + status1.text + '</span></td>' +
         '<td><span class="fac-pill ' + status2.cls + '">' + status2.text + '</span></td>' +
+        '<td><span class="fac-pill ' + status3.cls + '">' + status3.text + '</span></td>' +
+        '<td class="fac-score-cell"><span class="fac-pill ' + verdict.cls + '">' + escapeHtml(verdict.text) + '</span>' +
+          ' <button class="fac-recalc-btn" data-station="3" title="Пересчитать вердикт станции 3">↻</button></td>' +
         '<td>' + p.station1.appxReviewedCount + '/8 · ' + p.station1.cardCount + ' карт.</td>' +
         '<td>' + escapeHtml(formatDate(p.station1.updatedAt)) + '</td>' +
         '<td class="fac-score-cell">' + escapeHtml(formatScore(p, 'station1', 16)) +
@@ -282,14 +299,11 @@
         '<td>' + escapeHtml(formatTotal(p)) + '</td>' +
         '<td><button class="fac-delete-btn" title="Удалить участника">✕</button></td>';
       tr.addEventListener('click', function () { openDetail(p); });
-      var recalcBtns = tr.querySelectorAll('.fac-recalc-btn');
-      recalcBtns[0].addEventListener('click', function (e) {
-        e.stopPropagation();
-        recalcScore(p.bib, e.currentTarget, 1);
-      });
-      recalcBtns[1].addEventListener('click', function (e) {
-        e.stopPropagation();
-        recalcScore(p.bib, e.currentTarget, 2);
+      tr.querySelectorAll('.fac-recalc-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          recalcScore(p.bib, e.currentTarget, Number(e.currentTarget.getAttribute('data-station')));
+        });
       });
       tr.querySelector('.fac-delete-btn').addEventListener('click', function (e) {
         e.stopPropagation();
@@ -302,7 +316,7 @@
   function deleteParticipant(p, btn) {
     var confirmed = window.confirm(
       'Удалить участника ' + formatBib(p.bib) + ' (' + p.firstName + ' ' + p.lastName + ')?\n' +
-      'Это удалит регистрацию и весь прогресс по станциям 1 и 2. Действие необратимо.'
+      'Это удалит регистрацию и весь прогресс по станциям 1, 2 и 3. Действие необратимо.'
     );
     if (!confirmed) return;
     btn.disabled = true;
@@ -323,7 +337,7 @@
 
   if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
-      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Балл 1', 'Статус станции 2', 'Балл 2', 'Итого']
+      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Балл 1', 'Статус станции 2', 'Балл 2', 'Итого', 'Статус станции 3', 'Вердикт']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -339,7 +353,9 @@
         typeof p.station1.score === 'number' ? p.station1.score : '',
         stationStatusLabel(p, 'station2').text,
         typeof p.station2.score === 'number' ? p.station2.score : '',
-        totalScore(p) === null ? '' : totalScore(p)
+        totalScore(p) === null ? '' : totalScore(p),
+        stationStatusLabel(p, 'station3').text,
+        verdictLabel(p).text
       ]);
     });
     // BOM — иначе Excel показывает кириллицу в CSV как кашу
@@ -356,7 +372,7 @@
   });
 
   function recalcScore(bib, btn, station) {
-    var action = station === 2 ? 'judgeStation2' : 'judgeStation1';
+    var action = station === 3 ? 'judgeStation3' : station === 2 ? 'judgeStation2' : 'judgeStation1';
     btn.disabled = true;
     btn.textContent = '…';
     window.imp.callApi(action, { password: currentPassword(), bib: bib }).then(function (res) {
@@ -405,7 +421,7 @@
         detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить — попробуйте «Обновить» и открыть снова.</p>';
         return;
       }
-      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2);
+      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.station3);
     });
   }
 
@@ -493,7 +509,40 @@
     return html;
   }
 
-  function renderDetailHtml(registration, s1, s2) {
+  var AGEEV_LINES = [
+    'Заходите, присаживайтесь. Я прочитал то, что вы прислали — карту, связки, рекомендацию. Прежде чем перейдём к делу — короткий вопрос на разогрев: что из вашей карты вы бы назвали первым, если бы у вас было тридцать секунд перед лифтом?',
+    'Хорошо. По развилке я примерно понял вашу позицию. Меня смущает вот что: правление скажет, что решение можно принять и через полгода, когда будет больше данных. Зачем спешить?',
+    'И раз заговорили о данных — отдельный вопрос по одному из пунктов карты. Вы написали что-то про отсутствие мониторинга рынка и конкурентов. Честно, не вижу тут проблемы: у нас одиннадцать статей на топовых конференциях в 2025-м — больше, чем у всех остальных на рынке вместе. Ресерч в курсе всего, что происходит в индустрии. Loop выйдет не раньше 2027-го — время есть. По-моему, это не корневая проблема, а частность, которую можно снять с карты.',
+    'Понял вас. На сегодня достаточно — коллеги ждут вас на восьмом этаже, обсудите детали. Прежде чем вы уйдёте — что-нибудь ещё, о чём мы не поговорили?'
+  ];
+
+  function renderStation3Html(s3) {
+    if (!s3) {
+      return '<h4>Станция 3</h4><p class="fac-detail-text">Ещё не начата.</p>';
+    }
+    var verdictInfo = VERDICT_LABELS[s3.verdict] || { text: s3.finished ? 'не оценено' : '—', cls: 'is-none' };
+    var html = '<h4>Станция 3 — ' + (s3.finished ? 'завершена ' + escapeHtml(formatDate(s3.finishedAt)) : 'в процессе') + '</h4>';
+    html += '<p class="fac-detail-text">Вердикт: <span class="fac-pill ' + verdictInfo.cls + '">' + escapeHtml(verdictInfo.text) + '</span></p>';
+    if (s3.verdictReasoning) {
+      html += '<p class="fac-detail-text">' + escapeHtml(s3.verdictReasoning) + '</p>';
+    }
+    if ((s3.responses || []).some(function (r) { return r; })) {
+      html += '<div class="fac-cards">';
+      AGEEV_LINES.forEach(function (line, i) {
+        var resp = (s3.responses || [])[i];
+        if (!resp) return;
+        html += '<div class="fac-card">' +
+          '<p><b>Агеев:</b> «' + escapeHtml(line) + '»</p>' +
+          '<div class="fac-card-meta"><span>ответ участника</span></div>' +
+          '<p class="fac-card-warn">' + escapeHtml(resp) + '</p>' +
+          '</div>';
+      });
+      html += '</div>';
+    }
+    return html;
+  }
+
+  function renderDetailHtml(registration, s1, s2, s3) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
@@ -547,6 +596,7 @@
     }
 
     html += renderScore2Html(s2);
+    html += renderStation3Html(s3);
 
     return html;
   }

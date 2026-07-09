@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Станция 3 · Встреча с Агеевым — i(m)perfect</title>
+<meta name="description" content="Раунд 1, станция 3. Встреча с Агеевым — удержите курс под давлением." />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="gate" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Нужен номер участника</p>
+    <h2>Сначала регистрация</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Станция 3 привязана к вашему стартовому номеру — без него прогресс негде сохранить.</p>
+    <a class="btn btn-primary btn-block" href="register.html">Получить номер участника →</a>
+  </div>
+</div>
+
+<div id="gateStation2" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Сначала станция 2</p>
+    <h2>Станция 3 продолжает станцию 2</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Встреча с Агеевым — прямое продолжение вашей карты и рекомендации по развилке. Сначала завершите станцию 2.</p>
+    <a class="btn btn-primary btn-block" href="station2.html">Перейти на станцию 2 →</a>
+  </div>
+</div>
+
+<div class="frame station-frame" id="stationRoot" style="display:none;">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
+        <span class="station-sep">/</span>
+        <span class="station-name">Станция 3 · Встреча с Агеевым</span>
+      </div>
+      <div class="station-header-right">
+        <span class="bib" id="hdrBib" style="font-size:14px; padding:6px 12px;">№ 000</span>
+        <span class="station-hint">без баллов рубрики</span>
+        <button class="btn btn-primary" id="finishBtn" style="padding:11px 20px; font-size:14px; display:none;">Завершить станцию →</button>
+      </div>
+    </header>
+
+    <div class="station-intro" id="stationIntro">
+      <div class="station-intro-inner">
+        <p class="kicker">Постановка</p>
+        <p>Понедельник, 10:00, кабинет Агеева. Он читал ваши материалы и хочет обсудить их лично. Разговор пойдёт в 4 репликах — отвечайте свободным текстом на каждую, прежде чем откроется следующая.</p>
+        <div class="case-rule">
+          <span>→</span>
+          <span><b>Здесь нет балла по ходу.</b> Эта станция проверяет фокусировку — удержите ли вы позицию под давлением, а не соберёте очки. Судья читает весь разговор целиком.</span>
+        </div>
+        <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговору ↓</button>
+      </div>
+    </div>
+
+    <div class="station-body" style="grid-template-columns: 1fr;">
+      <section class="work-pane">
+        <div class="work-header">
+          <div>
+            <div class="kicker" style="margin-bottom:4px;">Кабинет Агеева</div>
+            <h3 style="font-family:var(--ff-display); font-size:19px; margin:0;">Разговор</h3>
+          </div>
+        </div>
+        <div class="work-scroll" id="dialogueScroll" style="max-width:640px; margin:0 auto; width:100%;">
+        </div>
+      </section>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/api.js"></script>
+<script src="js/station3.js"></script>
+</body>
+</html>
