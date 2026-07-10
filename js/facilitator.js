@@ -139,14 +139,25 @@
     return s.finished ? 'не оценено' : '—';
   }
 
+  // По методологии (§9 "Скоринг"): L1=1 балл ... L5=5 баллов — уровень способности
+  // это и есть балл. Но балл НАВЫКА = среднее уровней его двух способностей (АК-1+АК-2)/2,
+  // а АК-2 ещё не переведена на эту же логику — показываем только уровень/балл АК-1.
+  function formatLevel(p, key) {
+    var s = p[key];
+    if (typeof s.level === 'number') return 'L' + s.level + ' (' + s.level + ' балл) · ' + (s.levelSource === 'ai' ? 'ИИ' : 'дет.');
+    return s.finished ? 'не оценено' : '—';
+  }
+
+  // "Итого" (сумма 5 навыков по методологии) пока не считаем вообще — ни через
+  // старый балл станции 2 (её ещё предстоит переписать на ту же логику, что и
+  // станцию 1, текущий балл 0-4 не про то же самое), ни тем более через
+  // придуманную смесь с уровнем АК-1. Появится, когда наберётся полный навык.
   function totalScore(p) {
-    var s1 = p.station1.score, s2 = p.station2.score;
-    return (typeof s1 === 'number' && typeof s2 === 'number') ? s1 + s2 : null;
+    return null;
   }
 
   function formatTotal(p) {
-    var t = totalScore(p);
-    return typeof t === 'number' ? t + '/20' : '—';
+    return '—';
   }
 
   var VERDICT_LABELS = {
@@ -164,11 +175,15 @@
   function sortParticipants(participants) {
     var dir = sortState.dir;
     return participants.slice().sort(function (a, b) {
-      if (sortState.key === 'score' || sortState.key === 'score2') {
-        var stationKey = sortState.key === 'score' ? 'station1' : 'station2';
-        var av = typeof a[stationKey].score === 'number' ? a[stationKey].score : -1;
-        var bv = typeof b[stationKey].score === 'number' ? b[stationKey].score : -1;
-        return (av - bv) * dir;
+      if (sortState.key === 'score') {
+        var av1 = typeof a.station1.level === 'number' ? a.station1.level : -1;
+        var bv1 = typeof b.station1.level === 'number' ? b.station1.level : -1;
+        return (av1 - bv1) * dir;
+      }
+      if (sortState.key === 'score2') {
+        var av2 = typeof a.station2.score === 'number' ? a.station2.score : -1;
+        var bv2 = typeof b.station2.score === 'number' ? b.station2.score : -1;
+        return (av2 - bv2) * dir;
       }
       if (sortState.key === 'total') {
         var at = totalScore(a), bt = totalScore(b);
@@ -292,8 +307,8 @@
           ' <button class="fac-recalc-btn" data-station="3" title="Пересчитать вердикт станции 3">↻</button></td>' +
         '<td>' + p.station1.appxReviewedCount + '/8 · ' + p.station1.cardCount + ' карт.</td>' +
         '<td>' + escapeHtml(formatDate(p.station1.updatedAt)) + '</td>' +
-        '<td class="fac-score-cell">' + escapeHtml(formatScore(p, 'station1', 16)) +
-          ' <button class="fac-recalc-btn" data-station="1" title="Пересчитать балл станции 1">↻</button></td>' +
+        '<td class="fac-score-cell">' + escapeHtml(formatLevel(p, 'station1')) +
+          ' <button class="fac-recalc-btn" data-station="1" title="Пересчитать уровень АК-1">↻</button></td>' +
         '<td class="fac-score-cell">' + escapeHtml(formatScore(p, 'station2', 4)) +
           ' <button class="fac-recalc-btn" data-station="2" title="Пересчитать балл станции 2">↻</button></td>' +
         '<td>' + escapeHtml(formatTotal(p)) + '</td>' +
@@ -337,7 +352,7 @@
 
   if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
-      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Балл 1', 'Статус станции 2', 'Балл 2', 'Итого', 'Статус станции 3', 'Вердикт']
+      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Уровень АК-1', 'Источник уровня', 'Статус станции 2', 'Балл 2', 'Итого', 'Статус станции 3', 'Вердикт']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -350,7 +365,8 @@
         stationStatusLabel(p, 'station1').text,
         p.station1.cardCount,
         p.station1.appxReviewedCount,
-        typeof p.station1.score === 'number' ? p.station1.score : '',
+        typeof p.station1.level === 'number' ? p.station1.level : '',
+        p.station1.levelSource || '',
         stationStatusLabel(p, 'station2').text,
         typeof p.station2.score === 'number' ? p.station2.score : '',
         totalScore(p) === null ? '' : totalScore(p),
@@ -425,36 +441,31 @@
     });
   }
 
+  var AK1_DOMAIN_LABELS = {
+    competitors: 'конкуренты',
+    techShift: 'технологический/продуктовый сдвиг',
+    marketStructure: 'структура рынка',
+    ownership: 'смена собственника/корпоративный центр',
+    talent: 'рынок труда/отток специалистов'
+  };
+
   function renderScoreHtml(s1) {
-    if (typeof s1.score !== 'number') {
-      return '<h4>Оценка судьи</h4><p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
+    if (typeof s1.level !== 'number') {
+      return '<h4>АК-1 · широта охвата</h4><p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
     }
-    var html = '<h4>Оценка судьи — ' + s1.score + '/16</h4>';
-    var matched = s1.matchedProblems || {};
-    var problemIds = Object.keys(matched);
-    html += '<p class="fac-detail-text">Совпавшие проблемы: ' +
-      (problemIds.length
-        ? problemIds.map(function (id) { return '№' + id + ' (' + (matched[id] === 1 ? 'точно' : 'неточно') + ')'; }).join(', ')
-        : 'нет') + '</p>';
-    html += '<p class="fac-detail-text">Ложные следы, принятые за проблему: ' +
-      ((s1.falseLeadsCaught || []).length ? (s1.falseLeadsCaught || []).join(', ') : 'нет') + '</p>';
-    html += '<p class="fac-detail-text">Бонус за структуру: ' + (s1.structureBonusAwarded ? 'да' : 'нет') + '</p>';
-    if (s1.judgeReasoning && s1.judgeReasoning.cardJudgments) {
-      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи по карточкам</summary>';
-      s1.judgeReasoning.cardJudgments.forEach(function (cj) {
-        var card = (s1.cards || [])[cj.cardIndex - 1];
-        html += '<div class="fac-card">' +
-          '<p>' + (card ? escapeHtml(card.text || '(без формулировки)') : 'карточка #' + cj.cardIndex) + '</p>' +
-          '<div class="fac-card-meta"><span>' +
-            (cj.problemId ? '№' + cj.problemId + ' · ' + escapeHtml(cj.quality) : (cj.falseLeadId !== 'none' ? 'ложный след ' + escapeHtml(cj.falseLeadId) : 'не по ключу')) +
-          '</span></div>' +
-          '<p class="fac-card-warn">' + escapeHtml(cj.reasoning || '') + '</p>' +
-          '</div>';
-      });
-      if (s1.judgeReasoning.structureBonus) {
-        html += '<p class="fac-detail-text">Структура: ' + escapeHtml(s1.judgeReasoning.structureBonus.reasoning || '') + '</p>';
-      }
-      html += '</details>';
+    var html = '<h4>АК-1 · широта охвата — L' + s1.level + '</h4>';
+    html += '<p class="fac-detail-text">Источник: ' + (s1.levelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
+    var domains = s1.domainsCovered || [];
+    html += '<p class="fac-detail-text">Охваченные домены (' + domains.length + '/5): ' +
+      (domains.length ? domains.map(function (d) { return AK1_DOMAIN_LABELS[d] || d; }).join(', ') : 'нет') + '</p>';
+    if (s1.levelSource === 'ai') {
+      html += '<p class="fac-detail-text">Выходит за пределы явного в кейсе: ' + (s1.beyondCase ? 'да' : 'нет') +
+        ' · Видит взаимное влияние факторов: ' + (s1.seesInterdependency ? 'да' : 'нет') +
+        ' · Называет фактор второго порядка: ' + (s1.namesSecondOrder ? 'да' : 'нет') + '</p>';
+    }
+    if (s1.judgeReasoning && s1.judgeReasoning.reasoning) {
+      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи</summary>' +
+        '<p class="fac-card-warn">' + escapeHtml(s1.judgeReasoning.reasoning) + '</p></details>';
     }
     return html;
   }

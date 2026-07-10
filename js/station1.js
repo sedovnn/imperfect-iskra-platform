@@ -106,6 +106,7 @@
           id: id,
           note: markEl.title || '',
           sectionId: article ? article.id : '',
+          domains: domainsFor(markEl),
           snippet: markEl.textContent.slice(0, 140)
         });
         known.push(id);
@@ -222,6 +223,16 @@
     return article ? article.id : '';
   }
 
+  // АК-1 (широта охвата внешних факторов): домен выводится из разметки самого кейса
+  // (data-domain на конкретных абзацах — см. station1.html), а не из того, что участник
+  // сам о себе заявляет. Так карточка не может «попасть» в домен без реальной ссылки
+  // на соответствующий фрагмент текста.
+  function domainsFor(node) {
+    var el = node.nodeType === 3 ? node.parentElement : node;
+    var tagged = el && el.closest ? el.closest('[data-domain]') : null;
+    return tagged ? tagged.getAttribute('data-domain').split(/\s+/).filter(Boolean) : [];
+  }
+
   function shortAnchorLabel(articleId) {
     if (!articleId) return '';
     if (articleId.indexOf('appx-') === 0) {
@@ -294,12 +305,13 @@
   document.getElementById('hlBtn').addEventListener('click', function () {
     if (!activeRange) return;
     var sectionId = articleIdFor(activeRange.commonAncestorContainer);
+    var domains = domainsFor(activeRange.commonAncestorContainer);
     var id = uid();
     var mark = wrapRange(activeRange, id);
     var snippet = mark.textContent.slice(0, 140);
     window.getSelection().removeAllRanges();
     hideToolbar();
-    state.highlights.push({ id: id, note: '', sectionId: sectionId, snippet: snippet });
+    state.highlights.push({ id: id, note: '', sectionId: sectionId, domains: domains, snippet: snippet });
     saveState();
     saveCaseHtml();
     renderNotesList();
@@ -410,6 +422,7 @@
       });
       item.addEventListener('dragstart', function (ev) {
         ev.dataTransfer.setData('text/plain', label);
+        ev.dataTransfer.setData('application/x-imp-highlight-id', h.id);
         ev.dataTransfer.effectAllowed = 'copy';
       });
       item.addEventListener('click', function () {
@@ -517,6 +530,13 @@
           if (!text) return;
           card.anchor = card.anchor ? card.anchor + ' · ' + text : text;
           anchorInput.value = card.anchor;
+          // домен АК-1 засчитывается только за перетащенную (реальную) отметку —
+          // вписанный вручную текст якоря остаётся справочным, в охват не идёт.
+          var hlId = e.dataTransfer.getData('application/x-imp-highlight-id');
+          if (hlId) {
+            if (!card.linkedHighlightIds) card.linkedHighlightIds = [];
+            if (card.linkedHighlightIds.indexOf(hlId) === -1) card.linkedHighlightIds.push(hlId);
+          }
           saveState();
         });
       }
@@ -539,7 +559,7 @@
   }
 
   document.getElementById('addCardBtn').addEventListener('click', function () {
-    state.cards.push({ id: uid(), text: '', anchor: '', group: '' });
+    state.cards.push({ id: uid(), text: '', anchor: '', group: '', linkedHighlightIds: [] });
     saveState();
     renderCards();
     updateCardCount();

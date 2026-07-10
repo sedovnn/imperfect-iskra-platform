@@ -177,6 +177,14 @@
     showRecoverWrap.style.display = '';
   });
 
+  // Кнопка «Войти →» на главной ведёт сюда с ?recover=1 — сразу открываем
+  // форму восстановления, а не прячем её за мелкой ссылкой под регистрацией.
+  if (new URLSearchParams(window.location.search).get('recover')) {
+    form.style.display = 'none';
+    showRecoverWrap.style.display = 'none';
+    recoverForm.style.display = '';
+  }
+
   function recoverLocal(bib, lastNameLower) {
     var all = JSON.parse(localStorage.getItem('imp_registrations') || '[]');
     var record = all.filter(function (r) {
