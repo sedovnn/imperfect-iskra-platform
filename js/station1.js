@@ -111,6 +111,9 @@
         });
         known.push(id);
       }
+      // отметки восстановлены из сохранённого HTML — заново навешиваем drag,
+      // ни один обработчик не переживает сериализацию в innerHTML
+      attachMarkDragHandlers(markEl, id);
     });
   })();
 
@@ -292,6 +295,19 @@
     return mark;
   }
 
+  // Тащить можно прямо из подсветки в тексте, без похода в панель заметок —
+  // заметки остаются вторым, не единственным путём.
+  function attachMarkDragHandlers(markEl, id) {
+    markEl.draggable = true;
+    markEl.addEventListener('dragstart', function (ev) {
+      var h = state.highlights.filter(function (x) { return x.id === id; })[0];
+      var label = h ? shortAnchorLabel(h.sectionId) : '';
+      ev.dataTransfer.setData('text/plain', label);
+      ev.dataTransfer.setData('application/x-imp-highlight-id', id);
+      ev.dataTransfer.effectAllowed = 'copy';
+    });
+  }
+
   function openPopover(markEl, id, currentNote) {
     popoverHlId = id;
     noteInput.value = currentNote || '';
@@ -308,6 +324,7 @@
     var domains = domainsFor(activeRange.commonAncestorContainer);
     var id = uid();
     var mark = wrapRange(activeRange, id);
+    attachMarkDragHandlers(mark, id);
     var snippet = mark.textContent.slice(0, 140);
     window.getSelection().removeAllRanges();
     hideToolbar();

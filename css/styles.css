@@ -1488,7 +1488,7 @@ mark.hl {
   background: var(--lime);
   padding: 1px 2px;
   border-radius: 3px;
-  cursor: pointer;
+  cursor: grab;
 }
 
 mark.hl.has-note {
