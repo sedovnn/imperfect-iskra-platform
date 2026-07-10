@@ -1541,7 +1541,8 @@ table mark.hl {
 
 .rationale-block textarea,
 .card textarea,
-.card input[type="text"] {
+.card input[type="text"],
+.card select {
   width: 100%;
   font-family: var(--ff-body);
   font-size: 14px;
@@ -1552,6 +1553,8 @@ table mark.hl {
   color: var(--ink);
   resize: vertical;
 }
+
+.card select { margin-bottom: 8px; }
 
 .rationale-block textarea:focus,
 .card textarea:focus,
