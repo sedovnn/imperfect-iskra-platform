@@ -216,5 +216,5 @@
     }
   });
 
-  beginBtn.setAttribute('href', 'abilityAK1.html');
+  beginBtn.setAttribute('href', 'station1.html');
 })();
