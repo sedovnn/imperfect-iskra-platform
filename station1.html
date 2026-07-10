@@ -39,7 +39,6 @@
       </div>
       <div class="station-header-right">
         <span class="bib" id="hdrBib" style="font-size:14px; padding:6px 12px;">№ 000</span>
-        <button class="btn btn-ghost" id="notesToggleBtn" style="padding:11px 18px; font-size:14px;">Заметки <span id="notesCount">0</span></button>
         <button class="btn btn-primary" id="finishBtn" style="padding:11px 20px; font-size:14px;">Дальше: связки →</button>
       </div>
     </header>
@@ -58,7 +57,7 @@
         </div>
         <div class="case-rule" style="margin-top:12px;">
           <span>✎</span>
-          <span><b>Как работать с текстом.</b> Выделите фрагмент мышью — появится кнопка «отметить», после неё можно сразу вписать заметку или пропустить это. Клик по уже отмеченному фрагменту открывает то же окно — там же можно снять отметку. Все отметки собираются в панели «Заметки» справа сверху — оттуда их можно перетащить в поле «Якорь» нужной карточки или скопировать.</span>
+          <span><b>Как работать с текстом.</b> Выделите фрагмент мышью — появится кнопка «отметить», после неё можно сразу вписать заметку или пропустить это. Клик по уже отмеченному фрагменту открывает то же окно — там же можно снять отметку. Все отметки собираются во вкладке «Мои заметки» над текстом — перетащите отметку (прямо из текста или из этой вкладки) в поле «Якорь» нужной карточки.</span>
         </div>
         <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к материалам ↓</button>
       </div>
@@ -90,6 +89,13 @@
           <a href="#appx-8" class="case-nav-link" data-appx="8">П8 · Мемо «Приоритеты 2024–2026»</a>
           <div class="case-nav-progress" id="appxProgress">0/8 приложений изучено</div>
         </nav>
+
+        <div class="case-main">
+
+        <div class="case-tabs">
+          <button class="case-tab is-active" id="tabText">Весь текст</button>
+          <button class="case-tab" id="tabNotes">Мои заметки <span class="case-tab-count" id="notesCount">0</span></button>
+        </div>
 
         <div class="case-content" id="caseContent">
 
@@ -405,6 +411,10 @@
           <p style="font-size:12px; color:var(--muted-soft); margin:32px 0 60px;"><i>Кейс является учебным. Все компании, продукты, персонажи, издания, цифры и события вымышлены; возможные совпадения с реальными компаниями и людьми случайны.</i></p>
 
         </div>
+
+        <div class="notes-view" id="notesView" style="display:none;"></div>
+
+        </div>
       </section>
 
       <section class="work-pane">
@@ -492,15 +502,6 @@
     <button id="hlDeleteBtn" class="hl-popover-danger">удалить отметку</button>
     <button id="hlSaveBtn" class="hl-popover-save">сохранить</button>
   </div>
-</div>
-
-<div class="notes-drawer" id="notesDrawer">
-  <div class="notes-drawer-head">
-    <h4>Заметки и якоря</h4>
-    <button class="notes-drawer-close" id="notesCloseBtn">✕</button>
-  </div>
-  <p class="notes-drawer-hint">Все ваши отметки из текста слева — здесь. Перетащите отметку на поле «Якорь» нужной карточки справа, или нажмите «скопировать» и вставьте вручную.</p>
-  <div class="notes-drawer-list" id="notesList"></div>
 </div>
 
 <script src="js/main.js"></script>

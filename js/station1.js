@@ -266,6 +266,7 @@
   function closePopover() { popover.classList.remove('show'); popoverHlId = null; }
 
   document.addEventListener('mouseup', function (e) {
+    if (state.finished) return; // отметки — доказательная база АК-1, после финиша не редактируются
     if (toolbar.contains(e.target) || popover.contains(e.target)) return;
     var sel = window.getSelection();
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) { hideToolbar(); return; }
@@ -341,6 +342,7 @@
   });
 
   caseContent.addEventListener('click', function (e) {
+    if (state.finished) return; // после финиша отметки только читаются, попап не открываем
     var markEl = e.target.closest ? e.target.closest('mark.hl') : null;
     if (!markEl) return;
     var sel = window.getSelection();
@@ -385,15 +387,25 @@
     closePopover();
   });
 
-  // ---------- notes drawer ----------
+  // ---------- вкладки «Весь текст / Мои заметки» ----------
+  // Вкладка заметок — режим фокусировки: только заголовки разделов и ваши отметки,
+  // без остального текста. Заменяет прежнюю выпадающую панель.
 
-  var notesDrawer = document.getElementById('notesDrawer');
-  document.getElementById('notesToggleBtn').addEventListener('click', function () {
-    notesDrawer.classList.toggle('show');
-  });
-  document.getElementById('notesCloseBtn').addEventListener('click', function () {
-    notesDrawer.classList.remove('show');
-  });
+  var tabText = document.getElementById('tabText');
+  var tabNotes = document.getElementById('tabNotes');
+  var notesView = document.getElementById('notesView');
+
+  function showCaseTab(which) {
+    var isText = which === 'text';
+    tabText.classList.toggle('is-active', isText);
+    tabNotes.classList.toggle('is-active', !isText);
+    caseContent.style.display = isText ? '' : 'none';
+    notesView.style.display = isText ? 'none' : '';
+    if (!isText) renderNotesList();
+  }
+
+  tabText.addEventListener('click', function () { showCaseTab('text'); });
+  tabNotes.addEventListener('click', function () { showCaseTab('notes'); });
 
   function copyToClipboard(text) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -408,54 +420,82 @@
     document.body.removeChild(ta);
   }
 
+  function sectionTitleFor(articleId) {
+    var article = document.getElementById(articleId);
+    var h = article ? article.querySelector('h4') : null;
+    return h ? h.textContent : shortAnchorLabel(articleId);
+  }
+
+  function buildNoteItem(h) {
+    var label = shortAnchorLabel(h.sectionId);
+    var item = document.createElement('div');
+    item.className = 'note-item';
+    item.draggable = true;
+    item.innerHTML =
+      '<div class="note-item-top">' +
+        '<span class="note-item-label">' + escapeHtml(label) + '</span>' +
+        (state.finished ? '' : '<button class="note-item-del" title="Удалить">✕</button>') +
+      '</div>' +
+      '<div class="note-item-snippet">«' + escapeHtml(h.snippet) + '»</div>' +
+      (h.note ? '<div class="note-item-note">' + escapeHtml(h.note) + '</div>' : '') +
+      '<button class="note-item-copy">скопировать якорь</button>';
+
+    var del = item.querySelector('.note-item-del');
+    if (del) del.addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      removeHighlight(h.id);
+    });
+    item.querySelector('.note-item-copy').addEventListener('click', function (ev) {
+      ev.stopPropagation();
+      copyToClipboard(label);
+      var btn = ev.target;
+      var old = btn.textContent;
+      btn.textContent = 'скопировано';
+      setTimeout(function () { btn.textContent = old; }, 1200);
+    });
+    item.addEventListener('dragstart', function (ev) {
+      ev.dataTransfer.setData('text/plain', label);
+      ev.dataTransfer.setData('application/x-imp-highlight-id', h.id);
+      ev.dataTransfer.effectAllowed = 'copy';
+    });
+    // клик по заметке — назад в полный текст, к самой отметке
+    item.addEventListener('click', function () {
+      var markEl = caseContent.querySelector('mark[data-hl-id="' + h.id + '"]');
+      if (!markEl) return;
+      showCaseTab('text');
+      markEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      markEl.classList.add('flash');
+      setTimeout(function () { markEl.classList.remove('flash'); }, 900);
+    });
+    return item;
+  }
+
   function renderNotesList() {
     document.getElementById('notesCount').textContent = state.highlights.length;
-    var list = document.getElementById('notesList');
-    list.innerHTML = '';
+    notesView.innerHTML = '';
     if (state.highlights.length === 0) {
-      list.innerHTML = '<div class="notes-empty">Пока нет отметок. Выделите текст слева и нажмите «отметить».</div>';
+      notesView.innerHTML = '<div class="notes-empty">Пока нет отметок. Выделите текст во вкладке «Весь текст» и нажмите «отметить».</div>';
       return;
     }
-    state.highlights.slice().reverse().forEach(function (h) {
-      var label = shortAnchorLabel(h.sectionId);
-      var item = document.createElement('div');
-      item.className = 'note-item';
-      item.draggable = true;
-      item.innerHTML =
-        '<div class="note-item-top">' +
-          '<span class="note-item-label">' + escapeHtml(label) + '</span>' +
-          '<button class="note-item-del" title="Удалить">✕</button>' +
-        '</div>' +
-        '<div class="note-item-snippet">«' + escapeHtml(h.snippet) + '»</div>' +
-        (h.note ? '<div class="note-item-note">' + escapeHtml(h.note) + '</div>' : '') +
-        '<button class="note-item-copy">скопировать якорь</button>';
-
-      item.querySelector('.note-item-del').addEventListener('click', function (ev) {
-        ev.stopPropagation();
-        removeHighlight(h.id);
+    // группируем по разделам в порядке документа — видно, по каким разделам уже прошлись
+    var order = [];
+    caseContent.querySelectorAll('article[id]').forEach(function (a) { order.push(a.id); });
+    var bySection = {};
+    state.highlights.forEach(function (h) {
+      var key = h.sectionId || '';
+      if (!bySection[key]) bySection[key] = [];
+      bySection[key].push(h);
+    });
+    Object.keys(bySection).sort(function (a, b) {
+      return order.indexOf(a) - order.indexOf(b);
+    }).forEach(function (secId) {
+      var head = document.createElement('div');
+      head.className = 'notes-view-section';
+      head.textContent = sectionTitleFor(secId);
+      notesView.appendChild(head);
+      bySection[secId].forEach(function (h) {
+        notesView.appendChild(buildNoteItem(h));
       });
-      item.querySelector('.note-item-copy').addEventListener('click', function (ev) {
-        ev.stopPropagation();
-        copyToClipboard(label);
-        var btn = ev.target;
-        var old = btn.textContent;
-        btn.textContent = 'скопировано';
-        setTimeout(function () { btn.textContent = old; }, 1200);
-      });
-      item.addEventListener('dragstart', function (ev) {
-        ev.dataTransfer.setData('text/plain', label);
-        ev.dataTransfer.setData('application/x-imp-highlight-id', h.id);
-        ev.dataTransfer.effectAllowed = 'copy';
-      });
-      item.addEventListener('click', function () {
-        var markEl = caseContent.querySelector('mark[data-hl-id="' + h.id + '"]');
-        if (markEl) {
-          markEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-          markEl.classList.add('flash');
-          setTimeout(function () { markEl.classList.remove('flash'); }, 900);
-        }
-      });
-      list.appendChild(item);
     });
   }
 
@@ -789,6 +829,7 @@
     });
     renderGroups();
     renderCards();
+    renderNotesList(); // убирает кнопки удаления отметок во вкладке заметок
   }
 
   function finishStation() {

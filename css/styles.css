@@ -1391,11 +1391,70 @@ footer {
   border-top: 1px solid #ececec;
 }
 
+/* средняя колонка: вкладки сверху, под ними прокручиваемый текст или заметки */
+.case-main {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid #ececec;
+}
+
+.case-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px;
+  border-bottom: 1px solid #ececec;
+  flex: none;
+}
+
+.case-tab {
+  padding: 13px 14px 11px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-soft);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.case-tab:hover { color: var(--ink); }
+
+.case-tab.is-active {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+.case-tab-count {
+  display: inline-block;
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--lime);
+  color: var(--ink);
+  font-size: 11px;
+}
+
 .case-content {
   overflow-y: auto;
   padding: 32px 40px 20px;
-  border-right: 1px solid #ececec;
+  flex: 1;
 }
+
+.notes-view {
+  overflow-y: auto;
+  padding: 24px 28px 60px;
+  flex: 1;
+}
+
+.notes-view-section {
+  font-family: var(--ff-display);
+  font-size: 15px;
+  margin: 22px 0 10px;
+}
+.notes-view-section:first-child { margin-top: 0; }
 
 .case-content article { margin-bottom: 40px; }
 
@@ -1820,64 +1879,9 @@ table mark.hl {
 .hl-popover-danger { background: transparent; color: #c4362b; }
 .hl-popover-danger:hover { background: #fbe9e7; }
 
-/* notes drawer — collects every highlight so it isn't just scattered marks in the text */
+/* note items — highlights collected in the «Мои заметки» tab */
 
-.notes-drawer {
-  display: none;
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 320px;
-  background: var(--paper);
-  border-left: 1.5px solid var(--ink);
-  box-shadow: -8px 0 24px rgba(0,0,0,0.12);
-  z-index: 49;
-  flex-direction: column;
-}
-
-.notes-drawer.show { display: flex; }
-
-.notes-drawer-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 20px 12px;
-  border-bottom: 1px solid #ececec;
-}
-
-.notes-drawer-head h4 {
-  font-family: var(--ff-display);
-  font-size: 16px;
-  margin: 0;
-}
-
-.notes-drawer-close {
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
-  color: var(--muted-soft);
-  padding: 4px;
-}
-
-.notes-drawer-hint {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--muted-soft);
-  padding: 12px 20px;
-  margin: 0;
-  border-bottom: 1px solid #ececec;
-}
-
-.notes-drawer-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.notes-view .note-item { margin-bottom: 12px; background: #fff; }
 
 .notes-empty {
   font-size: 13px;
