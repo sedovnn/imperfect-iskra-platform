@@ -651,6 +651,14 @@ footer {
   margin-top: 6px;
 }
 
+.anchor-status {
+  font-size: 12px;
+  margin-top: 6px;
+  min-height: 15px;
+}
+.anchor-status.is-linked { color: #4c7a0d; }
+.anchor-status.is-unlinked { color: #a35b00; }
+
 .consent {
   display: flex;
   gap: 12px;

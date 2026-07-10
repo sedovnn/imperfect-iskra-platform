@@ -482,6 +482,24 @@
     return html;
   }
 
+  // Показывает участнику честно, что именно засчитывается — не балл, а факт
+  // «этот якорь подтверждён реальной подсветкой», ровно то же правило игры,
+  // что и так было заявлено («аргумент без якоря в тексте не засчитывается»).
+  function refreshAnchorStatus(el, card) {
+    var statusEl = el.querySelector('.anchor-status');
+    if (!statusEl) return;
+    if (card.linkedHighlightIds && card.linkedHighlightIds.length) {
+      statusEl.textContent = '✓ подтверждено отметкой в тексте';
+      statusEl.className = 'anchor-status is-linked';
+    } else if (card.anchor) {
+      statusEl.textContent = 'не подтверждено — перетащите сюда отметку из заметок';
+      statusEl.className = 'anchor-status is-unlinked';
+    } else {
+      statusEl.textContent = '';
+      statusEl.className = 'anchor-status';
+    }
+  }
+
   function renderCards() {
     var list = document.getElementById('cardsList');
     list.innerHTML = '';
@@ -492,7 +510,8 @@
         '<label>Формулировка проблемы (одно предложение)</label>' +
         '<textarea rows="2" data-field="text" placeholder="например: юнит-экономика «Миры+» отрицательная пять лет подряд">' + escapeHtml(card.text) + '</textarea>' +
         '<div class="card-row">' +
-          '<div><label>Якорь в материалах</label><input type="text" data-field="anchor" value="' + escapeHtml(card.anchor) + '" placeholder="перетащите отметку сюда или впишите: раздел 2 / П1" /></div>' +
+          '<div><label>Якорь в материалах</label><input type="text" data-field="anchor" value="' + escapeHtml(card.anchor) + '" placeholder="перетащите сюда отметку из заметок" />' +
+            '<div class="anchor-status"></div></div>' +
           '<div><label>Группа</label><select data-field="group">' + groupOptionsHtml(card.group) + '</select></div>' +
         '</div>';
       if (!state.finished) {
@@ -511,9 +530,11 @@
       el.querySelector('[data-field="text"]').addEventListener('input', function (e) {
         card.text = e.target.value; saveState();
       });
+      refreshAnchorStatus(el, card);
       var anchorInput = el.querySelector('[data-field="anchor"]');
       anchorInput.addEventListener('input', function (e) {
         card.anchor = e.target.value; saveState();
+        refreshAnchorStatus(el, card);
       });
       if (!state.finished) {
         anchorInput.addEventListener('dragover', function (e) {
@@ -537,6 +558,7 @@
             if (!card.linkedHighlightIds) card.linkedHighlightIds = [];
             if (card.linkedHighlightIds.indexOf(hlId) === -1) card.linkedHighlightIds.push(hlId);
           }
+          refreshAnchorStatus(el, card);
           saveState();
         });
       }
