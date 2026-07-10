@@ -21,10 +21,10 @@
 <div id="finishOverlay" class="gate" style="display:none;">
   <div class="gate-card">
     <p class="kicker">✓ Станция 1 завершена</p>
-    <h2>Карта проблем сохранена</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Сверка с ключом и балл видны только фасилитатору, не вам. Дальше — приоритизация: 2–3 корневые связки и развилка.</p>
+    <h2>Карта и связки сохранены</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Оценка видна только фасилитатору, не вам. Дальше — встреча с Агеевым: приоритеты и защита позиции.</p>
     <a class="btn btn-primary btn-block" href="station2.html">Перейти к станции 2 →</a>
-    <button class="btn btn-ghost btn-block" id="finishOverlayReview" style="margin-top:12px;">Ещё раз посмотреть карту</button>
+    <button class="btn btn-ghost btn-block" id="finishOverlayReview" style="margin-top:12px;">Ещё раз посмотреть</button>
   </div>
 </div>
 
@@ -40,7 +40,7 @@
       <div class="station-header-right">
         <span class="bib" id="hdrBib" style="font-size:14px; padding:6px 12px;">№ 000</span>
         <button class="btn btn-ghost" id="notesToggleBtn" style="padding:11px 18px; font-size:14px;">Заметки <span id="notesCount">0</span></button>
-        <button class="btn btn-primary" id="finishBtn" style="padding:11px 20px; font-size:14px;">Завершить станцию →</button>
+        <button class="btn btn-primary" id="finishBtn" style="padding:11px 20px; font-size:14px;">Дальше: связки →</button>
       </div>
     </header>
 
@@ -436,6 +436,49 @@
       </section>
 
     </div>
+  </div>
+</div>
+
+<!-- Фаза 2 (АК-2): режим фокусировки — кейс и панели убраны, на экране только
+     собственные карточки участника. Один финиш на всю станцию — здесь. -->
+<div class="frame station-frame" id="linksRoot" style="display:none;">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
+        <span class="station-sep">/</span>
+        <span class="station-name">Станция 1 · Связки: что порождает что</span>
+      </div>
+      <div class="station-header-right">
+        <span class="bib" id="hdrBib2" style="font-size:14px; padding:6px 12px;">№ 000</span>
+        <button class="btn btn-ghost" id="backToMapBtn" style="padding:11px 18px; font-size:14px;">← Вернуться к карте</button>
+        <button class="btn btn-primary" id="finishBtn2" style="padding:11px 20px; font-size:14px;">Завершить станцию →</button>
+      </div>
+    </header>
+
+    <div class="links-body">
+
+      <div class="links-intro">
+        <p class="kicker">Глубина</p>
+        <p>Карта собрана — материалы убраны, перед вами только ваши формулировки. Агеев просил второе: «выделите две-три корневые проблемы — те, что порождают остальные. И покажите связи». Оцените карточки, если считаете нужным, и соберите связки.</p>
+      </div>
+
+      <div class="links-section">
+        <h3>Ваши карточки</h3>
+        <p class="links-hint">Пометки необязательны — заполняйте только то, в чём уверены.</p>
+        <div class="cards-list" id="tagCardsList"></div>
+      </div>
+
+      <div class="links-section">
+        <h3>Корневые связки</h3>
+        <p class="links-hint">Выберите карточки, которые связаны между собой, и объясните механизм — почему одно порождает другое.</p>
+        <div class="cards-list" id="connectionsList"></div>
+        <button class="btn btn-ghost btn-small" id="addConnectionBtn" style="margin-top:8px;">+ связка</button>
+      </div>
+
+    </div>
+
   </div>
 </div>
 

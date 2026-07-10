@@ -659,6 +659,88 @@ footer {
 .anchor-status.is-linked { color: #4c7a0d; }
 .anchor-status.is-unlinked { color: #a35b00; }
 
+/* ---------- станция 1, фаза 2 (связки / АК-2) — режим фокусировки ---------- */
+
+.links-body {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 32px 90px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.links-intro {
+  margin-bottom: 34px;
+}
+.links-intro p:not(.kicker) {
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 640px;
+}
+
+.links-section { margin-bottom: 40px; }
+.links-section h3 {
+  font-family: var(--ff-display);
+  font-size: 19px;
+  margin: 0 0 4px;
+}
+.links-hint {
+  font-size: 13px;
+  color: var(--muted-soft);
+  margin: 0 0 16px;
+}
+
+.tag-pills {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 4px;
+}
+.tag-pill {
+  border: 1px solid #d6d8d2;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tag-pill.is-active {
+  background: var(--ink);
+  color: var(--lime);
+  border-color: var(--ink);
+}
+
+.conn-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.conn-chip {
+  border: 1px dashed #c9cbc5;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  max-width: 100%;
+}
+.conn-chip.is-selected {
+  background: var(--lime);
+  border: 1px solid var(--ink);
+}
+
+.conn-loop {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  margin-top: 10px;
+}
+.conn-loop input { margin-top: 2px; }
+
 .consent {
   display: flex;
   gap: 12px;

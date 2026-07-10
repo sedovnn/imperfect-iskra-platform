@@ -24,6 +24,8 @@
         if (!parsed.highlights) parsed.highlights = [];
         if (!parsed.appxOpened) parsed.appxOpened = {};
         if (!parsed.appxReviewed) parsed.appxReviewed = {};
+        if (!parsed.connections) parsed.connections = [];
+        if (!parsed.phase) parsed.phase = 'map';
         return parsed;
       }
     } catch (e) {}
@@ -34,6 +36,8 @@
       appxOpened: {},   // explicitly clicked open at least once
       appxReviewed: {}, // opened AND scrolled through to the end — the real "read it" signal
       highlights: [],
+      connections: [],  // корневые связки (АК-2): { id, cardIds, mechanism, conclusion, isLoop }
+      phase: 'map',     // 'map' (карта, кейс слева) | 'links' (фаза 2: только карточки)
       finished: false,
       startedAt: new Date().toISOString()
     };
@@ -82,6 +86,7 @@
   document.getElementById('gate').style.display = 'none';
   document.getElementById('stationRoot').style.display = '';
   document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(3, '0');
+  document.getElementById('hdrBib2').textContent = '№ ' + String(session.bib).padStart(3, '0');
 
   state = loadState(session.bib);
 
@@ -611,16 +616,185 @@
     state.rationale = e.target.value; saveState();
   });
 
+  // ---------- фаза 2: связки (АК-2) — режим фокусировки ----------
+
+  var linksRoot = document.getElementById('linksRoot');
+  var MAX_CONNECTIONS = 3;
+
+  function cardShortLabel(card) {
+    var t = (card.text || '').trim();
+    return t.length > 70 ? t.slice(0, 70) + '…' : (t || '(без формулировки)');
+  }
+
+  function realCards() {
+    return state.cards.filter(function (c) { return c.text && c.text.trim(); });
+  }
+
+  // Оценка карточек: необязательный тег угроза/возможность; при поставленном
+  // теге раскрывается необязательное поле влияния. Необязательность принципиальна —
+  // обязательный тег сделал бы L1/L2 (АК-2) ненаблюдаемыми: форма думала бы за участника.
+  function renderTagCards() {
+    var list = document.getElementById('tagCardsList');
+    list.innerHTML = '';
+    realCards().forEach(function (card) {
+      var el = document.createElement('div');
+      el.className = 'card' + (state.finished ? ' is-locked' : '');
+      var html = '<p style="margin:0 0 4px; font-size:14px; line-height:1.55;">' + escapeHtml(card.text) + '</p>';
+      if (card.anchor) html += '<div class="fac-card-meta" style="margin-bottom:6px;"><span>якорь: ' + escapeHtml(card.anchor) + '</span></div>';
+      html += '<div class="tag-pills">' +
+        '<button class="tag-pill' + (card.tag === 'threat' ? ' is-active' : '') + '" data-tag="threat">угроза</button>' +
+        '<button class="tag-pill' + (card.tag === 'opportunity' ? ' is-active' : '') + '" data-tag="opportunity">возможность</button>' +
+        '</div>' +
+        '<textarea class="card-influence" rows="2" placeholder="что это означает для компании — если хотите раскрыть" style="display:' + (card.tag ? '' : 'none') + ';">' + escapeHtml(card.influence || '') + '</textarea>';
+      el.innerHTML = html;
+
+      el.querySelectorAll('.tag-pill').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (state.finished) return;
+          var tag = btn.getAttribute('data-tag');
+          card.tag = card.tag === tag ? '' : tag; // повторный клик снимает тег
+          saveState();
+          renderTagCards();
+        });
+      });
+      el.querySelector('.card-influence').addEventListener('input', function (e) {
+        card.influence = e.target.value; saveState();
+      });
+      // замок должен переживать любую перерисовку — ставим disabled прямо здесь,
+      // а не только в lockEverything(), иначе «Ещё раз посмотреть» снимает его
+      if (state.finished) el.querySelectorAll('textarea, input, .tag-pill').forEach(function (x) {
+        x.setAttribute('disabled', 'disabled');
+      });
+      list.appendChild(el);
+    });
+    if (!realCards().length) {
+      list.innerHTML = '<p class="links-hint">Карточек с текстом нет — вернитесь к карте.</p>';
+    }
+  }
+
+  // Связки: карточки выбираются кликом по чипам (не печатаются) — тот же принцип,
+  // что и с доменами АК-1: нельзя сослаться на то, чего у тебя нет.
+  function renderConnections() {
+    var list = document.getElementById('connectionsList');
+    var addBtn = document.getElementById('addConnectionBtn');
+    list.innerHTML = '';
+    state.connections.forEach(function (conn) {
+      var el = document.createElement('div');
+      el.className = 'card' + (state.finished ? ' is-locked' : '');
+      var chipsHtml = realCards().map(function (card) {
+        var selected = (conn.cardIds || []).indexOf(card.id) !== -1;
+        return '<button class="conn-chip' + (selected ? ' is-selected' : '') + '" data-card-id="' + card.id + '">' + escapeHtml(cardShortLabel(card)) + '</button>';
+      }).join('');
+      el.innerHTML =
+        '<label>Какие проблемы связаны — выберите из ваших карточек</label>' +
+        '<div class="conn-chips">' + chipsHtml + '</div>' +
+        '<label>В чём механизм: почему одно порождает другое</label>' +
+        '<textarea class="conn-mechanism" rows="2">' + escapeHtml(conn.mechanism || '') + '</textarea>' +
+        '<label>Что из этого следует для Агеева</label>' +
+        '<textarea class="conn-conclusion" rows="2">' + escapeHtml(conn.conclusion || '') + '</textarea>' +
+        '<div class="conn-loop"><input type="checkbox" id="loop_' + conn.id + '"' + (conn.isLoop ? ' checked' : '') + ' />' +
+          '<label for="loop_' + conn.id + '" style="text-transform:none; letter-spacing:0; font-weight:400;">Цепочка замыкается обратно — конец усиливает (или гасит) начало</label></div>';
+
+      if (!state.finished) {
+        var rm = document.createElement('button');
+        rm.className = 'card-remove';
+        rm.textContent = '✕';
+        rm.title = 'Убрать связку';
+        rm.addEventListener('click', function () {
+          state.connections = state.connections.filter(function (x) { return x.id !== conn.id; });
+          saveState();
+          renderConnections();
+        });
+        el.appendChild(rm);
+      }
+
+      el.querySelectorAll('.conn-chip').forEach(function (chip) {
+        chip.addEventListener('click', function () {
+          if (state.finished) return;
+          var id = chip.getAttribute('data-card-id');
+          if (!conn.cardIds) conn.cardIds = [];
+          var idx = conn.cardIds.indexOf(id);
+          if (idx === -1) conn.cardIds.push(id); else conn.cardIds.splice(idx, 1);
+          saveState();
+          renderConnections();
+        });
+      });
+      el.querySelector('.conn-mechanism').addEventListener('input', function (e) {
+        conn.mechanism = e.target.value; saveState();
+      });
+      el.querySelector('.conn-conclusion').addEventListener('input', function (e) {
+        conn.conclusion = e.target.value; saveState();
+      });
+      el.querySelector('input[type="checkbox"]').addEventListener('change', function (e) {
+        conn.isLoop = e.target.checked; saveState();
+      });
+
+      if (state.finished) el.querySelectorAll('textarea, input, .conn-chip').forEach(function (x) {
+        x.setAttribute('disabled', 'disabled');
+      });
+
+      list.appendChild(el);
+    });
+    addBtn.style.display = (state.finished || state.connections.length >= MAX_CONNECTIONS) ? 'none' : '';
+  }
+
+  document.getElementById('addConnectionBtn').addEventListener('click', function () {
+    if (state.connections.length >= MAX_CONNECTIONS) return;
+    state.connections.push({ id: uid(), cardIds: [], mechanism: '', conclusion: '', isLoop: false });
+    saveState();
+    renderConnections();
+  });
+
+  function showMapPhase() {
+    linksRoot.style.display = 'none';
+    document.getElementById('stationRoot').style.display = '';
+    if (!state.finished) { state.phase = 'map'; saveState(); }
+  }
+
+  function showLinksPhase() {
+    renderTagCards();
+    renderConnections();
+    document.getElementById('stationRoot').style.display = 'none';
+    linksRoot.style.display = '';
+    if (!state.finished) { state.phase = 'links'; saveState(); }
+  }
+
+  document.getElementById('backToMapBtn').addEventListener('click', showMapPhase);
+
   // ---------- finish ----------
 
   function showFinishOverlay() {
     document.getElementById('stationRoot').style.display = 'none';
+    linksRoot.style.display = 'none';
     document.getElementById('finishOverlay').style.display = 'flex';
   }
 
-  function finishStation() {
+  function goToLinksPhase() {
     if (state.cards.length === 0) {
-      if (!window.confirm('Карта пуста — ни одной карточки. Завершить станцию всё равно?')) return;
+      if (!window.confirm('Карта пуста — ни одной карточки. Перейти к связкам всё равно?')) return;
+    }
+    showLinksPhase();
+  }
+
+  function lockEverything() {
+    document.getElementById('addCardBtn').style.display = 'none';
+    document.getElementById('addGroupBtn').style.display = 'none';
+    document.getElementById('rationale').setAttribute('readonly', 'readonly');
+    document.getElementById('finishBtn').setAttribute('disabled', 'disabled');
+    document.getElementById('finishBtn').textContent = 'Станция завершена';
+    document.getElementById('finishBtn2').setAttribute('disabled', 'disabled');
+    document.getElementById('finishBtn2').textContent = 'Станция завершена';
+    document.querySelectorAll('.links-body textarea, .links-body input').forEach(function (el) {
+      el.setAttribute('disabled', 'disabled');
+    });
+    renderGroups();
+    renderCards();
+  }
+
+  function finishStation() {
+    var hasTags = state.cards.some(function (c) { return c.tag; });
+    if (!hasTags && state.connections.length === 0) {
+      if (!window.confirm('Вы не оценили ни одной карточки и не собрали ни одной связки. Завершить станцию всё равно?')) return;
     }
     state.finished = true;
     state.finishedAt = new Date().toISOString();
@@ -628,21 +802,17 @@
     clearTimeout(backendSyncTimer);
     syncStateToBackend(); // finish shouldn't wait out the debounce — facilitator should see it now
 
-    document.getElementById('addCardBtn').style.display = 'none';
-    document.getElementById('addGroupBtn').style.display = 'none';
-    document.getElementById('rationale').setAttribute('readonly', 'readonly');
-    document.getElementById('finishBtn').setAttribute('disabled', 'disabled');
-    document.getElementById('finishBtn').textContent = 'Станция завершена';
-    renderGroups();
-    renderCards();
-
+    renderTagCards();
+    renderConnections();
+    lockEverything();
     showFinishOverlay();
   }
 
-  document.getElementById('finishBtn').addEventListener('click', finishStation);
+  document.getElementById('finishBtn').addEventListener('click', goToLinksPhase);
+  document.getElementById('finishBtn2').addEventListener('click', finishStation);
   document.getElementById('finishOverlayReview').addEventListener('click', function () {
     document.getElementById('finishOverlay').style.display = 'none';
-    document.getElementById('stationRoot').style.display = '';
+    showLinksPhase();
   });
 
   // ---------- init render ----------
@@ -654,8 +824,12 @@
   saveState(); // persist any reconciled highlights right away
 
   if (state.finished) {
-    // re-run finish rendering (locked state + overlay) after reload
-    state.finished = false; // temporarily so finishStation() re-applies lock cleanly
-    finishStation();
+    // после перезагрузки просто восстанавливаем замок и оверлей — без повторных confirm
+    renderTagCards();
+    renderConnections();
+    lockEverything();
+    showFinishOverlay();
+  } else if (state.phase === 'links') {
+    showLinksPhase();
   }
 })();

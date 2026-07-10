@@ -139,25 +139,36 @@
     return s.finished ? 'не оценено' : '—';
   }
 
-  // По методологии (§9 "Скоринг"): L1=1 балл ... L5=5 баллов — уровень способности
-  // это и есть балл. Но балл НАВЫКА = среднее уровней его двух способностей (АК-1+АК-2)/2,
-  // а АК-2 ещё не переведена на эту же логику — показываем только уровень/балл АК-1.
-  function formatLevel(p, key) {
-    var s = p[key];
-    if (typeof s.level === 'number') return 'L' + s.level + ' (' + s.level + ' балл) · ' + (s.levelSource === 'ai' ? 'ИИ' : 'дет.');
-    return s.finished ? 'не оценено' : '—';
+  function abilityBadge(level, source) {
+    if (typeof level !== 'number') return '—';
+    return 'L' + level + (source === 'ai' ? '·ИИ' : '·дет.');
   }
 
-  // "Итого" (сумма 5 навыков по методологии) пока не считаем вообще — ни через
-  // старый балл станции 2 (её ещё предстоит переписать на ту же логику, что и
-  // станцию 1, текущий балл 0-4 не про то же самое), ни тем более через
-  // придуманную смесь с уровнем АК-1. Появится, когда наберётся полный навык.
+  // Станция 1 покрывает навык АК целиком: АК-1 (широта) + АК-2 (глубина).
+  // ⚑ — нарушено ограничение методологии АК-2 ≤ АК-1, нужна ручная проверка.
+  function formatLevel(p, key) {
+    var s = p[key];
+    var a1 = abilityBadge(s.level, s.levelSource);
+    var a2 = abilityBadge(s.ak2Level, s.ak2LevelSource);
+    if (a1 === '—' && a2 === '—') return s.finished ? 'не оценено' : '—';
+    return a1 + ' / ' + a2 + (s.akFlag ? ' ⚑' : '');
+  }
+
+  // Балл навыка АК считает бэкенд (§9: среднее уровней двух способностей по таблице);
+  // это первый настоящий посчитанный навык из пяти — остальные появятся со своими станциями.
   function totalScore(p) {
-    return null;
+    return typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null;
+  }
+
+  function pluralPoints(n) {
+    if (n === 1) return 'балл';
+    if (n >= 2 && n <= 4) return 'балла';
+    return 'баллов';
   }
 
   function formatTotal(p) {
-    return '—';
+    var t = totalScore(p);
+    return typeof t === 'number' ? 'АК L' + t + ' · ' + t + ' ' + pluralPoints(t) : '—';
   }
 
   var VERDICT_LABELS = {
@@ -352,7 +363,7 @@
 
   if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
-      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Уровень АК-1', 'Источник уровня', 'Статус станции 2', 'Балл 2', 'Итого', 'Статус станции 3', 'Вердикт']
+      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'АК-1', 'Источник АК-1', 'АК-2', 'Источник АК-2', 'Флаг АК-2>АК-1', 'Навык АК (балл)', 'Статус станции 2', 'Балл 2', 'Статус станции 3', 'Вердикт']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -367,9 +378,12 @@
         p.station1.appxReviewedCount,
         typeof p.station1.level === 'number' ? p.station1.level : '',
         p.station1.levelSource || '',
+        typeof p.station1.ak2Level === 'number' ? p.station1.ak2Level : '',
+        p.station1.ak2LevelSource || '',
+        p.station1.akFlag ? 'да' : '',
+        totalScore(p) === null ? '' : totalScore(p),
         stationStatusLabel(p, 'station2').text,
         typeof p.station2.score === 'number' ? p.station2.score : '',
-        totalScore(p) === null ? '' : totalScore(p),
         stationStatusLabel(p, 'station3').text,
         verdictLabel(p).text
       ]);
@@ -466,6 +480,58 @@
     if (s1.judgeReasoning && s1.judgeReasoning.reasoning) {
       html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи</summary>' +
         '<p class="fac-card-warn">' + escapeHtml(s1.judgeReasoning.reasoning) + '</p></details>';
+    }
+    return html;
+  }
+
+  var TAG_LABELS = { threat: 'угроза', opportunity: 'возможность' };
+
+  function renderAK2Html(s1) {
+    var html = '<h4>АК-2 · глубина взаимосвязей' + (typeof s1.ak2Level === 'number' ? ' — L' + s1.ak2Level : '') + '</h4>';
+    if (typeof s1.ak2Level !== 'number') {
+      html += '<p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
+    } else {
+      html += '<p class="fac-detail-text">Источник: ' + (s1.ak2LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
+      if (typeof s1.level === 'number' && s1.ak2Level > s1.level) {
+        html += '<p class="fac-detail-text fac-card-warn">⚑ АК-2 выше АК-1 — по методологии нельзя глубоко анализировать незамеченное, нужна ручная проверка.</p>';
+      }
+    }
+
+    var cardById = {};
+    (s1.cards || []).forEach(function (c) { cardById[c.id] = c; });
+
+    var tagged = (s1.cards || []).filter(function (c) { return c.tag === 'threat' || c.tag === 'opportunity'; });
+    if (tagged.length) {
+      html += '<div class="fac-cards">';
+      tagged.forEach(function (c) {
+        html += '<div class="fac-card"><p>' + escapeHtml(c.text || '(без формулировки)') + '</p>' +
+          '<div class="fac-card-meta"><span>' + (TAG_LABELS[c.tag] || c.tag) + '</span></div>' +
+          (c.influence ? '<p class="fac-detail-text">' + escapeHtml(c.influence) + '</p>' : '') +
+          '</div>';
+      });
+      html += '</div>';
+    }
+
+    if ((s1.connections || []).length) {
+      html += '<h4 style="margin-top:16px;">Корневые связки (' + s1.connections.length + ')</h4><div class="fac-cards">';
+      s1.connections.forEach(function (conn) {
+        var cardTexts = (conn.cardIds || []).map(function (id) {
+          var c = cardById[id];
+          return c ? '«' + (c.text || '').slice(0, 60) + '»' : '(карточка удалена)';
+        }).join(' + ');
+        html += '<div class="fac-card">' +
+          '<p>' + escapeHtml(cardTexts || '(карточки не выбраны)') + '</p>' +
+          (conn.mechanism ? '<div class="fac-card-meta"><span>механизм: ' + escapeHtml(conn.mechanism) + '</span></div>' : '') +
+          (conn.conclusion ? '<div class="fac-card-meta"><span>вывод: ' + escapeHtml(conn.conclusion) + '</span></div>' : '') +
+          (conn.isLoop ? '<div class="fac-card-meta"><span>заявлена петля</span></div>' : '') +
+          '</div>';
+      });
+      html += '</div>';
+    }
+
+    if (s1.ak2JudgeReasoning && s1.ak2JudgeReasoning.reasoning) {
+      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи АК-2</summary>' +
+        '<p class="fac-card-warn">' + escapeHtml(s1.ak2JudgeReasoning.reasoning) + '</p></details>';
     }
     return html;
   }
@@ -568,6 +634,7 @@
       '</div>';
 
     html += renderScoreHtml(s1);
+    html += renderAK2Html(s1);
 
     if (s1.rationale) {
       html += '<h4>Как структурировал карту</h4><p class="fac-detail-text">' + escapeHtml(s1.rationale) + '</p>';
