@@ -133,54 +133,45 @@
     return { text: 'не начата', cls: 'is-none' };
   }
 
-  function formatScore(p, key, max) {
-    var s = p[key];
-    if (typeof s.score === 'number') return s.score + '/' + max;
-    return s.finished ? 'не оценено' : '—';
-  }
-
   function abilityBadge(level, source) {
     if (typeof level !== 'number') return '—';
     return 'L' + level + (source === 'ai' ? '·ИИ' : '·дет.');
   }
 
-  // Станция 1 покрывает навык АК целиком: АК-1 (широта) + АК-2 (глубина).
-  // ⚑ — нарушено ограничение методологии АК-2 ≤ АК-1, нужна ручная проверка.
+  // Станция 1 = навык АК (АК-1 широта + АК-2 глубина), станция 2 = навык ПР
+  // (ПР-1 приоритизация + ПР-2 обоснование). ⚑ — нарушено ограничение
+  // зависимостей методологии (АК-2 ≤ АК-1 / ПР-2 ≤ ПР-1+1), нужна ручная проверка.
   function formatLevel(p, key) {
     var s = p[key];
-    var a1 = abilityBadge(s.level, s.levelSource);
-    var a2 = abilityBadge(s.ak2Level, s.ak2LevelSource);
-    if (a1 === '—' && a2 === '—') return s.finished ? 'не оценено' : '—';
-    return a1 + ' / ' + a2 + (s.akFlag ? ' ⚑' : '');
+    if (key === 'station1') {
+      var a1 = abilityBadge(s.level, s.levelSource);
+      var a2 = abilityBadge(s.ak2Level, s.ak2LevelSource);
+      if (a1 === '—' && a2 === '—') return s.finished ? 'не оценено' : '—';
+      return a1 + ' / ' + a2 + (s.akFlag ? ' ⚑' : '');
+    }
+    var p1 = abilityBadge(s.pr1Level, s.pr1LevelSource);
+    var p2 = abilityBadge(s.pr2Level, s.pr2LevelSource);
+    if (p1 === '—' && p2 === '—') return s.finished ? 'не оценено' : '—';
+    return p1 + ' / ' + p2 + (s.prFlag ? ' ⚑' : '');
   }
 
-  // Балл навыка АК считает бэкенд (§9: среднее уровней двух способностей по таблице);
-  // это первый настоящий посчитанный навык из пяти — остальные появятся со своими станциями.
+  // «Итого» = сумма баллов посчитанных навыков (§9): пока АК + ПР, максимум 10.
+  // Пять навыков (max 25) появятся, когда соберутся остальные станции.
   function totalScore(p) {
-    return typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null;
-  }
-
-  function pluralPoints(n) {
-    if (n === 1) return 'балл';
-    if (n >= 2 && n <= 4) return 'балла';
-    return 'баллов';
+    var ak = typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null;
+    var pr = typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null;
+    if (ak === null && pr === null) return null;
+    return (ak || 0) + (pr || 0);
   }
 
   function formatTotal(p) {
-    var t = totalScore(p);
-    return typeof t === 'number' ? 'АК L' + t + ' · ' + t + ' ' + pluralPoints(t) : '—';
-  }
-
-  var VERDICT_LABELS = {
-    held: { text: 'удержал', cls: 'is-done' },
-    recovered_recall: { text: 'вернулся', cls: 'is-progress' },
-    not_defended: { text: 'не защитил', cls: 'is-none' }
-  };
-
-  function verdictLabel(p) {
-    var v = p.station3 && p.station3.verdict;
-    if (v && VERDICT_LABELS[v]) return VERDICT_LABELS[v];
-    return { text: p.station3 && p.station3.finished ? 'не оценено' : '—', cls: 'is-none' };
+    var ak = typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null;
+    var pr = typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null;
+    if (ak === null && pr === null) return '—';
+    var parts = [];
+    parts.push('АК ' + (ak === null ? '?' : ak));
+    parts.push('ПР ' + (pr === null ? '?' : pr));
+    return (ak !== null && pr !== null ? (ak + pr) + '/10' : '…') + ' (' + parts.join(' + ') + ')';
   }
 
   function sortParticipants(participants) {
@@ -192,8 +183,8 @@
         return (av1 - bv1) * dir;
       }
       if (sortState.key === 'score2') {
-        var av2 = typeof a.station2.score === 'number' ? a.station2.score : -1;
-        var bv2 = typeof b.station2.score === 'number' ? b.station2.score : -1;
+        var av2 = typeof a.station2.pr1Level === 'number' ? a.station2.pr1Level : -1;
+        var bv2 = typeof b.station2.pr1Level === 'number' ? b.station2.pr1Level : -1;
         return (av2 - bv2) * dir;
       }
       if (sortState.key === 'total') {
@@ -302,8 +293,6 @@
     view.forEach(function (p) {
       var status1 = stationStatusLabel(p, 'station1');
       var status2 = stationStatusLabel(p, 'station2');
-      var status3 = stationStatusLabel(p, 'station3');
-      var verdict = verdictLabel(p);
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
@@ -313,15 +302,12 @@
         '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
         '<td><span class="fac-pill ' + status1.cls + '">' + status1.text + '</span></td>' +
         '<td><span class="fac-pill ' + status2.cls + '">' + status2.text + '</span></td>' +
-        '<td><span class="fac-pill ' + status3.cls + '">' + status3.text + '</span></td>' +
-        '<td class="fac-score-cell"><span class="fac-pill ' + verdict.cls + '">' + escapeHtml(verdict.text) + '</span>' +
-          ' <button class="fac-recalc-btn" data-station="3" title="Пересчитать вердикт станции 3">↻</button></td>' +
         '<td>' + p.station1.appxReviewedCount + '/8 · ' + p.station1.cardCount + ' карт.</td>' +
         '<td>' + escapeHtml(formatDate(p.station1.updatedAt)) + '</td>' +
         '<td class="fac-score-cell">' + escapeHtml(formatLevel(p, 'station1')) +
-          ' <button class="fac-recalc-btn" data-station="1" title="Пересчитать уровень АК-1">↻</button></td>' +
-        '<td class="fac-score-cell">' + escapeHtml(formatScore(p, 'station2', 4)) +
-          ' <button class="fac-recalc-btn" data-station="2" title="Пересчитать балл станции 2">↻</button></td>' +
+          ' <button class="fac-recalc-btn" data-station="1" title="Пересчитать навык АК">↻</button></td>' +
+        '<td class="fac-score-cell">' + escapeHtml(formatLevel(p, 'station2')) +
+          ' <button class="fac-recalc-btn" data-station="2" title="Пересчитать навык ПР">↻</button></td>' +
         '<td>' + escapeHtml(formatTotal(p)) + '</td>' +
         '<td><button class="fac-delete-btn" title="Удалить участника">✕</button></td>';
       tr.addEventListener('click', function () { openDetail(p); });
@@ -363,7 +349,7 @@
 
   if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
-      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'АК-1', 'Источник АК-1', 'АК-2', 'Источник АК-2', 'Флаг АК-2>АК-1', 'Навык АК (балл)', 'Статус станции 2', 'Балл 2', 'Статус станции 3', 'Вердикт']
+      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'АК-1', 'Источник АК-1', 'АК-2', 'Источник АК-2', 'Флаг АК-2>АК-1', 'Навык АК (балл)', 'Статус станции 2', 'ПР-1', 'Источник ПР-1', 'ПР-2', 'Источник ПР-2', 'Флаг ПР-2>ПР-1+1', 'Навык ПР (балл)', 'Итого (из 10)']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -381,11 +367,15 @@
         typeof p.station1.ak2Level === 'number' ? p.station1.ak2Level : '',
         p.station1.ak2LevelSource || '',
         p.station1.akFlag ? 'да' : '',
-        totalScore(p) === null ? '' : totalScore(p),
+        typeof p.station1.akSkill === 'number' ? p.station1.akSkill : '',
         stationStatusLabel(p, 'station2').text,
-        typeof p.station2.score === 'number' ? p.station2.score : '',
-        stationStatusLabel(p, 'station3').text,
-        verdictLabel(p).text
+        typeof p.station2.pr1Level === 'number' ? p.station2.pr1Level : '',
+        p.station2.pr1LevelSource || '',
+        typeof p.station2.pr2Level === 'number' ? p.station2.pr2Level : '',
+        p.station2.pr2LevelSource || '',
+        p.station2.prFlag ? 'да' : '',
+        typeof p.station2.prSkill === 'number' ? p.station2.prSkill : '',
+        totalScore(p) === null ? '' : totalScore(p)
       ]);
     });
     // BOM — иначе Excel показывает кириллицу в CSV как кашу
@@ -402,7 +392,7 @@
   });
 
   function recalcScore(bib, btn, station) {
-    var action = station === 3 ? 'judgeStation3' : station === 2 ? 'judgeStation2' : 'judgeStation1';
+    var action = station === 2 ? 'judgeStation2' : 'judgeStation1';
     btn.disabled = true;
     btn.textContent = '…';
     window.imp.callApi(action, { password: currentPassword(), bib: bib }).then(function (res) {
@@ -451,7 +441,7 @@
         detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить — попробуйте «Обновить» и открыть снова.</p>';
         return;
       }
-      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.station3);
+      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2);
     });
   }
 
@@ -536,90 +526,80 @@
     return html;
   }
 
-  var FORK_LABELS = { fortress: '«Крепость»', second_curve: '«Вторая кривая»', both_incomplete: 'обе позиции неполны' };
-
-  function renderScore2Html(s2) {
+  // Станция 2 «Встреча с Агеевым» — навык ПР: приоритеты/отказы (ПР-1),
+  // обоснование + стресс-тест + проактивность (ПР-2).
+  function renderPRHtml(s2) {
     if (!s2) {
-      return '<h4>Станция 2</h4><p class="fac-detail-text">Ещё не начата.</p>';
+      return '<h4>Станция 2 · встреча с Агеевым</h4><p class="fac-detail-text">Ещё не начата.</p>';
     }
-    var html = '<h4>Станция 2 — ' + (s2.finished ? 'завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'в процессе') + '</h4>';
-    if (typeof s2.score !== 'number') {
-      html += '<p class="fac-detail-text">Не оценено' + (s2.finished ? ' — используйте «↻» в таблице.' : '.') + '</p>';
+    var cardById = {};
+    (s2.cardsSnapshot || []).forEach(function (c) { cardById[c.id] = c; });
+    function textOf(id) { var c = cardById[id]; return c ? c.text : '(карточка не найдена)'; }
+
+    var html = '<h4>Станция 2 · встреча с Агеевым — ' + (s2.finished ? 'завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'в процессе') + '</h4>';
+
+    html += '<h4 style="margin-top:14px;">ПР-1 · приоритизация' + (typeof s2.pr1Level === 'number' ? ' — L' + s2.pr1Level : '') + '</h4>';
+    if (typeof s2.pr1Level === 'number') {
+      html += '<p class="fac-detail-text">Источник: ' + (s2.pr1LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
     } else {
-      var matched = s2.matchedConnections || {};
-      var connIds = Object.keys(matched);
-      html += '<p class="fac-detail-text"><b>Оценка судьи — ' + s2.score + '/4</b></p>';
-      html += '<p class="fac-detail-text">Совпавшие связки: ' +
-        (connIds.length
-          ? connIds.map(function (id) { return '№' + id + ' (' + (matched[id] === 1 ? 'точно' : 'неточно') + ')'; }).join(', ')
-          : 'нет') + '</p>';
-      html += '<p class="fac-detail-text">Бонус за развилку (рекомендация + честная цена): ' + (s2.forkBonusAwarded ? 'да' : 'нет') + '</p>';
+      html += '<p class="fac-detail-text">' + (s2.finished ? 'Не оценено — используйте «↻» в таблице.' : 'Уровень появится после завершения.') + '</p>';
     }
-    html += '<p class="fac-detail-text">Развилка: <b>' + (FORK_LABELS[s2.forkChoice] || s2.forkChoice || 'не выбрана') + '</b></p>';
-    if (s2.forkRationale) {
-      html += '<p class="fac-detail-text">' + escapeHtml(s2.forkRationale) + '</p>';
-    }
-    if (s2.forkCriteria1 || s2.forkCriteria2) {
-      html += '<p class="fac-detail-text">Критерии: ' + escapeHtml(s2.forkCriteria1 || '—') + ' · ' + escapeHtml(s2.forkCriteria2 || '—') + '</p>';
-    }
-    if ((s2.rootConnections || []).length) {
+
+    if ((s2.priorities || []).length) {
       html += '<div class="fac-cards">';
-      s2.rootConnections.forEach(function (c) {
-        html += '<div class="fac-card"><p>' + escapeHtml(c.problems || '(не указано)') + '</p>' +
-          (c.mechanism ? '<div class="fac-card-meta"><span>' + escapeHtml(c.mechanism) + '</span></div>' : '') +
+      s2.priorities.forEach(function (p, i) {
+        html += '<div class="fac-card"><p><b>' + (i + 1) + '.</b> ' + escapeHtml(textOf(p.cardId)) + '</p>' +
+          (p.target ? '<div class="fac-card-meta"><span>ориентир: ' + escapeHtml(p.target) + '</span></div>' : '') +
           '</div>';
       });
       html += '</div>';
     }
-    if (s2.judgeReasoning && s2.judgeReasoning.connectionJudgments) {
-      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи по связкам и развилке</summary>';
-      s2.judgeReasoning.connectionJudgments.forEach(function (cj) {
-        html += '<div class="fac-card"><div class="fac-card-meta"><span>' +
-          (cj.matchedConnectionId ? '№' + cj.matchedConnectionId + ' · ' + escapeHtml(cj.quality) : 'не по ключу') +
-          '</span></div><p class="fac-card-warn">' + escapeHtml(cj.reasoning || '') + '</p></div>';
+    if ((s2.rejected || []).length) {
+      html += '<p class="fac-detail-text"><b>Не сейчас (явные отказы):</b></p><div class="fac-cards">';
+      s2.rejected.forEach(function (r) {
+        html += '<div class="fac-card"><p>' + escapeHtml(textOf(r.cardId)) + '</p>' +
+          (r.freed ? '<div class="fac-card-meta"><span>освобождает: ' + escapeHtml(r.freed) + '</span></div>' : '') +
+          '</div>';
       });
-      if (s2.judgeReasoning.forkJudgment) {
-        html += '<p class="fac-detail-text">Развилка: ' + escapeHtml(s2.judgeReasoning.forkJudgment.reasoning || '') + '</p>';
+      html += '</div>';
+    }
+    if (s2.rejectionRule) {
+      html += '<p class="fac-detail-text">Правило отказа: ' + escapeHtml(s2.rejectionRule) + '</p>';
+    }
+    if (s2.pr1JudgeReasoning && s2.pr1JudgeReasoning.reasoning) {
+      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи ПР-1</summary>' +
+        '<p class="fac-card-warn">' + escapeHtml(s2.pr1JudgeReasoning.reasoning) + '</p></details>';
+    }
+
+    html += '<h4 style="margin-top:16px;">ПР-2 · обоснование выбора' + (typeof s2.pr2Level === 'number' ? ' — L' + s2.pr2Level : '') + '</h4>';
+    if (typeof s2.pr2Level === 'number') {
+      html += '<p class="fac-detail-text">Источник: ' + (s2.pr2LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
+      if (typeof s2.pr1Level === 'number' && s2.pr2Level > s2.pr1Level + 1) {
+        html += '<p class="fac-detail-text fac-card-warn">⚑ ПР-2 выше ПР-1 более чем на 1 — нарушено ограничение зависимостей, нужна ручная проверка.</p>';
       }
-      html += '</details>';
+    }
+    if (s2.rationale) {
+      html += '<p class="fac-detail-text"><b>Почему №1 первым:</b> ' + escapeHtml(s2.rationale) + '</p>';
+    }
+    if (s2.stressChoice) {
+      html += '<p class="fac-detail-text"><b>Стресс-тест «отложим на полгода»:</b> <span class="fac-pill ' +
+        (s2.stressChoice === 'hold' ? 'is-done' : 'is-progress') + '">' +
+        (s2.stressChoice === 'hold' ? 'настоял на своём' : 'согласился пересобрать') + '</span></p>';
+      if (s2.stressComment) {
+        html += '<p class="fac-detail-text">' + escapeHtml(s2.stressComment) + '</p>';
+      }
+    }
+    if (s2.proactiveText) {
+      html += '<p class="fac-detail-text"><b>Условия пересмотра выбора:</b> ' + escapeHtml(s2.proactiveText) + '</p>';
+    }
+    if (s2.pr2JudgeReasoning && s2.pr2JudgeReasoning.reasoning) {
+      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи ПР-2</summary>' +
+        '<p class="fac-card-warn">' + escapeHtml(s2.pr2JudgeReasoning.reasoning) + '</p></details>';
     }
     return html;
   }
 
-  var AGEEV_LINES = [
-    'Заходите, присаживайтесь. Я прочитал то, что вы прислали — карту, связки, рекомендацию. Прежде чем перейдём к делу — короткий вопрос на разогрев: что из вашей карты вы бы назвали первым, если бы у вас было тридцать секунд перед лифтом?',
-    'Хорошо. По развилке я примерно понял вашу позицию. Меня смущает вот что: правление скажет, что решение можно принять и через полгода, когда будет больше данных. Зачем спешить?',
-    'И раз заговорили о данных — отдельный вопрос по одному из пунктов карты. Вы написали что-то про отсутствие мониторинга рынка и конкурентов. Честно, не вижу тут проблемы: у нас одиннадцать статей на топовых конференциях в 2025-м — больше, чем у всех остальных на рынке вместе. Ресерч в курсе всего, что происходит в индустрии. Loop выйдет не раньше 2027-го — время есть. По-моему, это не корневая проблема, а частность, которую можно снять с карты.',
-    'Понял вас. На сегодня достаточно — коллеги ждут вас на восьмом этаже, обсудите детали. Прежде чем вы уйдёте — что-нибудь ещё, о чём мы не поговорили?'
-  ];
-
-  function renderStation3Html(s3) {
-    if (!s3) {
-      return '<h4>Станция 3</h4><p class="fac-detail-text">Ещё не начата.</p>';
-    }
-    var verdictInfo = VERDICT_LABELS[s3.verdict] || { text: s3.finished ? 'не оценено' : '—', cls: 'is-none' };
-    var html = '<h4>Станция 3 — ' + (s3.finished ? 'завершена ' + escapeHtml(formatDate(s3.finishedAt)) : 'в процессе') + '</h4>';
-    html += '<p class="fac-detail-text">Вердикт: <span class="fac-pill ' + verdictInfo.cls + '">' + escapeHtml(verdictInfo.text) + '</span></p>';
-    if (s3.verdictReasoning) {
-      html += '<p class="fac-detail-text">' + escapeHtml(s3.verdictReasoning) + '</p>';
-    }
-    if ((s3.responses || []).some(function (r) { return r; })) {
-      html += '<div class="fac-cards">';
-      AGEEV_LINES.forEach(function (line, i) {
-        var resp = (s3.responses || [])[i];
-        if (!resp) return;
-        html += '<div class="fac-card">' +
-          '<p><b>Агеев:</b> «' + escapeHtml(line) + '»</p>' +
-          '<div class="fac-card-meta"><span>ответ участника</span></div>' +
-          '<p class="fac-card-warn">' + escapeHtml(resp) + '</p>' +
-          '</div>';
-      });
-      html += '</div>';
-    }
-    return html;
-  }
-
-  function renderDetailHtml(registration, s1, s2, s3) {
+  function renderDetailHtml(registration, s1, s2) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
@@ -673,8 +653,7 @@
       html += '</div>';
     }
 
-    html += renderScore2Html(s2);
-    html += renderStation3Html(s3);
+    html += renderPRHtml(s2);
 
     return html;
   }

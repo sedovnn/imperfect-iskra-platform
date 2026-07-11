@@ -741,6 +741,141 @@ footer {
 }
 .conn-loop input { margin-top: 2px; }
 
+/* ---------- станция 2 «Встреча с Агеевым» (ПР-1 + ПР-2) ---------- */
+
+.s2-body {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 32px 90px;
+  overflow-y: auto;
+  flex: 1;
+  width: 100%;
+}
+
+.s2-block {
+  margin-bottom: 44px;
+}
+
+.s2-ageev {
+  font-size: 15px;
+  line-height: 1.65;
+  max-width: 720px;
+  margin: 0 0 18px;
+  padding-left: 16px;
+  border-left: 3px solid var(--lime);
+}
+
+.s2-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.s2-col {
+  border: 1px dashed #d6d8d2;
+  border-radius: 14px;
+  padding: 14px;
+  min-height: 180px;
+}
+.s2-col.is-priorities { border-style: solid; border-color: var(--ink); }
+.s2-col.is-drop-target { background: #f7ffe0; }
+.s2-col h4 {
+  font-family: var(--ff-display);
+  font-size: 15px;
+  margin: 0 0 2px;
+}
+.s2-col .links-hint { margin-bottom: 10px; }
+
+.s2-item {
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: grab;
+}
+.s2-item:active { cursor: grabbing; }
+.s2-item p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.s2-item.is-priority { border-color: var(--ink); }
+
+.s2-item-rank {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--lime);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.s2-item-body { flex: 1; min-width: 0; }
+
+.s2-item-body input {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid #e3e3e0;
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+.s2-item-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: none;
+}
+
+.s2-act {
+  border: 1px solid #d6d8d2;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.s2-act:hover { border-color: var(--ink); }
+
+.s2-radio {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+  margin: 0 0 10px;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+.s2-radio input { margin-top: 3px; }
+
+.s2-body textarea {
+  width: 100%;
+  border: 1px solid #e3e3e0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+@media (max-width: 900px) {
+  .s2-columns { grid-template-columns: 1fr; }
+}
+
 .consent {
   display: flex;
   gap: 12px;

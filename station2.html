@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Станция 2 · Приоритизация и развилка — i(m)perfect</title>
-<meta name="description" content="Раунд 1, станция 2. Выделите корневые связки и дайте рекомендацию по развилке." />
+<title>Станция 2 · Встреча с Агеевым — i(m)perfect</title>
+<meta name="description" content="Раунд 1, станция 2. Понедельник, 10:00 — разговор с Агеевым: приоритеты и защита выбора." />
 <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -20,20 +20,19 @@
 
 <div id="gateStation1" class="gate" style="display:none;">
   <div class="gate-card">
-    <p class="kicker">Сначала станция 1</p>
-    <h2>Станция 2 продолжает станцию 1</h2>
-    <p class="section-lead" style="margin:0 0 24px;">2–3 корневые связки и развилка строятся на карте проблем, которую вы собираете на станции 1 — сначала завершите её.</p>
-    <a class="btn btn-primary btn-block" href="station1.html">Перейти на станцию 1 →</a>
+    <p class="kicker">Станция 2 закрыта</p>
+    <h2>Сначала — карта и связки</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Агеев не начнёт разговор без вашей карты: станция 2 работает с карточками, которые вы собрали на станции 1.</p>
+    <a class="btn btn-primary btn-block" href="station1.html">Вернуться на станцию 1 →</a>
   </div>
 </div>
 
-<div id="finishOverlay" class="gate" style="display:none;">
+<div id="finishOverlay" class="gate gate-finish" style="display:none;">
   <div class="gate-card">
     <p class="kicker">✓ Станция 2 завершена</p>
-    <h2>Связки и развилка сохранены</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Оценка судьи видна только фасилитатору. Дальше — встреча с Агеевым: удержите курс под давлением.</p>
-    <a class="btn btn-primary btn-block" href="station3.html">Перейти к станции 3 →</a>
-    <button class="btn btn-ghost btn-block" id="finishOverlayReview" style="margin-top:12px;">Ещё раз посмотреть</button>
+    <h2>Встреча закончена</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Агеев проводил вас до лифта. Оценка видна только фасилитатору. Дальше — порождающие комнаты; они ещё собираются, следите за письмом.</p>
+    <button class="btn btn-ghost btn-block" id="finishOverlayReview" style="border-color: rgba(255,255,255,0.3); color: #fff;">Ещё раз посмотреть разговор</button>
   </div>
 </div>
 
@@ -44,99 +43,33 @@
       <div class="station-header-left">
         <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
         <span class="station-sep">/</span>
-        <span class="station-name">Станция 2 · Приоритизация и развилка</span>
+        <span class="station-name">Станция 2 · Встреча с Агеевым</span>
       </div>
       <div class="station-header-right">
         <span class="bib" id="hdrBib" style="font-size:14px; padding:6px 12px;">№ 000</span>
-        <span class="station-hint">эталон · без баллов по ходу</span>
-        <button class="btn btn-primary" id="finishBtn" style="padding:11px 20px; font-size:14px;">Завершить станцию →</button>
       </div>
     </header>
 
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
         <p class="kicker">Постановка</p>
-        <p>Агеев в своём письме просит две вещи сверх карты проблем: во-первых, выделить 2–3 <b>корневые проблемы</b> — те, что порождают остальные, и показать связи; во-вторых, дать <b>рекомендацию по развилке</b> «Крепость» / «Вторая кривая» с двумя критериями, на которых она стоит.</p>
+        <p>Понедельник, 9 февраля, 10:00. Кабинет Агеева. Он закрывает ноутбук: «Карту вашу я прочитал вчера вечером, спасибо. Теперь разговор по существу. Всё разом мы делать не будем — люди, деньги и моё время у правления ограничены. Разложите прямо здесь: с чем идём к правлению в первую очередь, а что честно откладываем».</p>
         <div class="case-rule">
           <span>→</span>
-          <span><b>Механизм важнее списка.</b> Просто назвать 2–3 проблемы недостаточно — нужно объяснить, почему одна порождает другую. Судья засчитывает связку только при наличии объяснённого механизма.</span>
+          <span><b>Работаете со своей картой.</b> Здесь только карточки, которые вы сами собрали на станции 1. Что оставить неразобранным, что отложить, что двигать первым — решать вам; необязательные поля заполняйте только там, где вам есть что сказать.</span>
         </div>
         <div class="case-rule" style="margin-top:12px;">
-          <span>⚖</span>
-          <span><b>Правильного ответа на развилку нет.</b> Оценивается не то, какую позицию вы выбрали, а честно названная цена этого выбора. «Обе позиции неполны» — тоже сильный ответ, если аргументирован.</span>
+          <span>⚠</span>
+          <span><b>Разговор идёт вперёд.</b> Когда вы фиксируете приоритеты и отвечаете Агееву, вернуться и переиграть ответ нельзя — как в настоящей встрече.</span>
         </div>
-        <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к работе ↓</button>
+        <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговору ↓</button>
       </div>
     </div>
 
-    <div class="station-body" style="grid-template-columns: 1fr 1fr;">
-
-      <section class="work-pane" style="border-right:1px solid #ececec;">
-        <div class="work-header">
-          <div>
-            <div class="kicker" style="margin-bottom:4px;">Напоминание</div>
-            <h3 style="font-family:var(--ff-display); font-size:19px; margin:0;">Письмо Агеева и ваша карта</h3>
-          </div>
-        </div>
-        <div class="work-scroll" id="recapScroll">
-
-          <blockquote class="letter" style="margin-bottom:24px;">
-            <p><b>От:</b> Кирилл Агеев<br /><b>Дата:</b> пятница, 6 февраля 2026, 22:14<br /><b>Тема:</b> к понедельнику</p>
-            <p>Второе — из всей карты выделите две-три корневые проблемы: те, что порождают остальные. И покажите связи.</p>
-            <p>Третье. В правлении оформились две позиции, у каждой сильные сторонники.</p>
-            <p>Первую называют «Крепость»: сосредоточить капитал и людей на рекламном ядре — встроить монетизацию в «Искра Ответ», закрыть внутригрупповое финансирование устройств за два года, а само направление перевести на партнерскую модель. Логика: мы рекламная компания с лучшим поиском на рынке, и защищать надо то, что приносит деньги, а не догонять всех сразу.</p>
-            <p>Вторую называют «Вторая кривая»: выделить «Миру» и устройства в отдельную компанию с собственным P&L, собственным советом и защитой от внутренних аллокаций и внеплановых проектов; цель — к 2030 году построить подписочную и агентскую выручку, сопоставимую с третью рекламной. Логика: если интерфейсы уйдут с экранов, защищать станет нечего, а успеть можно, только выведя новое из-под правил старого.</p>
-            <p>Мне нужна ваша рекомендация и два критерия, на которых она стоит. Если считаете, что обе позиции неверны, — скажите и обоснуйте.</p>
-            <p>К.</p>
-          </blockquote>
-
-          <div class="kicker" style="margin-bottom:10px;">Ваша карта проблем (станция 1)</div>
-          <div class="fac-cards" id="ownCardsList"></div>
-
-        </div>
-      </section>
-
-      <section class="work-pane">
-        <div class="work-header">
-          <div>
-            <div class="kicker" style="margin-bottom:4px;">Ваша рабочая область</div>
-            <h3 style="font-family:var(--ff-display); font-size:19px; margin:0;">Связки и развилка</h3>
-          </div>
-        </div>
-
-        <div class="work-scroll" id="workScroll">
-
-          <div class="kicker" style="margin-bottom:10px;">Корневые связки (2–3)</div>
-          <div class="cards-list" id="connectionsList"></div>
-          <button class="btn btn-ghost btn-small" id="addConnectionBtn">+ связка</button>
-
-          <div class="kicker" style="margin:24px 0 10px;">Развилка</div>
-          <div class="fork-options" id="forkOptions">
-            <label class="consent"><input type="radio" name="forkChoice" value="fortress" /><span>«Крепость» — фокус на рекламном ядре</span></label>
-            <label class="consent"><input type="radio" name="forkChoice" value="second_curve" /><span>«Вторая кривая» — выделить «Миру» в отдельную компанию</span></label>
-            <label class="consent"><input type="radio" name="forkChoice" value="both_incomplete" /><span>Обе позиции неполны</span></label>
-          </div>
-
-          <div class="rationale-block">
-            <label for="forkRationale">Рекомендация и честно названная цена выбора</label>
-            <textarea id="forkRationale" rows="3" placeholder="например: выбираю «Вторую кривую», но она провалится без программы сохранения знаний «Периметра»"></textarea>
-          </div>
-
-          <div class="card-row">
-            <div class="rationale-block">
-              <label for="forkCriteria1">Критерий 1</label>
-              <input type="text" id="forkCriteria1" placeholder="например: срок до самоокупаемости" />
-            </div>
-            <div class="rationale-block">
-              <label for="forkCriteria2">Критерий 2</label>
-              <input type="text" id="forkCriteria2" placeholder="например: удержание критических носителей компетенций" />
-            </div>
-          </div>
-
-        </div>
-      </section>
-
+    <div class="s2-body" id="s2Body">
+      <!-- блоки разговора добавляются по мере прохождения (station2.js) -->
     </div>
+
   </div>
 </div>
 
