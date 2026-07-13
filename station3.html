@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Финальный отрезок — i(m)perfect</title>
+<meta name="description" content="Раунд 1, финальный отрезок. Свободный порядок разговоров перед тем, как финализировать стратегию." />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="gate" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Нужен номер участника</p>
+    <h2>Сначала регистрация</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Этот отрезок привязан к вашему стартовому номеру — без него прогресс негде сохранить.</p>
+    <a class="btn btn-primary btn-block" href="register.html">Получить номер участника →</a>
+  </div>
+</div>
+
+<div id="gateStation2" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Закрыто</p>
+    <h2>Сначала — встреча с Агеевым</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Финальный отрезок открывается после того, как вы закончите станцию 2.</p>
+    <a class="btn btn-primary btn-block" href="station2.html">Вернуться на станцию 2 →</a>
+  </div>
+</div>
+
+<div id="finishOverlay" class="gate gate-finish" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">✓ Раунд 1 завершён</p>
+    <h2>Стратегия финализирована</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Дальше — живой разбор в случайной тройке. Оценка видна только фасилитатору.</p>
+    <button class="btn btn-ghost btn-block" id="finishOverlayReview" style="border-color: rgba(255,255,255,0.3); color: #fff;">Ещё раз посмотреть</button>
+  </div>
+</div>
+
+<div class="frame station-frame" id="stationRoot" style="display:none;">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
+        <span class="station-sep">/</span>
+        <span class="station-name">Финальный отрезок</span>
+      </div>
+      <div class="station-header-right">
+        <span class="bib" id="hdrBib" style="font-size:14px; padding:6px 12px;">№ 000</span>
+      </div>
+    </header>
+
+    <div class="station-intro" id="stationIntro">
+      <div class="station-intro-inner">
+        <p class="kicker">Постановка</p>
+        <p>До конца раунда 1 — около двух часов на всё, включая то, что вы уже прошли. Впереди три коротких разговора и финализация стратегии.</p>
+        <div class="case-rule">
+          <span>→</span>
+          <span><b>Порядок свободный.</b> Заходите в любой разговор в любой последовательности, можно выходить и возвращаться. Единственное ограничение — общее время на раунд.</span>
+        </div>
+        <div class="case-rule" style="margin-top:12px;">
+          <span>⏱</span>
+          <span><b>Не успели — не страшно.</b> Если время поджимает, финализируйте с тем, что есть: непосещённый разговор просто не даст сигнала по этой части оценки, это не штраф.</span>
+        </div>
+        <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговорам ↓</button>
+      </div>
+    </div>
+
+    <div class="hub-body" id="hubBody">
+
+      <div class="hub-rooms" id="hubRooms">
+        <!-- карточки комнат рендерятся station3.js -->
+      </div>
+
+      <div class="hub-finalize">
+        <button class="btn btn-primary" id="finalizeBtn">Финализировать стратегию →</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/api.js"></script>
+<script src="js/station3.js"></script>
+</body>
+</html>
