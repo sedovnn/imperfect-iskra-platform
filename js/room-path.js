@@ -1,16 +1,14 @@
-// i(m)perfect — «Очередь в «Прожектор»» (кейс «Искра»). Навык ГА целиком:
-// самостоятельная генерация альтернатив (ГА-1) + привлечение идей из разных
-// областей (ГА-2). Один открытый стратегический вопрос — намеренно широкий,
-// без «предложите несколько вариантов», чтобы генерация сверх заданного
-// вопроса (граница ГА-1 2→3) была настоящим, а не подсказанным сигналом —
-// плюс один необязательный follow-up, приглашающий к аналогии из другой
-// области (граница ГА-2 3→4), но не требующий её.
+// i(m)perfect — «Черновик к мартовскому комитету» (кейс «Искра»). Навык ПП
+// целиком: декомпозиция цели и маршрута (ПП-1) + работа с барьерами и
+// ресурсами (ПП-2). Один открытый вопрос про целевое состояние и путь к нему,
+// один follow-up про то, что мешает и на что можно опереться — без отдельных
+// полей «барьер»/«enabler», чтобы структура не была подсказана заранее.
 
 (function () {
   var session = null;
   var state = null;
 
-  function storageKey(bib) { return 'imp_room_alternatives_' + bib; }
+  function storageKey(bib) { return 'imp_room_path_' + bib; }
   function station2Key(bib) { return 'imp_station2_' + bib; }
 
   function loadSession() {
@@ -46,7 +44,7 @@
 
   function syncStateToBackend() {
     if (!window.imp.isApiConfigured()) return;
-    window.imp.callApi('saveRoomAlternatives', { bib: session.bib, state: state });
+    window.imp.callApi('saveRoomPath', { bib: session.bib, state: state });
   }
 
   // ---------- gate ----------
@@ -61,7 +59,7 @@
   // сначала подтягиваем реальный прогресс с бэкенда, иначе следующий же автосейв
   // затрёт его пустым стейтом (см. api.js hydrateOnce) — фоновая проверка,
   // не блокирует рендер; если найдётся реальный прогресс, страница перезагрузится сама
-  window.imp.hydrateOnce('loadRoomAlternatives', session.bib, storageKey(session.bib));
+  window.imp.hydrateOnce('loadRoomPath', session.bib, storageKey(session.bib));
 
   function localStation2Finished() {
     try {
@@ -106,7 +104,7 @@
   function initWorkspace() {
     state = loadState(session.bib);
 
-    var introKey = 'imp_room_alternatives_intro_seen_' + session.bib;
+    var introKey = 'imp_room_path_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
     document.getElementById('dismissIntro').addEventListener('click', function () {
@@ -124,7 +122,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Сосед по очереди:</b> «И как, есть версия? А что бы вы сами сделали на месте Агеева?»</p>' +
+        '<p class="s2-ageev"><b>Штерн:</b> «Раз уж вы смотрите на всё это со стороны — как, по-вашему, должен выглядеть путь отсюда до целевого состояния, которое вы считаете правильным? Не общими словами: с чего начинается и куда ведёт?»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
@@ -148,7 +146,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Сосед по очереди</b> забирает свой кофе: «Мы у себя в „Пэй" одно время бились над похожим вопросом — правда, с деньгами, не с поиском. А вам это вообще ничего не напоминает? Может, из совсем другой истории?»</p>' +
+        '<p class="s2-ageev"><b>Штерн</b> отпивает кофе: «Хорошо. А что реально этому мешает — и есть ли что-то, на что можно опереться?»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
       if (!locked) {

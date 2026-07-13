@@ -38,22 +38,26 @@
   // localStorage для этой станции/комнаты пустым, скрипт тихо открывает
   // пустое состояние — и первое же автосохранение затирает на бэкенде
   // реальный прогресс, записанный с исходного устройства. Пробуем
-  // подтянуть его один раз; флаг не даёт зациклить reload, если на
-  // бэкенде и правда ничего нет (обычный новый участник).
-  // Возвращает true, если запустила восстановление — вызывающий код должен
-  // сразу return, дальше работает уже перезагруженная страница.
+  // подтянуть его один раз в фоне; флаг не даёт повторять проверку при
+  // каждой загрузке страницы.
+  //
+  // Намеренно НЕ блокирует вызывающий код и НЕ перезагружает страницу,
+  // если на бэкенде ничего не нашлось (обычный новый участник, самый частый
+  // случай) — иначе каждый первый визит на станцию/комнату ждал бы сетевой
+  // ответ и перезагружался вслепую, рискуя гонкой с быстрым вводом участника.
+  // Страница продолжает рендериться синхронно как обычно; перезагрузка
+  // происходит только если реально нашлось что подтягивать.
   window.imp.hydrateOnce = function (action, bib, storageKey) {
-    if (!window.imp.isApiConfigured()) return false;
-    if (localStorage.getItem(storageKey)) return false;
+    if (!window.imp.isApiConfigured()) return;
+    if (localStorage.getItem(storageKey)) return;
     var flagKey = storageKey + '_hydrate_tried';
-    if (localStorage.getItem(flagKey)) return false;
+    if (localStorage.getItem(flagKey)) return;
     localStorage.setItem(flagKey, '1');
     window.imp.callApi(action, { bib: bib }).then(function (res) {
       if (res && res.ok && res.state) {
         localStorage.setItem(storageKey, JSON.stringify(res.state));
+        window.location.reload();
       }
-      window.location.reload();
     });
-    return true;
   };
 })();
