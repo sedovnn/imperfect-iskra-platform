@@ -323,7 +323,8 @@
       { key: 'station2', label: 'С2', title: 'Станция 2 · Встреча с Агеевым' },
       { key: 'roomFuture', label: 'КЛ', title: '«Коридор Лемеха»' },
       { key: 'roomAlternatives', label: 'ОП', title: '«Очередь в „Прожектор"»' },
-      { key: 'roomPath', label: 'ЧК', title: '«Черновик к мартовскому комитету»' }
+      { key: 'roomPath', label: 'ЧК', title: '«Черновик к мартовскому комитету»' },
+      { key: 'station3', label: 'Ф', title: 'Финализация стратегии (холл)' }
     ];
     return '<span class="fac-progress-pills">' + stages.map(function (st) {
       var s = stationStatusLabel(p, st.key);
@@ -396,7 +397,7 @@
         'Статус «Коридор Лемеха»', 'Горизонт (МК-1)', 'Источник горизонта', 'Развилки будущего (МК-2)', 'Источник развилок', 'Образ будущего, балл',
         'Статус «Очередь в Прожектор»', 'Альтернативы (ГА-1)', 'Источник альтернатив', 'Идеи из областей (ГА-2)', 'Источник идей', 'Альтернативы, балл',
         'Статус «Черновик к комитету»', 'Декомпозиция пути (ПП-1)', 'Источник декомпозиции', 'Барьеры/ресурсы (ПП-2)', 'Источник барьеров', 'Путь к цели, балл',
-        'Итого (из 25)']
+        'Итого (из 25)', 'Стратегия финализирована', 'Дата финализации']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -426,7 +427,11 @@
         roomCsvCols(p, 'roomFuture', 'level1', 'level2'),
         roomCsvCols(p, 'roomAlternatives', 'level1', 'level2'),
         roomCsvCols(p, 'roomPath', 'level1', 'level2'),
-        [totalScore(p) === null ? '' : totalScore(p)]
+        [
+          totalScore(p) === null ? '' : totalScore(p),
+          p.station3.finished ? 'да' : 'нет',
+          p.station3.finished ? formatDate(p.station3.finishedAt) : ''
+        ]
       ));
     });
     // BOM — иначе Excel показывает кириллицу в CSV как кашу
@@ -501,7 +506,7 @@
         detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить — попробуйте «Обновить» и открыть снова.</p>';
         return;
       }
-      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.roomFuture, res.roomAlternatives, res.roomPath, participant);
+      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.roomFuture, res.roomAlternatives, res.roomPath, res.station3, participant);
       detailBody.querySelectorAll('[data-recalc]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           recalcScore(participant.bib, btn, Number(btn.getAttribute('data-recalc')), function () {
@@ -744,7 +749,7 @@
     return html;
   }
 
-  function renderDetailHtml(registration, s1, s2, roomFuture, roomAlternatives, roomPath, participant) {
+  function renderDetailHtml(registration, s1, s2, roomFuture, roomAlternatives, roomPath, station3, participant) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
@@ -761,6 +766,11 @@
     if (participant) {
       html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Итого: ' + escapeHtml(formatTotal(participant)) + '</b></p>';
     }
+    // хаб без содержания — только факт финализации; непосещённая комната не штраф,
+    // единственное реальное ограничение раунда — время участника, а не полнота
+    html += '<p class="fac-detail-text">' + (station3 && station3.finished
+      ? 'Стратегия финализирована ' + escapeHtml(formatDate(station3.finishedAt))
+      : 'Стратегия ещё не финализирована') + '</p>';
 
     html += renderScoreHtml(s1);
     html += renderAK2Html(s1);
