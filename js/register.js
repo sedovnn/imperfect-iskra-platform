@@ -38,7 +38,7 @@
       res.waves.forEach(function (w) {
         var opt = document.createElement('option');
         opt.value = w.id;
-        opt.textContent = w.label + ' — раунд 1 + раунд 2';
+        opt.textContent = w.label;
         select.appendChild(opt);
       });
     });
@@ -135,7 +135,7 @@
       confirmText.textContent = 'Сессия восстановлена по номеру и фамилии. Прогресс на месте.';
     } else {
       confirmHeading.textContent = 'Готово. Вы на дистанции.';
-      confirmText.textContent = 'Это ваш стартовый номер — под ним вы идёте по табло, если не включили показ имени. На почту придёт ссылка на раунд 1 и время сбора команды для раунда 2.';
+      confirmText.textContent = 'Это ваш стартовый номер, если не включили показ имени. Дальше — раунд 1: кейс, встреча с клиентом и три разговора в холле.';
     }
     confirmPanel.classList.add('show');
   }
