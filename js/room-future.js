@@ -56,6 +56,11 @@
     return;
   }
 
+  // восстановление доступа на новом устройстве: локально для этой комнаты пусто —
+  // сначала подтягиваем реальный прогресс с бэкенда, иначе следующий же автосейв
+  // затрёт его пустым стейтом (см. api.js hydrateOnce)
+  if (window.imp.hydrateOnce('loadRoomFuture', session.bib, storageKey(session.bib))) return;
+
   function localStation2Finished() {
     try {
       var raw = localStorage.getItem(station2Key(session.bib));

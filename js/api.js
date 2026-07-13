@@ -33,4 +33,27 @@
         return null;
       });
   };
+
+  // Восстановление доступа на новом устройстве иначе оставляет
+  // localStorage для этой станции/комнаты пустым, скрипт тихо открывает
+  // пустое состояние — и первое же автосохранение затирает на бэкенде
+  // реальный прогресс, записанный с исходного устройства. Пробуем
+  // подтянуть его один раз; флаг не даёт зациклить reload, если на
+  // бэкенде и правда ничего нет (обычный новый участник).
+  // Возвращает true, если запустила восстановление — вызывающий код должен
+  // сразу return, дальше работает уже перезагруженная страница.
+  window.imp.hydrateOnce = function (action, bib, storageKey) {
+    if (!window.imp.isApiConfigured()) return false;
+    if (localStorage.getItem(storageKey)) return false;
+    var flagKey = storageKey + '_hydrate_tried';
+    if (localStorage.getItem(flagKey)) return false;
+    localStorage.setItem(flagKey, '1');
+    window.imp.callApi(action, { bib: bib }).then(function (res) {
+      if (res && res.ok && res.state) {
+        localStorage.setItem(storageKey, JSON.stringify(res.state));
+      }
+      window.location.reload();
+    });
+    return true;
+  };
 })();

@@ -83,6 +83,12 @@
     document.getElementById('gate').style.display = 'flex';
     return;
   }
+
+  // восстановление доступа на новом устройстве: локально для этой станции пусто —
+  // сначала подтягиваем реальный прогресс с бэкенда, иначе следующий же автосейв
+  // затрёт его пустым стейтом (см. api.js hydrateOnce)
+  if (window.imp.hydrateOnce('loadStation1', session.bib, storageKey(session.bib))) return;
+
   document.getElementById('gate').style.display = 'none';
   document.getElementById('stationRoot').style.display = '';
   document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(3, '0');

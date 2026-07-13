@@ -77,6 +77,11 @@
     return;
   }
 
+  // восстановление доступа на новом устройстве: локально для этой станции пусто —
+  // сначала подтягиваем реальный прогресс с бэкенда, иначе следующий же автосейв
+  // затрёт его пустым стейтом (см. api.js hydrateOnce)
+  if (window.imp.hydrateOnce('loadStation2', session.bib, storageKey(session.bib))) return;
+
   function localStation1() {
     try {
       var raw = localStorage.getItem(station1Key(session.bib));
