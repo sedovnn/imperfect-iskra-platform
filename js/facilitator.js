@@ -123,8 +123,8 @@
 
   function refresh() {
     var pw = currentPassword();
-    if (!pw) return;
-    window.imp.callApi('facilitatorList', { password: pw }).then(function (res) {
+    if (!pw) return Promise.resolve();
+    return window.imp.callApi('facilitatorList', { password: pw }).then(function (res) {
       if (res && res.ok) {
         renderParticipants(res.participants);
       } else if (res && res.error === 'unauthorized') {
@@ -137,9 +137,19 @@
     });
   }
 
+  // Раньше клик не давал никакой отдачи — нажал и будто ничего не произошло.
+  // Теперь кнопка реально показывает состояние: идёт запрос → секунда
+  // подтверждения → обратно, тем же паттерном, что и кнопки пересчёта.
   refreshBtn.addEventListener('click', function () {
-    refresh();
-    loadWaves();
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = 'Обновляю…';
+    Promise.all([refresh(), loadWaves()]).then(function () {
+      refreshBtn.textContent = 'Обновлено ✓';
+      setTimeout(function () {
+        refreshBtn.textContent = 'Обновить';
+        refreshBtn.disabled = false;
+      }, 900);
+    });
   });
 
   function stationStatusLabel(p, key) {
@@ -206,7 +216,7 @@
   // ---------- waves ----------
 
   function loadWaves() {
-    window.imp.callApi('listWaves', {}).then(function (res) {
+    return window.imp.callApi('listWaves', {}).then(function (res) {
       if (!res || !res.ok || !res.waves) return;
       waves = res.waves;
       waveLabelMap = {};

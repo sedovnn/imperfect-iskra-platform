@@ -497,13 +497,21 @@ footer {
   gap: 12px;
 }
 
-/* Незаметный вход в кабинет фасилитатора — читается как обычная строчка
-   лицензии/атрибуции в подвале, а не как admin-кнопка. */
-.footer-fp-link {
-  color: var(--muted-soft);
-  text-decoration: none;
+/* Незаметный вход в кабинет фасилитатора — маскот выглядывает из угла экрана,
+   без подписи и без обычных признаков ссылки (подчёркивания, смены курсора
+   не считается — это просто "здесь можно нажать", а не "здесь есть текст"),
+   чтобы это прочитывалось как декоративная деталь, а не как кнопка входа. */
+.corner-peek {
+  position: fixed;
+  right: 18px;
+  bottom: -8px;
+  z-index: 40;
+  display: block;
+  line-height: 0;
+  opacity: 0.85;
 }
-.footer-fp-link:hover { color: var(--ink); text-decoration: underline; }
+.corner-peek img { width: 34px; height: auto; display: block; }
+.corner-peek:hover { opacity: 1; }
 
 /* ---------- registration page ---------- */
 
