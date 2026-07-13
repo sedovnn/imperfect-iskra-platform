@@ -684,13 +684,68 @@
   // (два открытых ответа, один общий вызов ИИ на обе способности сразу), поэтому
   // один рендер-хелпер вместо трёх copy-paste функций (см. renderScoreHtml/
   // renderAK2Html/renderPRHtml выше — те устроены иначе, там не было смысла обобщать).
+  var GA2_SOURCE_LABELS = {
+    own: 'мои собственные суждения на месте',
+    practice: 'то, что обычно делают в таких ситуациях',
+    example: 'конкретный пример откуда-то ещё',
+    pattern: 'что-то более общее, что видно за разными примерами'
+  };
+
+  function roomAnswersFuture(state) {
+    var html = '';
+    if (state.answer1) html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Про горизонт:</b> ' + escapeHtml(state.answer1) + '</p>';
+    if (state.answer2) html += '<p class="fac-detail-text"><b>Если пойдёт не так:</b> ' + escapeHtml(state.answer2) + '</p>';
+    return html;
+  }
+
+  function roomAnswersAlternatives(state) {
+    var html = '';
+    if (state.answer1) html += '<p class="fac-detail-text" style="margin-top:10px;"><b>На месте Агеева:</b> ' + escapeHtml(state.answer1) + '</p>';
+    if (state.source) {
+      html += '<p class="fac-detail-text"><b>Источник идей (самооценка):</b> ' + escapeHtml(GA2_SOURCE_LABELS[state.source] || state.source) + '</p>';
+    }
+    if (state.sourceElaboration) {
+      html += '<p class="fac-detail-text"><b>Элаборация:</b> ' + escapeHtml(state.sourceElaboration) + '</p>';
+    }
+    return html;
+  }
+
+  function roomAnswersPath(state) {
+    var html = '';
+    if (state.currentState || state.targetState) {
+      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Текущее → целевое:</b> ' +
+        escapeHtml(state.currentState || '—') + ' → ' + escapeHtml(state.targetState || '—') + '</p>';
+    }
+    if ((state.stages || []).length) {
+      html += '<div class="fac-cards">';
+      state.stages.forEach(function (st, i) {
+        html += '<div class="fac-card"><p><b>Этап ' + (i + 1) + '.</b> ' + escapeHtml(st.description || '(не описан)') + '</p>' +
+          (st.rationale ? '<div class="fac-card-meta"><span>почему здесь: ' + escapeHtml(st.rationale) + '</span></div>' : '') +
+          '</div>';
+      });
+      html += '</div>';
+    }
+    var barriers = (state.barriers || []).filter(function (b) { return b.text; });
+    var enablers = (state.enablers || []).filter(function (e) { return e.text; });
+    if (barriers.length) {
+      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Барьеры:</b></p><div class="fac-cards">';
+      barriers.forEach(function (b) { html += '<div class="fac-card"><p>' + escapeHtml(b.text) + '</p></div>'; });
+      html += '</div>';
+    }
+    if (enablers.length) {
+      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Опора / ресурсы:</b></p><div class="fac-cards">';
+      enablers.forEach(function (e) { html += '<div class="fac-card"><p>' + escapeHtml(e.text) + '</p></div>'; });
+      html += '</div>';
+    }
+    return html;
+  }
+
   var ROOM_CONFIGS = {
     roomFuture: {
       title: '«Коридор Лемеха»',
       recalcStation: 3,
       recalcLabel: 'пересчитать навык МК',
-      q1Label: 'Про горизонт',
-      q2Label: 'Если пойдёт не так',
+      answersHtml: roomAnswersFuture,
       ability1: { label: 'Горизонт рассуждения', code: 'МК-1', levelKey: 'mk1Level', sourceKey: 'mk1LevelSource' },
       ability2: { label: 'Работа с развилками будущего', code: 'МК-2', levelKey: 'mk2Level', sourceKey: 'mk2LevelSource', reasoningKey: 'mk2JudgeReasoning' }
     },
@@ -698,8 +753,7 @@
       title: '«Очередь в „Прожектор"»',
       recalcStation: 4,
       recalcLabel: 'пересчитать навык ГА',
-      q1Label: 'На месте Агеева',
-      q2Label: 'Аналогия из другой области',
+      answersHtml: roomAnswersAlternatives,
       ability1: { label: 'Генерация альтернатив', code: 'ГА-1', levelKey: 'ga1Level', sourceKey: 'ga1LevelSource' },
       ability2: { label: 'Идеи из разных областей', code: 'ГА-2', levelKey: 'ga2Level', sourceKey: 'ga2LevelSource', reasoningKey: 'ga2JudgeReasoning' }
     },
@@ -707,8 +761,7 @@
       title: '«Черновик к мартовскому комитету»',
       recalcStation: 5,
       recalcLabel: 'пересчитать навык ПП',
-      q1Label: 'Путь к цели',
-      q2Label: 'Барьеры и ресурсы',
+      answersHtml: roomAnswersPath,
       ability1: { label: 'Декомпозиция цели и маршрута', code: 'ПП-1', levelKey: 'pp1Level', sourceKey: 'pp1LevelSource' },
       ability2: { label: 'Работа с барьерами и ресурсами', code: 'ПП-2', levelKey: 'pp2Level', sourceKey: 'pp2LevelSource', reasoningKey: 'pp2JudgeReasoning' }
     }
@@ -740,12 +793,7 @@
     var html = '<h4>' + config.title + ' — ' + (state.finished ? 'завершена ' + escapeHtml(formatDate(state.finishedAt)) : 'в процессе') + '</h4>';
     html += renderRoomAbilityHtml(config.ability1, state, state.finished ? recalcButtonHtml(config.recalcStation, config.recalcLabel) : '');
     html += renderRoomAbilityHtml(config.ability2, state, '');
-    if (state.answer1) {
-      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>' + escapeHtml(config.q1Label) + ':</b> ' + escapeHtml(state.answer1) + '</p>';
-    }
-    if (state.answer2) {
-      html += '<p class="fac-detail-text"><b>' + escapeHtml(config.q2Label) + ':</b> ' + escapeHtml(state.answer2) + '</p>';
-    }
+    html += config.answersHtml(state);
     return html;
   }
 

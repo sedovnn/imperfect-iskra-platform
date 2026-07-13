@@ -1,8 +1,13 @@
 // i(m)perfect — «Черновик к мартовскому комитету» (кейс «Искра»). Навык ПП
 // целиком: декомпозиция цели и маршрута (ПП-1) + работа с барьерами и
-// ресурсами (ПП-2). Один открытый вопрос про целевое состояние и путь к нему,
-// один follow-up про то, что мешает и на что можно опереться — без отдельных
-// полей «барьер»/«enabler», чтобы структура не была подсказана заранее.
+// ресурсами (ПП-2). В отличие от ГА/МК, граничные тесты ПП — про структуру
+// и содержание ответа, а не про спонтанность (ни один из них не требует
+// «не потому, что вопрос попросил») — поэтому здесь безопасно дать реальный
+// структурный каркас: поля текущее/целевое + список этапов (стартует пустым,
+// участник сам решает, сколько добавить) для ПП-1, и два раздельных списка
+// барьеры/ресурсы для ПП-2. Каркас организует собственный текст участника,
+// не подсказывает содержание — связность этапов и качество барьер→ресурс
+// по-прежнему решает ИИ.
 
 (function () {
   var session = null;
@@ -10,6 +15,7 @@
 
   function storageKey(bib) { return 'imp_room_path_' + bib; }
   function station2Key(bib) { return 'imp_station2_' + bib; }
+  function uid() { return 'id_' + Math.random().toString(36).slice(2, 10); }
 
   function loadSession() {
     try { return JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) { return null; }
@@ -18,9 +24,20 @@
   function loadState(bib) {
     try {
       var raw = localStorage.getItem(storageKey(bib));
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed.currentState === undefined) parsed.currentState = '';
+        if (parsed.targetState === undefined) parsed.targetState = '';
+        if (!parsed.stages) parsed.stages = [];
+        if (!parsed.barriers) parsed.barriers = [];
+        if (!parsed.enablers) parsed.enablers = [];
+        return parsed;
+      }
     } catch (e) {}
-    return { answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
+    return {
+      currentState: '', targetState: '', stages: [], barriers: [], enablers: [],
+      step: 'q1', finished: false, startedAt: new Date().toISOString()
+    };
   }
 
   function escapeHtml(s) {
@@ -117,20 +134,59 @@
     function stepIndex(s) { return STEPS.indexOf(s); }
     function stepLocked(s) { return state.finished || stepIndex(s) < stepIndex(state.step); }
 
+    // ---------- блок 1: путь к цели (ПП-1) ----------
+
     function buildQ1Block() {
       var locked = stepLocked('q1');
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Штерн:</b> «Раз уж вы смотрите на всё это со стороны — как, по-вашему, должен выглядеть путь отсюда до целевого состояния, которое вы считаете правильным? Не общими словами: с чего начинается и куда ведёт?»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
+        '<p class="s2-ageev"><b>Штерн:</b> «Раз уж вы смотрите на всё это со стороны — как, по-вашему, должен выглядеть путь отсюда до целевого состояния, которое вы считаете правильным?»</p>' +
+        '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
+          '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
+          '<div class="field"><label>Целевое состояние</label><input type="text" class="pp-target" placeholder="куда должны прийти"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.targetState) + '" /></div>' +
+        '</div>' +
+        '<div class="pp-stages" data-list="stages"></div>' +
+        (locked ? '' : '<button class="btn btn-ghost" id="addStageBtn" style="margin-top:10px;">+ добавить этап</button>') +
+        (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px; margin-left:8px;">Ответить →</button>');
+
+      var stagesList = block.querySelector('[data-list="stages"]');
+
+      function renderStages() {
+        stagesList.innerHTML = '';
+        state.stages.forEach(function (st, i) {
+          var item = document.createElement('div');
+          item.className = 'pp-stage-item';
+          item.innerHTML =
+            '<div class="pp-stage-head"><span>Этап ' + (i + 1) + '</span>' +
+              (locked ? '' : '<button class="pp-stage-remove" title="Убрать этап">✕</button>') +
+            '</div>' +
+            '<textarea class="pp-stage-desc" rows="2" placeholder="что происходит на этом этапе"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.description) + '</textarea>' +
+            '<textarea class="pp-stage-rationale" rows="2" placeholder="почему этот этап идёт здесь, а не раньше/позже (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.rationale) + '</textarea>';
+          if (!locked) {
+            item.querySelector('.pp-stage-desc').addEventListener('input', function (e) { st.description = e.target.value; saveState(); });
+            item.querySelector('.pp-stage-rationale').addEventListener('input', function (e) { st.rationale = e.target.value; saveState(); });
+            item.querySelector('.pp-stage-remove').addEventListener('click', function () {
+              state.stages = state.stages.filter(function (s) { return s.id !== st.id; });
+              saveState();
+              renderStages();
+            });
+          }
+          stagesList.appendChild(item);
+        });
+      }
+      renderStages();
+
       if (!locked) {
-        block.querySelector('.s2-rationale').addEventListener('input', function (e) {
-          state.answer1 = e.target.value; saveState();
+        block.querySelector('.pp-current').addEventListener('input', function (e) { state.currentState = e.target.value; saveState(); });
+        block.querySelector('.pp-target').addEventListener('input', function (e) { state.targetState = e.target.value; saveState(); });
+        block.querySelector('#addStageBtn').addEventListener('click', function () {
+          state.stages.push({ id: uid(), description: '', rationale: '' });
+          saveState();
+          renderStages();
         });
         block.querySelector('#commitQ1Btn').addEventListener('click', function () {
-          if (!state.answer1.trim()) {
+          if (!state.targetState.trim() && !state.stages.length) {
             if (!window.confirm('Ничего не ответить — так и зафиксируем?')) return;
           }
           state.step = 'q2';
@@ -141,19 +197,63 @@
       return block;
     }
 
+    // ---------- блок 2: барьеры и ресурсы (ПП-2) ----------
+
     function buildQ2Block() {
       var locked = stepLocked('q2');
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev"><b>Штерн</b> отпивает кофе: «Хорошо. А что реально этому мешает — и есть ли что-то, на что можно опереться?»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
-      if (!locked) {
-        block.querySelector('.s2-rationale').addEventListener('input', function (e) {
-          state.answer2 = e.target.value; saveState();
+        '<div class="pp-columns">' +
+          '<div class="pp-column"><h4>Барьеры</h4><div class="pp-list" data-list="barriers"></div>' +
+            (locked ? '' : '<button class="btn btn-ghost" data-add="barriers" style="margin-top:8px;">+ добавить барьер</button>') +
+          '</div>' +
+          '<div class="pp-column"><h4>Опора / ресурсы</h4><div class="pp-list" data-list="enablers"></div>' +
+            (locked ? '' : '<button class="btn btn-ghost" data-add="enablers" style="margin-top:8px;">+ добавить ресурс</button>') +
+          '</div>' +
+        '</div>' +
+        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:16px;">Завершить разговор →</button>');
+
+      function renderList(key, placeholder) {
+        var listEl = block.querySelector('[data-list="' + key + '"]');
+        listEl.innerHTML = '';
+        state[key].forEach(function (it) {
+          var item = document.createElement('div');
+          item.className = 'pp-list-item';
+          item.innerHTML =
+            '<textarea rows="2" placeholder="' + escapeHtml(placeholder) + '"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.text) + '</textarea>' +
+            (locked ? '' : '<button class="pp-item-remove" title="Убрать">✕</button>');
+          if (!locked) {
+            item.querySelector('textarea').addEventListener('input', function (e) { it.text = e.target.value; saveState(); });
+            item.querySelector('.pp-item-remove').addEventListener('click', function () {
+              state[key] = state[key].filter(function (x) { return x.id !== it.id; });
+              saveState();
+              renderList(key, placeholder);
+            });
+          }
+          listEl.appendChild(item);
         });
-        block.querySelector('#finishBtn').addEventListener('click', finishRoom);
+      }
+      renderList('barriers', 'что мешает на пути к цели');
+      renderList('enablers', 'на что можно опереться');
+
+      if (!locked) {
+        block.querySelectorAll('[data-add]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var key = btn.getAttribute('data-add');
+            var placeholder = key === 'barriers' ? 'что мешает на пути к цели' : 'на что можно опереться';
+            state[key].push({ id: uid(), text: '' });
+            saveState();
+            renderList(key, placeholder);
+          });
+        });
+        block.querySelector('#finishBtn').addEventListener('click', function () {
+          if (!state.barriers.length && !state.enablers.length) {
+            if (!window.confirm('Ничего не ответить — так и зафиксируем?')) return;
+          }
+          finishRoom();
+        });
       }
       return block;
     }

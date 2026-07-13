@@ -1,14 +1,24 @@
 // i(m)perfect — «Очередь в «Прожектор»» (кейс «Искра»). Навык ГА целиком:
 // самостоятельная генерация альтернатив (ГА-1) + привлечение идей из разных
-// областей (ГА-2). Один открытый стратегический вопрос — намеренно широкий,
-// без «предложите несколько вариантов», чтобы генерация сверх заданного
-// вопроса (граница ГА-1 2→3) была настоящим, а не подсказанным сигналом —
-// плюс один необязательный follow-up, приглашающий к аналогии из другой
-// области (граница ГА-2 3→4), но не требующий её.
+// областей (ГА-2). Первый вопрос остаётся открытым и ничем не подсказанным —
+// это единственный источник для ГА-1, где граница 2→3 буквально требует, чтобы
+// генерация была самостоятельной, а не запрошенной («не только потому, что
+// вопрос прямо просил»); любая структура здесь испортила бы этот сигнал.
+// Второй шаг — про ГА-2 (широта источника идей), а не про спонтанность, поэтому
+// у него есть дешёвый структурный пол: самотег источника (как тег угроза/
+// возможность у АК-2) + необязательная элаборация. Тег не решает уровень сам —
+// ИИ всё ещё проверяет содержание элаборации на L3+.
 
 (function () {
   var session = null;
   var state = null;
+
+  var SOURCE_OPTIONS = [
+    { value: 'own', label: 'Мои собственные суждения на месте' },
+    { value: 'practice', label: 'То, что обычно делают в таких ситуациях' },
+    { value: 'example', label: 'Конкретный пример откуда-то ещё' },
+    { value: 'pattern', label: 'Что-то более общее, что я вижу за разными примерами' }
+  ];
 
   function storageKey(bib) { return 'imp_room_alternatives_' + bib; }
   function station2Key(bib) { return 'imp_station2_' + bib; }
@@ -20,9 +30,14 @@
   function loadState(bib) {
     try {
       var raw = localStorage.getItem(storageKey(bib));
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed.source === undefined) parsed.source = '';
+        if (parsed.sourceElaboration === undefined) parsed.sourceElaboration = '';
+        return parsed;
+      }
     } catch (e) {}
-    return { answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
+    return { answer1: '', source: '', sourceElaboration: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
   }
 
   function escapeHtml(s) {
@@ -148,14 +163,43 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Сосед по очереди</b> забирает свой кофе: «Мы у себя в „Пэй" одно время бились над похожим вопросом — правда, с деньгами, не с поиском. А вам это вообще ничего не напоминает? Может, из совсем другой истории?»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
+        '<p class="s2-ageev"><b>Сосед по очереди</b> забирает свой кофе: «Слушайте, а вам не кажется, что вы одну и ту же логику применяете? Откуда вы это вообще берёте?»</p>' +
+        '<div class="rationale-block" style="margin-top:6px;"><label>Это в основном...</label></div>';
+
+      var optWrap = document.createElement('div');
+      optWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; margin:8px 0 12px;';
+      SOURCE_OPTIONS.forEach(function (opt) {
+        var lbl = document.createElement('label');
+        lbl.className = 's2-radio';
+        lbl.innerHTML =
+          '<input type="radio" name="ga2Source" value="' + opt.value + '"' +
+          (state.source === opt.value ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> ' + escapeHtml(opt.label);
+        optWrap.appendChild(lbl);
+      });
+      block.appendChild(optWrap);
+
+      var elabWrap = document.createElement('div');
+      elabWrap.innerHTML =
+        '<textarea class="s2-rationale" rows="3" placeholder="если хотите — опишите, что это за пример или паттерн (необязательно)"' +
+        (locked ? ' disabled' : '') + '>' + escapeHtml(state.sourceElaboration) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
+      block.appendChild(elabWrap);
+
       if (!locked) {
-        block.querySelector('.s2-rationale').addEventListener('input', function (e) {
-          state.answer2 = e.target.value; saveState();
+        optWrap.querySelectorAll('input[name="ga2Source"]').forEach(function (r) {
+          r.addEventListener('change', function () {
+            if (r.checked) { state.source = r.value; saveState(); }
+          });
         });
-        block.querySelector('#finishBtn').addEventListener('click', finishRoom);
+        block.querySelector('.s2-rationale').addEventListener('input', function (e) {
+          state.sourceElaboration = e.target.value; saveState();
+        });
+        block.querySelector('#finishBtn').addEventListener('click', function () {
+          if (!state.source) {
+            if (!window.confirm('Не выбрать вариант — так и зафиксируем?')) return;
+          }
+          finishRoom();
+        });
       }
       return block;
     }

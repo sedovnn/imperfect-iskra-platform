@@ -876,6 +876,64 @@ footer {
   .s2-columns { grid-template-columns: 1fr; }
 }
 
+/* ---------- ПП: конструктор этапов + барьеры/ресурсы (room-path.js) ---------- */
+
+.pp-stage-item {
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+.pp-stage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.pp-stage-head span { font-size: 12px; color: var(--muted-soft); font-weight: 700; }
+.pp-stage-desc { margin-bottom: 8px; }
+
+.pp-stage-remove,
+.pp-item-remove {
+  border: 1px solid #d6d8d2;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  flex: none;
+}
+.pp-stage-remove:hover,
+.pp-item-remove:hover { border-color: var(--ink); }
+
+.pp-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.pp-column h4 {
+  font-family: var(--ff-display);
+  font-size: 15px;
+  margin: 0 0 10px;
+}
+.pp-list-item {
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.pp-list-item textarea { flex: 1; min-width: 0; }
+
+@media (max-width: 900px) {
+  .pp-columns { grid-template-columns: 1fr; }
+}
+
 /* ---------- хаб «Финальный отрезок» (комнаты в свободном порядке) ---------- */
 
 .hub-body {
