@@ -2433,6 +2433,55 @@ table mark.hl {
 .fac-judge-reasoning summary { cursor: pointer; font-size: 12.5px; color: var(--muted-soft); margin-bottom: 10px; }
 .fac-judge-reasoning .fac-card { margin-bottom: 10px; }
 
+.fac-task {
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  margin: 0 0 12px;
+  overflow: hidden;
+}
+
+.fac-task + .fac-task { margin-top: 12px; }
+
+.fac-task-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.fac-task-summary::-webkit-details-marker { display: none; }
+
+.fac-task-summary::before {
+  content: '▸';
+  display: inline-block;
+  margin-right: 8px;
+  color: var(--muted-soft);
+  transition: transform 0.15s ease;
+}
+
+.fac-task[open] > .fac-task-summary::before { transform: rotate(90deg); }
+
+.fac-task-title { font-weight: 600; }
+
+.fac-task-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.fac-task-body {
+  padding: 4px 16px 18px;
+  border-top: 1px solid #ececec;
+}
+
+.fac-task-body h4:first-child { margin-top: 0; }
+
 .fac-delete-btn {
   background: none;
   border: 1px solid #d8dadd;

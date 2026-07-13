@@ -620,13 +620,13 @@
   // обоснование + стресс-тест + проактивность (ПР-2).
   function renderPRHtml(s2) {
     if (!s2) {
-      return '<h4>Станция 2 · встреча с Агеевым</h4><p class="fac-detail-text">Ещё не начата.</p>';
+      return '<p class="fac-detail-text">Ещё не начата.</p>';
     }
     var cardById = {};
     (s2.cardsSnapshot || []).forEach(function (c) { cardById[c.id] = c; });
     function textOf(id) { var c = cardById[id]; return c ? c.text : '(карточка не найдена)'; }
 
-    var html = '<h4>Станция 2 · встреча с Агеевым — ' + (s2.finished ? 'завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'в процессе') + '</h4>';
+    var html = '<p class="fac-detail-text">' + (s2.finished ? 'Завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'В процессе') + '</p>';
 
     html += '<h4 style="margin-top:14px;">Выбор приоритетов <span class="fac-code-hint">(ПР-1)</span>' + (typeof s2.pr1Level === 'number' ? ' — L' + s2.pr1Level : '') + '</h4>';
     if (s2.finished) html += recalcButtonHtml(2, 'пересчитать навык ПР');
@@ -798,13 +798,41 @@
   function renderRoomHtml(configKey, state) {
     var config = ROOM_CONFIGS[configKey];
     if (!state) {
-      return '<h4>' + config.title + '</h4><p class="fac-detail-text">Ещё не начата.</p>';
+      return '<p class="fac-detail-text">Ещё не начата.</p>';
     }
-    var html = '<h4>' + config.title + ' — ' + (state.finished ? 'завершена ' + escapeHtml(formatDate(state.finishedAt)) : 'в процессе') + '</h4>';
+    var html = '<p class="fac-detail-text">' + (state.finished ? 'Завершена ' + escapeHtml(formatDate(state.finishedAt)) : 'В процессе') + '</p>';
     html += renderRoomAbilityHtml(config.ability1, state, state.finished ? recalcButtonHtml(config.recalcStation, config.recalcLabel) : '');
     html += renderRoomAbilityHtml(config.ability2, state, '');
     html += config.answersHtml(state);
     return html;
+  }
+
+  // Карточка участника раньше была одним длинным полотном — все шесть заданий
+  // подряд, с сырыми карточками/заметками/обоснованиями судьи целиком видны сразу.
+  // Теперь каждое задание — свой <details>: заголовок + баллы видны без раскрытия
+  // (это и нужно фасилитатору для быстрого скана), сырой материал — по клику.
+  function abilityBadgeHtml(code, level) {
+    return typeof level === 'number'
+      ? '<span class="fac-pill is-done">' + escapeHtml(code) + ' L' + level + '</span>'
+      : '<span class="fac-pill">' + escapeHtml(code) + ' —</span>';
+  }
+
+  function skillBadgeHtml(label, value) {
+    return typeof value === 'number'
+      ? '<span class="fac-pill is-done">' + escapeHtml(label) + ' ' + value + '/5</span>'
+      : '<span class="fac-pill">' + escapeHtml(label) + ' —</span>';
+  }
+
+  function taskSectionHtml(title, statusKey, participant, badgesHtml, bodyHtml, warn) {
+    var status = statusKey ? stationStatusLabel(participant, statusKey) : null;
+    var statusPill = status ? '<span class="fac-pill ' + status.cls + '">' + escapeHtml(status.text) + '</span>' : '';
+    return '<details class="fac-task">' +
+      '<summary class="fac-task-summary">' +
+        '<span class="fac-task-title">' + escapeHtml(title) + (warn ? ' <span class="fac-card-warn" title="' + escapeHtml(warn) + '">⚑</span>' : '') + '</span>' +
+        '<span class="fac-task-badges">' + statusPill + badgesHtml + '</span>' +
+      '</summary>' +
+      '<div class="fac-task-body">' + bodyHtml + '</div>' +
+      '</details>';
   }
 
   function renderDetailHtml(registration, s1, s2, roomFuture, roomAlternatives, roomPath, station3, participant) {
@@ -830,50 +858,70 @@
       ? 'Стратегия финализирована ' + escapeHtml(formatDate(station3.finishedAt))
       : 'Стратегия ещё не финализирована') + '</p>';
 
-    html += renderScoreHtml(s1);
-    html += renderAK2Html(s1);
-
+    // ---- Станция 1 · Вычитка и карта проблем (АК-1 + АК-2) ----
+    var s1Body = renderScoreHtml(s1) + renderAK2Html(s1);
     if (s1.rationale) {
-      html += '<h4>Как структурировал карту</h4><p class="fac-detail-text">' + escapeHtml(s1.rationale) + '</p>';
+      s1Body += '<h4>Как структурировал карту</h4><p class="fac-detail-text">' + escapeHtml(s1.rationale) + '</p>';
     }
-
-    html += '<h4>Карточки проблем (' + (s1.cards || []).length + ')</h4>';
+    s1Body += '<h4>Карточки проблем (' + (s1.cards || []).length + ')</h4>';
     if (!s1.cards || !s1.cards.length) {
-      html += '<p class="fac-detail-text">Пока пусто.</p>';
+      s1Body += '<p class="fac-detail-text">Пока пусто.</p>';
     } else {
-      html += '<div class="fac-cards">';
+      s1Body += '<div class="fac-cards">';
       s1.cards.forEach(function (c) {
-        html += '<div class="fac-card">' +
+        s1Body += '<div class="fac-card">' +
           '<p>' + escapeHtml(c.text || '(без формулировки)') + '</p>' +
           '<div class="fac-card-meta">' +
             (c.anchor ? '<span>якорь: ' + escapeHtml(c.anchor) + '</span>' : '<span class="fac-card-warn">якорь не указан</span>') +
             (c.group && groupNames[c.group] ? '<span>' + escapeHtml(groupNames[c.group]) + '</span>' : '') +
           '</div></div>';
       });
-      html += '</div>';
+      s1Body += '</div>';
     }
-
     var reviewedCount = Object.keys(s1.appxReviewed || {}).length;
-    html += '<h4>Приложения — изучено ' + reviewedCount + '/8</h4>';
-
-    html += '<h4>Заметки и выделения (' + (s1.highlights || []).length + ')</h4>';
+    s1Body += '<h4>Приложения — изучено ' + reviewedCount + '/8</h4>';
+    s1Body += '<h4>Заметки и выделения (' + (s1.highlights || []).length + ')</h4>';
     if (!s1.highlights || !s1.highlights.length) {
-      html += '<p class="fac-detail-text">Нет отметок.</p>';
+      s1Body += '<p class="fac-detail-text">Нет отметок.</p>';
     } else {
-      html += '<div class="fac-cards">';
+      s1Body += '<div class="fac-cards">';
       s1.highlights.forEach(function (h) {
-        html += '<div class="fac-card">' +
+        s1Body += '<div class="fac-card">' +
           '<p>«' + escapeHtml(h.snippet) + '»</p>' +
           (h.note ? '<div class="fac-card-meta"><span>' + escapeHtml(h.note) + '</span></div>' : '') +
           '</div>';
       });
-      html += '</div>';
+      s1Body += '</div>';
     }
+    // балл навыка считается только в facilitatorList (participant.*.akSkill/prSkill/skill) —
+    // сырые записи станций/комнат (s1/s2/roomX здесь) его не несут, поэтому берём из participant.
+    html += taskSectionHtml(
+      'Станция 1 · Вычитка и карта проблем', 'station1', participant,
+      abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill),
+      s1Body,
+      participant.station1 && participant.station1.akFlag ? 'Нарушено ограничение зависимостей способностей' : null
+    );
 
-    html += renderPRHtml(s2);
-    html += renderRoomHtml('roomFuture', roomFuture);
-    html += renderRoomHtml('roomAlternatives', roomAlternatives);
-    html += renderRoomHtml('roomPath', roomPath);
+    // ---- Станция 2 · Встреча с Агеевым (ПР-1 + ПР-2) ----
+    html += taskSectionHtml(
+      'Станция 2 · Встреча с Агеевым', 'station2', participant,
+      abilityBadgeHtml('ПР-1', s2 && s2.pr1Level) + abilityBadgeHtml('ПР-2', s2 && s2.pr2Level) + skillBadgeHtml('навык ПР', participant.station2 && participant.station2.prSkill),
+      renderPRHtml(s2),
+      participant.station2 && participant.station2.prFlag ? 'Нарушено ограничение зависимостей способностей' : null
+    );
+
+    // ---- Три комнаты финального отрезка ----
+    ['roomFuture', 'roomAlternatives', 'roomPath'].forEach(function (key) {
+      var config = ROOM_CONFIGS[key];
+      var state = key === 'roomFuture' ? roomFuture : (key === 'roomAlternatives' ? roomAlternatives : roomPath);
+      html += taskSectionHtml(
+        config.title, key, participant,
+        abilityBadgeHtml(config.ability1.code, state && state[config.ability1.levelKey]) +
+          abilityBadgeHtml(config.ability2.code, state && state[config.ability2.levelKey]) +
+          skillBadgeHtml('навык', participant[key] && participant[key].skill),
+        renderRoomHtml(key, state)
+      );
+    });
 
     return html;
   }
