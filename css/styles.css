@@ -2269,6 +2269,12 @@ table mark.hl {
 
 .fac-card-warn { color: #c4362b; }
 
+.fac-code-hint {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted-soft);
+}
+
 .fac-sortable { cursor: pointer; user-select: none; }
 .fac-sortable:hover { color: var(--ink); }
 

@@ -133,24 +133,25 @@
     return { text: 'не начата', cls: 'is-none' };
   }
 
-  function abilityBadge(level, source) {
+  function abilityBadge(label, level, source) {
     if (typeof level !== 'number') return '—';
-    return 'L' + level + (source === 'ai' ? '·ИИ' : '·дет.');
+    return label + ' L' + level + (source === 'ai' ? '·ИИ' : '·дет.');
   }
 
-  // Станция 1 = навык АК (АК-1 широта + АК-2 глубина), станция 2 = навык ПР
-  // (ПР-1 приоритизация + ПР-2 обоснование). ⚑ — нарушено ограничение
-  // зависимостей методологии (АК-2 ≤ АК-1 / ПР-2 ≤ ПР-1+1), нужна ручная проверка.
+  // Станция 1 = навык «Анализ контекста» (широта + глубина), станция 2 = навык
+  // «Приоритизация» (выбор + защита). Простые слова вместо кодов методологии —
+  // фасилитатор не обязан помнить, что это АК-1/АК-2/ПР-1/ПР-2. ⚑ — нарушено
+  // ограничение зависимостей (глубина ≤ широты / защита ≤ выбор+1), ручная проверка.
   function formatLevel(p, key) {
     var s = p[key];
     if (key === 'station1') {
-      var a1 = abilityBadge(s.level, s.levelSource);
-      var a2 = abilityBadge(s.ak2Level, s.ak2LevelSource);
+      var a1 = abilityBadge('широта', s.level, s.levelSource);
+      var a2 = abilityBadge('глубина', s.ak2Level, s.ak2LevelSource);
       if (a1 === '—' && a2 === '—') return s.finished ? 'не оценено' : '—';
       return a1 + ' / ' + a2 + (s.akFlag ? ' ⚑' : '');
     }
-    var p1 = abilityBadge(s.pr1Level, s.pr1LevelSource);
-    var p2 = abilityBadge(s.pr2Level, s.pr2LevelSource);
+    var p1 = abilityBadge('выбор', s.pr1Level, s.pr1LevelSource);
+    var p2 = abilityBadge('защита', s.pr2Level, s.pr2LevelSource);
     if (p1 === '—' && p2 === '—') return s.finished ? 'не оценено' : '—';
     return p1 + ' / ' + p2 + (s.prFlag ? ' ⚑' : '');
   }
@@ -169,8 +170,8 @@
     var pr = typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null;
     if (ak === null && pr === null) return '—';
     var parts = [];
-    parts.push('АК ' + (ak === null ? '?' : ak));
-    parts.push('ПР ' + (pr === null ? '?' : pr));
+    parts.push('контекст ' + (ak === null ? '?' : ak));
+    parts.push('приоритизация ' + (pr === null ? '?' : pr));
     return (ak !== null && pr !== null ? (ak + pr) + '/10' : '…') + ' (' + parts.join(' + ') + ')';
   }
 
@@ -349,7 +350,7 @@
 
   if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
-      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'АК-1', 'Источник АК-1', 'АК-2', 'Источник АК-2', 'Флаг АК-2>АК-1', 'Навык АК (балл)', 'Статус станции 2', 'ПР-1', 'Источник ПР-1', 'ПР-2', 'Источник ПР-2', 'Флаг ПР-2>ПР-1+1', 'Навык ПР (балл)', 'Итого (из 10)']
+      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Широта (АК-1)', 'Источник широты', 'Глубина (АК-2)', 'Источник глубины', 'Флаг: глубина>широты', 'Контекст, балл', 'Статус станции 2', 'Выбор (ПР-1)', 'Источник выбора', 'Защита (ПР-2)', 'Источник защиты', 'Флаг: защита>выбор+1', 'Приоритизация, балл', 'Итого (из 10)']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -455,9 +456,9 @@
 
   function renderScoreHtml(s1) {
     if (typeof s1.level !== 'number') {
-      return '<h4>АК-1 · широта охвата</h4><p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
+      return '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span></h4><p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
     }
-    var html = '<h4>АК-1 · широта охвата — L' + s1.level + '</h4>';
+    var html = '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span> — L' + s1.level + '</h4>';
     html += '<p class="fac-detail-text">Источник: ' + (s1.levelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
     var domains = s1.domainsCovered || [];
     html += '<p class="fac-detail-text">Охваченные домены (' + domains.length + '/5): ' +
@@ -477,13 +478,13 @@
   var TAG_LABELS = { threat: 'угроза', opportunity: 'возможность' };
 
   function renderAK2Html(s1) {
-    var html = '<h4>АК-2 · глубина взаимосвязей' + (typeof s1.ak2Level === 'number' ? ' — L' + s1.ak2Level : '') + '</h4>';
+    var html = '<h4>Глубина взаимосвязей <span class="fac-code-hint">(АК-2)</span>' + (typeof s1.ak2Level === 'number' ? ' — L' + s1.ak2Level : '') + '</h4>';
     if (typeof s1.ak2Level !== 'number') {
       html += '<p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
     } else {
       html += '<p class="fac-detail-text">Источник: ' + (s1.ak2LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
       if (typeof s1.level === 'number' && s1.ak2Level > s1.level) {
-        html += '<p class="fac-detail-text fac-card-warn">⚑ АК-2 выше АК-1 — по методологии нельзя глубоко анализировать незамеченное, нужна ручная проверка.</p>';
+        html += '<p class="fac-detail-text fac-card-warn">⚑ Глубина выше широты — нельзя глубоко анализировать то, чего не заметил, нужна ручная проверка.</p>';
       }
     }
 
@@ -538,7 +539,7 @@
 
     var html = '<h4>Станция 2 · встреча с Агеевым — ' + (s2.finished ? 'завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'в процессе') + '</h4>';
 
-    html += '<h4 style="margin-top:14px;">ПР-1 · приоритизация' + (typeof s2.pr1Level === 'number' ? ' — L' + s2.pr1Level : '') + '</h4>';
+    html += '<h4 style="margin-top:14px;">Выбор приоритетов <span class="fac-code-hint">(ПР-1)</span>' + (typeof s2.pr1Level === 'number' ? ' — L' + s2.pr1Level : '') + '</h4>';
     if (typeof s2.pr1Level === 'number') {
       html += '<p class="fac-detail-text">Источник: ' + (s2.pr1LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
     } else {
@@ -571,11 +572,11 @@
         '<p class="fac-card-warn">' + escapeHtml(s2.pr1JudgeReasoning.reasoning) + '</p></details>';
     }
 
-    html += '<h4 style="margin-top:16px;">ПР-2 · обоснование выбора' + (typeof s2.pr2Level === 'number' ? ' — L' + s2.pr2Level : '') + '</h4>';
+    html += '<h4 style="margin-top:16px;">Защита выбора <span class="fac-code-hint">(ПР-2)</span>' + (typeof s2.pr2Level === 'number' ? ' — L' + s2.pr2Level : '') + '</h4>';
     if (typeof s2.pr2Level === 'number') {
       html += '<p class="fac-detail-text">Источник: ' + (s2.pr2LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
       if (typeof s2.pr1Level === 'number' && s2.pr2Level > s2.pr1Level + 1) {
-        html += '<p class="fac-detail-text fac-card-warn">⚑ ПР-2 выше ПР-1 более чем на 1 — нарушено ограничение зависимостей, нужна ручная проверка.</p>';
+        html += '<p class="fac-detail-text fac-card-warn">⚑ Защита выше выбора больше чем на 1 уровень — так не должно быть, нужна ручная проверка.</p>';
       }
     }
     if (s2.rationale) {
