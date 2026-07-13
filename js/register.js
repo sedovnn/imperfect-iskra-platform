@@ -75,9 +75,35 @@
     localStorage.setItem('imp_current_session', JSON.stringify(record));
   }
 
-  function syncRegistrationToBackend(record) {
-    if (!window.imp.isApiConfigured()) return;
-    window.imp.callApi('register', {
+  function buildLocalRecord(data) {
+    return Object.assign({}, data, {
+      id: 'imp_' + Date.now().toString(36),
+      case: 'iskra',
+      bib: nextLocalBib(),
+      round1StartedAt: null,
+      round2AssignedRole: null,
+      registeredAt: new Date().toISOString()
+    });
+  }
+
+  function formatBib(n) {
+    return '№ ' + String(n).padStart(3, '0');
+  }
+
+  var beginBtnDefaultText = null;
+
+  // Пока сервер не выдал авторитетный номер, на станцию не пускаем: если участник
+  // уйдёт раньше ответа, весь его прогресс запишется под локальным номером,
+  // которого нет в Registrations, — и кабинет фасилитатора его никогда не свяжет.
+  function setBeginPending(pending) {
+    if (beginBtnDefaultText === null) beginBtnDefaultText = beginBtn.textContent;
+    beginBtn.textContent = pending ? 'Получаем номер участника…' : beginBtnDefaultText;
+    beginBtn.style.pointerEvents = pending ? 'none' : '';
+    beginBtn.style.opacity = pending ? '0.5' : '';
+  }
+
+  function registerOnBackend(record) {
+    return window.imp.callApi('register', {
       firstName: record.firstName,
       lastName: record.lastName,
       email: record.email,
@@ -88,34 +114,14 @@
       showName: record.showName,
       consent: record.consent
     }).then(function (res) {
-      if (!res || !res.ok || !res.record) return;
+      if (!res || !res.ok || !res.record) return null;
       var authoritative = Object.assign({}, record, {
         bib: res.record.bib,
         registeredAt: res.record.registeredAt
       });
       persistRegistration(authoritative);
-      if (confirmBib.dataset.recordId === record.id) {
-        confirmBib.textContent = formatBib(authoritative.bib);
-      }
+      return authoritative;
     });
-  }
-
-  function submitRegistration(data) {
-    var record = Object.assign({}, data, {
-      id: 'imp_' + Date.now().toString(36),
-      case: 'iskra',
-      bib: nextLocalBib(),
-      round1StartedAt: null,
-      round2AssignedRole: null,
-      registeredAt: new Date().toISOString()
-    });
-    persistRegistration(record);
-    syncRegistrationToBackend(record);
-    return record;
-  }
-
-  function formatBib(n) {
-    return '№ ' + String(n).padStart(3, '0');
   }
 
   function showConfirm(record, isRecovery) {
@@ -155,8 +161,25 @@
     }
     formError.classList.remove('show');
 
-    var record = submitRegistration(data);
+    var record = buildLocalRecord(data);
+    persistRegistration(record);
     showConfirm(record, false);
+
+    if (window.imp.isApiConfigured()) {
+      // номер на экране — предварительный; кнопка старта заблокирована,
+      // пока сервер не пришлёт настоящий (или не станет ясно, что сети нет)
+      confirmBib.textContent = '№ …';
+      setBeginPending(true);
+      registerOnBackend(record).then(function (authoritative) {
+        if (authoritative) {
+          confirmBib.textContent = formatBib(authoritative.bib);
+        } else {
+          // бэкенд недоступен — офлайн-режим на локальном номере, как раньше
+          confirmBib.textContent = formatBib(record.bib);
+        }
+        setBeginPending(false);
+      });
+    }
   });
 
   // Восстановление: сначала бэкенд (работает с любого устройства, если настроен),
