@@ -158,31 +158,38 @@
     return !!(p.station1.akFlag || p.station2.prFlag);
   }
 
-  // «Итого» = сумма баллов посчитанных навыков (§9): пока АК + ПР, максимум 10.
-  // Пять навыков (max 25) появятся, когда соберутся остальные станции.
+  // «Итого» = сумма баллов посчитанных навыков (§9): пять навыков, максимум 25.
+  function skillScores(p) {
+    return [
+      { label: 'контекст', value: typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null },
+      { label: 'приоритизация', value: typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null },
+      { label: 'образ будущего', value: typeof p.roomFuture.skill === 'number' ? p.roomFuture.skill : null },
+      { label: 'альтернативы', value: typeof p.roomAlternatives.skill === 'number' ? p.roomAlternatives.skill : null },
+      { label: 'путь к цели', value: typeof p.roomPath.skill === 'number' ? p.roomPath.skill : null }
+    ];
+  }
+
   function totalScore(p) {
-    var ak = typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null;
-    var pr = typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null;
-    if (ak === null && pr === null) return null;
-    return (ak || 0) + (pr || 0);
+    var scores = skillScores(p).filter(function (s) { return s.value !== null; });
+    if (!scores.length) return null;
+    return scores.reduce(function (sum, s) { return sum + s.value; }, 0);
   }
 
   // Главная таблица — только итоговое число (быстрый скан по всем участникам).
-  // Разбивка «контекст N + приоритизация N» и объяснение по способностям —
-  // в карточке участника (renderDetailTotalHtml), не здесь.
+  // Разбивка по навыкам и объяснение по способностям — в карточке участника
+  // (formatTotal ниже), не здесь.
   function formatTotalCompact(p) {
     var t = totalScore(p);
-    return t === null ? '—' : t + '/10';
+    return t === null ? '—' : t + '/25';
   }
 
   function formatTotal(p) {
-    var ak = typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null;
-    var pr = typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null;
-    if (ak === null && pr === null) return '—';
-    var parts = [];
-    parts.push('контекст ' + (ak === null ? '?' : ak));
-    parts.push('приоритизация ' + (pr === null ? '?' : pr));
-    return (ak !== null && pr !== null ? (ak + pr) + '/10' : '…') + ' (' + parts.join(' + ') + ')';
+    var scores = skillScores(p);
+    var known = scores.filter(function (s) { return s.value !== null; });
+    if (!known.length) return '—';
+    var parts = scores.map(function (s) { return s.label + ' ' + (s.value === null ? '?' : s.value); });
+    var total = known.reduce(function (sum, s) { return sum + s.value; }, 0);
+    return (known.length === scores.length ? total + '/25' : '…') + ' (' + parts.join(' + ') + ')';
   }
 
   function sortParticipants(participants) {
@@ -308,10 +315,15 @@
 
   // Компактный «Ход»: точка на станцию (не начата/в процессе/завершена),
   // подпись — в title. Полная расшифровка по способностям — в карточке участника.
+  // Комнаты финального отрезка — свободный порядок, поэтому подписаны буквами
+  // названия комнаты, а не номером станции (как С1/С2).
   function progressPillsHtml(p) {
     var stages = [
       { key: 'station1', label: 'С1', title: 'Станция 1 · Вычитка и карта проблем' },
-      { key: 'station2', label: 'С2', title: 'Станция 2 · Встреча с Агеевым' }
+      { key: 'station2', label: 'С2', title: 'Станция 2 · Встреча с Агеевым' },
+      { key: 'roomFuture', label: 'КЛ', title: '«Коридор Лемеха»' },
+      { key: 'roomAlternatives', label: 'ОП', title: '«Очередь в „Прожектор"»' },
+      { key: 'roomPath', label: 'ЧК', title: '«Черновик к мартовскому комитету»' }
     ];
     return '<span class="fac-progress-pills">' + stages.map(function (st) {
       var s = stationStatusLabel(p, st.key);
@@ -364,9 +376,27 @@
     return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
 
+  function roomCsvCols(p, key, level1Key, level2Key) {
+    var r = p[key];
+    return [
+      stationStatusLabel(p, key).text,
+      typeof r[level1Key] === 'number' ? r[level1Key] : '',
+      r[level1Key + 'Source'] || '',
+      typeof r[level2Key] === 'number' ? r[level2Key] : '',
+      r[level2Key + 'Source'] || '',
+      typeof r.skill === 'number' ? r.skill : ''
+    ];
+  }
+
   if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
-      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации', 'Статус станции 1', 'Карточек', 'Приложений изучено', 'Широта (АК-1)', 'Источник широты', 'Глубина (АК-2)', 'Источник глубины', 'Флаг: глубина>широты', 'Контекст, балл', 'Статус станции 2', 'Выбор (ПР-1)', 'Источник выбора', 'Защита (ПР-2)', 'Источник защиты', 'Флаг: защита>выбор+1', 'Приоритизация, балл', 'Итого (из 10)']
+      ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации',
+        'Статус станции 1', 'Карточек', 'Приложений изучено', 'Широта (АК-1)', 'Источник широты', 'Глубина (АК-2)', 'Источник глубины', 'Флаг: глубина>широты', 'Контекст, балл',
+        'Статус станции 2', 'Выбор (ПР-1)', 'Источник выбора', 'Защита (ПР-2)', 'Источник защиты', 'Флаг: защита>выбор+1', 'Приоритизация, балл',
+        'Статус «Коридор Лемеха»', 'Горизонт (МК-1)', 'Источник горизонта', 'Развилки будущего (МК-2)', 'Источник развилок', 'Образ будущего, балл',
+        'Статус «Очередь в Прожектор»', 'Альтернативы (ГА-1)', 'Источник альтернатив', 'Идеи из областей (ГА-2)', 'Источник идей', 'Альтернативы, балл',
+        'Статус «Черновик к комитету»', 'Декомпозиция пути (ПП-1)', 'Источник декомпозиции', 'Барьеры/ресурсы (ПП-2)', 'Источник барьеров', 'Путь к цели, балл',
+        'Итого (из 25)']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -391,9 +421,13 @@
         typeof p.station2.pr2Level === 'number' ? p.station2.pr2Level : '',
         p.station2.pr2LevelSource || '',
         p.station2.prFlag ? 'да' : '',
-        typeof p.station2.prSkill === 'number' ? p.station2.prSkill : '',
-        totalScore(p) === null ? '' : totalScore(p)
-      ]);
+        typeof p.station2.prSkill === 'number' ? p.station2.prSkill : ''
+      ].concat(
+        roomCsvCols(p, 'roomFuture', 'level1', 'level2'),
+        roomCsvCols(p, 'roomAlternatives', 'level1', 'level2'),
+        roomCsvCols(p, 'roomPath', 'level1', 'level2'),
+        [totalScore(p) === null ? '' : totalScore(p)]
+      ));
     });
     // BOM — иначе Excel показывает кириллицу в CSV как кашу
     var csv = '﻿' + rows.map(function (row) { return row.map(csvEscape).join(','); }).join('\r\n');
@@ -408,8 +442,16 @@
     URL.revokeObjectURL(url);
   });
 
+  var RECALC_ACTIONS = {
+    1: 'judgeStation1',
+    2: 'judgeStation2',
+    3: 'judgeRoomFuture',
+    4: 'judgeRoomAlternatives',
+    5: 'judgeRoomPath'
+  };
+
   function recalcScore(bib, btn, station, onSuccess) {
-    var action = station === 2 ? 'judgeStation2' : 'judgeStation1';
+    var action = RECALC_ACTIONS[station];
     var originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = '…';
@@ -459,7 +501,7 @@
         detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить — попробуйте «Обновить» и открыть снова.</p>';
         return;
       }
-      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, participant);
+      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.roomFuture, res.roomAlternatives, res.roomPath, participant);
       detailBody.querySelectorAll('[data-recalc]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           recalcScore(participant.bib, btn, Number(btn.getAttribute('data-recalc')), function () {
@@ -633,7 +675,76 @@
     return html;
   }
 
-  function renderDetailHtml(registration, s1, s2, participant) {
+  // МК/ГА/ПП живут в комнатах финального отрезка — все три структурно одинаковы
+  // (два открытых ответа, один общий вызов ИИ на обе способности сразу), поэтому
+  // один рендер-хелпер вместо трёх copy-paste функций (см. renderScoreHtml/
+  // renderAK2Html/renderPRHtml выше — те устроены иначе, там не было смысла обобщать).
+  var ROOM_CONFIGS = {
+    roomFuture: {
+      title: '«Коридор Лемеха»',
+      recalcStation: 3,
+      recalcLabel: 'пересчитать навык МК',
+      q1Label: 'Про горизонт',
+      q2Label: 'Если пойдёт не так',
+      ability1: { label: 'Горизонт рассуждения', code: 'МК-1', levelKey: 'mk1Level', sourceKey: 'mk1LevelSource' },
+      ability2: { label: 'Работа с развилками будущего', code: 'МК-2', levelKey: 'mk2Level', sourceKey: 'mk2LevelSource', reasoningKey: 'mk2JudgeReasoning' }
+    },
+    roomAlternatives: {
+      title: '«Очередь в „Прожектор"»',
+      recalcStation: 4,
+      recalcLabel: 'пересчитать навык ГА',
+      q1Label: 'На месте Агеева',
+      q2Label: 'Аналогия из другой области',
+      ability1: { label: 'Генерация альтернатив', code: 'ГА-1', levelKey: 'ga1Level', sourceKey: 'ga1LevelSource' },
+      ability2: { label: 'Идеи из разных областей', code: 'ГА-2', levelKey: 'ga2Level', sourceKey: 'ga2LevelSource', reasoningKey: 'ga2JudgeReasoning' }
+    },
+    roomPath: {
+      title: '«Черновик к мартовскому комитету»',
+      recalcStation: 5,
+      recalcLabel: 'пересчитать навык ПП',
+      q1Label: 'Путь к цели',
+      q2Label: 'Барьеры и ресурсы',
+      ability1: { label: 'Декомпозиция цели и маршрута', code: 'ПП-1', levelKey: 'pp1Level', sourceKey: 'pp1LevelSource' },
+      ability2: { label: 'Работа с барьерами и ресурсами', code: 'ПП-2', levelKey: 'pp2Level', sourceKey: 'pp2LevelSource', reasoningKey: 'pp2JudgeReasoning' }
+    }
+  };
+
+  function renderRoomAbilityHtml(ability, state, extraTop) {
+    var level = typeof state[ability.levelKey] === 'number' ? state[ability.levelKey] : null;
+    var html = '<h4 style="margin-top:16px;">' + escapeHtml(ability.label) + ' <span class="fac-code-hint">(' + ability.code + ')</span>' +
+      (level !== null ? ' — L' + level : '') + '</h4>';
+    if (extraTop) html += extraTop;
+    if (level !== null) {
+      html += '<p class="fac-detail-text">Источник: ' + (state[ability.sourceKey] === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
+    } else {
+      html += '<p class="fac-detail-text">' + (state.finished ? 'Не оценено.' : 'Уровень появится после завершения.') + '</p>';
+    }
+    var reasoning = ability.reasoningKey && state[ability.reasoningKey];
+    if (reasoning && reasoning.reasoning) {
+      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи (' + ability.code + ')</summary>' +
+        '<p class="fac-card-warn">' + escapeHtml(reasoning.reasoning) + '</p></details>';
+    }
+    return html;
+  }
+
+  function renderRoomHtml(configKey, state) {
+    var config = ROOM_CONFIGS[configKey];
+    if (!state) {
+      return '<h4>' + config.title + '</h4><p class="fac-detail-text">Ещё не начата.</p>';
+    }
+    var html = '<h4>' + config.title + ' — ' + (state.finished ? 'завершена ' + escapeHtml(formatDate(state.finishedAt)) : 'в процессе') + '</h4>';
+    html += renderRoomAbilityHtml(config.ability1, state, state.finished ? recalcButtonHtml(config.recalcStation, config.recalcLabel) : '');
+    html += renderRoomAbilityHtml(config.ability2, state, '');
+    if (state.answer1) {
+      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>' + escapeHtml(config.q1Label) + ':</b> ' + escapeHtml(state.answer1) + '</p>';
+    }
+    if (state.answer2) {
+      html += '<p class="fac-detail-text"><b>' + escapeHtml(config.q2Label) + ':</b> ' + escapeHtml(state.answer2) + '</p>';
+    }
+    return html;
+  }
+
+  function renderDetailHtml(registration, s1, s2, roomFuture, roomAlternatives, roomPath, participant) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
@@ -692,6 +803,9 @@
     }
 
     html += renderPRHtml(s2);
+    html += renderRoomHtml('roomFuture', roomFuture);
+    html += renderRoomHtml('roomAlternatives', roomAlternatives);
+    html += renderRoomHtml('roomPath', roomPath);
 
     return html;
   }
