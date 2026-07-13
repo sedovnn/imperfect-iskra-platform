@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Очередь в «Прожектор» — i(m)perfect</title>
+<meta name="description" content="Раунд 1, финальный отрезок. Очередь за кофе на минус первом этаже." />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="gate" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Нужен номер участника</p>
+    <h2>Сначала регистрация</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Этот разговор привязан к вашему стартовому номеру — без него прогресс негде сохранить.</p>
+    <a class="btn btn-primary btn-block" href="register.html">Получить номер участника →</a>
+  </div>
+</div>
+
+<div id="gateStation2" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Закрыто</p>
+    <h2>Сначала — встреча с Агеевым</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Этот разговор открывается после того, как вы закончите станцию 2.</p>
+    <a class="btn btn-primary btn-block" href="station2.html">Вернуться на станцию 2 →</a>
+  </div>
+</div>
+
+<div id="finishOverlay" class="gate gate-finish" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">✓ Разговор закончен</p>
+    <h2>Очередь двигается дальше</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Оценка видна только фасилитатору.</p>
+    <a class="btn btn-primary btn-block" href="station3.html">Вернуться в холл →</a>
+    <button class="btn btn-ghost btn-block" id="finishOverlayReview" style="margin-top:12px; border-color: rgba(255,255,255,0.3); color: #fff;">Ещё раз посмотреть разговор</button>
+  </div>
+</div>
+
+<div class="frame station-frame" id="stationRoot" style="display:none;">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
+        <span class="station-sep">/</span>
+        <span class="station-name">Очередь в «Прожектор»</span>
+      </div>
+      <div class="station-header-right">
+        <span class="bib" id="hdrBib" style="font-size:14px; padding:6px 12px;">№ 000</span>
+        <a class="btn btn-ghost" href="station3.html" style="padding:11px 18px; font-size:14px;">← В холл</a>
+      </div>
+    </header>
+
+    <div class="station-intro" id="stationIntro">
+      <div class="station-intro-inner">
+        <p class="kicker">Постановка</p>
+        <p>Минус первый этаж, кофейня «Прожектор» — говорят, единственное место в кампусе, где гарантированно встречаются все двенадцать этажей. Пока бариста колдует над чашкой, сосед по очереди — судя по бейджу, кто-то из «Искра Пэй» — кивает на ваш ноутбук: «Слышал, вас Агеев позвал разобраться, что тут происходит. И как, есть версия?»</p>
+        <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговору ↓</button>
+      </div>
+    </div>
+
+    <div class="s2-body" id="roomBody">
+      <!-- реплики добавляются по мере прохождения (room-alternatives.js) -->
+    </div>
+
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/api.js"></script>
+<script src="js/room-alternatives.js"></script>
+</body>
+</html>
