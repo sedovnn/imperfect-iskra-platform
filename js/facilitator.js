@@ -27,14 +27,17 @@
   var table = document.getElementById('facTable');
   var empty = document.getElementById('facEmpty');
   var countEl = document.getElementById('facCount');
+  var rosterTableBody = document.getElementById('facRosterTableBody');
+  var rosterTable = document.getElementById('facRosterTable');
+  var rosterEmpty = document.getElementById('facRosterEmpty');
+  var tabButtons = document.querySelectorAll('.fac-tab-btn');
+  var tabPanels = { progress: document.getElementById('facTabProgress'), roster: document.getElementById('facTabRoster') };
 
   var detail = document.getElementById('facDetail');
   var detailBib = document.getElementById('facDetailBib');
   var detailName = document.getElementById('facDetailName');
   var detailBody = document.getElementById('facDetailBody');
   var detailClose = document.getElementById('facDetailClose');
-  var sortScoreHeader = document.getElementById('facSortScore');
-  var sortScore2Header = document.getElementById('facSortScore2');
   var sortTotalHeader = document.getElementById('facSortTotal');
   var wavesListEl = document.getElementById('facWavesList');
   var waveAddForm = document.getElementById('facWaveAddForm');
@@ -44,6 +47,20 @@
 
   var sortState = { key: 'bib', dir: 1 };
   var lastParticipants = [];
+  var currentDetailParticipant = null;
+
+  // «Ход раунда» — живой мониторинг во время игры (кто где, компактно).
+  // «Регистрации и потоки» — админ-задачи другого темпа (волны, контакты,
+  // удаление): разнесены, чтобы не раздувать строку мониторинга вширь.
+  tabButtons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var tab = btn.getAttribute('data-tab');
+      tabButtons.forEach(function (b) { b.classList.toggle('is-active', b === btn); });
+      Object.keys(tabPanels).forEach(function (key) {
+        tabPanels[key].style.display = key === tab ? '' : 'none';
+      });
+    });
+  });
 
   function escapeHtml(s) {
     var div = document.createElement('div');
@@ -133,27 +150,12 @@
     return { text: 'не начата', cls: 'is-none' };
   }
 
-  function abilityBadge(label, level, source) {
-    if (typeof level !== 'number') return '—';
-    return label + ' L' + level + (source === 'ai' ? '·ИИ' : '·дет.');
-  }
-
-  // Станция 1 = навык «Анализ контекста» (широта + глубина), станция 2 = навык
-  // «Приоритизация» (выбор + защита). Простые слова вместо кодов методологии —
-  // фасилитатор не обязан помнить, что это АК-1/АК-2/ПР-1/ПР-2. ⚑ — нарушено
-  // ограничение зависимостей (глубина ≤ широты / защита ≤ выбор+1), ручная проверка.
-  function formatLevel(p, key) {
-    var s = p[key];
-    if (key === 'station1') {
-      var a1 = abilityBadge('широта', s.level, s.levelSource);
-      var a2 = abilityBadge('глубина', s.ak2Level, s.ak2LevelSource);
-      if (a1 === '—' && a2 === '—') return s.finished ? 'не оценено' : '—';
-      return a1 + ' / ' + a2 + (s.akFlag ? ' ⚑' : '');
-    }
-    var p1 = abilityBadge('выбор', s.pr1Level, s.pr1LevelSource);
-    var p2 = abilityBadge('защита', s.pr2Level, s.pr2LevelSource);
-    if (p1 === '—' && p2 === '—') return s.finished ? 'не оценено' : '—';
-    return p1 + ' / ' + p2 + (s.prFlag ? ' ⚑' : '');
+  // ⚑ — нарушено ограничение зависимостей методологии (глубина ≤ широты /
+  // защита ≤ выбор+1) — нужна ручная проверка. Полная расшифровка по
+  // способностям — в карточке участника (renderAK2Html/renderPRHtml); здесь
+  // только флаг, чтобы не открывать карточку каждого просто ради проверки.
+  function hasFlags(p) {
+    return !!(p.station1.akFlag || p.station2.prFlag);
   }
 
   // «Итого» = сумма баллов посчитанных навыков (§9): пока АК + ПР, максимум 10.
@@ -163,6 +165,14 @@
     var pr = typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null;
     if (ak === null && pr === null) return null;
     return (ak || 0) + (pr || 0);
+  }
+
+  // Главная таблица — только итоговое число (быстрый скан по всем участникам).
+  // Разбивка «контекст N + приоритизация N» и объяснение по способностям —
+  // в карточке участника (renderDetailTotalHtml), не здесь.
+  function formatTotalCompact(p) {
+    var t = totalScore(p);
+    return t === null ? '—' : t + '/10';
   }
 
   function formatTotal(p) {
@@ -178,16 +188,6 @@
   function sortParticipants(participants) {
     var dir = sortState.dir;
     return participants.slice().sort(function (a, b) {
-      if (sortState.key === 'score') {
-        var av1 = typeof a.station1.level === 'number' ? a.station1.level : -1;
-        var bv1 = typeof b.station1.level === 'number' ? b.station1.level : -1;
-        return (av1 - bv1) * dir;
-      }
-      if (sortState.key === 'score2') {
-        var av2 = typeof a.station2.pr1Level === 'number' ? a.station2.pr1Level : -1;
-        var bv2 = typeof b.station2.pr1Level === 'number' ? b.station2.pr1Level : -1;
-        return (av2 - bv2) * dir;
-      }
       if (sortState.key === 'total') {
         var at = totalScore(a), bt = totalScore(b);
         return ((at === null ? -1 : at) - (bt === null ? -1 : bt)) * dir;
@@ -290,10 +290,43 @@
     tableBody.innerHTML = '';
     empty.style.display = view.length ? 'none' : '';
     table.style.display = view.length ? '' : 'none';
+    renderRoster();
 
     view.forEach(function (p) {
-      var status1 = stationStatusLabel(p, 'station1');
-      var status2 = stationStatusLabel(p, 'station2');
+      var tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
+        '<td>' + escapeHtml(p.firstName + ' ' + p.lastName) + '</td>' +
+        '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + '</td>' +
+        '<td>' + progressPillsHtml(p) + '</td>' +
+        '<td>' + escapeHtml(formatTotalCompact(p)) +
+          (hasFlags(p) ? ' <span class="fac-card-warn" title="Нарушено ограничение зависимостей способностей — см. карточку участника">⚑</span>' : '') + '</td>';
+      tr.addEventListener('click', function () { openDetail(p); });
+      tableBody.appendChild(tr);
+    });
+  }
+
+  // Компактный «Ход»: точка на станцию (не начата/в процессе/завершена),
+  // подпись — в title. Полная расшифровка по способностям — в карточке участника.
+  function progressPillsHtml(p) {
+    var stages = [
+      { key: 'station1', label: 'С1', title: 'Станция 1 · Вычитка и карта проблем' },
+      { key: 'station2', label: 'С2', title: 'Станция 2 · Встреча с Агеевым' }
+    ];
+    return '<span class="fac-progress-pills">' + stages.map(function (st) {
+      var s = stationStatusLabel(p, st.key);
+      return '<span class="fac-progress-dot ' + s.cls + '" title="' + escapeHtml(st.title + ' — ' + s.text) + '">' + st.label + '</span>';
+    }).join('') + '</span>';
+  }
+
+  // ---------- roster tab (регистрации, контакты, удаление) ----------
+
+  function renderRoster() {
+    rosterTableBody.innerHTML = '';
+    rosterEmpty.style.display = lastParticipants.length ? 'none' : '';
+    rosterTable.style.display = lastParticipants.length ? '' : 'none';
+
+    lastParticipants.slice().sort(function (a, b) { return Number(a.bib) - Number(b.bib); }).forEach(function (p) {
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
@@ -301,28 +334,11 @@
         '<td>' + escapeHtml(p.email) + '</td>' +
         '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + '</td>' +
         '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
-        '<td><span class="fac-pill ' + status1.cls + '">' + status1.text + '</span></td>' +
-        '<td><span class="fac-pill ' + status2.cls + '">' + status2.text + '</span></td>' +
-        '<td>' + p.station1.appxReviewedCount + '/8 · ' + p.station1.cardCount + ' карт.</td>' +
-        '<td>' + escapeHtml(formatDate(p.station1.updatedAt)) + '</td>' +
-        '<td class="fac-score-cell">' + escapeHtml(formatLevel(p, 'station1')) +
-          ' <button class="fac-recalc-btn" data-station="1" title="Пересчитать навык АК">↻</button></td>' +
-        '<td class="fac-score-cell">' + escapeHtml(formatLevel(p, 'station2')) +
-          ' <button class="fac-recalc-btn" data-station="2" title="Пересчитать навык ПР">↻</button></td>' +
-        '<td>' + escapeHtml(formatTotal(p)) + '</td>' +
         '<td><button class="fac-delete-btn" title="Удалить участника">✕</button></td>';
-      tr.addEventListener('click', function () { openDetail(p); });
-      tr.querySelectorAll('.fac-recalc-btn').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          recalcScore(p.bib, e.currentTarget, Number(e.currentTarget.getAttribute('data-station')));
-        });
+      tr.querySelector('.fac-delete-btn').addEventListener('click', function () {
+        deleteParticipant(p, tr.querySelector('.fac-delete-btn'));
       });
-      tr.querySelector('.fac-delete-btn').addEventListener('click', function (e) {
-        e.stopPropagation();
-        deleteParticipant(p, e.currentTarget);
-      });
-      tableBody.appendChild(tr);
+      rosterTableBody.appendChild(tr);
     });
   }
 
@@ -392,16 +408,18 @@
     URL.revokeObjectURL(url);
   });
 
-  function recalcScore(bib, btn, station) {
+  function recalcScore(bib, btn, station, onSuccess) {
     var action = station === 2 ? 'judgeStation2' : 'judgeStation1';
+    var originalText = btn.textContent;
     btn.disabled = true;
     btn.textContent = '…';
     window.imp.callApi(action, { password: currentPassword(), bib: bib }).then(function (res) {
       if (res && res.ok) {
         refresh();
+        if (onSuccess) onSuccess();
       } else {
         btn.disabled = false;
-        btn.textContent = '↻';
+        btn.textContent = originalText;
         window.alert('Не удалось пересчитать балл: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
       }
     });
@@ -420,8 +438,6 @@
     });
   }
 
-  bindSortHeader(sortScoreHeader, 'score', -1);
-  bindSortHeader(sortScore2Header, 'score2', -1);
   bindSortHeader(sortTotalHeader, 'total', -1);
 
   function pluralParticipants(n) {
@@ -432,6 +448,7 @@
   }
 
   function openDetail(participant) {
+    currentDetailParticipant = participant;
     detailBib.textContent = formatBib(participant.bib);
     detailName.textContent = participant.firstName + ' ' + participant.lastName;
     detailBody.innerHTML = '<p class="fac-detail-loading">Загружаю карту участника…</p>';
@@ -442,7 +459,14 @@
         detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить — попробуйте «Обновить» и открыть снова.</p>';
         return;
       }
-      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2);
+      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, participant);
+      detailBody.querySelectorAll('[data-recalc]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          recalcScore(participant.bib, btn, Number(btn.getAttribute('data-recalc')), function () {
+            if (currentDetailParticipant && currentDetailParticipant.bib === participant.bib) openDetail(participant);
+          });
+        });
+      });
     });
   }
 
@@ -454,11 +478,19 @@
     talent: 'рынок труда/отток специалистов'
   };
 
+  // Одна кнопка пересчёта на станцию (judgeStation1/2 всегда считают обе
+  // способности своей станции сразу) — раньше жила в главной таблице,
+  // теперь только здесь: пересчёт — задача глубокого разбора, не мониторинга.
+  function recalcButtonHtml(station, label) {
+    return '<button class="fac-recalc-btn fac-recalc-btn-labeled" data-recalc="' + station + '">↻ ' + escapeHtml(label) + '</button>';
+  }
+
   function renderScoreHtml(s1) {
     if (typeof s1.level !== 'number') {
-      return '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span></h4><p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
+      return '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span></h4><p class="fac-detail-text">Не оценено.</p>' + recalcButtonHtml(1, 'Пересчитать навык АК');
     }
     var html = '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span> — L' + s1.level + '</h4>';
+    html += recalcButtonHtml(1, 'пересчитать навык АК');
     html += '<p class="fac-detail-text">Источник: ' + (s1.levelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
     var domains = s1.domainsCovered || [];
     html += '<p class="fac-detail-text">Охваченные домены (' + domains.length + '/5): ' +
@@ -480,7 +512,7 @@
   function renderAK2Html(s1) {
     var html = '<h4>Глубина взаимосвязей <span class="fac-code-hint">(АК-2)</span>' + (typeof s1.ak2Level === 'number' ? ' — L' + s1.ak2Level : '') + '</h4>';
     if (typeof s1.ak2Level !== 'number') {
-      html += '<p class="fac-detail-text">Не оценено — используйте «↻» в таблице.</p>';
+      html += '<p class="fac-detail-text">Не оценено — см. кнопку «пересчитать» в разделе «Широта охвата» выше.</p>';
     } else {
       html += '<p class="fac-detail-text">Источник: ' + (s1.ak2LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
       if (typeof s1.level === 'number' && s1.ak2Level > s1.level) {
@@ -540,10 +572,11 @@
     var html = '<h4>Станция 2 · встреча с Агеевым — ' + (s2.finished ? 'завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'в процессе') + '</h4>';
 
     html += '<h4 style="margin-top:14px;">Выбор приоритетов <span class="fac-code-hint">(ПР-1)</span>' + (typeof s2.pr1Level === 'number' ? ' — L' + s2.pr1Level : '') + '</h4>';
+    if (s2.finished) html += recalcButtonHtml(2, 'пересчитать навык ПР');
     if (typeof s2.pr1Level === 'number') {
       html += '<p class="fac-detail-text">Источник: ' + (s2.pr1LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
     } else {
-      html += '<p class="fac-detail-text">' + (s2.finished ? 'Не оценено — используйте «↻» в таблице.' : 'Уровень появится после завершения.') + '</p>';
+      html += '<p class="fac-detail-text">' + (s2.finished ? 'Не оценено — нажмите «пересчитать» выше.' : 'Уровень появится после завершения.') + '</p>';
     }
 
     if ((s2.priorities || []).length) {
@@ -600,7 +633,7 @@
     return html;
   }
 
-  function renderDetailHtml(registration, s1, s2) {
+  function renderDetailHtml(registration, s1, s2, participant) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
@@ -611,8 +644,12 @@
     html += '<div class="fac-detail-meta">' +
       '<span>' + escapeHtml(registration.email) + '</span>' +
       '<span>волна ' + escapeHtml(waveLabelMap[registration.wave] || registration.wave) + '</span>' +
+      '<span>регистрация ' + escapeHtml(formatDate(registration.registeredAt)) + '</span>' +
       '<span>' + (s1.finished ? 'завершена ' + escapeHtml(formatDate(s1.finishedAt)) : 'в процессе') + '</span>' +
       '</div>';
+    if (participant) {
+      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Итого: ' + escapeHtml(formatTotal(participant)) + '</b></p>';
+    }
 
     html += renderScoreHtml(s1);
     html += renderAK2Html(s1);

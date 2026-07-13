@@ -41,43 +41,64 @@
 
     <div class="fac-body">
 
-      <div class="fac-waves" id="facWaves">
-        <span class="fac-waves-label">Потоки</span>
-        <div class="fac-waves-list" id="facWavesList"></div>
-        <form class="fac-wave-add" id="facWaveAddForm">
-          <input type="text" id="facWaveLabelInput" placeholder="напр. 25 июля, 11:00" />
-          <button type="submit" class="btn btn-ghost">+ поток</button>
-        </form>
+      <div class="fac-tabs" id="facTabs">
+        <button class="fac-tab-btn is-active" data-tab="progress" type="button">Ход раунда</button>
+        <button class="fac-tab-btn" data-tab="roster" type="button">Регистрации и потоки</button>
       </div>
 
-      <div class="fac-toolbar">
-        <select id="facWaveFilter" class="fac-select">
-          <option value="">Все потоки</option>
-        </select>
-        <button class="btn btn-ghost" id="facExportBtn">Скачать CSV</button>
+      <div class="fac-tab-panel" id="facTabProgress">
+        <div class="fac-toolbar">
+          <select id="facWaveFilter" class="fac-select">
+            <option value="">Все потоки</option>
+          </select>
+        </div>
+
+        <table class="fac-table" id="facTable">
+          <thead>
+            <tr>
+              <th>№</th>
+              <th>ФИО</th>
+              <th>Волна</th>
+              <th title="Компактный статус по станциям: незаполненная точка — не начата, жёлтая — в процессе, зелёная — завершена. Полная разбивка по способностям — по клику на строку.">Ход</th>
+              <th id="facSortTotal" class="fac-sortable" title="Сумма баллов посчитанных навыков — пока «Анализ контекста» и «Приоритизация», 2 навыка из 5">Итого ▾</th>
+            </tr>
+          </thead>
+          <tbody id="facTableBody"></tbody>
+        </table>
+        <div class="fac-empty" id="facEmpty" style="display:none;">Пока никто не зарегистрировался.</div>
       </div>
 
-      <table class="fac-table" id="facTable">
-        <thead>
-          <tr>
-            <th>№</th>
-            <th>ФИО</th>
-            <th>Email</th>
-            <th>Волна</th>
-            <th>Регистрация</th>
-            <th>Станция 1</th>
-            <th>Станция 2</th>
-            <th>Приложения</th>
-            <th>Обновлено</th>
-            <th id="facSortScore" class="fac-sortable" title="Анализ контекста: широта — сколько внешних факторов заметил; глубина — что сделал с тем, что заметил (АК-1/АК-2)">Широта / Глубина ▾</th>
-            <th id="facSortScore2" class="fac-sortable" title="Приоритизация: выбор — насколько чётко расставлены приоритеты; защита — насколько убедительно обосновано и удержано под давлением (ПР-1/ПР-2)">Выбор / Защита ▾</th>
-            <th id="facSortTotal" class="fac-sortable" title="Сумма баллов посчитанных навыков — пока «Анализ контекста» и «Приоритизация», 2 навыка из 5">Итого ▾</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="facTableBody"></tbody>
-      </table>
-      <div class="fac-empty" id="facEmpty" style="display:none;">Пока никто не зарегистрировался.</div>
+      <div class="fac-tab-panel" id="facTabRoster" style="display:none;">
+        <div class="fac-waves" id="facWaves">
+          <span class="fac-waves-label">Потоки</span>
+          <div class="fac-waves-list" id="facWavesList"></div>
+          <form class="fac-wave-add" id="facWaveAddForm">
+            <input type="text" id="facWaveLabelInput" placeholder="напр. 25 июля, 11:00" />
+            <button type="submit" class="btn btn-ghost">+ поток</button>
+          </form>
+        </div>
+
+        <div class="fac-toolbar">
+          <span class="fac-toolbar-hint">Регистрация, контакты, удаление участников</span>
+          <button class="btn btn-ghost" id="facExportBtn">Скачать CSV</button>
+        </div>
+
+        <table class="fac-table" id="facRosterTable">
+          <thead>
+            <tr>
+              <th>№</th>
+              <th>ФИО</th>
+              <th>Email</th>
+              <th>Волна</th>
+              <th>Регистрация</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="facRosterTableBody"></tbody>
+        </table>
+        <div class="fac-empty" id="facRosterEmpty" style="display:none;">Пока никто не зарегистрировался.</div>
+      </div>
+
     </div>
 
   </div>
