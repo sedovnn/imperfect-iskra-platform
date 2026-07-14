@@ -17,6 +17,18 @@
   var showRecoverWrap = document.getElementById('showRecoverWrap');
   var recoverForm = document.getElementById('recoverForm');
   var recoverError = document.getElementById('recoverError');
+  var regSyncError = document.getElementById('regSyncError');
+
+  // Пока бэкенд настроен, но ещё не подтвердил регистрацию, участника нельзя
+  // пускать дальше — иначе прогресс станций запишется под номером, которого
+  // нет в Registrations, и фасилитатор никогда его не увидит (реальный баг,
+  // который это чинит: registerOnBackend() ошибался молча, кнопка «Начать»
+  // включалась в любом случае, и участник уходил на station1.html как ни в
+  // чём не бывало). Если бэкенд не настроен вовсе — оффлайн-режим легален,
+  // backendConfirmed остаётся неважным (см. проверку isApiConfigured() ниже).
+  var backendConfirmed = false;
+  var awaitingRetry = false;
+  var currentRecord = null;
 
   function updateDeviceWarning() {
     deviceWarning.classList.toggle('show', window.imp.isHandheld());
@@ -126,9 +138,6 @@
 
   var beginBtnDefaultText = null;
 
-  // Пока сервер не выдал авторитетный номер, на станцию не пускаем: если участник
-  // уйдёт раньше ответа, весь его прогресс запишется под локальным номером,
-  // которого нет в Registrations, — и кабинет фасилитатора его никогда не свяжет.
   function setBeginPending(pending) {
     if (beginBtnDefaultText === null) beginBtnDefaultText = beginBtn.textContent;
     beginBtn.textContent = pending ? 'Получаем номер участника…' : beginBtnDefaultText;
@@ -155,6 +164,40 @@
       });
       persistRegistration(authoritative);
       return authoritative;
+    });
+  }
+
+  // Один автоматический повтор — частая причина первого сбоя это холодный
+  // старт Apps Script, а не настоящая недоступность бэкенда.
+  function registerOnBackendWithRetry(record) {
+    return registerOnBackend(record).then(function (authoritative) {
+      if (authoritative) return authoritative;
+      return registerOnBackend(record);
+    });
+  }
+
+  function showSyncError(record) {
+    confirmBib.textContent = formatBib(record.bib);
+    regSyncError.classList.add('show');
+    beginBtn.textContent = 'Повторить попытку →';
+    awaitingRetry = true;
+    beginBtn.style.pointerEvents = '';
+    beginBtn.style.opacity = '';
+  }
+
+  function trySync(record) {
+    currentRecord = record;
+    confirmBib.textContent = '№ …';
+    regSyncError.classList.remove('show');
+    setBeginPending(true);
+    registerOnBackendWithRetry(record).then(function (authoritative) {
+      if (authoritative) {
+        confirmBib.textContent = formatBib(authoritative.bib);
+        backendConfirmed = true;
+        setBeginPending(false);
+      } else {
+        showSyncError(record);
+      }
     });
   }
 
@@ -198,21 +241,25 @@
     var record = buildLocalRecord(data);
     persistRegistration(record);
     showConfirm(record, false);
+    backendConfirmed = !window.imp.isApiConfigured(); // без бэкенда легален чистый оффлайн-номер
 
     if (window.imp.isApiConfigured()) {
-      // номер на экране — предварительный; кнопка старта заблокирована,
-      // пока сервер не пришлёт настоящий (или не станет ясно, что сети нет)
-      confirmBib.textContent = '№ …';
-      setBeginPending(true);
-      registerOnBackend(record).then(function (authoritative) {
-        if (authoritative) {
-          confirmBib.textContent = formatBib(authoritative.bib);
-        } else {
-          // бэкенд недоступен — офлайн-режим на локальном номере, как раньше
-          confirmBib.textContent = formatBib(record.bib);
-        }
-        setBeginPending(false);
-      });
+      // номер на экране — предварительный; переход на станцию заблокирован
+      // (см. обработчик клика на beginBtn ниже), пока сервер не подтвердит
+      // регистрацию по-настоящему
+      trySync(record);
+    }
+  });
+
+  // Пока backendConfirmed не true (и бэкенд настроен), клик либо запускает
+  // повторную попытку синхронизации, либо просто ничего не делает —
+  // не даёт уйти на станцию с незарегистрированным на сервере номером.
+  beginBtn.addEventListener('click', function (e) {
+    if (!window.imp.isApiConfigured() || backendConfirmed) return;
+    e.preventDefault();
+    if (awaitingRetry && currentRecord) {
+      awaitingRetry = false;
+      trySync(currentRecord);
     }
   });
 
@@ -252,6 +299,7 @@
       return;
     }
     localStorage.setItem('imp_current_session', JSON.stringify(record));
+    backendConfirmed = true; // уже была настоящая регистрация — просто нашли её локально
     showConfirm(record, true);
   }
 
@@ -271,6 +319,7 @@
       window.imp.callApi('recover', { bib: enteredBib, lastName: enteredLastName }).then(function (res) {
         if (res && res.ok && res.record) {
           localStorage.setItem('imp_current_session', JSON.stringify(res.record));
+          backendConfirmed = true; // подтверждено самим бэкендом
           showConfirm(res.record, true);
         } else {
           recoverLocal(enteredBib, enteredLastName.toLowerCase());
