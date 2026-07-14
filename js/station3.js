@@ -135,6 +135,9 @@
       introEl.style.display = 'none';
       localStorage.setItem(introKey, '1');
     });
+    document.getElementById('reopenIntroBtn').addEventListener('click', function () {
+      introEl.style.display = 'flex';
+    });
 
     function roomStatus(room) {
       try {

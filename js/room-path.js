@@ -128,6 +128,9 @@
       introEl.style.display = 'none';
       localStorage.setItem(introKey, '1');
     });
+    document.getElementById('reopenIntroBtn').addEventListener('click', function () {
+      introEl.style.display = 'flex';
+    });
 
     var body = document.getElementById('roomBody');
     var STEPS = ['q1', 'q2', 'done'];

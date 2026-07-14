@@ -138,6 +138,9 @@
     introEl.style.display = 'none';
     localStorage.setItem(introKey, '1');
   });
+  document.getElementById('reopenIntroBtn').addEventListener('click', function () {
+    introEl.style.display = 'flex';
+  });
 
   // ---------- appendix tracking: must be explicitly opened AND scrolled to the end ----------
   // Appendices are collapsed <details> by default. A stray scroll-past can no longer
