@@ -2677,8 +2677,10 @@ table mark.hl {
   .wrap { padding: 0 20px; }
   .skills { grid-template-columns: 1fr 1fr; }
   .logistics { grid-template-columns: 1fr; }
-  .nav-links { gap: 12px; font-size: 13px; }
+  .nav { flex-wrap: wrap; row-gap: 10px; }
+  .nav-links { gap: 10px; font-size: 13px; }
   .nav-links a:not(.btn) { display: none; }
+  .nav-links .btn { padding: 8px 14px !important; }
   .nav-case { display: none; }
   .field-row { grid-template-columns: 1fr; }
   .final-cta { padding: 40px 28px; }
