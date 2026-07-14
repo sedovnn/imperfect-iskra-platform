@@ -123,7 +123,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех:</b> «Через полгода я буду перед советом директоров — на сроке длиннее, чем в этом здании любят обсуждать. Одной фразой: где мы окажемся, если заглянуть по-настоящему далеко — не на квартал, а туда, где нас самих может уже не быть?»</p>' +
+        '<p class="s2-ageev"><b>Лемех:</b> «Через полгода мне выходить к совету директоров. Прежде чем нырять в детали — одной фразой: куда, по-вашему, всё это в итоге идёт?»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {

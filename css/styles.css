@@ -2482,6 +2482,15 @@ table mark.hl {
 
 .fac-task-body h4:first-child { margin-top: 0; }
 
+.dossier-body {
+  padding: 28px;
+  max-width: 780px;
+  width: 100%;
+  margin: 0 auto;
+  overflow-y: auto;
+}
+.dossier-body h4:first-of-type { margin-top: 0; }
+
 .fac-delete-btn {
   background: none;
   border: 1px solid #d8dadd;

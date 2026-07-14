@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Мои ходы — i(m)perfect</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div id="gate" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Нужен номер участника</p>
+    <h2>Здесь пока пусто</h2>
+    <p class="section-lead" style="margin:0 0 24px;">«Мои ходы» показывают то, что вы уже сделали в раунде. Начните с регистрации и первой станции.</p>
+    <a class="btn btn-primary btn-block" href="register.html">Получить номер участника →</a>
+  </div>
+</div>
+
+<div class="frame station-frame" id="dossierRoot" style="display:none;">
+  <div class="station-shell">
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
+        <span class="station-sep">/</span>
+        <span class="station-name">Мои ходы</span>
+      </div>
+      <div class="station-header-right">
+        <span class="bib" id="hdrBib" style="font-size:14px; padding:6px 12px;">№ 000</span>
+        <button class="btn btn-ghost" id="closeBtn" style="padding:6px 12px; font-size:14px; margin-left:10px;">Закрыть</button>
+      </div>
+    </header>
+
+    <div class="dossier-body">
+      <p class="section-lead" style="margin:0 0 20px;">Всё, что вы уже нашли и решили в этом раунде — чтобы свериться, не держа в голове. Только ваши ходы; оценок здесь нет. Зафиксированные шаги переиграть отсюда нельзя.</p>
+      <div class="fac-detail-body" id="dossierContent" style="padding:0;"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/dossier.js"></script>
+</body>
+</html>
