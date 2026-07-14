@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Служебный вход — i(m)perfect</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+<div class="gate" style="display:flex;">
+  <div class="gate-card" style="max-width:460px;">
+    <p class="kicker">Служебный вход</p>
+    <h2>Куда пойти?</h2>
+
+    <div id="qaOptions" style="display:flex; flex-direction:column; gap:12px; margin-top:22px;">
+      <a href="facilitator.html" class="hub-room-card">
+        <div class="hub-room-top"><h3>Кабинет фасилитатора</h3></div>
+        <p>Список участников, ход раунда, пересчёт баллов. Нужен пароль.</p>
+      </a>
+
+      <button type="button" class="hub-room-card" id="btnQuickTest" style="width:100%; text-align:left; background:none; border-color:#ececec; font:inherit; cursor:pointer;">
+        <div class="hub-room-top"><h3>Быстрый тестовый прогон</h3></div>
+        <p>Только имя и фамилия — сразу в раунд, без лишних полей.</p>
+      </button>
+
+      <a href="register.html?recover=1" class="hub-room-card">
+        <div class="hub-room-top"><h3>Войти по фамилии и номеру</h3></div>
+        <p>Если уже проходили раунд на этом или другом устройстве.</p>
+      </a>
+    </div>
+
+    <form id="quickTestForm" novalidate style="display:none; margin-top:4px;">
+      <p class="field-hint" id="quickTestWaveHint" style="margin:0 0 16px;">Поток: —</p>
+      <div class="field">
+        <label for="qtFirstName">Имя</label>
+        <input type="text" id="qtFirstName" autocomplete="given-name" />
+      </div>
+      <div class="field" style="margin-top:12px;">
+        <label for="qtLastName">Фамилия</label>
+        <input type="text" id="qtLastName" autocomplete="family-name" />
+      </div>
+      <div class="form-error" id="quickTestError">Введите имя и фамилию.</div>
+      <button class="btn btn-primary btn-block" id="quickTestSubmit" type="submit" style="margin-top:16px;">Начать →</button>
+      <p class="recover-link"><a href="#" id="quickTestBack">← Назад</a></p>
+    </form>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+<script src="js/api.js"></script>
+<script src="js/qa.js"></script>
+</body>
+</html>
