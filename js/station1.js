@@ -380,10 +380,6 @@
     setTimeout(function () { document.body.removeChild(ghost); }, 0);
   }
 
-  // Клик — надёжная альтернатива перетаскиванию для привязки якоря: настоящий
-  // HTML5 drag-and-drop через скролл (когда карточка №3 и далее уже не видна
-  // одновременно с местом, откуда тащат) капризен в реальных браузерах —
-  // репортили, что после пары карточек привязка просто не фиксируется.
   function linkAnchorToCard(card, hlId, el, anchorInput) {
     if (!state.highlights.some(function (h) { return h.id === hlId; })) return;
     var text = anchorTextFor(hlId);
@@ -394,22 +390,6 @@
     if (card.linkedHighlightIds.indexOf(hlId) === -1) card.linkedHighlightIds.push(hlId);
     refreshAnchorStatus(el, card);
     saveState();
-  }
-
-  function populateAnchorPicker(selectEl) {
-    var current = selectEl.value;
-    var html = '<option value="">+ выбрать отметку…</option>';
-    state.highlights.forEach(function (h) {
-      var label = shortAnchorLabel(h.sectionId);
-      var snippet = h.snippet.length > 50 ? h.snippet.slice(0, 50) + '…' : h.snippet;
-      html += '<option value="' + h.id + '">' + escapeHtml(label ? label + ': «' + snippet + '»' : '«' + snippet + '»') + '</option>';
-    });
-    selectEl.innerHTML = html;
-    selectEl.value = current && selectEl.querySelector('option[value="' + current + '"]') ? current : '';
-  }
-
-  function refreshAllAnchorPickers() {
-    document.querySelectorAll('.anchor-pick').forEach(populateAnchorPicker);
   }
 
   function attachMarkDragHandlers(markEl, id) {
@@ -447,7 +427,6 @@
     saveState();
     saveCaseHtml();
     renderNotesList();
-    refreshAllAnchorPickers();
     openPopover(marks[0], id, '');
   });
 
@@ -474,7 +453,6 @@
     saveState();
     saveCaseHtml();
     renderNotesList();
-    refreshAllAnchorPickers();
   }
 
   document.getElementById('hlSaveBtn').addEventListener('click', function () {
@@ -666,13 +644,52 @@
       statusEl.textContent = '✓ подтверждено отметкой в тексте';
       statusEl.className = 'anchor-status is-linked';
     } else if (card.anchor) {
-      statusEl.textContent = 'не подтверждено — перетащите отметку сюда или выберите её из списка ниже';
+      statusEl.textContent = 'не подтверждено — перетащите сюда отметку из заметок';
       statusEl.className = 'anchor-status is-unlinked';
     } else {
       statusEl.textContent = '';
       statusEl.className = 'anchor-status';
     }
   }
+
+  // Ручной автоскролл во время перетаскивания. #cardsList живёт в #workScroll —
+  // отдельно скроллящейся панели, не в той же, что подсветки/заметки (у тех
+  // свой скролл, #caseContent/#notesView). Между независимо скроллящимися
+  // панелями нативный auto-scroll браузера при drag ненадёжен (особенно в
+  // Safari) — этим и объясняется жалоба «якорь не фиксируется начиная с 3-й
+  // карточки»: #workScroll как раз перестаёт помещаться целиком примерно на
+  // этом месте и требует скролла, до которого браузер сам не докручивает.
+  (function setupWorkScrollAutoscroll() {
+    var workScroll = document.getElementById('workScroll');
+    if (!workScroll) return;
+    var EDGE = 56;
+    var MAX_SPEED = 14;
+    var speed = 0;
+    var raf = null;
+
+    function step() {
+      if (!speed) { raf = null; return; }
+      workScroll.scrollTop += speed;
+      raf = requestAnimationFrame(step);
+    }
+
+    workScroll.addEventListener('dragover', function (e) {
+      var rect = workScroll.getBoundingClientRect();
+      var y = e.clientY;
+      if (y < rect.top + EDGE) {
+        speed = -MAX_SPEED * (1 - Math.max(0, y - rect.top) / EDGE);
+      } else if (y > rect.bottom - EDGE) {
+        speed = MAX_SPEED * (1 - Math.max(0, rect.bottom - y) / EDGE);
+      } else {
+        speed = 0;
+      }
+      if (speed && !raf) raf = requestAnimationFrame(step);
+    });
+    workScroll.addEventListener('dragleave', function (e) {
+      if (!workScroll.contains(e.relatedTarget)) speed = 0;
+    });
+    workScroll.addEventListener('drop', function () { speed = 0; });
+  })();
 
   function renderCards() {
     var list = document.getElementById('cardsList');
@@ -684,10 +701,8 @@
         '<label>Формулировка проблемы (одно предложение)</label>' +
         '<textarea rows="2" data-field="text" placeholder="например: юнит-экономика «Миры+» отрицательная пять лет подряд">' + escapeHtml(card.text) + '</textarea>' +
         '<div class="card-row">' +
-          '<div><label>Якорь в материалах</label><input type="text" data-field="anchor" value="' + escapeHtml(card.anchor) + '" placeholder="перетащите сюда отметку или выберите ниже" />' +
-            '<div class="anchor-status"></div>' +
-            (state.finished ? '' : '<select class="anchor-pick"></select>') +
-          '</div>' +
+          '<div><label>Якорь в материалах</label><input type="text" data-field="anchor" value="' + escapeHtml(card.anchor) + '" placeholder="перетащите сюда отметку из заметок" />' +
+            '<div class="anchor-status"></div></div>' +
           '<div><label>Группа</label><select data-field="group">' + groupOptionsHtml(card.group) + '</select></div>' +
         '</div>';
       if (!state.finished) {
@@ -736,14 +751,6 @@
           anchorInput.value = card.anchor;
           refreshAnchorStatus(el, card);
           saveState();
-        });
-        var anchorPick = el.querySelector('.anchor-pick');
-        populateAnchorPicker(anchorPick);
-        anchorPick.addEventListener('change', function () {
-          var hlId = anchorPick.value;
-          anchorPick.value = '';
-          if (!hlId) return;
-          linkAnchorToCard(card, hlId, el, anchorInput);
         });
       }
       el.querySelector('[data-field="group"]').addEventListener('change', function (e) {
