@@ -272,6 +272,12 @@
   var activeRange = null;
   var popoverHlId = null;
 
+  // Заметка к отметке — не якорь: браузеры по умолчанию вставляют перетащенный
+  // текст в любое текстовое поле под курсором, а этот попап часто открыт прямо
+  // рядом с местом, откуда тащат якорь на карточку — легко промахнуться сюда.
+  noteInput.addEventListener('dragover', function (ev) { ev.dataTransfer.dropEffect = 'none'; });
+  noteInput.addEventListener('drop', function (ev) { ev.preventDefault(); });
+
   function hideToolbar() { toolbar.classList.remove('show'); activeRange = null; }
   function closePopover() { popover.classList.remove('show'); popoverHlId = null; }
 
@@ -357,12 +363,62 @@
     return h ? '«' + h.snippet + '»' : '';
   }
 
+  // Браузер по умолчанию рисует "призрак" перетаскивания из полного, непрозрачного
+  // вида самого элемента (жёлтая подсветка/белая карточка заметки) — из-за этого
+  // не видно, на что именно наводишься. Свой полупрозрачный призрак с обрезанным
+  // текстом решает это для любого источника перетаскивания (подсветка в тексте
+  // и карточка в «Моих заметках» используют один и тот же хелпер).
+  function setTranslucentDragImage(ev, text) {
+    var ghost = document.createElement('div');
+    ghost.textContent = text.length > 60 ? text.slice(0, 60) + '…' : text;
+    ghost.style.cssText =
+      'position:absolute; top:-1000px; left:-1000px; max-width:260px; padding:6px 10px;' +
+      'background:var(--lime); color:var(--ink); font-size:13px; line-height:1.3; border-radius:8px;' +
+      'opacity:0.55; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
+    document.body.appendChild(ghost);
+    ev.dataTransfer.setDragImage(ghost, 10, 10);
+    setTimeout(function () { document.body.removeChild(ghost); }, 0);
+  }
+
+  // Клик — надёжная альтернатива перетаскиванию для привязки якоря: настоящий
+  // HTML5 drag-and-drop через скролл (когда карточка №3 и далее уже не видна
+  // одновременно с местом, откуда тащат) капризен в реальных браузерах —
+  // репортили, что после пары карточек привязка просто не фиксируется.
+  function linkAnchorToCard(card, hlId, el, anchorInput) {
+    if (!state.highlights.some(function (h) { return h.id === hlId; })) return;
+    var text = anchorTextFor(hlId);
+    if (!text) return;
+    card.anchor = card.anchor ? card.anchor + ' · ' + text : text;
+    anchorInput.value = card.anchor;
+    if (!card.linkedHighlightIds) card.linkedHighlightIds = [];
+    if (card.linkedHighlightIds.indexOf(hlId) === -1) card.linkedHighlightIds.push(hlId);
+    refreshAnchorStatus(el, card);
+    saveState();
+  }
+
+  function populateAnchorPicker(selectEl) {
+    var current = selectEl.value;
+    var html = '<option value="">+ выбрать отметку…</option>';
+    state.highlights.forEach(function (h) {
+      var label = shortAnchorLabel(h.sectionId);
+      var snippet = h.snippet.length > 50 ? h.snippet.slice(0, 50) + '…' : h.snippet;
+      html += '<option value="' + h.id + '">' + escapeHtml(label ? label + ': «' + snippet + '»' : '«' + snippet + '»') + '</option>';
+    });
+    selectEl.innerHTML = html;
+    selectEl.value = current && selectEl.querySelector('option[value="' + current + '"]') ? current : '';
+  }
+
+  function refreshAllAnchorPickers() {
+    document.querySelectorAll('.anchor-pick').forEach(populateAnchorPicker);
+  }
+
   function attachMarkDragHandlers(markEl, id) {
     markEl.draggable = true;
     markEl.addEventListener('dragstart', function (ev) {
       ev.dataTransfer.setData('text/plain', anchorTextFor(id));
       ev.dataTransfer.setData('application/x-imp-highlight-id', id);
       ev.dataTransfer.effectAllowed = 'copy';
+      setTranslucentDragImage(ev, anchorTextFor(id));
     });
   }
 
@@ -391,6 +447,7 @@
     saveState();
     saveCaseHtml();
     renderNotesList();
+    refreshAllAnchorPickers();
     openPopover(marks[0], id, '');
   });
 
@@ -417,6 +474,7 @@
     saveState();
     saveCaseHtml();
     renderNotesList();
+    refreshAllAnchorPickers();
   }
 
   document.getElementById('hlSaveBtn').addEventListener('click', function () {
@@ -510,6 +568,7 @@
       ev.dataTransfer.setData('text/plain', anchorTextFor(h.id));
       ev.dataTransfer.setData('application/x-imp-highlight-id', h.id);
       ev.dataTransfer.effectAllowed = 'copy';
+      setTranslucentDragImage(ev, anchorTextFor(h.id));
     });
     // клик по заметке — назад в полный текст, к самой отметке
     item.addEventListener('click', function () {
@@ -607,7 +666,7 @@
       statusEl.textContent = '✓ подтверждено отметкой в тексте';
       statusEl.className = 'anchor-status is-linked';
     } else if (card.anchor) {
-      statusEl.textContent = 'не подтверждено — перетащите сюда отметку из заметок';
+      statusEl.textContent = 'не подтверждено — перетащите отметку сюда или выберите её из списка ниже';
       statusEl.className = 'anchor-status is-unlinked';
     } else {
       statusEl.textContent = '';
@@ -625,8 +684,10 @@
         '<label>Формулировка проблемы (одно предложение)</label>' +
         '<textarea rows="2" data-field="text" placeholder="например: юнит-экономика «Миры+» отрицательная пять лет подряд">' + escapeHtml(card.text) + '</textarea>' +
         '<div class="card-row">' +
-          '<div><label>Якорь в материалах</label><input type="text" data-field="anchor" value="' + escapeHtml(card.anchor) + '" placeholder="перетащите сюда отметку из заметок" />' +
-            '<div class="anchor-status"></div></div>' +
+          '<div><label>Якорь в материалах</label><input type="text" data-field="anchor" value="' + escapeHtml(card.anchor) + '" placeholder="перетащите сюда отметку или выберите ниже" />' +
+            '<div class="anchor-status"></div>' +
+            (state.finished ? '' : '<select class="anchor-pick"></select>') +
+          '</div>' +
           '<div><label>Группа</label><select data-field="group">' + groupOptionsHtml(card.group) + '</select></div>' +
         '</div>';
       if (!state.finished) {
@@ -662,19 +723,27 @@
         anchorInput.addEventListener('drop', function (e) {
           e.preventDefault();
           anchorInput.classList.remove('is-drop-target');
-          var text = e.dataTransfer.getData('text/plain');
-          if (!text) return;
-          card.anchor = card.anchor ? card.anchor + ' · ' + text : text;
-          anchorInput.value = card.anchor;
           // домен АК-1 засчитывается только за перетащенную (реальную) отметку —
           // вписанный вручную текст якоря остаётся справочным, в охват не идёт.
           var hlId = e.dataTransfer.getData('application/x-imp-highlight-id');
           if (hlId) {
-            if (!card.linkedHighlightIds) card.linkedHighlightIds = [];
-            if (card.linkedHighlightIds.indexOf(hlId) === -1) card.linkedHighlightIds.push(hlId);
+            linkAnchorToCard(card, hlId, el, anchorInput);
+            return;
           }
+          var text = e.dataTransfer.getData('text/plain');
+          if (!text) return;
+          card.anchor = card.anchor ? card.anchor + ' · ' + text : text;
+          anchorInput.value = card.anchor;
           refreshAnchorStatus(el, card);
           saveState();
+        });
+        var anchorPick = el.querySelector('.anchor-pick');
+        populateAnchorPicker(anchorPick);
+        anchorPick.addEventListener('change', function () {
+          var hlId = anchorPick.value;
+          anchorPick.value = '';
+          if (!hlId) return;
+          linkAnchorToCard(card, hlId, el, anchorInput);
         });
       }
       el.querySelector('[data-field="group"]').addEventListener('change', function (e) {

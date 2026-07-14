@@ -675,6 +675,20 @@ footer {
 .anchor-status.is-linked { color: #4c7a0d; }
 .anchor-status.is-unlinked { color: #a35b00; }
 
+/* .anchor-pick — надёжный клик-альтернатива перетаскиванию отметки на карточку:
+   нативный select, без риска, что drag-and-drop не сработает при скролле. */
+.anchor-pick {
+  width: 100%;
+  font-size: 12.5px;
+  padding: 6px 8px;
+  margin-top: 6px;
+  border: 1.5px solid #d8dadd;
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--muted);
+}
+.anchor-pick:focus { outline: none; border-color: var(--ink); color: var(--ink); }
+
 /* ---------- станция 1, фаза 2 (связки / АК-2) — режим фокусировки ---------- */
 
 .links-body {
