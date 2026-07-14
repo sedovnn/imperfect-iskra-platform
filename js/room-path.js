@@ -141,7 +141,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Штерн:</b> «Раз уж вы смотрите на всё это со стороны — как, по-вашему, должен выглядеть путь отсюда до целевого состояния, которое вы считаете правильным?»</p>' +
+        '<p class="s2-ageev"><b>Штерн:</b> «Раз уж вы смотрите на всё это со стороны — как, по-вашему, добраться отсюда туда, где нам нужно оказаться?»</p>' +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
           '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
           '<div class="field"><label>Целевое состояние</label><input type="text" class="pp-target" placeholder="куда должны прийти"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.targetState) + '" /></div>' +

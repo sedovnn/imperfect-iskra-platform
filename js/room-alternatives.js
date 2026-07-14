@@ -163,7 +163,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Сосед по очереди</b> забирает свой кофе: «Слушайте, а вам не кажется, что вы одну и ту же логику применяете? Откуда вы это вообще берёте?»</p>' +
+        '<p class="s2-ageev"><b>Сосед по очереди</b> забирает свой кофе: «Слушайте, а откуда вы вообще такие вещи берёте — из опыта, из практики, ещё откуда-то?»</p>' +
         '<div class="rationale-block" style="margin-top:6px;"><label>Это в основном...</label></div>';
 
       var optWrap = document.createElement('div');
