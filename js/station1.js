@@ -298,17 +298,54 @@
 
   window.addEventListener('scroll', function () { hideToolbar(); closePopover(); }, true);
 
+  // Оборачивает выделение в <mark>. Возвращает МАССИВ марок (обычно один элемент).
+  // range.surroundContents() бросает исключение, если выделение пересекает границу
+  // блочного элемента (абзац, ячейка таблицы, <br>) — раньше это "чинилось" через
+  // extractContents()+insertNode(), который в таком случае вытаскивает и переставляет
+  // сами блочные элементы (целые <p>/<td>) внутрь инлайнового <mark>. Браузер не
+  // умеет корректно рендерить блок внутри инлайна: ячейка таблицы съезжает, а на
+  // абзацах видны только тонкие цветные полосы по краям вместо подсветки текста,
+  // с "прыгающей" красной строкой — оба бага, о которых сообщил пользователь.
+  // Настоящее исправление — никогда не трогать блочные элементы: оборачивать КАЖДЫЙ
+  // затронутый текстовый узел в свой собственный <mark> с одним и тем же data-hl-id.
   function wrapRange(range, id) {
-    var mark = document.createElement('mark');
-    mark.className = 'hl';
-    mark.dataset.hlId = id;
     try {
+      var mark = document.createElement('mark');
+      mark.className = 'hl';
+      mark.dataset.hlId = id;
       range.surroundContents(mark);
+      return [mark];
     } catch (e) {
-      mark.appendChild(range.extractContents());
-      range.insertNode(mark);
+      return wrapRangeAcrossNodes(range, id);
     }
-    return mark;
+  }
+
+  function wrapRangeAcrossNodes(range, id) {
+    var walker = document.createTreeWalker(range.commonAncestorContainer, NodeFilter.SHOW_TEXT);
+    var nodes = [];
+    var n;
+    while ((n = walker.nextNode())) {
+      // пропускаем чисто-пробельные текстовые узлы (переносы строк/отступы между
+      // тегами разметки) — оборачивать их в <mark> рискованно, если их родитель —
+      // структурный элемент вроде <tr>, куда инлайновый элемент вставлять нельзя
+      if (range.intersectsNode(n) && n.textContent.replace(/\s+/g, '').length) nodes.push(n);
+    }
+    var marks = [];
+    nodes.forEach(function (node) {
+      var start = (node === range.startContainer) ? range.startOffset : 0;
+      var end = (node === range.endContainer) ? range.endOffset : node.length;
+      if (start >= end) return;
+      var target = node;
+      if (end < target.length) target.splitText(end);
+      if (start > 0) target = target.splitText(start);
+      var m = document.createElement('mark');
+      m.className = 'hl';
+      m.dataset.hlId = id;
+      target.parentNode.insertBefore(m, target);
+      m.appendChild(target);
+      marks.push(m);
+    });
+    return marks;
   }
 
   // Тащить можно прямо из подсветки в тексте, без похода в панель заметок —
@@ -339,16 +376,17 @@
     var sectionId = articleIdFor(activeRange.commonAncestorContainer);
     var domains = domainsFor(activeRange.commonAncestorContainer);
     var id = uid();
-    var mark = wrapRange(activeRange, id);
-    attachMarkDragHandlers(mark, id);
-    var snippet = mark.textContent.slice(0, 140);
+    var marks = wrapRange(activeRange, id);
+    if (!marks.length) { hideToolbar(); return; }
+    marks.forEach(function (m) { attachMarkDragHandlers(m, id); });
+    var snippet = marks.map(function (m) { return m.textContent; }).join(' ').slice(0, 140);
     window.getSelection().removeAllRanges();
     hideToolbar();
     state.highlights.push({ id: id, note: '', sectionId: sectionId, domains: domains, snippet: snippet });
     saveState();
     saveCaseHtml();
     renderNotesList();
-    openPopover(mark, id, '');
+    openPopover(marks[0], id, '');
   });
 
   caseContent.addEventListener('click', function (e) {
@@ -362,13 +400,14 @@
   });
 
   function removeHighlight(id) {
-    var markEl = caseContent.querySelector('mark[data-hl-id="' + id + '"]');
-    if (markEl) {
+    // выделение могло лечь на несколько текстовых узлов (см. wrapRangeAcrossNodes) —
+    // одному id может соответствовать несколько <mark>, снимаем все разом
+    caseContent.querySelectorAll('mark[data-hl-id="' + id + '"]').forEach(function (markEl) {
       var parent = markEl.parentNode;
       while (markEl.firstChild) parent.insertBefore(markEl.firstChild, markEl);
       parent.removeChild(markEl);
       parent.normalize();
-    }
+    });
     state.highlights = state.highlights.filter(function (x) { return x.id !== id; });
     saveState();
     saveCaseHtml();
@@ -378,13 +417,12 @@
   document.getElementById('hlSaveBtn').addEventListener('click', function () {
     if (!popoverHlId) return;
     var note = noteInput.value.trim();
-    var markEl = caseContent.querySelector('mark[data-hl-id="' + popoverHlId + '"]');
     var h = state.highlights.filter(function (x) { return x.id === popoverHlId; })[0];
     if (h) h.note = note;
-    if (markEl) {
+    caseContent.querySelectorAll('mark[data-hl-id="' + popoverHlId + '"]').forEach(function (markEl) {
       markEl.className = note ? 'hl has-note' : 'hl';
       markEl.title = note || '';
-    }
+    });
     saveState();
     saveCaseHtml();
     renderNotesList();
@@ -470,12 +508,12 @@
     });
     // клик по заметке — назад в полный текст, к самой отметке
     item.addEventListener('click', function () {
-      var markEl = caseContent.querySelector('mark[data-hl-id="' + h.id + '"]');
-      if (!markEl) return;
+      var markEls = caseContent.querySelectorAll('mark[data-hl-id="' + h.id + '"]');
+      if (!markEls.length) return;
       showCaseTab('text');
-      markEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
-      markEl.classList.add('flash');
-      setTimeout(function () { markEl.classList.remove('flash'); }, 900);
+      markEls[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+      markEls.forEach(function (markEl) { markEl.classList.add('flash'); });
+      setTimeout(function () { markEls.forEach(function (markEl) { markEl.classList.remove('flash'); }); }, 900);
     });
     return item;
   }
