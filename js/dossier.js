@@ -1,9 +1,13 @@
-// i(m)perfect — «Мои ходы»: read-only досье участника по всему раунду 1.
+// i(m)perfect — «Мои ответы»: read-only досье участника по всему раунду 1.
 // Память не должна быть скрытым препятствием — методология меряет мышление,
 // а не то, сколько человек удержит в голове за два часа. Показываем только
-// СОБСТВЕННЫЕ ходы участника и материал, который он сам собрал; никаких баллов,
+// СОБСТВЕННЫЕ ответы участника и материал, который он сам собрал; никаких баллов,
 // уровней и подсказок. Источник — localStorage этого браузера (мгновенно,
 // без сети); зафиксированные шаги видны, но отсюда не редактируются.
+//
+// Каждый раздел рендерится, ТОЛЬКО если по нему реально есть сохранённые данные
+// (ключ в localStorage существует) — иначе название и структура ещё не пройденных
+// станций/комнат были бы видны заранее, до того как участник до них дойдёт.
 
 (function () {
   function loadSession() {
@@ -48,23 +52,19 @@
   function section(title) { html += '<h4>' + esc(title) + '</h4>'; }
   function text(t) { html += '<p class="fac-detail-text">' + esc(t) + '</p>'; }
   function textB(label, t) { html += '<p class="fac-detail-text"><b>' + esc(label) + '</b> ' + esc(t) + '</p>'; }
-  function empty(t) { html += '<p class="fac-detail-text" style="color:var(--muted-soft);">' + esc(t) + '</p>'; }
   function cardsOpen() { html += '<div class="fac-cards">'; }
   function cardsClose() { html += '</div>'; }
 
-  // ---------- Станция 1 ----------
-  section('Станция 1 · Вычитка и карта проблем');
-  if (!s1) {
-    empty('Ещё не начата.');
-  } else {
+  // ---------- Станция 1 (показываем, только если участник её начал) ----------
+  if (s1) {
+    section('Станция 1 · Вычитка и карта проблем');
     var groupNames = {};
     (s1.groups || []).forEach(function (g) { groupNames[g.id] = g.name; });
     if (s1.rationale) textB('Как я структурировал карту:', s1.rationale);
 
     var cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });
-    html += '<p class="fac-detail-text"><b>Карточки проблем (' + cards.length + '):</b></p>';
-    if (!cards.length) { empty('Пока пусто.'); }
-    else {
+    if (cards.length) {
+      html += '<p class="fac-detail-text"><b>Карточки проблем (' + cards.length + '):</b></p>';
       cardsOpen();
       cards.forEach(function (c) {
         html += '<div class="fac-card"><p>' + esc(c.text) + '</p><div class="fac-card-meta">' +
@@ -91,9 +91,8 @@
     }
 
     var hls = s1.highlights || [];
-    html += '<p class="fac-detail-text"><b>Мои выделения (' + hls.length + '):</b></p>';
-    if (!hls.length) { empty('Нет отметок.'); }
-    else {
+    if (hls.length) {
+      html += '<p class="fac-detail-text"><b>Мои выделения (' + hls.length + '):</b></p>';
       cardsOpen();
       hls.forEach(function (h) {
         html += '<div class="fac-card"><p>«' + esc(h.snippet || h.text || '') + '»</p>' +
@@ -101,15 +100,14 @@
       });
       cardsClose();
     }
-    var reviewed = s1.appxReviewed ? Object.keys(s1.appxReviewed).length : 0;
-    text('Приложения изучено: ' + reviewed + '/8');
+    if (s1.appxReviewed && Object.keys(s1.appxReviewed).length) {
+      text('Приложения изучено: ' + Object.keys(s1.appxReviewed).length + '/8');
+    }
   }
 
   // ---------- Станция 2 ----------
-  section('Станция 2 · Встреча с Агеевым');
-  if (!s2) {
-    empty('Ещё не начата.');
-  } else {
+  if (s2) {
+    section('Станция 2 · Встреча с Агеевым');
     var cardById2 = {}; (s2.cardsSnapshot || []).forEach(function (c) { cardById2[c.id] = c; });
     function t2(id) { var c = cardById2[id]; return c ? c.text : '(карточка)'; }
 
@@ -140,28 +138,24 @@
       if (s2.stressComment) text(s2.stressComment);
     }
     if (s2.proactiveText) textB('При каких условиях пересмотрю выбор:', s2.proactiveText);
-    if (!prs.length && !rej.length && !s2.rationale) empty('Пока пусто.');
   }
 
-  // ---------- Комнаты ----------
-  section('Коридор Лемеха');
-  if (!rf || (!rf.answer1 && !rf.answer2)) empty('Не заходил или пусто.');
-  else {
+  // ---------- Комнаты (каждая — только если реально открывалась) ----------
+  if (rf && (rf.answer1 || rf.answer2)) {
+    section('Коридор Лемеха');
     if (rf.answer1) textB('Куда всё идёт:', rf.answer1);
     if (rf.answer2) textB('Если пойдёт не так:', rf.answer2);
   }
 
-  section('Очередь в «Прожектор»');
-  if (!ra || (!ra.answer1 && !ra.source && !ra.sourceElaboration)) empty('Не заходил или пусто.');
-  else {
+  if (ra && (ra.answer1 || ra.source || ra.sourceElaboration)) {
+    section('Очередь в «Прожектор»');
     if (ra.answer1) textB('На месте Агеева:', ra.answer1);
     if (ra.source) textB('Источник идей:', GA_SOURCE[ra.source] || ra.source);
     if (ra.sourceElaboration) text(ra.sourceElaboration);
   }
 
-  section('Черновик к мартовскому комитету');
-  if (!rp || (!rp.currentState && !rp.targetState && !(rp.stages || []).length)) empty('Не заходил или пусто.');
-  else {
+  if (rp && (rp.currentState || rp.targetState || (rp.stages || []).length)) {
+    section('Черновик к мартовскому комитету');
     if (rp.currentState || rp.targetState) textB('Текущее → целевое:', (rp.currentState || '—') + ' → ' + (rp.targetState || '—'));
     var stages = (rp.stages || []).filter(function (s) { return s.description; });
     if (stages.length) {
@@ -180,9 +174,14 @@
   }
 
   // ---------- Финализация ----------
-  section('Финальная защита стратегии');
-  if (s3 && s3.finalDefense && String(s3.finalDefense).trim()) text(s3.finalDefense);
-  else empty('Пока не заполнена.');
+  if (s3 && s3.finalDefense && String(s3.finalDefense).trim()) {
+    section('Финальная защита стратегии');
+    text(s3.finalDefense);
+  }
+
+  if (!html) {
+    html = '<p class="fac-detail-text" style="color:var(--muted-soft);">Пока ничего не сохранено — начните с текущего задания, здесь появится то, что вы уже сделали.</p>';
+  }
 
   document.getElementById('dossierContent').innerHTML = html;
 })();
