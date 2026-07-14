@@ -24,23 +24,57 @@
   updateDeviceWarning();
   window.addEventListener('resize', updateDeviceWarning);
 
-  // Список волн переехал в бэкенд (лист Waves) — фасилитатор управляет им
-  // из кабинета. Если бэкенд недоступен/не настроен, остаются 3 опции,
-  // зашитые прямо в register.html — страница не должна ломаться без сети.
+  // Список волн живёт на бэкенде (лист Waves) — фасилитатор управляет им из
+  // кабинета. Раньше в HTML стояли захардкоженные даты как фолбэк, и пока/если
+  // бэкенд не отвечал, они молча показывались как настоящие — это сбивало.
+  // Теперь селект по умолчанию заблокирован с плашкой «Загружаю…»; реальные
+  // даты появляются только из ответа сервера, а на сбой показывается честная
+  // ошибка, а не устаревшие слоты. Фолбэк-даты — только для офлайна/без бэкенда.
+  var FALLBACK_WAVES = [
+    { id: 'w1', label: '15 июля, 11:00' },
+    { id: 'w2', label: '18 июля, 15:00' },
+    { id: 'w3', label: '22 июля, 11:00' }
+  ];
+
+  function setWavePlaceholder(textStr) {
+    var select = form.wave;
+    select.innerHTML = '';
+    var opt = document.createElement('option');
+    opt.value = ''; opt.disabled = true; opt.selected = true;
+    opt.textContent = textStr;
+    select.appendChild(opt);
+    select.disabled = true;
+  }
+
+  function fillWaves(waves) {
+    var select = form.wave;
+    select.innerHTML = '';
+    var ph = document.createElement('option');
+    ph.value = ''; ph.disabled = true; ph.selected = true;
+    ph.textContent = 'Выберите дату и время';
+    select.appendChild(ph);
+    waves.forEach(function (w) {
+      var opt = document.createElement('option');
+      opt.value = w.id; opt.textContent = w.label;
+      select.appendChild(opt);
+    });
+    select.disabled = false;
+  }
+
   function loadWaves() {
-    if (!window.imp.isApiConfigured()) return;
+    if (!window.imp.isApiConfigured()) {
+      // офлайн/без бэкенда — локальный фолбэк, чтобы форма работала
+      fillWaves(FALLBACK_WAVES);
+      return;
+    }
+    setWavePlaceholder('Загружаю доступные даты…');
     window.imp.callApi('listWaves', {}).then(function (res) {
-      if (!res || !res.ok || !res.waves || !res.waves.length) return;
-      var select = form.wave;
-      Array.prototype.slice.call(select.options).forEach(function (opt) {
-        if (opt.value) select.removeChild(opt);
-      });
-      res.waves.forEach(function (w) {
-        var opt = document.createElement('option');
-        opt.value = w.id;
-        opt.textContent = w.label;
-        select.appendChild(opt);
-      });
+      if (res && res.ok && res.waves && res.waves.length) {
+        fillWaves(res.waves);
+      } else {
+        // не показываем устаревшие даты как настоящие — честная ошибка
+        setWavePlaceholder('Не удалось загрузить даты — обновите страницу');
+      }
     });
   }
   loadWaves();
