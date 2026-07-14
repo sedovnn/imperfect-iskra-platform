@@ -462,7 +462,8 @@
     2: 'judgeStation2',
     3: 'judgeRoomFuture',
     4: 'judgeRoomAlternatives',
-    5: 'judgeRoomPath'
+    5: 'judgeRoomPath',
+    '3c': 'judgeStation3Control'
   };
 
   function recalcScore(bib, btn, station, onSuccess) {
@@ -519,7 +520,7 @@
       detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.roomFuture, res.roomAlternatives, res.roomPath, res.station3, participant);
       detailBody.querySelectorAll('[data-recalc]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          recalcScore(participant.bib, btn, Number(btn.getAttribute('data-recalc')), function () {
+          recalcScore(participant.bib, btn, btn.getAttribute('data-recalc'), function () {
             if (currentDetailParticipant && currentDetailParticipant.bib === participant.bib) openDetail(participant);
           });
         });
@@ -923,7 +924,63 @@
       );
     });
 
+    // ---- Финальная защита + контроль (§7-8) ----
+    html += renderControlHtml(station3);
+
     return html;
+  }
+
+  // Контроль: финальная защита + сравнение основной/контрольной оценки по ПР-2/МК-2/ГА-1.
+  // Флаг ⚑ ставит арбитр-ИИ только на реальные расхождения (не на артефакт недо-вызова).
+  var CONTROL_LABELS = { pr2: 'ПР-2 · обоснование выбора', mk2: 'МК-2 · развилки будущего', ga1: 'ГА-1 · генерация альтернатив' };
+
+  function renderControlHtml(station3) {
+    var hasDefense = station3 && station3.finalDefense && String(station3.finalDefense).trim();
+    var control = station3 && station3.control;
+    var anyFlag = false;
+    if (control && control.comparisons) {
+      Object.keys(control.comparisons).forEach(function (k) { if (control.comparisons[k].flag) anyFlag = true; });
+    }
+    var badges = '';
+    if (control && control.comparisons) {
+      ['pr2', 'mk2', 'ga1'].forEach(function (k) {
+        var c = control.comparisons[k];
+        if (!c) return;
+        var cls = c.flag ? '' : 'is-done';
+        badges += '<span class="fac-pill ' + cls + '">' + escapeHtml(c.code) + ' контр.L' + c.control +
+          (c.primary === null ? '' : ' / осн.L' + c.primary) + (c.flag ? ' ⚑' : '') + '</span>';
+      });
+    }
+
+    var body = '';
+    body += recalcButtonHtml('3c', 'пересчитать контроль');
+    if (!hasDefense) {
+      body += '<p class="fac-detail-text">Финальная защита не заполнена — контроль не считался.</p>';
+      return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null);
+    }
+    body += '<p class="fac-detail-text" style="margin-top:10px;"><b>Защита стратегии:</b> ' + escapeHtml(station3.finalDefense) + '</p>';
+    if (control && control.comparisons) {
+      body += '<div class="fac-cards" style="margin-top:12px;">';
+      ['pr2', 'mk2', 'ga1'].forEach(function (k) {
+        var c = control.comparisons[k];
+        if (!c) return;
+        body += '<div class="fac-card"><p>' + escapeHtml(CONTROL_LABELS[k] || k) +
+          (c.flag ? ' <span class="fac-card-warn">⚑ расхождение</span>' : '') + '</p>' +
+          '<div class="fac-card-meta"><span>контрольная: L' + c.control + '</span>' +
+          '<span>основная: ' + (c.primary === null ? '—' : 'L' + c.primary) + '</span>' +
+          (c.gap === null ? '' : '<span>разница: ' + c.gap + '</span>') + '</div>' +
+          (c.arbiterNote ? '<p class="fac-detail-text">Арбитр: ' + escapeHtml(c.arbiterNote) + '</p>' : '') +
+          '</div>';
+      });
+      body += '</div>';
+      if (control.judgment && control.judgment.reasoning) {
+        body += '<details class="fac-judge-reasoning"><summary>Обоснование контрольного судьи</summary>' +
+          '<p class="fac-card-warn">' + escapeHtml(control.judgment.reasoning) + '</p></details>';
+      }
+    } else {
+      body += '<p class="fac-detail-text">Контроль ещё не считался — нажмите «пересчитать контроль».</p>';
+    }
+    return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null);
   }
 
   detailClose.addEventListener('click', function () { detail.classList.remove('show'); });

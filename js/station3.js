@@ -48,7 +48,7 @@
       var raw = localStorage.getItem(storageKey(bib));
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    return { finished: false, startedAt: new Date().toISOString() };
+    return { finished: false, finalDefense: '', startedAt: new Date().toISOString() };
   }
 
   var backendSyncTimer = null;
@@ -169,6 +169,20 @@
 
     renderRooms();
 
+    // ---------- финальная защита стратегии (контрольный вопрос) ----------
+    // Один интегративный вопрос: пере-вызывает ПР-2 / МК-2 / ГА-1 на настоящей
+    // глубине для перекрёстной проверки (§7-8 методологии). Не оптимизирован под
+    // одну способность — это и есть «контрольная роль». Необязателен, как и комнаты.
+    var defenseEl = document.getElementById('finalDefense');
+    if (defenseEl) {
+      defenseEl.value = state.finalDefense || '';
+      defenseEl.disabled = !!state.finished;
+      defenseEl.addEventListener('input', function () {
+        state.finalDefense = defenseEl.value;
+        saveState();
+      });
+    }
+
     // ---------- finalize ----------
 
     function showFinishOverlay() {
@@ -183,12 +197,14 @@
         var word = left === 1 ? 'разговор' : 'разговора';
         if (!window.confirm('Вы не зашли в ' + left + ' ' + word + ' из ' + ROOMS.length + '. Финализировать стратегию с тем, что есть?')) return;
       }
+      if (defenseEl) state.finalDefense = defenseEl.value;
       state.finished = true;
       state.finishedAt = new Date().toISOString();
       saveState();
       clearTimeout(backendSyncTimer);
       syncStateToBackend();
       document.getElementById('finalizeBtn').setAttribute('disabled', 'disabled');
+      if (defenseEl) defenseEl.disabled = true;
       renderRooms();
       showFinishOverlay();
     }
