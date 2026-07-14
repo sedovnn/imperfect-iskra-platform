@@ -37,6 +37,20 @@
   </div>
 </div>
 
+<div id="dossierPanel" class="dossier-overlay" style="display:none;">
+  <div class="gate-card dossier-card">
+    <div class="dossier-card-header">
+      <div>
+        <p class="kicker">Мои ответы</p>
+        <h2 style="margin:0;">Что вы уже сделали</h2>
+      </div>
+      <button type="button" class="btn btn-ghost" id="closeDossierBtn" style="padding:6px 12px; font-size:14px;">Закрыть ✕</button>
+    </div>
+    <p class="section-lead" style="margin:14px 0 0;">Только ваши ответы — чтобы свериться, не держа в голове. Оценок здесь нет.</p>
+    <div class="fac-detail-body" id="dossierPanelContent"><!-- рендерится js/dossier-render.js --></div>
+  </div>
+</div>
+
 <div class="frame station-frame" id="stationRoot" style="display:none;">
   <div class="station-shell">
 
@@ -48,7 +62,7 @@
       </div>
       <div class="station-header-right">
         <button type="button" class="btn btn-ghost" id="reopenIntroBtn" title="Показать правила этого экрана" style="padding:6px 10px; font-size:14px; margin-right:10px;">?</button>
-        <a class="btn btn-ghost" href="dossier.html" target="_blank" rel="noopener" style="padding:6px 12px; font-size:14px; margin-right:10px;">Мои ответы ↗</a>
+        <button type="button" class="btn btn-ghost js-open-dossier" id="openDossierBtn" style="padding:6px 12px; font-size:14px; margin-right:10px;">Мои ответы</button>
         <span class="bib" id="hdrBib" style="font-size:14px; padding:6px 12px;">№ 000</span>
       </div>
     </header>
@@ -78,6 +92,8 @@
 
 <script src="js/main.js"></script>
 <script src="js/api.js"></script>
+<script src="js/dossier-render.js"></script>
+<script src="js/dossier-panel.js"></script>
 <script src="js/station2.js"></script>
 </body>
 </html>

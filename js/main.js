@@ -20,4 +20,8 @@
     var touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     return narrow && (coarse || touch);
   };
+
+  window.imp.loadSession = function () {
+    try { return JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) { return null; }
+  };
 })();

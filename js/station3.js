@@ -264,11 +264,6 @@
     }
 
     document.getElementById('finalizeBtn').addEventListener('click', finalizeRound);
-    document.getElementById('finishOverlayReview').addEventListener('click', function () {
-      document.getElementById('finishOverlay').style.display = 'none';
-      document.getElementById('stationRoot').style.display = '';
-      renderRooms();
-    });
 
     if (state.finished) {
       openFinalizeBtn.setAttribute('disabled', 'disabled');

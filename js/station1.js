@@ -349,13 +349,18 @@
   }
 
   // Тащить можно прямо из подсветки в тексте, без похода в панель заметок —
-  // заметки остаются вторым, не единственным путём.
+  // заметки остаются вторым, не единственным путём. Якорь — сам выделенный
+  // текст (доказательство), а не ссылка на раздел: "П1" ничего не доказывает,
+  // а цитата — доказывает, что карточка реально на чём-то основана.
+  function anchorTextFor(id) {
+    var h = state.highlights.filter(function (x) { return x.id === id; })[0];
+    return h ? '«' + h.snippet + '»' : '';
+  }
+
   function attachMarkDragHandlers(markEl, id) {
     markEl.draggable = true;
     markEl.addEventListener('dragstart', function (ev) {
-      var h = state.highlights.filter(function (x) { return x.id === id; })[0];
-      var label = h ? shortAnchorLabel(h.sectionId) : '';
-      ev.dataTransfer.setData('text/plain', label);
+      ev.dataTransfer.setData('text/plain', anchorTextFor(id));
       ev.dataTransfer.setData('application/x-imp-highlight-id', id);
       ev.dataTransfer.effectAllowed = 'copy';
     });
@@ -495,14 +500,14 @@
     });
     item.querySelector('.note-item-copy').addEventListener('click', function (ev) {
       ev.stopPropagation();
-      copyToClipboard(label);
+      copyToClipboard(anchorTextFor(h.id));
       var btn = ev.target;
       var old = btn.textContent;
       btn.textContent = 'скопировано';
       setTimeout(function () { btn.textContent = old; }, 1200);
     });
     item.addEventListener('dragstart', function (ev) {
-      ev.dataTransfer.setData('text/plain', label);
+      ev.dataTransfer.setData('text/plain', anchorTextFor(h.id));
       ev.dataTransfer.setData('application/x-imp-highlight-id', h.id);
       ev.dataTransfer.effectAllowed = 'copy';
     });

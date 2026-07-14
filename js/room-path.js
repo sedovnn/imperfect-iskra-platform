@@ -285,12 +285,6 @@
       showFinishOverlay();
     }
 
-    document.getElementById('finishOverlayReview').addEventListener('click', function () {
-      document.getElementById('finishOverlay').style.display = 'none';
-      document.getElementById('stationRoot').style.display = '';
-      render();
-    });
-
     render();
 
     if (state.finished) showFinishOverlay();
