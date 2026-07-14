@@ -1006,7 +1006,13 @@ footer {
   text-align: center;
 }
 
-.finalize-card { max-width: 680px; }
+/* .gate-card.* (не просто .finalize-card/.dossier-card): .gate-card задаёт
+   свой max-width:420px ниже по файлу — при равной специфичности выигрывало
+   бы правило, идущее позже в файле (т.е. .gate-card), и оба этих модификатора
+   молча схлопывались обратно в узкую 420px карточку независимо от заявленного
+   здесь max-width. Составной селектор специфичнее одиночного класса — теперь
+   порядок правил в файле не важен. */
+.gate-card.finalize-card { max-width: 680px; }
 
 /* .dossier-overlay — в отличие от остальных .gate-экранов (полноэкранных,
    взаимоисключающих шагов раунда), эта панель должна уметь появиться ПОВЕРХ
@@ -1025,7 +1031,7 @@ footer {
   overflow-y: auto;
 }
 
-.dossier-card {
+.gate-card.dossier-card {
   max-width: 680px;
   max-height: 84vh;
   display: flex;
