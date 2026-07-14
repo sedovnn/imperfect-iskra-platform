@@ -121,6 +121,14 @@
   function initWorkspace() {
     state = loadState(session.bib);
 
+    // позиция со станции 2 — предмет разговора: сосед допытывается, какие
+    // альтернативы ВАШЕМУ выбору вы вообще взвешивали (ГА-1), а не «что бы вы
+    // сделали» в вакууме.
+    var s2 = null;
+    try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
+    var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
+    var stancePhrase = stance ? ('к ' + stance.label) : 'к какому-то решению';
+
     var introKey = 'imp_room_alternatives_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
@@ -142,7 +150,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Сосед по очереди:</b> «И как, есть версия? А что бы вы сами сделали на месте Агеева?»</p>' +
+        '<p class="s2-ageev"><b>Сосед по очереди</b> кивает на ваш бейдж: «Так вы тот самый консультант? У нас полкампуса гадает, что вы Агееву насоветуете. Говорят, склоняетесь ' + escapeHtml(stancePhrase) + '. А другие-то варианты вы всерьёз крутили — или сразу к этому пришли? Что рассматривали и отмели, вот что интересно.»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
@@ -166,7 +174,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Сосед по очереди</b> забирает свой кофе: «Слушайте, а откуда вы вообще такие вещи берёте — из опыта, из практики, ещё откуда-то?»</p>' +
+        '<p class="s2-ageev"><b>Сосед по очереди</b> забирает свой капучино: «Любопытно. А откуда это у вас вообще — из своего опыта, из того как обычно делают, из конкретного примера где-то видели? Просто интересно, как люди до таких вещей доходят.»</p>' +
         '<div class="rationale-block" style="margin-top:6px;"><label>Это в основном...</label></div>';
 
       var optWrap = document.createElement('div');

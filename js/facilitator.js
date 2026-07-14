@@ -684,6 +684,15 @@
     if (s2.proactiveText) {
       html += '<p class="fac-detail-text"><b>Условия пересмотра выбора:</b> ' + escapeHtml(s2.proactiveText) + '</p>';
     }
+    if (s2.stance) {
+      var stanceLabel = s2.stance === 'fortress' ? '«Крепость»'
+        : s2.stance === 'secondCurve' ? '«Вторая кривая»'
+        : (s2.stanceOther ? '«' + s2.stanceOther + '» (своя)' : 'обе неверны (своя не сформулирована)');
+      html += '<p class="fac-detail-text"><b>Рекомендация по развилке:</b> ' + escapeHtml(stanceLabel) + '</p>';
+      if (s2.stanceCriteria) {
+        html += '<p class="fac-detail-text">Критерии: ' + escapeHtml(s2.stanceCriteria) + '</p>';
+      }
+    }
     if (s2.pr2JudgeReasoning && s2.pr2JudgeReasoning.reasoning) {
       html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи ПР-2</summary>' +
         '<p class="fac-card-warn">' + escapeHtml(s2.pr2JudgeReasoning.reasoning) + '</p></details>';

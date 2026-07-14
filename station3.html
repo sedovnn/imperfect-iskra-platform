@@ -38,9 +38,9 @@
 
 <div id="finalizeScreen" class="gate" style="display:none;">
   <div class="gate-card finalize-card">
-    <p class="kicker">Финализация стратегии</p>
-    <h2>Что у вас получилось за раунд</h2>
-    <p class="section-lead" style="margin:0 0 20px;">Коротко — то, что вы уже собрали: выбранный приоритет и то, что вынесли из комнат холла.</p>
+    <p class="kicker">Ваша стратегия</p>
+    <h2>Вот что вы собрали за раунд</h2>
+    <p class="section-lead" style="margin:0 0 20px;">Это ваша стратегия целиком — из позиции по развилке, первого хода и трёх разговоров в холле. Прочтите её как единое целое: так её увидит совет.</p>
     <div class="fac-cards" id="strategyRecap"><!-- рендерится station3.js --></div>
 
     <p class="s2-ageev" style="margin-top:26px;"><b>Совет правления:</b> «Прежде чем зафиксировать — коротко защитите свою финальную стратегию перед нами.»</p>
@@ -100,6 +100,8 @@
     </div>
 
     <div class="hub-body" id="hubBody">
+
+      <div class="hub-stance-callback" id="hubStanceCallback" style="display:none;"></div>
 
       <div class="hub-rooms" id="hubRooms">
         <!-- карточки комнат рендерятся station3.js -->

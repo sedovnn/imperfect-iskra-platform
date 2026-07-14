@@ -961,6 +961,21 @@ footer {
   width: 100%;
 }
 
+.hub-stance-callback {
+  max-width: 640px;
+  margin-bottom: 22px;
+  padding: 14px 18px;
+  border-left: 3px solid var(--lime);
+  background: #f7ffe8;
+  border-radius: 0 10px 10px 0;
+}
+.hub-stance-callback p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
 .hub-rooms {
   display: flex;
   flex-direction: column;

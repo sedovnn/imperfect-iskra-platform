@@ -105,6 +105,13 @@
   function initWorkspace() {
     state = loadState(session.bib);
 
+    // позиция, выбранная на станции 2, — предмет разговора. Лемех давит на ГРАНЬ
+    // будущего именно ВАШЕГО выбора, а не задаёт вопрос в пустоту.
+    var s2 = null;
+    try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
+    var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
+    var stancePhrase = stance ? ('позицию ' + stance.label) : 'вашу рекомендацию';
+
     var introKey = 'imp_room_future_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
@@ -126,7 +133,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех:</b> «Через полгода мне выходить к совету директоров. Прежде чем нырять в детали — одной фразой: куда, по-вашему, всё это в итоге идёт?»</p>' +
+        '<p class="s2-ageev"><b>Лемех</b> придерживает двери лифта: «Погодите-ка. Мне ' + escapeHtml(stancePhrase) + ' через полгода нести на совет Меридиана, а я пока сам не понимаю, куда оно нас в итоге приводит. Без презентационных формулировок, своими словами — если пойдём по-вашему, где „Искра“ окажется?»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
@@ -150,7 +157,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b> щурится: «Хорошо. А если пойдёт не так, как вы сказали — что тогда?»</p>' +
+        '<p class="s2-ageev"><b>Лемех</b> щурится: «Допустим. А если мир не подыграет — рынок качнётся не туда, расчёт не сойдётся? Совет спросит первым делом. Что тогда — и как вы вообще поймёте, что пора менять курс?»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
       if (!locked) {

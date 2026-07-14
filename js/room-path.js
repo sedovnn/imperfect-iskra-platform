@@ -121,6 +121,12 @@
   function initWorkspace() {
     state = loadState(session.bib);
 
+    // позиция со станции 2 — то, путь к чему Штерн заставляет расписать (ПП).
+    var s2 = null;
+    try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
+    var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
+    var stancePhrase = stance ? stance.label : 'выбранный вами курс';
+
     var introKey = 'imp_room_path_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
@@ -144,7 +150,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Штерн:</b> «Раз уж вы смотрите на всё это со стороны — как, по-вашему, добраться отсюда туда, где нам нужно оказаться?»</p>' +
+        '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «Ну, ' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не лозунг. Покажите по-честному: отсюда, где мы сейчас, — до туда. Какими этапами?»</p>' +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
           '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
           '<div class="field"><label>Целевое состояние</label><input type="text" class="pp-target" placeholder="куда должны прийти"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.targetState) + '" /></div>' +
@@ -207,7 +213,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Штерн</b> отпивает кофе: «Хорошо. А что реально этому мешает — и есть ли что-то, на что можно опереться?»</p>' +
+        '<p class="s2-ageev"><b>Штерн</b> проходится по вашим этапам глазами: «Допустим. Теперь трезво: что реально этому помешает — и есть ли на что опереться? По опыту, мешает всегда что-то вполне конкретное, а не „рынок вообще“.»</p>' +
         '<div class="pp-columns">' +
           '<div class="pp-column"><h4>Барьеры</h4><div class="pp-list" data-list="barriers"></div>' +
             (locked ? '' : '<button class="btn btn-ghost" data-add="barriers" style="margin-top:8px;">+ добавить барьер</button>') +

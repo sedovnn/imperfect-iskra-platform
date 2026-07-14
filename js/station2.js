@@ -37,7 +37,13 @@
       stressChoice: '',    // 'hold' | 'change'
       stressComment: '',
       proactiveText: '',
-      step: 'sort',        // 'sort' → 'rationale' → 'stress' → 'proactive'
+      // рекомендация по развилке из письма Агеева (задание №3 кейса) — спина
+      // всего финала. 'fortress' | 'secondCurve' | 'other'; stanceOther — своя
+      // позиция, если обе неверны; stanceCriteria — два критерия, что Агеев просит.
+      stance: '',
+      stanceOther: '',
+      stanceCriteria: '',
+      step: 'sort',        // 'sort' → 'rationale' → 'stress' → 'stance' → 'proactive'
       finished: false,
       startedAt: new Date().toISOString()
     };
@@ -166,7 +172,7 @@
       return top ? top.text : '';
     }
 
-    var STEPS = ['sort', 'rationale', 'stress', 'proactive'];
+    var STEPS = ['sort', 'rationale', 'stress', 'stance', 'proactive'];
     function stepIndex(step) { return STEPS.indexOf(step); }
     function stepLocked(step) {
       // шаг залочен, если разговор уже ушёл дальше него (или станция завершена)
@@ -406,7 +412,61 @@
       return block;
     }
 
-    // ---------- блок 4: проактивность (финал, необязательно) ----------
+    // ---------- блок 4: рекомендация по развилке (задание №3 кейса) ----------
+    // Это спина финала: с этого момента у участника есть занятая позиция, на
+    // которую ссылается холл и вокруг которой раскрываются три разговора.
+    // Сам выбор не оценивается как отдельный навык — это ось, а не балл; но он
+    // питает контрольный вопрос финала и собирается в документ стратегии.
+
+    function buildStanceBlock() {
+      var locked = stepLocked('stance');
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML =
+        '<p class="s2-ageev"><b>Агеев</b> кладёт распечатку письма на стол: «И то, ради чего я, собственно, и звал. В правлении две позиции — вы их видели. „Крепость“: защищать рекламное ядро, „Миру“ на партнёрскую модель, железо свернуть. „Вторая кривая“: вынести устройства в отдельную компанию и строить новую выручку к 2030-му. Мне нужна ваша рекомендация — и два критерия, на которых она стоит. Считаете, что обе мимо, — так и скажите, но тогда предложите свою.»</p>' +
+        '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Крепость» — защищать рекламное ядро</label>' +
+        '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Вторая кривая» — ставка на новое направление</label>' +
+        '<label class="s2-radio"><input type="radio" name="stance" value="other"' + (state.stance === 'other' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Обе позиции неверны — предложу свою</label>' +
+        '<textarea class="s2-stance-other" rows="2" placeholder="ваша позиция одной фразой" style="display:' + (state.stance === 'other' ? '' : 'none') + ';"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceOther) + '</textarea>' +
+        '<div class="rationale-block" style="margin-top:12px;">' +
+          '<label>Два критерия, на которых стоит рекомендация</label>' +
+          '<textarea class="s2-stance-criteria" rows="3" placeholder="например: 1) где через 3 года будет маржа группы; 2) что мы теряем безвозвратно, если не сделаем этого сейчас"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceCriteria) + '</textarea>' +
+        '</div>' +
+        (locked ? '' : '<button class="btn btn-primary" id="commitStanceBtn" style="margin-top:12px;">Дать рекомендацию →</button>');
+
+      if (!locked) {
+        var otherField = block.querySelector('.s2-stance-other');
+        block.querySelectorAll('input[name="stance"]').forEach(function (r) {
+          r.addEventListener('change', function () {
+            if (!r.checked) return;
+            state.stance = r.value;
+            otherField.style.display = r.value === 'other' ? '' : 'none';
+            saveState();
+          });
+        });
+        otherField.addEventListener('input', function (e) {
+          state.stanceOther = e.target.value; saveState();
+        });
+        block.querySelector('.s2-stance-criteria').addEventListener('input', function (e) {
+          state.stanceCriteria = e.target.value; saveState();
+        });
+        block.querySelector('#commitStanceBtn').addEventListener('click', function () {
+          if (!state.stance) {
+            window.alert('Агеев ждёт рекомендацию по развилке — выберите позицию.');
+            return;
+          }
+          if (state.stance === 'other' && !state.stanceOther.trim()) {
+            if (!window.confirm('Вы отвергли обе позиции, но свою не сформулировали. Так и зафиксируем?')) return;
+          }
+          state.step = 'proactive';
+          saveState();
+          render();
+        });
+      }
+      return block;
+    }
+
+    // ---------- блок 5: проактивность (финал, необязательно) ----------
 
     function buildProactiveBlock() {
       var locked = state.finished;
@@ -434,7 +494,8 @@
       if (upTo >= 0) body.appendChild(buildSortBlock());
       if (upTo >= 1) body.appendChild(buildRationaleBlock());
       if (upTo >= 2) body.appendChild(buildStressBlock());
-      if (upTo >= 3) body.appendChild(buildProactiveBlock());
+      if (upTo >= 3) body.appendChild(buildStanceBlock());
+      if (upTo >= 4) body.appendChild(buildProactiveBlock());
       var last = body.lastElementChild;
       if (last && !state.finished) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }
