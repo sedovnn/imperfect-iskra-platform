@@ -707,7 +707,14 @@
   // ---------- фаза 2: связки (АК-2) — режим фокусировки ----------
 
   var linksRoot = document.getElementById('linksRoot');
-  var MAX_CONNECTIONS = 3;
+  // Раньше здесь был жёсткий потолок в 3 связки — не от методологии (АК-2 не
+  // называет число, L5 требует "хотя бы одну" петлю/точку нестабильности) и не от
+  // судьи (AK2_ESCALATION_PROMPT/computeAK2Deterministic верхней границы не знают).
+  // Похоже на неотрефлексированный осколок старой станции 2 (где Агеев просил
+  // "2-3 корневые проблемы" в другом, давно упразднённом скоринге). Живой лимит
+  // формы участник обнаруживает так же легко, как это сделал тестовый прогон —
+  // потыкав кнопку "+" — и считывает как подсказку "здесь нужно ровно 3", что и
+  // есть подталкивание, которого мы стараемся избегать. Убран.
 
   function cardShortLabel(card) {
     var t = (card.text || '').trim();
@@ -823,11 +830,10 @@
 
       list.appendChild(el);
     });
-    addBtn.style.display = (state.finished || state.connections.length >= MAX_CONNECTIONS) ? 'none' : '';
+    addBtn.style.display = state.finished ? 'none' : '';
   }
 
   document.getElementById('addConnectionBtn').addEventListener('click', function () {
-    if (state.connections.length >= MAX_CONNECTIONS) return;
     state.connections.push({ id: uid(), cardIds: [], mechanism: '', conclusion: '', isLoop: false });
     saveState();
     renderConnections();
