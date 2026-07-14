@@ -962,9 +962,10 @@ footer {
 }
 
 .hub-rooms {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 640px;
 }
 
 .hub-room-card {
@@ -1005,8 +1006,33 @@ footer {
   text-align: center;
 }
 
-@media (max-width: 900px) {
-  .hub-rooms { grid-template-columns: 1fr; }
+.finalize-card { max-width: 680px; }
+
+.finalize-textarea {
+  width: 100%;
+  min-height: 220px;
+  border: 1px solid #e3e3e0;
+  border-radius: 12px;
+  padding: 16px 18px;
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.6;
+  resize: vertical;
+  margin-top: 14px;
+}
+
+.finalize-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+.finalize-actions .btn-primary { flex: 1; }
+
+@media (max-width: 600px) {
+  .finalize-actions { flex-direction: column-reverse; }
+  .finalize-actions .btn { width: 100%; }
 }
 
 .consent {
@@ -1499,6 +1525,11 @@ footer {
 .gate-finish .gate-card .section-lead { color: rgba(255, 255, 255, 0.68); }
 .gate-finish .gate-card .btn-ghost { color: var(--paper); border-color: rgba(255, 255, 255, 0.5); }
 .gate-finish .gate-card .btn-ghost:hover { box-shadow: 6px 6px 0 var(--paper); }
+/* .btn-primary — чёрный фон + чёрная рамка — на тёмной .gate-finish карточке (тоже
+   чёрной) была полностью невидима как кнопка: виден только парящий лаймовый текст,
+   без формы/границ. Из-за этого казалось, что после комнаты некуда вернуться. */
+.gate-finish .gate-card .btn-primary { background: var(--lime); color: var(--ink); border-color: var(--lime); }
+.gate-finish .gate-card .btn-primary:hover { box-shadow: 6px 6px 0 var(--paper), 6px 6px 0 1px var(--ink); }
 
 .gate-card {
   background: var(--paper);

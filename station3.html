@@ -36,6 +36,23 @@
   </div>
 </div>
 
+<div id="finalizeScreen" class="gate" style="display:none;">
+  <div class="gate-card finalize-card">
+    <p class="kicker">Финализация стратегии</p>
+    <h2>Что у вас получилось за раунд</h2>
+    <p class="section-lead" style="margin:0 0 20px;">Коротко — то, что вы уже собрали: выбранный приоритет и то, что вынесли из комнат холла.</p>
+    <div class="fac-cards" id="strategyRecap"><!-- рендерится station3.js --></div>
+
+    <p class="s2-ageev" style="margin-top:26px;"><b>Совет правления:</b> «Прежде чем зафиксировать — коротко защитите свою финальную стратегию перед нами.»</p>
+    <textarea id="finalDefense" class="finalize-textarea" rows="10" placeholder="Коротко объясните и защитите свой выбор перед советом. Можно пропустить, но это ваш последний ход."></textarea>
+
+    <div class="finalize-actions">
+      <button type="button" class="btn btn-ghost" id="closeFinalizeBtn">← Назад в холл</button>
+      <button type="button" class="btn btn-primary" id="finalizeBtn">Финализировать стратегию →</button>
+    </div>
+  </div>
+</div>
+
 <div class="frame station-frame" id="stationRoot" style="display:none;">
   <div class="station-shell">
 
@@ -74,14 +91,8 @@
         <!-- карточки комнат рендерятся station3.js -->
       </div>
 
-      <div class="hub-defense" id="hubDefense">
-        <p class="s2-ageev"><b>Совет правления:</b> «Прежде чем зафиксировать — коротко защитите свою финальную стратегию перед нами.»</p>
-        <p class="field-hint">Коротко объясните и защитите свой выбор перед советом.</p>
-        <textarea id="finalDefense" class="s2-rationale" rows="6" placeholder="ваш ответ (можно пропустить, но это ваш последний ход)"></textarea>
-      </div>
-
       <div class="hub-finalize">
-        <button class="btn btn-primary" id="finalizeBtn">Финализировать стратегию →</button>
+        <button class="btn btn-primary" id="openFinalizeBtn">Собрать и финализировать стратегию →</button>
       </div>
 
     </div>
