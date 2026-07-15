@@ -296,15 +296,25 @@
   }
 
   var bib = DEMO_BIB;
-  if (page === 'station1.html') {
-    setFinished('imp_station1_' + bib, false); // играбельна
-  } else if (page === 'station2.html') {
-    setFinished('imp_station1_' + bib, true);   // гейт станции 2
-    setFinished('imp_station2_' + bib, false);  // играбельна
-  } else if (page === 'station3.html' || page.indexOf('room-') === 0) {
-    setFinished('imp_station2_' + bib, true);   // гейт комнат/холла
-    // собственный .finished комнат/холла уже false из seed()
-  }
+
+  // собственный ключ .finished для каждого экрана
+  var OWN_KEY = {
+    'station1.html': 'imp_station1_' + bib,
+    'station2.html': 'imp_station2_' + bib,
+    'station3.html': 'imp_station3_' + bib,
+    'room-future.html': 'imp_room_future_' + bib,
+    'room-alternatives.html': 'imp_room_alternatives_' + bib,
+    'room-path.html': 'imp_room_path_' + bib
+  };
+
+  // 1) гейты предыдущих этапов должны быть пройдены
+  if (page === 'station2.html') setFinished('imp_station1_' + bib, true);
+  if (page === 'station3.html' || page.indexOf('room-') === 0) setFinished('imp_station2_' + bib, true);
+
+  // 2) ТЕКУЩИЙ экран экскурсии всегда играбелен/просматриваем: даже если на нём
+  // нажали «Завершить» и ушли дальше, при возврате он не должен быть заперт
+  // (иначе комнаты/холл после финиша показывали бы только оверлей и лок).
+  if (OWN_KEY[page]) setFinished(OWN_KEY[page], false);
 
   // ---------- тур: порядок экранов + пояснения механики ----------
 
