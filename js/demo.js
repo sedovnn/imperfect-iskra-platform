@@ -61,12 +61,12 @@
       station1: {
         rationale: 'Сгруппировал по тому, что бьёт по самой бизнес-модели, а не по метрике.',
         cards: [
-          { text: 'Юнит-экономика «Миры+» отрицательная пятый год подряд — направление жжёт кэш рекламного ядра.', tag: 'threat', influence: 'Ядро дотирует убыток, вместо того чтобы финансировать будущее.', snippet: 'юнит-экономика «Миры+» остаётся отрицательной пятый год' },
-          { text: 'Loop и переход к безэкранным интерфейсам к 2027 обесценивает саму модель «реклама на экране».', tag: 'threat', influence: 'Под угрозой не метрика, а фундамент выручки.', snippet: 'Loop... безэкранный интерфейс' },
-          { text: 'Отток senior-инженеров (12 за квартал) после заморозки опционов — теряем носителей железной экспертизы.', tag: 'threat', influence: 'Некому будет вытаскивать «Миру».', snippet: 'заморозка опционов' },
+          { text: 'Юнит-экономика «Миры+» отрицательная пятый год подряд — направление жжёт кэш рекламного ядра.', tag: 'threat', influence: 'Ядро дотирует убыток, вместо того чтобы финансировать будущее.', snippet: 'Пятый год финансируем направление из рекламы' },
+          { text: 'Loop и переход к безэкранным интерфейсам к 2027 обесценивает саму модель «реклама на экране».', tag: 'threat', influence: 'Под угрозой не метрика, а фундамент выручки.', snippet: 'готовит Loop One' },
+          { text: 'Отток ключевых инженеров и рост текучки — теряем носителей экспертизы.', tag: 'threat', influence: 'Некому будет вытаскивать «Миру».', snippet: 'Добровольная текучка ключевых грейдов достигла 27%' },
           { text: 'Меридиан рассматривает «Искру» как национальный актив с обязательствами вне выручки.', tag: 'opportunity', influence: 'Одновременно рычаг и ограничение.', snippet: 'национальный актив' },
-          { text: 'Регулятор ужесточает требования к данным — рекламный таргетинг под риском.', tag: 'threat', influence: '', snippet: 'требования к данным' },
-          { text: 'Бренд «Миры» силён у поколения Z — платформенный потенциал вне рекламы.', tag: 'opportunity', influence: 'Актив, который не виден в текущей P&L.', snippet: 'бренд «Миры»' }
+          { text: '«Искра» теряет позиции в открытом модельном индексе — конкуренты обгоняют технологически.', tag: 'threat', influence: '', snippet: 'В Открытом модельном индексе' },
+          { text: '«Мира» растёт в проактивного ассистента — платформенный потенциал за пределами рекламы.', tag: 'opportunity', influence: 'Актив, который не виден в текущей P&L.', snippet: 'нового поколения ассистента с проактивными сценариями' }
         ],
         connections: [
           { cards: [2, 1], mechanism: 'Безэкранный сдвиг убивает рекламный экран → ядро, которым дотируем «Миру», само тает.', conclusion: 'Нельзя чинить «Миру» деньгами ядра, которое под угрозой.', loop: false },
@@ -123,10 +123,10 @@
       station1: {
         rationale: 'Выписал главные проблемы, которые вижу.',
         cards: [
-          { text: '«Мира+» убыточна и тянет деньги.', tag: 'threat', influence: 'Теряем прибыль.', snippet: 'юнит-экономика «Миры+»' },
-          { text: 'Инженеры увольняются после заморозки опционов.', tag: 'threat', influence: '', snippet: 'заморозка опционов' },
-          { text: 'Конкуренты по рекламе усиливаются.', tag: 'threat', influence: '', snippet: 'конкуренты' },
-          { text: 'У «Миры» хороший бренд.', tag: 'opportunity', influence: '', snippet: 'бренд «Миры»' }
+          { text: '«Мира+» убыточна и тянет деньги.', tag: 'threat', influence: 'Теряем прибыль.', snippet: 'Пятый год финансируем направление из рекламы' },
+          { text: 'Инженеры увольняются, растёт текучка.', tag: 'threat', influence: '', snippet: 'Добровольная текучка ключевых грейдов достигла 27%' },
+          { text: 'Конкуренты по технологиям усиливаются.', tag: 'threat', influence: '', snippet: 'Nord Labs' },
+          { text: 'У «Миры» хороший потенциал как продукта.', tag: 'opportunity', influence: '', snippet: 'нового поколения ассистента с проактивными сценариями' }
         ],
         connections: [
           { cards: [1, 2], mechanism: 'Убытки «Миры» → режем расходы → уходят инженеры.', conclusion: 'Экономия бьёт по команде.', loop: false }
@@ -178,9 +178,9 @@
       station1: {
         rationale: 'Просто выписал проблемы, которые заметил.',
         cards: [
-          { text: 'У компании проблемы с деньгами.', tag: '', influence: '', snippet: 'юнит-экономика «Миры+»' },
-          { text: 'Люди увольняются.', tag: '', influence: '', snippet: 'заморозка опционов' },
-          { text: 'Технологии немного отстают.', tag: '', influence: '', snippet: 'технологическая гонка' }
+          { text: 'У компании проблемы с деньгами.', tag: '', influence: '', snippet: 'Пятый год финансируем направление из рекламы' },
+          { text: 'Люди увольняются.', tag: '', influence: '', snippet: 'Добровольная текучка ключевых грейдов достигла 27%' },
+          { text: 'Технологии немного отстают.', tag: '', influence: '', snippet: 'В Открытом модельном индексе' }
         ],
         connections: []
       },
@@ -217,6 +217,9 @@
 
   function seed(profile) {
     var bib = DEMO_BIB;
+
+    // размеченный HTML кейса пере-создаётся под новый профиль (см. injectDemoMarks)
+    localStorage.removeItem('imp_station1_html_' + bib);
 
     put('imp_current_session', {
       id: 'demo_session', bib: bib, case: 'iskra',
@@ -546,6 +549,49 @@
         if (btn && screen && screen.style.display !== 'flex') { btn.click(); clearInterval(t); }
         if (++tries > 40) clearInterval(t);
       }, 100);
+    }
+
+    // станция 1: реально размечаем в тексте цитаты засеянных проблем, чтобы в
+    // экскурсии была видна связка «отметка в тексте ↔ карточка проблемы» — как у
+    // настоящего участника (демо не проходит выделение руками).
+    if (page === 'station1.html') injectDemoMarks();
+  }
+
+  // Оборачивает в <mark class="hl"> первую встреченную в тексте кейса цитату каждой
+  // засеянной проблемы (по её snippet). Клик по отметке station1.js уводит к
+  // карточке, клик по цитате карточки — к отметке. Размеченный HTML сохраняем в
+  // htmlKey, чтобы отметки пережили перезагрузку экскурсии.
+  function injectDemoMarks() {
+    var cc = document.getElementById('caseContent');
+    if (!cc) return;
+    var s1 = null;
+    try { s1 = JSON.parse(localStorage.getItem('imp_station1_' + DEMO_BIB) || 'null'); } catch (e) {}
+    if (!s1 || !s1.highlights || !s1.highlights.length) return;
+    var changed = false;
+    s1.highlights.forEach(function (h) {
+      if (!h.snippet) return;
+      if (cc.querySelector('mark[data-hl-id="' + h.id + '"]')) return; // уже размечено
+      var walker = document.createTreeWalker(cc, NodeFilter.SHOW_TEXT, null);
+      var node;
+      while ((node = walker.nextNode())) {
+        if (node.parentElement && node.parentElement.closest('mark.hl')) continue;
+        var idx = node.textContent.indexOf(h.snippet);
+        if (idx === -1) continue;
+        try {
+          var range = document.createRange();
+          range.setStart(node, idx);
+          range.setEnd(node, idx + h.snippet.length);
+          var mark = document.createElement('mark');
+          mark.className = 'hl';
+          mark.dataset.hlId = h.id;
+          range.surroundContents(mark);
+          changed = true;
+        } catch (e) {}
+        break;
+      }
+    });
+    if (changed) {
+      try { localStorage.setItem('imp_station1_html_' + DEMO_BIB, cc.innerHTML); } catch (e) {}
     }
   }
 
