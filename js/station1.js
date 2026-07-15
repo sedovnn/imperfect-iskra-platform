@@ -380,18 +380,6 @@
     setTimeout(function () { document.body.removeChild(ghost); }, 0);
   }
 
-  function linkAnchorToCard(card, hlId, el, anchorInput) {
-    if (!state.highlights.some(function (h) { return h.id === hlId; })) return;
-    var text = anchorTextFor(hlId);
-    if (!text) return;
-    card.anchor = card.anchor ? card.anchor + ' · ' + text : text;
-    anchorInput.value = card.anchor;
-    if (!card.linkedHighlightIds) card.linkedHighlightIds = [];
-    if (card.linkedHighlightIds.indexOf(hlId) === -1) card.linkedHighlightIds.push(hlId);
-    refreshAnchorStatus(el, card);
-    saveState();
-  }
-
   function attachMarkDragHandlers(markEl, id) {
     markEl.draggable = true;
     markEl.addEventListener('dragstart', function (ev) {
@@ -519,34 +507,18 @@
     var label = shortAnchorLabel(h.sectionId);
     var item = document.createElement('div');
     item.className = 'note-item';
-    item.draggable = true;
     item.innerHTML =
       '<div class="note-item-top">' +
         '<span class="note-item-label">' + escapeHtml(label) + '</span>' +
         (state.finished ? '' : '<button class="note-item-del" title="Удалить">✕</button>') +
       '</div>' +
       '<div class="note-item-snippet">«' + escapeHtml(h.snippet) + '»</div>' +
-      (h.note ? '<div class="note-item-note">' + escapeHtml(h.note) + '</div>' : '') +
-      '<button class="note-item-copy">скопировать якорь</button>';
+      (h.note ? '<div class="note-item-note">' + escapeHtml(h.note) + '</div>' : '');
 
     var del = item.querySelector('.note-item-del');
     if (del) del.addEventListener('click', function (ev) {
       ev.stopPropagation();
       removeHighlight(h.id);
-    });
-    item.querySelector('.note-item-copy').addEventListener('click', function (ev) {
-      ev.stopPropagation();
-      copyToClipboard(anchorTextFor(h.id));
-      var btn = ev.target;
-      var old = btn.textContent;
-      btn.textContent = 'скопировано';
-      setTimeout(function () { btn.textContent = old; }, 1200);
-    });
-    item.addEventListener('dragstart', function (ev) {
-      ev.dataTransfer.setData('text/plain', anchorTextFor(h.id));
-      ev.dataTransfer.setData('application/x-imp-highlight-id', h.id);
-      ev.dataTransfer.effectAllowed = 'copy';
-      setTranslucentDragImage(ev, anchorTextFor(h.id));
     });
     // клик по заметке — назад в полный текст, к самой отметке
     item.addEventListener('click', function () {
@@ -589,68 +561,12 @@
     });
   }
 
-  // ---------- groups ----------
-
-  function renderGroups() {
-    var row = document.getElementById('groupsRow');
-    row.innerHTML = '';
-    state.groups.forEach(function (g) {
-      var chip = document.createElement('span');
-      chip.className = 'group-chip';
-      chip.textContent = g.name;
-      if (!state.finished) {
-        var del = document.createElement('button');
-        del.textContent = '×';
-        del.title = 'Удалить группу';
-        del.addEventListener('click', function () {
-          state.groups = state.groups.filter(function (x) { return x.id !== g.id; });
-          state.cards.forEach(function (c) { if (c.group === g.id) c.group = ''; });
-          saveState();
-          renderGroups();
-          renderCards();
-        });
-        chip.appendChild(del);
-      }
-      row.appendChild(chip);
-    });
-  }
-
-  document.getElementById('addGroupBtn').addEventListener('click', function () {
-    var name = window.prompt('Название группы (например: «стратегия», «до 1 года», «культура»):', '');
-    if (!name) return;
-    state.groups.push({ id: uid(), name: name.trim() });
-    saveState();
-    renderGroups();
-    renderCards();
-  });
+  // Группы и якорь-на-карточке убраны: ни один скорер их не читал (АК-1 судит ИИ
+  // по тексту карточек, АК-2 — по связкам), а «✓ подтверждено/не подтверждено»
+  // выглядело как обязательный гейт, которого в оценке нет. Выделения и «Мои
+  // заметки» остаются как инструмент чтения (не в балл).
 
   // ---------- cards ----------
-
-  function groupOptionsHtml(selected) {
-    var html = '<option value="">без группы</option>';
-    state.groups.forEach(function (g) {
-      html += '<option value="' + g.id + '"' + (g.id === selected ? ' selected' : '') + '>' + escapeHtml(g.name) + '</option>';
-    });
-    return html;
-  }
-
-  // Показывает участнику честно, что именно засчитывается — не балл, а факт
-  // «этот якорь подтверждён реальной подсветкой», ровно то же правило игры,
-  // что и так было заявлено («аргумент без якоря в тексте не засчитывается»).
-  function refreshAnchorStatus(el, card) {
-    var statusEl = el.querySelector('.anchor-status');
-    if (!statusEl) return;
-    if (card.linkedHighlightIds && card.linkedHighlightIds.length) {
-      statusEl.textContent = '✓ подтверждено отметкой в тексте';
-      statusEl.className = 'anchor-status is-linked';
-    } else if (card.anchor) {
-      statusEl.textContent = 'не подтверждено — перетащите сюда отметку из заметок';
-      statusEl.className = 'anchor-status is-unlinked';
-    } else {
-      statusEl.textContent = '';
-      statusEl.className = 'anchor-status';
-    }
-  }
 
   // Ручной автоскролл во время перетаскивания. #cardsList живёт в #workScroll —
   // отдельно скроллящейся панели, не в той же, что подсветки/заметки (у тех
@@ -699,12 +615,7 @@
       el.className = 'card' + (state.finished ? ' is-locked' : '');
       el.innerHTML =
         '<label>Формулировка проблемы (одно предложение)</label>' +
-        '<textarea rows="2" data-field="text" placeholder="например: юнит-экономика «Миры+» отрицательная пять лет подряд">' + escapeHtml(card.text) + '</textarea>' +
-        '<div class="card-row">' +
-          '<div><label>Якорь в материалах</label><input type="text" data-field="anchor" value="' + escapeHtml(card.anchor) + '" placeholder="перетащите сюда отметку из заметок" />' +
-            '<div class="anchor-status"></div></div>' +
-          '<div><label>Группа</label><select data-field="group">' + groupOptionsHtml(card.group) + '</select></div>' +
-        '</div>';
+        '<textarea rows="2" data-field="text" placeholder="например: юнит-экономика «Миры+» отрицательная пять лет подряд">' + escapeHtml(card.text) + '</textarea>';
       if (!state.finished) {
         var rm = document.createElement('button');
         rm.className = 'card-remove';
@@ -720,41 +631,6 @@
       }
       el.querySelector('[data-field="text"]').addEventListener('input', function (e) {
         card.text = e.target.value; saveState();
-      });
-      refreshAnchorStatus(el, card);
-      var anchorInput = el.querySelector('[data-field="anchor"]');
-      anchorInput.addEventListener('input', function (e) {
-        card.anchor = e.target.value; saveState();
-        refreshAnchorStatus(el, card);
-      });
-      if (!state.finished) {
-        anchorInput.addEventListener('dragover', function (e) {
-          e.preventDefault();
-          anchorInput.classList.add('is-drop-target');
-        });
-        anchorInput.addEventListener('dragleave', function () {
-          anchorInput.classList.remove('is-drop-target');
-        });
-        anchorInput.addEventListener('drop', function (e) {
-          e.preventDefault();
-          anchorInput.classList.remove('is-drop-target');
-          // домен АК-1 засчитывается только за перетащенную (реальную) отметку —
-          // вписанный вручную текст якоря остаётся справочным, в охват не идёт.
-          var hlId = e.dataTransfer.getData('application/x-imp-highlight-id');
-          if (hlId) {
-            linkAnchorToCard(card, hlId, el, anchorInput);
-            return;
-          }
-          var text = e.dataTransfer.getData('text/plain');
-          if (!text) return;
-          card.anchor = card.anchor ? card.anchor + ' · ' + text : text;
-          anchorInput.value = card.anchor;
-          refreshAnchorStatus(el, card);
-          saveState();
-        });
-      }
-      el.querySelector('[data-field="group"]').addEventListener('change', function (e) {
-        card.group = e.target.value; saveState();
       });
       list.appendChild(el);
     });
@@ -772,7 +648,7 @@
   }
 
   document.getElementById('addCardBtn').addEventListener('click', function () {
-    state.cards.push({ id: uid(), text: '', anchor: '', group: '', linkedHighlightIds: [] });
+    state.cards.push({ id: uid(), text: '' });
     saveState();
     renderCards();
     updateCardCount();
@@ -816,7 +692,6 @@
       var el = document.createElement('div');
       el.className = 'card' + (state.finished ? ' is-locked' : '');
       var html = '<p style="margin:0 0 4px; font-size:14px; line-height:1.55;">' + escapeHtml(card.text) + '</p>';
-      if (card.anchor) html += '<div class="fac-card-meta" style="margin-bottom:6px;"><span>якорь: ' + escapeHtml(card.anchor) + '</span></div>';
       html += '<div class="tag-pills">' +
         '<button class="tag-pill' + (card.tag === 'threat' ? ' is-active' : '') + '" data-tag="threat">угроза</button>' +
         '<button class="tag-pill' + (card.tag === 'opportunity' ? ' is-active' : '') + '" data-tag="opportunity">возможность</button>' +
@@ -962,7 +837,6 @@
     document.querySelectorAll('.links-body textarea, .links-body input').forEach(function (el) {
       el.setAttribute('disabled', 'disabled');
     });
-    renderGroups();
     renderCards();
     renderNotesList(); // убирает кнопки удаления отметок во вкладке заметок
   }
@@ -993,7 +867,6 @@
 
   // ---------- init render ----------
 
-  renderGroups();
   renderCards();
   updateCardCount();
   renderNotesList();
