@@ -20,9 +20,14 @@
         <p>Список участников, ход раунда, пересчёт баллов. Нужен пароль.</p>
       </a>
 
-      <button type="button" class="hub-room-card" id="btnQuickTest" style="width:100%; text-align:left; background:none; border-color:#ececec; font:inherit; cursor:pointer;">
+      <button type="button" class="hub-room-card" id="btnQuickTest" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
         <div class="hub-room-top"><h3>Быстрый тестовый прогон</h3></div>
         <p>Только имя и фамилия — сразу в раунд, без лишних полей.</p>
+      </button>
+
+      <button type="button" class="hub-room-card" id="btnDemoTour" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+        <div class="hub-room-top"><h3>Экскурсия по платформе</h3></div>
+        <p>Все экраны раунда с примерами заполнения, без стопов, с пояснениями механики. Ничего не сохраняется на бэкенд.</p>
       </button>
 
       <a href="register.html?recover=1" class="hub-room-card">
@@ -45,6 +50,25 @@
       <button class="btn btn-primary btn-block" id="quickTestSubmit" type="submit" style="margin-top:16px;">Начать →</button>
       <p class="recover-link"><a href="#" id="quickTestBack">← Назад</a></p>
     </form>
+
+    <div id="demoPicker" style="display:none; margin-top:4px;">
+      <p class="section-lead" style="margin:0 0 18px;">Выберите профиль ответов — с ним пройдёте все экраны. Профиль можно переключать прямо во время экскурсии.</p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <button type="button" class="hub-room-card demo-profile-btn" data-profile="strong" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+          <div class="hub-room-top"><h3>Сильный прогон</h3></div>
+          <p>Развёрнутые ответы, широкий контекст, дальний горизонт. Позиция «Вторая кривая».</p>
+        </button>
+        <button type="button" class="hub-room-card demo-profile-btn" data-profile="mid" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+          <div class="hub-room-top"><h3>Средний прогон</h3></div>
+          <p>Верные, но более поверхностные ответы. Позиция «Крепость».</p>
+        </button>
+        <button type="button" class="hub-room-card demo-profile-btn" data-profile="weak" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+          <div class="hub-room-top"><h3>Слабый прогон</h3></div>
+          <p>Общие слова без опоры на кейс — видно, как срабатывают «полы» (L1). Своя позиция.</p>
+        </button>
+      </div>
+      <p class="recover-link" style="margin-top:16px;"><a href="#" id="demoBack">← Назад</a></p>
+    </div>
   </div>
 </div>
 

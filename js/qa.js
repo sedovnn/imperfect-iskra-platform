@@ -5,6 +5,12 @@
 // QA-инструмент, а не публичная форма участника.
 
 (function () {
+  // Возврат в служебный вход = выход из любого прошлого демо: снимаем флаг
+  // экскурсии, чтобы demo.js не перехватил обычный «быстрый прогон» или вход
+  // по фамилии (иначе он пере-сеял бы демо-профиль поверх реальной сессии).
+  // Кнопка экскурсии ниже выставляет флаг заново непосредственно перед запуском.
+  localStorage.removeItem('imp_demo');
+
   var optionsEl = document.getElementById('qaOptions');
   var formEl = document.getElementById('quickTestForm');
   var waveHint = document.getElementById('quickTestWaveHint');
@@ -32,6 +38,24 @@
     optionsEl.style.display = 'none';
     formEl.style.display = '';
     document.getElementById('qtFirstName').focus();
+  });
+
+  // ---------- экскурсия (демо-прохождение) ----------
+  var demoPicker = document.getElementById('demoPicker');
+  document.getElementById('btnDemoTour').addEventListener('click', function () {
+    optionsEl.style.display = 'none';
+    demoPicker.style.display = '';
+  });
+  document.getElementById('demoBack').addEventListener('click', function (e) {
+    e.preventDefault();
+    demoPicker.style.display = 'none';
+    optionsEl.style.display = '';
+  });
+  document.querySelectorAll('.demo-profile-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      localStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: btn.getAttribute('data-profile'), seededFor: null }));
+      window.location.href = 'station1.html';
+    });
   });
 
   document.getElementById('quickTestBack').addEventListener('click', function (e) {

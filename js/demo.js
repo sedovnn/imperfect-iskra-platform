@@ -1,0 +1,521 @@
+// i(m)perfect — режим «Экскурсия» (demo/tour).
+//
+// Что это. Служебный проходной режим для команды: пройти ВСЕ экраны раунда 1
+// с примерами заполнения, без стопов и без создания реальных строк на бэкенде,
+// с короткими пояснениями «что здесь меряется и как зашита механика».
+// Запускается из служебного входа (qa.html) с выбором профиля ответов.
+//
+// Как устроено (важно для будущего меня):
+//  1. Экраны участника — отдельные страницы, каждая гейтится на .finished
+//     ПРЕДЫДУЩЕГО этапа в localStorage (станция 2 ← станция 1; комнаты/холл ←
+//     станция 2). demo.js подключён РАНЬШЕ скрипта страницы, поэтому успевает
+//     переключить нужные два флага .finished ПОД конкретную страницу — так все
+//     гейты проходят, но текущий экран остаётся играбельным (не заперт).
+//  2. Бэкенд глушим (isApiConfigured → false, callApi → null, hydrateOnce → no-op),
+//     чтобы ни один экскурсионный прогон не попал в живые Sheets и не ждал сети.
+//  3. Профиль ответов раскладывается в те же самые ключи localStorage
+//     (imp_station1_<bib> и т.д.), что пишет настоящий участник, — экраны не
+//     знают, что это демо, и рендерят реальный UI.
+//  4. Поверх — тонкая панель пояснений (что меряется) + нижняя навигация по
+//     экскурсии (пред./след. экран, смена профиля, выход).
+//
+// В продакшене demo.js ничего не делает, пока в localStorage нет флага imp_demo.
+
+(function () {
+  var DEMO_KEY = 'imp_demo';
+  var DEMO_BIB = 900; // локальный, на бэкенд не уходит
+
+  // читаем флаг демо СРАЗУ — если его нет, выходим и ни на что не влияем
+  var demo = null;
+  try { demo = JSON.parse(localStorage.getItem(DEMO_KEY) || 'null'); } catch (e) {}
+  if (!demo || !demo.active) return;
+
+  window.imp = window.imp || {};
+
+  // ---------- профили ответов ----------
+  // Каждый профиль — «человеческий» набор ответов (как в headless-харнессе).
+  // Позиции по развилке РАЗНЫЕ, чтобы было видно ветвление: сильный → «Вторая
+  // кривая», средний → «Крепость», слабый → своя. expected — иллюстративные
+  // ожидаемые уровни (живого судьи в демо нет), чтобы связать «ответ → уровень».
+
+  var PROFILES = {
+    strong: {
+      id: 'strong', label: 'Сильный прогон', stanceLabel: '«Вторая кривая»',
+      note: 'Развёрнутые ответы, широкий контекст, петли, дальний горизонт.',
+      station1: {
+        rationale: 'Сгруппировал по тому, что бьёт по самой бизнес-модели, а не по метрике.',
+        cards: [
+          { text: 'Юнит-экономика «Миры+» отрицательная пятый год подряд — направление жжёт кэш рекламного ядра.', tag: 'threat', influence: 'Ядро дотирует убыток, вместо того чтобы финансировать будущее.', snippet: 'юнит-экономика «Миры+» остаётся отрицательной пятый год' },
+          { text: 'Loop и переход к безэкранным интерфейсам к 2027 обесценивает саму модель «реклама на экране».', tag: 'threat', influence: 'Под угрозой не метрика, а фундамент выручки.', snippet: 'Loop... безэкранный интерфейс' },
+          { text: 'Отток senior-инженеров (12 за квартал) после заморозки опционов — теряем носителей железной экспертизы.', tag: 'threat', influence: 'Некому будет вытаскивать «Миру».', snippet: 'заморозка опционов' },
+          { text: 'Меридиан рассматривает «Искру» как национальный актив с обязательствами вне выручки.', tag: 'opportunity', influence: 'Одновременно рычаг и ограничение.', snippet: 'национальный актив' },
+          { text: 'Регулятор ужесточает требования к данным — рекламный таргетинг под риском.', tag: 'threat', influence: '', snippet: 'требования к данным' },
+          { text: 'Бренд «Миры» силён у поколения Z — платформенный потенциал вне рекламы.', tag: 'opportunity', influence: 'Актив, который не виден в текущей P&L.', snippet: 'бренд «Миры»' }
+        ],
+        connections: [
+          { cards: [2, 1], mechanism: 'Безэкранный сдвиг убивает рекламный экран → ядро, которым дотируем «Миру», само тает.', conclusion: 'Нельзя чинить «Миру» деньгами ядра, которое под угрозой.', loop: false },
+          { cards: [3, 1], mechanism: 'Заморозка опционов ради экономии → уходят те, кто мог бы вытащить железо → «Мира» дешевеет → снова режем.', conclusion: 'Экономия на людях запускает самоусиливающуюся спираль обесценивания.', loop: true }
+        ]
+      },
+      station2: {
+        priorities: [
+          { card: 2, target: 'к Q3 2026 — решение по платформенному пивоту' },
+          { card: 1, target: 'снять дотацию ядра с «Миры» за 18 мес' },
+          { card: 3, target: '' }
+        ],
+        rejected: [{ card: 5, freed: 'юристы разгрузятся' }],
+        rejectionRule: 'Всё, что не двигает ответ на безэкранный сдвиг в ближайший год, — не первым.',
+        rationale: 'Loop-сдвиг — единственная угроза, которая обнуляет саму модель, а не метрику; остальное — следствия.',
+        stressChoice: 'hold',
+        stressComment: 'Данные не появятся — сдвиг уже идёт; ждать полгода = отдать окно.',
+        stance: 'secondCurve', stanceOther: '',
+        stanceCriteria: '1) где через 3 года маржа группы; 2) что теряем безвозвратно, если не выносим железо сейчас — команду и окно рынка.',
+        proactiveText: 'Пересматриваю, если адаптация рынка к Loop замедлится на 18+ мес или Меридиан свяжет железо мандатом.'
+      },
+      roomFuture: {
+        answer1: 'Через 3–5 лет «Искра» — две сущности: зрелое рекламное ядро как кэш-машина и отдельная железная компания, к 2030 живущая на своей выручке. А дальше, за горизонтом сделки, вопрос уже не про рекламу — останется ли у страны собственный интерфейсный стек, когда экран уйдёт совсем.',
+        answer2: 'Если рынок не подыграет — железо не сжигаем внутри, а переводим в лицензирование патентов. Сигнал сменить курс: за 2 года runway отдельной компании не выходит на 40% внешней выручки.'
+      },
+      roomAlternatives: {
+        answer1: 'Крутил три: (а) продать «Миру» стратегу — отверг, теряем интерфейсный рычаг навсегда; (б) «Крепость» — отверг, лечит симптом, ядро само тает под Loop; (в) СП с Меридианом по железу — отложил как запасной.',
+        source: 'pattern',
+        sourceElaboration: 'Паттерн «второй кривой» Хэнди + как Fujifilm пережил смерть плёнки, уйдя в смежный стек, а Kodak — нет.'
+      },
+      roomPath: {
+        currentState: 'Рекламное ядро дотирует убыточную «Миру», единая P&L.',
+        targetState: 'Две компании: ядро-кэш и железо на своей выручке к 2030.',
+        stages: [
+          { description: 'Q1–Q2: юридически выделить железо в отдельное юрлицо, сохранить IP.', rationale: 'Раньше нельзя — сначала нужен чистый контур.' },
+          { description: '2026–2027: внешний раунд/партнёр под железо, снять дотацию с ядра.', rationale: '' },
+          { description: '2028–2030: железо на 40%+ внешней выручки, ядро под безэкранный таргетинг.', rationale: '' }
+        ],
+        barriers: ['Меридиан может связать железо мандатом «национального актива».', 'Senior-инженеры уходят — некому строить.'],
+        enablers: ['Бренд «Миры» у Z.', 'Кэш ядра на переходный период.', 'Интерес Меридиана к суверенному стеку.']
+      },
+      station3: { finalDefense: 'Ставлю на «Вторую кривую»: единственная реальная угроза — обесценивание экрана Loop\'ом — бьёт по модели, а не по метрике; «Крепость» лечит симптом. Критерии: маржа группы через 3 года и безвозвратная потеря окна/команды. Первый ход — юр.выделение железа при живом кэше ядра. Риск — мандат Меридиана; хедж — лицензирование IP.' },
+      expected: { ak1: 5, ak2: 5, pr1: 4, pr2: 5, mk1: 4, mk2: 4, ga1: 4, ga2: 5, pp1: 4, pp2: 4 }
+    },
+
+    mid: {
+      id: 'mid', label: 'Средний прогон', stanceLabel: '«Крепость»',
+      note: 'Верные, но более поверхностные ответы; горизонт ближе, связей меньше.',
+      station1: {
+        rationale: 'Выписал главные проблемы, которые вижу.',
+        cards: [
+          { text: '«Мира+» убыточна и тянет деньги.', tag: 'threat', influence: 'Теряем прибыль.', snippet: 'юнит-экономика «Миры+»' },
+          { text: 'Инженеры увольняются после заморозки опционов.', tag: 'threat', influence: '', snippet: 'заморозка опционов' },
+          { text: 'Конкуренты по рекламе усиливаются.', tag: 'threat', influence: '', snippet: 'конкуренты' },
+          { text: 'У «Миры» хороший бренд.', tag: 'opportunity', influence: '', snippet: 'бренд «Миры»' }
+        ],
+        connections: [
+          { cards: [1, 2], mechanism: 'Убытки «Миры» → режем расходы → уходят инженеры.', conclusion: 'Экономия бьёт по команде.', loop: false }
+        ]
+      },
+      station2: {
+        priorities: [
+          { card: 1, target: 'вывести «Миру» в ноль за год' },
+          { card: 2, target: '' }
+        ],
+        rejected: [{ card: 3, freed: '' }],
+        rejectionRule: '',
+        rationale: 'Убыточная «Мира» — самая большая дыра, с неё и начинаем.',
+        stressChoice: 'hold',
+        stressComment: 'Дыру нельзя откладывать.',
+        stance: 'fortress', stanceOther: '',
+        stanceCriteria: '1) прибыльность ядра; 2) чтобы не потерять рекламный рынок.',
+        proactiveText: 'Пересмотрю, если реклама начнёт падать.'
+      },
+      roomFuture: {
+        answer1: 'Если защитим рекламное ядро, через пару лет компания снова прибыльна и стабильна, «Миру» переводим на партнёров.',
+        answer2: 'Если не выйдет — придётся закрывать «Миру» и сокращаться.'
+      },
+      roomAlternatives: {
+        answer1: 'Думал ещё вынести «Миру» в отдельную компанию, но это рискованно, поэтому выбрал защиту ядра.',
+        source: 'practice',
+        sourceElaboration: 'Обычно в таких случаях сначала стабилизируют основной бизнес.'
+      },
+      roomPath: {
+        currentState: 'Реклама прибыльна, «Мира» в убытке.',
+        targetState: 'Реклама защищена, «Мира» на партнёрской модели.',
+        stages: [
+          { description: 'Сократить расходы на «Миру».', rationale: '' },
+          { description: 'Перевести «Миру» на партнёров.', rationale: '' }
+        ],
+        barriers: ['Партнёров может не найтись.'],
+        enablers: ['Прибыль рекламного ядра.']
+      },
+      station3: { finalDefense: 'Защищаем рекламное ядро — это то, что приносит деньги. «Миру» переводим на партнёрскую модель, чтобы не тянула убыток. Так сохраняем прибыльность.' },
+      expected: { ak1: 3, ak2: 3, pr1: 3, pr2: 3, mk1: 3, mk2: 2, ga1: 3, ga2: 3, pp1: 3, pp2: 2 }
+    },
+
+    weak: {
+      id: 'weak', label: 'Слабый прогон', stanceLabel: 'своя позиция',
+      note: 'Общие слова без опоры на кейс — видно, как срабатывают «полы» (L1).',
+      station1: {
+        rationale: 'Просто выписал проблемы, которые заметил.',
+        cards: [
+          { text: 'У компании проблемы с деньгами.', tag: '', influence: '', snippet: '' },
+          { text: 'Люди увольняются.', tag: '', influence: '', snippet: '' },
+          { text: 'Технологии немного отстают.', tag: '', influence: '', snippet: '' }
+        ],
+        connections: []
+      },
+      station2: {
+        priorities: [{ card: 1, target: '' }],
+        rejected: [], rejectionRule: '',
+        rationale: 'Деньги — это важно.',
+        stressChoice: 'hold', stressComment: '',
+        stance: 'other', stanceOther: 'Просто продавать рекламу и не лезть в железо',
+        stanceCriteria: '',
+        proactiveText: ''
+      },
+      roomFuture: { answer1: 'Думаю, дальше всё будет лучше, если решить проблемы.', answer2: 'Ну, если не получится, будет хуже.' },
+      roomAlternatives: { answer1: 'Можно было бы что-то поменять, но думаю это нормальный вариант.', source: 'own', sourceElaboration: '' },
+      roomPath: { currentState: 'Сейчас у компании всё не очень хорошо.', targetState: 'Надо, чтобы стало хорошо.', stages: [], barriers: [], enablers: [] },
+      station3: { finalDefense: 'Нужно решать проблемы компании, чтобы всё стало лучше.' },
+      expected: { ak1: 1, ak2: 1, pr1: 2, pr2: 1, mk1: 1, mk2: 1, ga1: 1, ga2: 1, pp1: 1, pp2: 1 }
+    }
+  };
+
+  var profileId = demo.profile && PROFILES[demo.profile] ? demo.profile : 'strong';
+  var profile = PROFILES[profileId];
+
+  // ---------- глушим бэкенд ----------
+  window.imp.isApiConfigured = function () { return false; };
+  window.imp.callApi = function () { return Promise.resolve(null); };
+  window.imp.hydrateOnce = function () {};
+
+  // ---------- раскладка профиля в localStorage ----------
+
+  function uid() { return 'demo_' + Math.random().toString(36).slice(2, 9); }
+  function put(key, obj) { localStorage.setItem(key, JSON.stringify(obj)); }
+  function nowISO() { return new Date().toISOString(); }
+
+  function seed(profile) {
+    var bib = DEMO_BIB;
+
+    put('imp_current_session', {
+      id: 'demo_session', bib: bib, case: 'iskra',
+      firstName: 'Экскурсия', lastName: '(' + profile.label + ')',
+      wave: 'demo', registeredAt: nowISO()
+    });
+
+    // станция 1 — карточки, отметки (якоря), связки
+    var s1 = profile.station1;
+    var cards = s1.cards.map(function (c, i) {
+      return { id: 'c' + (i + 1), text: c.text, anchor: '', group: '',
+               linkedHighlightIds: [], tag: c.tag || '', influence: c.influence || '' };
+    });
+    var highlights = [];
+    s1.cards.forEach(function (c, i) {
+      if (!c.snippet) return;
+      var hid = 'h' + (i + 1);
+      highlights.push({ id: hid, note: '', sectionId: '', domains: [], snippet: c.snippet });
+      cards[i].anchor = '«' + c.snippet + '»';
+      cards[i].linkedHighlightIds = [hid];
+    });
+    var connections = (s1.connections || []).map(function (cn) {
+      return { id: uid(), cardIds: cn.cards.map(function (n) { return 'c' + n; }),
+               mechanism: cn.mechanism || '', conclusion: cn.conclusion || '', isLoop: !!cn.loop };
+    });
+    put('imp_station1_' + bib, {
+      cards: cards, groups: [], rationale: s1.rationale || '',
+      appxOpened: {}, appxReviewed: {}, highlights: highlights, connections: connections,
+      phase: 'map', finished: true, startedAt: nowISO(), finishedAt: nowISO()
+    });
+
+    // станция 2 — приоритизация + развилка
+    var s2 = profile.station2;
+    put('imp_station2_' + bib, {
+      cardsSnapshot: cards.map(function (c) { return { id: c.id, text: c.text }; }),
+      priorities: (s2.priorities || []).map(function (p) { return { cardId: 'c' + p.card, target: p.target || '' }; }),
+      rejected: (s2.rejected || []).map(function (r) { return { cardId: 'c' + r.card, freed: r.freed || '' }; }),
+      rejectionRule: s2.rejectionRule || '', rationale: s2.rationale || '',
+      stressChoice: s2.stressChoice || '', stressComment: s2.stressComment || '',
+      stance: s2.stance || '', stanceOther: s2.stanceOther || '', stanceCriteria: s2.stanceCriteria || '',
+      proactiveText: s2.proactiveText || '',
+      step: 'proactive', finished: true, startedAt: nowISO(), finishedAt: nowISO()
+    });
+
+    var rf = profile.roomFuture;
+    put('imp_room_future_' + bib, {
+      answer1: rf.answer1 || '', answer2: rf.answer2 || '',
+      step: 'q2', finished: false, startedAt: nowISO()
+    });
+
+    var ra = profile.roomAlternatives;
+    put('imp_room_alternatives_' + bib, {
+      answer1: ra.answer1 || '', source: ra.source || '', sourceElaboration: ra.sourceElaboration || '',
+      step: 'q2', finished: false, startedAt: nowISO()
+    });
+
+    var rp = profile.roomPath;
+    put('imp_room_path_' + bib, {
+      currentState: rp.currentState || '', targetState: rp.targetState || '',
+      stages: (rp.stages || []).map(function (s) { return { id: uid(), description: s.description || '', rationale: s.rationale || '' }; }),
+      barriers: (rp.barriers || []).map(function (t) { return { id: uid(), text: t }; }),
+      enablers: (rp.enablers || []).map(function (t) { return { id: uid(), text: t }; }),
+      step: 'q2', finished: false, startedAt: nowISO()
+    });
+
+    put('imp_station3_' + bib, {
+      finalDefense: (profile.station3 && profile.station3.finalDefense) || '',
+      finished: false, startedAt: nowISO()
+    });
+
+    // интро-оверлеи считаем просмотренными — в экскурсии они только мешают
+    ['station1', 'station2', 'station3', 'room_future', 'room_alternatives', 'room_path'].forEach(function (k) {
+      localStorage.setItem('imp_' + k + '_intro_seen_' + bib, '1');
+    });
+  }
+
+  // сеем при первом заходе или после смены профиля
+  if (!demo.seededFor || demo.seededFor !== profileId) {
+    seed(profile);
+    demo.seededFor = profileId;
+    localStorage.setItem(DEMO_KEY, JSON.stringify(demo));
+  }
+
+  // ---------- переключение флагов .finished под текущую страницу ----------
+  // Каждый экран должен быть играбельным (свой .finished = false), но гейт
+  // требует .finished ПРЕДЫДУЩЕГО этапа = true. Выставляем оба под страницу.
+
+  var page = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
+
+  function setFinished(key, val) {
+    try {
+      var raw = localStorage.getItem(key);
+      if (!raw) return;
+      var o = JSON.parse(raw);
+      o.finished = val;
+      localStorage.setItem(key, JSON.stringify(o));
+    } catch (e) {}
+  }
+
+  var bib = DEMO_BIB;
+  if (page === 'station1.html') {
+    setFinished('imp_station1_' + bib, false); // играбельна
+  } else if (page === 'station2.html') {
+    setFinished('imp_station1_' + bib, true);   // гейт станции 2
+    setFinished('imp_station2_' + bib, false);  // играбельна
+  } else if (page === 'station3.html' || page.indexOf('room-') === 0) {
+    setFinished('imp_station2_' + bib, true);   // гейт комнат/холла
+    // собственный .finished комнат/холла уже false из seed()
+  }
+
+  // ---------- тур: порядок экранов + пояснения механики ----------
+
+  var TOUR = [
+    { file: 'station1.html', label: '1 · Карта проблем', tag: 'Навык АК',
+      abilities: ['ak1', 'ak2'],
+      how: 'Навык «Анализ контекста». <b>АК-1</b> — широта: сколько разных доменов внешней среды затронуто (экономика, технология, регуляторика, люди, бренд…). <b>АК-2</b> — глубина: связи между факторами и петли обратной связи. Судит ИИ по <b>тексту</b> карточек и связок, не по перетаскиванию. Нет карточек → L1. Домен засчитывается, только если карточка привязана к реальной отметке в тексте кейса.',
+      tip: 'Кнопка «К связкам →» открывает вторую фазу (АК-2): теги «угроза/возможность» и связки с петлями.' },
+    { file: 'station2.html', label: '2 · Встреча с Агеевым', tag: 'Навык ПР + развилка',
+      abilities: ['pr1', 'pr2'],
+      how: 'Навык «Приоритизация». <b>ПР-1</b> — что выбрано: ранжирование своих же карточек + явные отказы. <b>ПР-2</b> — почему и держится ли под давлением (стресс-тест Агеева). <b>Развилка</b> («Крепость»/«Вторая кривая»/своя) — это <b>не отдельный балл</b>, а ось всего финала: на неё ссылается холл и три разговора, из неё собирается документ стратегии.',
+      tip: 'Разговор идёт только вперёд — зафиксированные шаги залочены. Это by design, а не баг.' },
+    { file: 'station3.html', label: '3 · Холл трёх разговоров', tag: 'Свободный порядок',
+      abilities: [],
+      how: 'Хаб: три разговора в любом порядке. Плашка вверху ссылается на выбранную позицию — «слух разошёлся по этажам». Полнота <b>не гейтится</b>: можно финализировать, не зайдя во все три (непосещённая комната просто не даёт сигнала — это не штраф).',
+      tip: 'Названия комнат — про сюжет, не про способность: чтобы не подсказывать, что здесь меряется.' },
+    { file: 'room-future.html', label: 'Коридор Лемеха', tag: 'Навык МК',
+      abilities: ['mk1', 'mk2'],
+      how: 'Навык «Моделирование будущего». <b>МК-1</b> — как далеко горизонт рассуждения. <b>МК-2</b> — тип мышления о будущем (экстраполяция / образ / сценарии / «другая реальность»). Реплика Лемеха подставляет <b>вашу</b> позицию с развилки. Горизонт намеренно не подсказывается — участник сам решает, как далеко зайти.',
+      tip: 'Обратите внимание: текст реплики меняется в зависимости от позиции — переключите профиль и сравните.' },
+    { file: 'room-alternatives.html', label: 'Очередь в «Прожектор»', tag: 'Навык ГА',
+      abilities: ['ga1', 'ga2'],
+      how: 'Навык «Генерация альтернатив». <b>ГА-1</b> — сам ли участник сгенерировал альтернативы (а не потому, что попросили). <b>ГА-2</b> — широта источников идей (свой опыт / практика / пример / общий паттерн). Первый вопрос намеренно без структуры — иначе сигнал ГА-1 испортится. Второй — самотег источника + необязательная элаборация.',
+      tip: 'Тег источника не решает уровень сам — ИИ всё равно читает содержание элаборации на L3+.' },
+    { file: 'room-path.html', label: 'Черновик к комитету', tag: 'Навык ПП',
+      abilities: ['pp1', 'pp2'],
+      how: 'Навык «Путь к цели». <b>ПП-1</b> — декомпозиция: текущее → целевое состояние + этапы. <b>ПП-2</b> — барьеры и ресурсы, связка «барьер → чем перекрыть». Здесь есть реальный структурный каркас (в отличие от МК/ГА), потому что граничные тесты ПП — про структуру и содержание, а не про спонтанность.',
+      tip: 'Каркас организует текст участника, но связность этапов и качество барьер→ресурс по-прежнему решает ИИ.' },
+    { file: 'station3.html#finalize', label: 'Финал · Документ стратегии', tag: 'Сборка + контроль',
+      abilities: [],
+      how: 'Документ стратегии собирается из решений всего раунда вокруг <b>одной</b> позиции: позиция+критерии → первый ход → куда ведёт → что отвергли → путь → барьеры/опора. Поле «защиты» — это <b>контрольный вопрос</b> (§7–8 методологии): пере-оценивает ПР-2/МК-2/ГА-1 на глубине; при расхождении с основными оценками ≥2 включается арбитр-ИИ.',
+      tip: 'Это и есть ответ на «что вообще получилось» — не три несвязанных ответа, а единый документ.' }
+  ];
+
+  var ABILITY_NAMES = {
+    ak1: 'АК-1 широта', ak2: 'АК-2 глубина', pr1: 'ПР-1 выбор', pr2: 'ПР-2 обоснование',
+    mk1: 'МК-1 горизонт', mk2: 'МК-2 развилки', ga1: 'ГА-1 генерация', ga2: 'ГА-2 источники',
+    pp1: 'ПП-1 декомпозиция', pp2: 'ПП-2 барьеры-ресурсы'
+  };
+
+  function currentTourIndex() {
+    var hash = location.hash || '';
+    // финал = station3.html#finalize; холл = station3.html без хэша
+    for (var i = 0; i < TOUR.length; i++) {
+      var t = TOUR[i];
+      var tf = t.file.split('#')[0];
+      var th = t.file.indexOf('#') !== -1 ? '#' + t.file.split('#')[1] : '';
+      if (tf === page && (th ? hash === th : true) && (th || !hash || page !== 'station3.html' || i === 2)) {
+        if (page === 'station3.html') {
+          // различаем холл (без #finalize) и финал (#finalize)
+          if (hash === '#finalize' && th === '#finalize') return i;
+          if (hash !== '#finalize' && th !== '#finalize') return i;
+          continue;
+        }
+        return i;
+      }
+    }
+    // грубый фолбэк по файлу
+    for (var j = 0; j < TOUR.length; j++) if (TOUR[j].file.split('#')[0] === page) return j;
+    return -1;
+  }
+
+  // ---------- стили экскурсионного UI (инжектим, styles.css не трогаем) ----------
+
+  var css = '' +
+    '.demo-bar{position:fixed;left:0;right:0;bottom:0;z-index:99998;background:#12141a;color:#fff;' +
+      'display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;padding:10px 16px;font-family:system-ui,sans-serif;' +
+      'font-size:13px;box-shadow:0 -2px 14px rgba(0,0,0,.25);max-height:40vh;overflow:auto;}' +
+    '.demo-bar b{color:#c8f560;}' +
+    '.demo-bar .demo-spacer{flex:1;}' +
+    '.demo-bar button,.demo-bar select{font:inherit;border-radius:8px;border:1px solid #3a3f4b;' +
+      'background:#1c1f27;color:#fff;padding:7px 12px;cursor:pointer;}' +
+    '.demo-bar button:hover{background:#262a34;}' +
+    '.demo-bar button:disabled{opacity:.4;cursor:default;}' +
+    '.demo-bar .demo-primary{background:#c8f560;color:#12141a;border-color:#c8f560;font-weight:700;}' +
+    '.demo-bar .demo-exit{border-color:#6b3a3a;color:#ffb4b4;}' +
+    '.demo-bar select{max-width:190px;}' +
+    '.demo-badge{position:fixed;top:0;left:0;right:0;z-index:99997;background:#c8f560;color:#12141a;' +
+      'text-align:center;font:700 12px system-ui,sans-serif;letter-spacing:.04em;padding:4px;}' +
+    '.demo-note{position:fixed;right:16px;bottom:64px;z-index:99998;width:340px;max-width:calc(100vw - 32px);' +
+      'background:#fff;color:#1a1e26;border:1px solid #d6dbe2;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);' +
+      'font-family:system-ui,sans-serif;overflow:hidden;}' +
+    '.demo-note-head{display:flex;align-items:center;justify-content:space-between;gap:8px;' +
+      'padding:11px 14px;background:#12141a;color:#fff;cursor:pointer;}' +
+    '.demo-note-head .demo-note-tag{font:700 11px system-ui;letter-spacing:.05em;text-transform:uppercase;color:#c8f560;flex:1;min-width:0;}' +
+    '.demo-note-head .demo-note-toggle{font-size:15px;opacity:.7;}' +
+    '.demo-note-body{padding:13px 15px;font-size:13.5px;line-height:1.55;max-height:52vh;overflow:auto;}' +
+    '.demo-note-body h5{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7a8393;}' +
+    '.demo-note-how{margin:0 0 12px;}' +
+    '.demo-note-tip{margin:0 0 12px;padding:9px 11px;background:#f3f6ea;border-radius:9px;font-size:12.5px;color:#495a2a;}' +
+    '.demo-levels{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}' +
+    '.demo-levels span{font-size:11.5px;background:#eef1f5;border-radius:6px;padding:3px 7px;}' +
+    '.demo-levels span b{color:#12141a;}' +
+    '.demo-note.collapsed .demo-note-body{display:none;}' +
+    'body{padding-bottom:56px!important;}';
+
+  var styleEl = document.createElement('style');
+  styleEl.textContent = css;
+  (document.head || document.documentElement).appendChild(styleEl);
+
+  // ---------- построение UI после загрузки страницы ----------
+
+  function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+
+  function go(tourItem) {
+    location.href = tourItem.file;
+  }
+
+  function setProfile(id) {
+    demo.profile = id;
+    demo.seededFor = null; // заставит пере-сеять на следующей загрузке
+    localStorage.setItem(DEMO_KEY, JSON.stringify(demo));
+    // остаёмся на том же экране, но с новым профилем
+    location.reload();
+  }
+
+  function exitDemo() {
+    var bib = DEMO_BIB;
+    ['imp_current_session', DEMO_KEY, 'imp_demo_note_collapsed',
+     'imp_station1_' + bib, 'imp_station1_html_' + bib, 'imp_station2_' + bib,
+     'imp_station3_' + bib, 'imp_room_future_' + bib, 'imp_room_alternatives_' + bib,
+     'imp_room_path_' + bib].forEach(function (k) { localStorage.removeItem(k); });
+    ['station1', 'station2', 'station3', 'room_future', 'room_alternatives', 'room_path'].forEach(function (k) {
+      localStorage.removeItem('imp_' + k + '_intro_seen_' + bib);
+    });
+    location.href = 'qa.html';
+  }
+
+  function buildUI() {
+    var idx = currentTourIndex();
+    var item = idx >= 0 ? TOUR[idx] : null;
+
+    // верхняя плашка
+    var badge = document.createElement('div');
+    badge.className = 'demo-badge';
+    badge.textContent = 'РЕЖИМ ЭКСКУРСИИ · ' + profile.label + ' · позиция ' + profile.stanceLabel + ' · данные не сохраняются';
+    document.body.appendChild(badge);
+
+    // панель пояснений
+    if (item) {
+      var note = document.createElement('div');
+      note.className = 'demo-note';
+      var levelsHtml = '';
+      if (item.abilities && item.abilities.length) {
+        levelsHtml = '<h5>Ожидаемо для этого профиля (иллюстративно)</h5><div class="demo-levels">' +
+          item.abilities.map(function (a) {
+            return '<span>' + esc(ABILITY_NAMES[a] || a) + ': <b>L' + (profile.expected[a] || '?') + '</b></span>';
+          }).join('') + '</div>';
+      }
+      note.innerHTML =
+        '<div class="demo-note-head"><span class="demo-note-tag">' + esc(item.tag) + '</span>' +
+          '<span class="demo-note-toggle">▾ что здесь меряется</span></div>' +
+        '<div class="demo-note-body">' +
+          '<p class="demo-note-how">' + item.how + '</p>' +
+          (item.tip ? '<p class="demo-note-tip">💡 ' + item.tip + '</p>' : '') +
+          levelsHtml +
+        '</div>';
+      document.body.appendChild(note);
+      // состояние «свёрнуто» помним между экранами — свернул один раз, и панель
+      // больше не перекрывает рабочую область на следующих экранах
+      function applyCollapsed(collapsed) {
+        note.classList.toggle('collapsed', collapsed);
+        note.querySelector('.demo-note-toggle').textContent =
+          collapsed ? '▸ что здесь меряется' : '▾ что здесь меряется';
+      }
+      applyCollapsed(localStorage.getItem('imp_demo_note_collapsed') === '1');
+      note.querySelector('.demo-note-head').addEventListener('click', function () {
+        var next = !note.classList.contains('collapsed');
+        applyCollapsed(next);
+        localStorage.setItem('imp_demo_note_collapsed', next ? '1' : '0');
+      });
+    }
+
+    // нижняя навигация
+    var bar = document.createElement('div');
+    bar.className = 'demo-bar';
+    var pos = idx >= 0 ? (idx + 1) + '/' + TOUR.length : '—';
+    var options = TOUR.map(function (t, i) {
+      return '<option value="' + i + '"' + (i === idx ? ' selected' : '') + '>' + esc((i + 1) + '. ' + t.label) + '</option>';
+    }).join('');
+    var profOptions = Object.keys(PROFILES).map(function (p) {
+      return '<option value="' + p + '"' + (p === profileId ? ' selected' : '') + '>' + esc(PROFILES[p].label) + '</option>';
+    }).join('');
+    bar.innerHTML =
+      '<b>Экскурсия ' + pos + '</b>' +
+      '<button class="demo-prev"' + (idx <= 0 ? ' disabled' : '') + '>← назад</button>' +
+      '<select class="demo-jump">' + options + '</select>' +
+      '<button class="demo-next demo-primary"' + (idx >= TOUR.length - 1 ? ' disabled' : '') + '>след. экран →</button>' +
+      '<span class="demo-spacer"></span>' +
+      '<span>Профиль:</span><select class="demo-profile">' + profOptions + '</select>' +
+      '<button class="demo-exit">Выйти</button>';
+    document.body.appendChild(bar);
+
+    bar.querySelector('.demo-prev').addEventListener('click', function () { if (idx > 0) go(TOUR[idx - 1]); });
+    bar.querySelector('.demo-next').addEventListener('click', function () { if (idx < TOUR.length - 1) go(TOUR[idx + 1]); });
+    bar.querySelector('.demo-jump').addEventListener('change', function (e) { go(TOUR[parseInt(e.target.value, 10)]); });
+    bar.querySelector('.demo-profile').addEventListener('change', function (e) { setProfile(e.target.value); });
+    bar.querySelector('.demo-exit').addEventListener('click', exitDemo);
+
+    // финал: автоматически открыть документ стратегии на station3.html#finalize
+    if (page === 'station3.html' && location.hash === '#finalize') {
+      var tries = 0;
+      var t = setInterval(function () {
+        var btn = document.getElementById('openFinalizeBtn');
+        var screen = document.getElementById('finalizeScreen');
+        if (btn && screen && screen.style.display !== 'flex') { btn.click(); clearInterval(t); }
+        if (++tries > 40) clearInterval(t);
+      }, 100);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', buildUI);
+  } else {
+    buildUI();
+  }
+})();
