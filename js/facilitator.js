@@ -168,7 +168,8 @@
     return !!(p.station1.akFlag || p.station2.prFlag);
   }
 
-  // «Итого» = сумма баллов посчитанных навыков (§9): пять навыков, максимум 25.
+  // «Итого» = сумма посчитанных навыков (§9). Навык = сумма двух его способностей
+  // (2–10); итог = сумма пяти навыков = сумма 10 способностей, максимум 50.
   function skillScores(p) {
     return [
       { label: 'контекст', value: typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null },
@@ -190,7 +191,7 @@
   // (formatTotal ниже), не здесь.
   function formatTotalCompact(p) {
     var t = totalScore(p);
-    return t === null ? '—' : t + '/25';
+    return t === null ? '—' : t + '/50';
   }
 
   function formatTotal(p) {
@@ -199,7 +200,7 @@
     if (!known.length) return '—';
     var parts = scores.map(function (s) { return s.label + ' ' + (s.value === null ? '?' : s.value); });
     var total = known.reduce(function (sum, s) { return sum + s.value; }, 0);
-    return (known.length === scores.length ? total + '/25' : '…') + ' (' + parts.join(' + ') + ')';
+    return (known.length === scores.length ? total + '/50' : '…') + ' (' + parts.join(' + ') + ')';
   }
 
   function sortParticipants(participants) {
@@ -407,7 +408,7 @@
         'Статус «Коридор Лемеха»', 'Горизонт (МК-1)', 'Источник горизонта', 'Развилки будущего (МК-2)', 'Источник развилок', 'Образ будущего, балл',
         'Статус «Очередь в Прожектор»', 'Альтернативы (ГА-1)', 'Источник альтернатив', 'Идеи из областей (ГА-2)', 'Источник идей', 'Альтернативы, балл',
         'Статус «Черновик к комитету»', 'Декомпозиция пути (ПП-1)', 'Источник декомпозиции', 'Барьеры/ресурсы (ПП-2)', 'Источник барьеров', 'Путь к цели, балл',
-        'Итого (из 25)', 'Стратегия финализирована', 'Дата финализации']
+        'Итого (из 50)', 'Стратегия финализирована', 'Дата финализации']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -829,7 +830,7 @@
 
   function skillBadgeHtml(label, value) {
     return typeof value === 'number'
-      ? '<span class="fac-pill is-done">' + escapeHtml(label) + ' ' + value + '/5</span>'
+      ? '<span class="fac-pill is-done">' + escapeHtml(label) + ' ' + value + '/10</span>'
       : '<span class="fac-pill">' + escapeHtml(label) + ' —</span>';
   }
 
