@@ -208,6 +208,10 @@
   window.imp.isApiConfigured = function () { return false; };
   window.imp.callApi = function () { return Promise.resolve(null); };
   window.imp.hydrateOnce = function () {};
+  // флаг для экранов участника: показать механику в неактивном (демонстрационном)
+  // виде даже там, где у реального участника шаг уже залочен (напр. разбор карточек
+  // на станции 2) — чтобы в экскурсии было видно, как это работает.
+  window.imp.isDemo = function () { return true; };
 
   // ---------- раскладка профиля в localStorage ----------
 

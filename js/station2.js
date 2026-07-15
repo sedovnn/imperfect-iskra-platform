@@ -253,6 +253,10 @@
 
     function buildSortBlock() {
       var locked = stepLocked('sort');
+      // в экскурсии показываем механику разбора даже на залоченном шаге —
+      // кнопки видны, но неактивны (обработчики вешаются только при !locked)
+      var demoShow = !!(window.imp.isDemo && window.imp.isDemo());
+      var showActions = !locked || demoShow;
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
@@ -276,11 +280,11 @@
         var item = document.createElement('div');
         item.className = 's2-item';
         item.innerHTML = '<p>' + escapeHtml(c.text) + '</p>' +
-          (locked ? '' :
+          (showActions ?
             '<div class="s2-item-actions">' +
-              (state.priorities.length < MAX_PRIORITIES ? '<button class="s2-act" data-act="prio">в приоритеты</button>' : '') +
-              '<button class="s2-act" data-act="rej">не сейчас</button>' +
-            '</div>');
+              (state.priorities.length < MAX_PRIORITIES ? '<button class="s2-act" data-act="prio"' + (locked ? ' disabled' : '') + '>в приоритеты</button>' : '') +
+              '<button class="s2-act" data-act="rej"' + (locked ? ' disabled' : '') + '>не сейчас</button>' +
+            '</div>' : '');
         if (!locked) {
           var actPrio = item.querySelector('[data-act="prio"]');
           if (actPrio) actPrio.addEventListener('click', function () { moveToPriorities(c.id); });
@@ -301,12 +305,12 @@
           '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
           '<input type="text" class="s2-target" placeholder="измеримый ориентир: величина + срок; провал — при чём? (необязательно)" value="' + escapeHtml(p.target || '') + '"' + (locked ? ' disabled' : '') + ' />' +
           '</div>' +
-          (locked ? '' :
+          (showActions ?
             '<div class="s2-item-actions">' +
-              '<button class="s2-act" data-act="up" title="выше">↑</button>' +
-              '<button class="s2-act" data-act="down" title="ниже">↓</button>' +
-              '<button class="s2-act" data-act="back" title="вернуть в карту">✕</button>' +
-            '</div>');
+              '<button class="s2-act" data-act="up" title="выше"' + (locked ? ' disabled' : '') + '>↑</button>' +
+              '<button class="s2-act" data-act="down" title="ниже"' + (locked ? ' disabled' : '') + '>↓</button>' +
+              '<button class="s2-act" data-act="back" title="вернуть в карту"' + (locked ? ' disabled' : '') + '>✕</button>' +
+            '</div>' : '');
         if (!locked) {
           item.querySelector('[data-act="up"]').addEventListener('click', function () { movePriority(p.cardId, -1); });
           item.querySelector('[data-act="down"]').addEventListener('click', function () { movePriority(p.cardId, 1); });
@@ -326,7 +330,7 @@
         item.innerHTML = '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
           '<input type="text" class="s2-freed" placeholder="что это освобождает — люди/деньги/время (необязательно)" value="' + escapeHtml(r.freed || '') + '"' + (locked ? ' disabled' : '') + ' />' +
           '</div>' +
-          (locked ? '' : '<div class="s2-item-actions"><button class="s2-act" data-act="back" title="вернуть в карту">✕</button></div>');
+          (showActions ? '<div class="s2-item-actions"><button class="s2-act" data-act="back" title="вернуть в карту"' + (locked ? ' disabled' : '') + '>✕</button></div>' : '');
         if (!locked) {
           item.querySelector('[data-act="back"]').addEventListener('click', function () { moveToPool(r.cardId); });
           item.querySelector('.s2-freed').addEventListener('input', function (e) { r.freed = e.target.value; saveState(); });
