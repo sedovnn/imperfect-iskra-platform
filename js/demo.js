@@ -178,9 +178,9 @@
       station1: {
         rationale: 'Просто выписал проблемы, которые заметил.',
         cards: [
-          { text: 'У компании проблемы с деньгами.', tag: '', influence: '', snippet: '' },
-          { text: 'Люди увольняются.', tag: '', influence: '', snippet: '' },
-          { text: 'Технологии немного отстают.', tag: '', influence: '', snippet: '' }
+          { text: 'У компании проблемы с деньгами.', tag: '', influence: '', snippet: 'юнит-экономика «Миры+»' },
+          { text: 'Люди увольняются.', tag: '', influence: '', snippet: 'заморозка опционов' },
+          { text: 'Технологии немного отстают.', tag: '', influence: '', snippet: 'технологическая гонка' }
         ],
         connections: []
       },
@@ -224,22 +224,26 @@
       wave: 'demo', registeredAt: nowISO()
     });
 
-    // станция 1 — карточки, отметки (якоря), связки
+    // станция 1 — проблемы рождаются из отметок: цитата (snippet) + описание (problem).
     var s1 = profile.station1;
-    var cards = s1.cards.map(function (c, i) {
-      return { id: 'c' + (i + 1), text: c.text, tag: c.tag || '', influence: c.influence || '' };
+    var highlights = s1.cards.map(function (c, i) {
+      return {
+        id: 'c' + (i + 1), sectionId: '', domains: [],
+        snippet: c.snippet || (c.text || '').slice(0, 60),
+        problem: c.text || '', tag: c.tag || '', influence: c.influence || ''
+      };
     });
-    // «Мои заметки» — инструмент чтения (не в балл): выделенная фраза + коммент.
-    var highlights = (s1.notes || []).map(function (n, i) {
-      return { id: 'h' + (i + 1), note: n.comment || '', sectionId: '', domains: [], snippet: n.snippet };
-    });
+    // снимок для станции 2 — её приоритеты ссылаются на те же id
+    var cards = highlights.map(function (h) { return { id: h.id, text: h.problem }; });
     var connections = (s1.connections || []).map(function (cn) {
       return { id: uid(), cardIds: cn.cards.map(function (n) { return 'c' + n; }),
                mechanism: cn.mechanism || '', conclusion: cn.conclusion || '', isLoop: !!cn.loop };
     });
     put('imp_station1_' + bib, {
-      cards: cards, groups: [], rationale: s1.rationale || '',
-      appxOpened: {}, appxReviewed: {}, highlights: highlights, connections: connections,
+      cards: [], highlights: highlights, connections: connections,
+      mainProblemId: (profile.id === 'weak' ? '' : 'c1'),
+      mainProblemWhy: (profile.id === 'strong' ? 'она обнуляет саму бизнес-модель, остальное — следствия' : ''),
+      appxOpened: {}, appxReviewed: {},
       phase: 'map', finished: true, startedAt: nowISO(), finishedAt: nowISO()
     });
 

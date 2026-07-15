@@ -62,7 +62,7 @@
         </div>
         <div class="case-rule" style="margin-top:12px;">
           <span>✎</span>
-          <span><b>Как работать с текстом.</b> Выделите фрагмент мышью — появится кнопка «отметить», можно сразу вписать заметку. Клик по отметке открывает то же окно, там же можно её снять. Все отметки собираются во вкладке «Мои заметки» — это ваш черновик чтения. Проблемы, которые решите вынести, выпишите карточками справа.</span>
+          <span><b>Как выписать проблему.</b> Выделите фрагмент в тексте мышью — появится кнопка «отметить». Цитата сразу окажется в рабочей области справа, и вы опишете, в чём здесь проблема, своими словами. Клик по отметке в тексте подсвечивает её карточку; убрать — крестиком на карточке.</span>
         </div>
         <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к материалам ↓</button>
       </div>
@@ -96,11 +96,6 @@
         </nav>
 
         <div class="case-main">
-
-        <div class="case-tabs">
-          <button class="case-tab is-active" id="tabText">Весь текст</button>
-          <button class="case-tab" id="tabNotes">Мои заметки <span class="case-tab-count" id="notesCount">0</span></button>
-        </div>
 
         <div class="case-content" id="caseContent">
 
@@ -417,8 +412,6 @@
 
         </div>
 
-        <div class="notes-view" id="notesView" style="display:none;"></div>
-
         </div>
       </section>
 
@@ -426,23 +419,24 @@
         <div class="work-header">
           <div>
             <div class="kicker" style="margin-bottom:4px;">Ваша рабочая область</div>
-            <h3 style="font-family:var(--ff-display); font-size:19px; margin:0;">Карта проблем</h3>
+            <h3 style="font-family:var(--ff-display); font-size:19px; margin:0;">Мои проблемы</h3>
           </div>
           <div class="work-counters">
-            <span id="cardCount">0 карточек</span>
+            <span id="cardCount">0 проблем</span>
           </div>
         </div>
 
         <div class="work-scroll" id="workScroll">
 
-          <div class="rationale-block">
-            <label for="rationale">Что здесь, по-вашему, корень — с чего тянется остальное? <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>
-            <textarea id="rationale" rows="2" placeholder="например: всё тянется от того, что рекламное ядро дотирует убыточное направление — с этого и раскручивать"></textarea>
-          </div>
+          <p class="links-hint" id="problemsEmpty" style="margin:0 0 4px;">Выделяйте важные места прямо в тексте слева (кнопка «отметить») — каждая цитата появится здесь, и вы опишете, в чём проблема, своими словами.</p>
 
           <div class="cards-list" id="cardsList"></div>
 
-          <button class="btn btn-primary btn-block" id="addCardBtn" style="margin-top:16px;">+ добавить проблему</button>
+          <div class="rationale-block" id="mainProblemBlock" style="display:none; margin-top:22px; padding-top:18px; border-top:1px solid #ececec;">
+            <label for="mainProblemSelect">Какая из этих проблем, по-вашему, основная — корень остальных?</label>
+            <select id="mainProblemSelect" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #cfd6dd; border-radius:8px; font:inherit; background:#fff;"></select>
+            <textarea id="mainProblemWhy" rows="2" placeholder="почему именно она (необязательно)"></textarea>
+          </div>
 
         </div>
       </section>
@@ -473,18 +467,18 @@
 
       <div class="links-intro">
         <p class="kicker">Глубина</p>
-        <p>Карта собрана — материалы убраны, перед вами только ваши формулировки. Агеев просил второе: «выделите две-три корневые проблемы — те, что порождают остальные. И покажите связи». Оцените карточки, если считаете нужным, и соберите связки.</p>
+        <p>Проблемы собраны — материалы убраны, перед вами только ваши формулировки. Агеев просил второе: «выделите две-три корневые проблемы — те, что порождают остальные. И покажите связи». Оцените проблемы, если считаете нужным, и соберите связки.</p>
       </div>
 
       <div class="links-section">
-        <h3>Ваши карточки</h3>
+        <h3>Ваши проблемы</h3>
         <p class="links-hint">Пометки необязательны — заполняйте только то, в чём уверены.</p>
         <div class="cards-list" id="tagCardsList"></div>
       </div>
 
       <div class="links-section">
         <h3>Корневые связки</h3>
-        <p class="links-hint">Выберите карточки, которые связаны между собой, и объясните механизм — почему одно порождает другое.</p>
+        <p class="links-hint">Выберите проблемы, которые связаны между собой, и объясните механизм — почему одно порождает другое.</p>
         <div class="cards-list" id="connectionsList"></div>
         <button class="btn btn-ghost btn-small" id="addConnectionBtn" style="margin-top:8px;">+ связка</button>
       </div>
@@ -495,15 +489,7 @@
 </div>
 
 <div class="sel-toolbar" id="selToolbar">
-  <button id="hlBtn" title="Отметить фрагмент">✎ отметить</button>
-</div>
-
-<div class="hl-popover" id="hlPopover">
-  <textarea id="hlNoteInput" rows="2" placeholder="заметка к отметке (необязательно)"></textarea>
-  <div class="hl-popover-actions">
-    <button id="hlDeleteBtn" class="hl-popover-danger">удалить отметку</button>
-    <button id="hlSaveBtn" class="hl-popover-save">сохранить</button>
-  </div>
+  <button id="hlBtn" title="Отметить фрагмент как проблему">✎ отметить</button>
 </div>
 
 <script src="js/main.js"></script>

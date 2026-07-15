@@ -1,11 +1,17 @@
 // i(m)perfect — станция 1 «Вычитка и карта проблем» (кейс «Искра»).
-// Полностью фронтовая заглушка: судейство против ключа (LLM-судья) не подключено —
-// экран честно показывает это на финише вместо баллов.
+//
+// Модель взаимодействия: рабочая область = ВАШИ отметки. Выделяете фрагмент в
+// тексте → он появляется справа карточкой (цитата + поле «опишите проблему
+// своими словами»). Так каждая проблема по построению привязана к тексту — без
+// отдельного «якоря» и статуса «подтверждено». В конце — рефлексивный вопрос
+// «какая из них основная». Фаза 2 — связки (АК-2). Оценка: АК-1 судит ИИ по
+// тексту описаний (state.cards), АК-2 — по связкам; и то и другое считает бэкенд,
+// участнику не показывается.
 
 (function () {
   var APPX_TOTAL = 8;
   var session = null;
-  var state = null; // { cards, groups, rationale, appxOpened, highlights, finished, startedAt }
+  var state = null;
 
   function storageKey(bib) { return 'imp_station1_' + bib; }
   function htmlKey(bib) { return 'imp_station1_html_' + bib; }
@@ -22,22 +28,31 @@
       if (raw) {
         var parsed = JSON.parse(raw);
         if (!parsed.highlights) parsed.highlights = [];
+        // каждая отметка — проблема: описание своими словами + оценка (АК-2)
+        parsed.highlights.forEach(function (h) {
+          if (h.problem === undefined) h.problem = '';
+          if (h.tag === undefined) h.tag = '';
+          if (h.influence === undefined) h.influence = '';
+        });
+        if (!parsed.cards) parsed.cards = [];
         if (!parsed.appxOpened) parsed.appxOpened = {};
         if (!parsed.appxReviewed) parsed.appxReviewed = {};
         if (!parsed.connections) parsed.connections = [];
+        if (parsed.mainProblemId === undefined) parsed.mainProblemId = '';
+        if (parsed.mainProblemWhy === undefined) parsed.mainProblemWhy = '';
         if (!parsed.phase) parsed.phase = 'map';
         return parsed;
       }
     } catch (e) {}
     return {
-      cards: [],
-      groups: [],
-      rationale: '',
-      appxOpened: {},   // explicitly clicked open at least once
-      appxReviewed: {}, // opened AND scrolled through to the end — the real "read it" signal
-      highlights: [],
-      connections: [],  // корневые связки (АК-2): { id, cardIds, mechanism, conclusion, isLoop }
-      phase: 'map',     // 'map' (карта, кейс слева) | 'links' (фаза 2: только карточки)
+      cards: [],          // ПРОИЗВОДНОЕ от highlights (для бэкенда/связок) — см. deriveCards
+      highlights: [],     // источник правды: { id, sectionId, domains, snippet, problem, tag, influence }
+      connections: [],    // корневые связки (АК-2): { id, cardIds, mechanism, conclusion, isLoop }
+      mainProblemId: '',  // рефлексивный выбор «основной» проблемы (не в балл)
+      mainProblemWhy: '',
+      appxOpened: {},
+      appxReviewed: {},
+      phase: 'map',       // 'map' | 'links'
       finished: false,
       startedAt: new Date().toISOString()
     };
@@ -46,13 +61,11 @@
   var backendSyncTimer = null;
 
   function saveState() {
+    deriveCards(); // state.cards всегда зеркалит описанные проблемы — их читает бэкенд и фаза связок
     localStorage.setItem(storageKey(session.bib), JSON.stringify(state));
     scheduleBackendSync();
   }
 
-  // localStorage stays the instant, synchronous source of truth for the UI;
-  // the backend sync is a best-effort background mirror for the facilitator
-  // dashboard, debounced so we're not firing a request on every keystroke.
   function scheduleBackendSync() {
     if (!window.imp.isApiConfigured()) return;
     clearTimeout(backendSyncTimer);
@@ -72,7 +85,7 @@
 
   function escapeHtml(s) {
     var div = document.createElement('div');
-    div.textContent = s;
+    div.textContent = s == null ? '' : String(s);
     return div.innerHTML;
   }
 
@@ -84,10 +97,7 @@
     return;
   }
 
-  // восстановление доступа на новом устройстве: локально для этой станции пусто —
-  // сначала подтягиваем реальный прогресс с бэкенда, иначе следующий же автосейв
-  // затрёт его пустым стейтом (см. api.js hydrateOnce) — фоновая проверка,
-  // не блокирует рендер; если найдётся реальный прогресс, страница перезагрузится сама
+  // восстановление доступа на новом устройстве — см. api.js hydrateOnce
   window.imp.hydrateOnce('loadStation1', session.bib, storageKey(session.bib));
 
   document.getElementById('gate').style.display = 'none';
@@ -99,14 +109,13 @@
 
   var caseContent = document.getElementById('caseContent');
 
-  // restore reading panel (highlights/notes survive reload)
+  // restore reading panel (marks survive reload)
   (function restoreCaseHtml() {
     var saved = localStorage.getItem(htmlKey(session.bib));
     if (saved) caseContent.innerHTML = saved;
   })();
 
-  // rebuild state.highlights from marks already in the DOM if they predate this field,
-  // or if a mark and its record ever drift apart
+  // rebuild state.highlights from marks already in the DOM if a mark and its record drift apart
   (function reconcileHighlights() {
     var known = state.highlights.map(function (h) { return h.id; });
     caseContent.querySelectorAll('mark.hl').forEach(function (markEl) {
@@ -116,16 +125,13 @@
         var article = markEl.closest('article[id]');
         state.highlights.push({
           id: id,
-          note: markEl.title || '',
           sectionId: article ? article.id : '',
           domains: domainsFor(markEl),
-          snippet: markEl.textContent.slice(0, 140)
+          snippet: markEl.textContent.slice(0, 140),
+          problem: '', tag: '', influence: ''
         });
         known.push(id);
       }
-      // отметки восстановлены из сохранённого HTML — заново навешиваем drag,
-      // ни один обработчик не переживает сериализацию в innerHTML
-      attachMarkDragHandlers(markEl, id);
     });
   })();
 
@@ -142,13 +148,8 @@
     introEl.style.display = 'flex';
   });
 
-  // ---------- appendix tracking: must be explicitly opened AND scrolled to the end ----------
-  // Appendices are collapsed <details> by default. A stray scroll-past can no longer
-  // "read" one for you — opening takes a click, and "изучено" only lands once the
-  // sentinel at the bottom of that appendix's body has actually been seen while it's open.
+  // ---------- appendix tracking (открыть + долистать до конца) ----------
 
-  // "справка по терминам" is a glossary, not one of the 8 numbered appendices —
-  // it still gets tracked and checked off in the nav, just excluded from the /8 count.
   var countableAppxIds = ['1', '2', '3', '4', '5', '6', '7', '8'];
   var trackedAppxIds = ['terms'].concat(countableAppxIds);
 
@@ -224,8 +225,6 @@
     });
   });
 
-  // clicking a nav link for an appendix also opens it — jumping to a closed card
-  // without opening it would be a dead end
   document.querySelectorAll('.case-nav-link[data-appx]').forEach(function (link) {
     link.addEventListener('click', function () {
       var details = appxDetails[link.dataset.appx];
@@ -233,7 +232,7 @@
     });
   });
 
-  // ---------- section labels (used as anchor tokens dragged onto cards) ----------
+  // ---------- домены/разделы кейса ----------
 
   function articleIdFor(node) {
     var el = node.nodeType === 3 ? node.parentElement : node;
@@ -241,49 +240,23 @@
     return article ? article.id : '';
   }
 
-  // АК-1 (широта охвата внешних факторов): домен выводится из разметки самого кейса
-  // (data-domain на конкретных абзацах — см. station1.html), а не из того, что участник
-  // сам о себе заявляет. Так карточка не может «попасть» в домен без реальной ссылки
-  // на соответствующий фрагмент текста.
+  // АК-1: домен выводится из разметки самого кейса (data-domain), не из заявления участника.
   function domainsFor(node) {
     var el = node.nodeType === 3 ? node.parentElement : node;
     var tagged = el && el.closest ? el.closest('[data-domain]') : null;
     return tagged ? tagged.getAttribute('data-domain').split(/\s+/).filter(Boolean) : [];
   }
 
-  function shortAnchorLabel(articleId) {
-    if (!articleId) return '';
-    if (articleId.indexOf('appx-') === 0) {
-      var key = articleId.replace('appx-', '');
-      return key === 'terms' ? 'справка по терминам' : 'П' + key;
-    }
-    if (articleId === 'sec-intro') return 'перед чтением';
-    if (articleId === 'sec-7') return 'письмо Агеева';
-    if (articleId === 'sec-8') return 'задание';
-    if (articleId.indexOf('sec-') === 0) return 'раздел ' + articleId.replace('sec-', '');
-    return articleId;
-  }
-
-  // ---------- highlight + note: one action, optional note, click to edit/remove ----------
+  // ---------- выделение фрагмента → отметка ----------
 
   var toolbar = document.getElementById('selToolbar');
-  var popover = document.getElementById('hlPopover');
-  var noteInput = document.getElementById('hlNoteInput');
   var activeRange = null;
-  var popoverHlId = null;
-
-  // Заметка к отметке — не якорь: браузеры по умолчанию вставляют перетащенный
-  // текст в любое текстовое поле под курсором, а этот попап часто открыт прямо
-  // рядом с местом, откуда тащат якорь на карточку — легко промахнуться сюда.
-  noteInput.addEventListener('dragover', function (ev) { ev.dataTransfer.dropEffect = 'none'; });
-  noteInput.addEventListener('drop', function (ev) { ev.preventDefault(); });
 
   function hideToolbar() { toolbar.classList.remove('show'); activeRange = null; }
-  function closePopover() { popover.classList.remove('show'); popoverHlId = null; }
 
   document.addEventListener('mouseup', function (e) {
-    if (state.finished) return; // отметки — доказательная база АК-1, после финиша не редактируются
-    if (toolbar.contains(e.target) || popover.contains(e.target)) return;
+    if (state.finished) return; // после финиша отметки не добавляются
+    if (toolbar.contains(e.target)) return;
     var sel = window.getSelection();
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) { hideToolbar(); return; }
     var range = sel.getRangeAt(0);
@@ -296,24 +269,11 @@
     toolbar.classList.add('show');
   });
 
-  document.addEventListener('mousedown', function (e) {
-    if (popover.classList.contains('show') && !popover.contains(e.target) && !(e.target.closest && e.target.closest('mark.hl'))) {
-      closePopover();
-    }
-  });
+  window.addEventListener('scroll', function () { hideToolbar(); }, true);
 
-  window.addEventListener('scroll', function () { hideToolbar(); closePopover(); }, true);
-
-  // Оборачивает выделение в <mark>. Возвращает МАССИВ марок (обычно один элемент).
-  // range.surroundContents() бросает исключение, если выделение пересекает границу
-  // блочного элемента (абзац, ячейка таблицы, <br>) — раньше это "чинилось" через
-  // extractContents()+insertNode(), который в таком случае вытаскивает и переставляет
-  // сами блочные элементы (целые <p>/<td>) внутрь инлайнового <mark>. Браузер не
-  // умеет корректно рендерить блок внутри инлайна: ячейка таблицы съезжает, а на
-  // абзацах видны только тонкие цветные полосы по краям вместо подсветки текста,
-  // с "прыгающей" красной строкой — оба бага, о которых сообщил пользователь.
-  // Настоящее исправление — никогда не трогать блочные элементы: оборачивать КАЖДЫЙ
-  // затронутый текстовый узел в свой собственный <mark> с одним и тем же data-hl-id.
+  // Оборачивает выделение в <mark>. Возвращает МАССИВ марок (обычно один).
+  // surroundContents() бросает исключение на пересечении границ блочных элементов —
+  // тогда оборачиваем каждый затронутый текстовый узел в свой <mark> с общим id.
   function wrapRange(range, id) {
     try {
       var mark = document.createElement('mark');
@@ -331,9 +291,6 @@
     var nodes = [];
     var n;
     while ((n = walker.nextNode())) {
-      // пропускаем чисто-пробельные текстовые узлы (переносы строк/отступы между
-      // тегами разметки) — оборачивать их в <mark> рискованно, если их родитель —
-      // структурный элемент вроде <tr>, куда инлайновый элемент вставлять нельзя
       if (range.intersectsNode(n) && n.textContent.replace(/\s+/g, '').length) nodes.push(n);
     }
     var marks = [];
@@ -354,52 +311,6 @@
     return marks;
   }
 
-  // Тащить можно прямо из подсветки в тексте, без похода в панель заметок —
-  // заметки остаются вторым, не единственным путём. Якорь — сам выделенный
-  // текст (доказательство), а не ссылка на раздел: "П1" ничего не доказывает,
-  // а цитата — доказывает, что карточка реально на чём-то основана.
-  function anchorTextFor(id) {
-    var h = state.highlights.filter(function (x) { return x.id === id; })[0];
-    return h ? '«' + h.snippet + '»' : '';
-  }
-
-  // Браузер по умолчанию рисует "призрак" перетаскивания из полного, непрозрачного
-  // вида самого элемента (жёлтая подсветка/белая карточка заметки) — из-за этого
-  // не видно, на что именно наводишься. Свой полупрозрачный призрак с обрезанным
-  // текстом решает это для любого источника перетаскивания (подсветка в тексте
-  // и карточка в «Моих заметках» используют один и тот же хелпер).
-  function setTranslucentDragImage(ev, text) {
-    var ghost = document.createElement('div');
-    ghost.textContent = text.length > 60 ? text.slice(0, 60) + '…' : text;
-    ghost.style.cssText =
-      'position:absolute; top:-1000px; left:-1000px; max-width:260px; padding:6px 10px;' +
-      'background:var(--lime); color:var(--ink); font-size:13px; line-height:1.3; border-radius:8px;' +
-      'opacity:0.55; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;';
-    document.body.appendChild(ghost);
-    ev.dataTransfer.setDragImage(ghost, 10, 10);
-    setTimeout(function () { document.body.removeChild(ghost); }, 0);
-  }
-
-  function attachMarkDragHandlers(markEl, id) {
-    markEl.draggable = true;
-    markEl.addEventListener('dragstart', function (ev) {
-      ev.dataTransfer.setData('text/plain', anchorTextFor(id));
-      ev.dataTransfer.setData('application/x-imp-highlight-id', id);
-      ev.dataTransfer.effectAllowed = 'copy';
-      setTranslucentDragImage(ev, anchorTextFor(id));
-    });
-  }
-
-  function openPopover(markEl, id, currentNote) {
-    popoverHlId = id;
-    noteInput.value = currentNote || '';
-    var rect = markEl.getBoundingClientRect();
-    popover.style.top = Math.min(window.innerHeight - 160, rect.bottom + 8) + 'px';
-    popover.style.left = Math.max(8, Math.min(window.innerWidth - 280, rect.left)) + 'px';
-    popover.classList.add('show');
-    noteInput.focus();
-  }
-
   document.getElementById('hlBtn').addEventListener('click', function () {
     if (!activeRange) return;
     var sectionId = articleIdFor(activeRange.commonAncestorContainer);
@@ -407,30 +318,34 @@
     var id = uid();
     var marks = wrapRange(activeRange, id);
     if (!marks.length) { hideToolbar(); return; }
-    marks.forEach(function (m) { attachMarkDragHandlers(m, id); });
     var snippet = marks.map(function (m) { return m.textContent; }).join(' ').slice(0, 140);
     window.getSelection().removeAllRanges();
     hideToolbar();
-    state.highlights.push({ id: id, note: '', sectionId: sectionId, domains: domains, snippet: snippet });
+    state.highlights.push({ id: id, sectionId: sectionId, domains: domains, snippet: snippet, problem: '', tag: '', influence: '' });
     saveState();
     saveCaseHtml();
-    renderNotesList();
-    openPopover(marks[0], id, '');
+    renderProblems();
+    var nc = document.querySelector('#cardsList .problem-card[data-hl-id="' + id + '"] [data-field="problem"]');
+    if (nc) nc.focus();
   });
 
+  // клик по отметке в тексте → подсветить её карточку-проблему справа
   caseContent.addEventListener('click', function (e) {
-    if (state.finished) return; // после финиша отметки только читаются, попап не открываем
     var markEl = e.target.closest ? e.target.closest('mark.hl') : null;
     if (!markEl) return;
     var sel = window.getSelection();
     if (sel && !sel.isCollapsed && sel.toString().length > 0) return;
-    var h = state.highlights.filter(function (x) { return x.id === markEl.dataset.hlId; })[0];
-    openPopover(markEl, markEl.dataset.hlId, h ? h.note : (markEl.title || ''));
+    var id = markEl.dataset.hlId;
+    var card = document.querySelector('#cardsList .problem-card[data-hl-id="' + id + '"]');
+    if (!card) return;
+    card.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    card.classList.add('flash');
+    setTimeout(function () { card.classList.remove('flash'); }, 900);
+    var ta = card.querySelector('[data-field="problem"]');
+    if (ta && !state.finished) ta.focus();
   });
 
   function removeHighlight(id) {
-    // выделение могло лечь на несколько текстовых узлов (см. wrapRangeAcrossNodes) —
-    // одному id может соответствовать несколько <mark>, снимаем все разом
     caseContent.querySelectorAll('mark[data-hl-id="' + id + '"]').forEach(function (markEl) {
       var parent = markEl.parentNode;
       while (markEl.firstChild) parent.insertBefore(markEl.firstChild, markEl);
@@ -438,293 +353,176 @@
       parent.normalize();
     });
     state.highlights = state.highlights.filter(function (x) { return x.id !== id; });
+    if (state.mainProblemId === id) state.mainProblemId = '';
     saveState();
     saveCaseHtml();
-    renderNotesList();
+    renderProblems();
   }
 
-  document.getElementById('hlSaveBtn').addEventListener('click', function () {
-    if (!popoverHlId) return;
-    var note = noteInput.value.trim();
-    var h = state.highlights.filter(function (x) { return x.id === popoverHlId; })[0];
-    if (h) h.note = note;
-    caseContent.querySelectorAll('mark[data-hl-id="' + popoverHlId + '"]').forEach(function (markEl) {
-      markEl.className = note ? 'hl has-note' : 'hl';
-      markEl.title = note || '';
-    });
-    saveState();
-    saveCaseHtml();
-    renderNotesList();
-    closePopover();
-  });
-
-  document.getElementById('hlDeleteBtn').addEventListener('click', function () {
-    if (!popoverHlId) return;
-    removeHighlight(popoverHlId);
-    closePopover();
-  });
-
-  // ---------- вкладки «Весь текст / Мои заметки» ----------
-  // Вкладка заметок — режим фокусировки: только заголовки разделов и ваши отметки,
-  // без остального текста. Заменяет прежнюю выпадающую панель.
-
-  var tabText = document.getElementById('tabText');
-  var tabNotes = document.getElementById('tabNotes');
-  var notesView = document.getElementById('notesView');
-
-  function showCaseTab(which) {
-    var isText = which === 'text';
-    tabText.classList.toggle('is-active', isText);
-    tabNotes.classList.toggle('is-active', !isText);
-    caseContent.style.display = isText ? '' : 'none';
-    notesView.style.display = isText ? 'none' : '';
-    if (!isText) renderNotesList();
+  function scrollToMark(id) {
+    var marks = caseContent.querySelectorAll('mark[data-hl-id="' + id + '"]');
+    if (!marks.length) return;
+    marks[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
+    marks.forEach(function (m) { m.classList.add('flash'); });
+    setTimeout(function () { marks.forEach(function (m) { m.classList.remove('flash'); }); }, 900);
   }
 
-  tabText.addEventListener('click', function () { showCaseTab('text'); });
-  tabNotes.addEventListener('click', function () { showCaseTab('notes'); });
+  // ---------- рабочая область: проблемы = отметки ----------
 
-  function copyToClipboard(text) {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(function () {});
-      return;
-    }
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); } catch (e) {}
-    document.body.removeChild(ta);
-  }
-
-  function sectionTitleFor(articleId) {
-    var article = document.getElementById(articleId);
-    var h = article ? article.querySelector('h4') : null;
-    return h ? h.textContent : shortAnchorLabel(articleId);
-  }
-
-  function buildNoteItem(h) {
-    var label = shortAnchorLabel(h.sectionId);
-    var item = document.createElement('div');
-    item.className = 'note-item';
-    item.innerHTML =
-      '<div class="note-item-top">' +
-        '<span class="note-item-label">' + escapeHtml(label) + '</span>' +
-        (state.finished ? '' : '<button class="note-item-del" title="Удалить">✕</button>') +
-      '</div>' +
-      '<div class="note-item-snippet">«' + escapeHtml(h.snippet) + '»</div>' +
-      (h.note ? '<div class="note-item-note">' + escapeHtml(h.note) + '</div>' : '');
-
-    var del = item.querySelector('.note-item-del');
-    if (del) del.addEventListener('click', function (ev) {
-      ev.stopPropagation();
-      removeHighlight(h.id);
-    });
-    // клик по заметке — назад в полный текст, к самой отметке
-    item.addEventListener('click', function () {
-      var markEls = caseContent.querySelectorAll('mark[data-hl-id="' + h.id + '"]');
-      if (!markEls.length) return;
-      showCaseTab('text');
-      markEls[0].scrollIntoView({ block: 'center', behavior: 'smooth' });
-      markEls.forEach(function (markEl) { markEl.classList.add('flash'); });
-      setTimeout(function () { markEls.forEach(function (markEl) { markEl.classList.remove('flash'); }); }, 900);
-    });
-    return item;
-  }
-
-  function renderNotesList() {
-    document.getElementById('notesCount').textContent = state.highlights.length;
-    notesView.innerHTML = '';
-    if (state.highlights.length === 0) {
-      notesView.innerHTML = '<div class="notes-empty">Пока нет отметок. Выделите текст во вкладке «Весь текст» и нажмите «отметить».</div>';
-      return;
-    }
-    // группируем по разделам в порядке документа — видно, по каким разделам уже прошлись
+  // отметки в порядке их появления в тексте — карта читается сверху вниз
+  function orderedHighlights() {
     var order = [];
-    caseContent.querySelectorAll('article[id]').forEach(function (a) { order.push(a.id); });
-    var bySection = {};
-    state.highlights.forEach(function (h) {
-      var key = h.sectionId || '';
-      if (!bySection[key]) bySection[key] = [];
-      bySection[key].push(h);
+    caseContent.querySelectorAll('mark.hl').forEach(function (m) {
+      var id = m.dataset.hlId;
+      if (id && order.indexOf(id) === -1) order.push(id);
     });
-    Object.keys(bySection).sort(function (a, b) {
-      return order.indexOf(a) - order.indexOf(b);
-    }).forEach(function (secId) {
-      var head = document.createElement('div');
-      head.className = 'notes-view-section';
-      head.textContent = sectionTitleFor(secId);
-      notesView.appendChild(head);
-      bySection[secId].forEach(function (h) {
-        notesView.appendChild(buildNoteItem(h));
-      });
-    });
+    var byId = {};
+    state.highlights.forEach(function (h) { byId[h.id] = h; });
+    var out = [];
+    order.forEach(function (id) { if (byId[id]) { out.push(byId[id]); delete byId[id]; } });
+    state.highlights.forEach(function (h) { if (byId[h.id]) out.push(h); });
+    return out;
   }
 
-  // Группы и якорь-на-карточке убраны: ни один скорер их не читал (АК-1 судит ИИ
-  // по тексту карточек, АК-2 — по связкам), а «✓ подтверждено/не подтверждено»
-  // выглядело как обязательный гейт, которого в оценке нет. Выделения и «Мои
-  // заметки» остаются как инструмент чтения (не в балл).
+  function problemsWithText() {
+    return orderedHighlights().filter(function (h) { return (h.problem || '').trim(); });
+  }
 
-  // ---------- cards ----------
+  // state.cards — производное: то, что читает бэкенд (АК-1 по тексту) и фаза связок
+  function deriveCards() {
+    if (!state.highlights) { state.cards = []; return; }
+    state.cards = orderedHighlights()
+      .filter(function (h) { return (h.problem || '').trim(); })
+      .map(function (h) {
+        return { id: h.id, text: h.problem, anchor: h.snippet, tag: h.tag || '', influence: h.influence || '' };
+      });
+  }
 
-  // Ручной автоскролл во время перетаскивания. #cardsList живёт в #workScroll —
-  // отдельно скроллящейся панели, не в той же, что подсветки/заметки (у тех
-  // свой скролл, #caseContent/#notesView). Между независимо скроллящимися
-  // панелями нативный auto-scroll браузера при drag ненадёжен (особенно в
-  // Safari) — этим и объясняется жалоба «якорь не фиксируется начиная с 3-й
-  // карточки»: #workScroll как раз перестаёт помещаться целиком примерно на
-  // этом месте и требует скролла, до которого браузер сам не докручивает.
-  (function setupWorkScrollAutoscroll() {
-    var workScroll = document.getElementById('workScroll');
-    if (!workScroll) return;
-    var EDGE = 56;
-    var MAX_SPEED = 14;
-    var speed = 0;
-    var raf = null;
+  function pluralProblems(n) {
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return 'а';
+    if ([2, 3, 4].indexOf(m10) !== -1 && [12, 13, 14].indexOf(m100) === -1) return 'ы';
+    return '';
+  }
 
-    function step() {
-      if (!speed) { raf = null; return; }
-      workScroll.scrollTop += speed;
-      raf = requestAnimationFrame(step);
-    }
+  function updateProblemCount() {
+    var n = orderedHighlights().length;
+    document.getElementById('cardCount').textContent = n + ' проблем' + pluralProblems(n);
+  }
 
-    workScroll.addEventListener('dragover', function (e) {
-      var rect = workScroll.getBoundingClientRect();
-      var y = e.clientY;
-      if (y < rect.top + EDGE) {
-        speed = -MAX_SPEED * (1 - Math.max(0, y - rect.top) / EDGE);
-      } else if (y > rect.bottom - EDGE) {
-        speed = MAX_SPEED * (1 - Math.max(0, rect.bottom - y) / EDGE);
-      } else {
-        speed = 0;
-      }
-      if (speed && !raf) raf = requestAnimationFrame(step);
-    });
-    workScroll.addEventListener('dragleave', function (e) {
-      if (!workScroll.contains(e.relatedTarget)) speed = 0;
-    });
-    workScroll.addEventListener('drop', function () { speed = 0; });
-  })();
-
-  function renderCards() {
+  function renderProblems() {
     var list = document.getElementById('cardsList');
     list.innerHTML = '';
-    state.cards.forEach(function (card) {
+    var hs = orderedHighlights();
+    var empty = document.getElementById('problemsEmpty');
+    if (empty) empty.style.display = hs.length ? 'none' : '';
+    hs.forEach(function (h) {
       var el = document.createElement('div');
-      el.className = 'card' + (state.finished ? ' is-locked' : '');
+      el.className = 'card problem-card' + (state.finished ? ' is-locked' : '');
+      el.dataset.hlId = h.id;
       el.innerHTML =
-        '<label>Формулировка проблемы (одно предложение)</label>' +
-        '<textarea rows="2" data-field="text" placeholder="например: юнит-экономика «Миры+» отрицательная пять лет подряд">' + escapeHtml(card.text) + '</textarea>';
+        '<blockquote class="problem-quote">«' + escapeHtml(h.snippet) + '»</blockquote>' +
+        '<label>Опишите проблему своими словами</label>' +
+        '<textarea rows="2" data-field="problem"' + (state.finished ? ' disabled' : '') +
+          ' placeholder="в чём здесь проблема для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>';
       if (!state.finished) {
         var rm = document.createElement('button');
         rm.className = 'card-remove';
         rm.textContent = '✕';
-        rm.title = 'Удалить';
-        rm.addEventListener('click', function () {
-          state.cards = state.cards.filter(function (c) { return c.id !== card.id; });
-          saveState();
-          renderCards();
-          updateCardCount();
-        });
+        rm.title = 'Убрать отметку';
+        rm.addEventListener('click', function () { removeHighlight(h.id); });
         el.appendChild(rm);
       }
-      el.querySelector('[data-field="text"]').addEventListener('input', function (e) {
-        card.text = e.target.value; saveState();
-      });
+      var ta = el.querySelector('[data-field="problem"]');
+      ta.addEventListener('input', function (e) { h.problem = e.target.value; saveState(); });
+      ta.addEventListener('blur', renderMainProblem); // обновить подписи/состав в выборе основной
+      el.querySelector('.problem-quote').addEventListener('click', function () { scrollToMark(h.id); });
       list.appendChild(el);
     });
+    updateProblemCount();
+    renderMainProblem();
   }
 
-  function updateCardCount() {
-    document.getElementById('cardCount').textContent = state.cards.length + ' карточ' + pluralCards(state.cards.length);
+  // ---------- рефлексивный шаг: какая проблема основная (не в балл) ----------
+
+  function renderMainProblem() {
+    var block = document.getElementById('mainProblemBlock');
+    var sel = document.getElementById('mainProblemSelect');
+    var why = document.getElementById('mainProblemWhy');
+    if (!block || !sel || !why) return;
+    var ps = problemsWithText();
+    if (!ps.length) { block.style.display = 'none'; return; }
+    block.style.display = '';
+    if (state.mainProblemId && !ps.some(function (h) { return h.id === state.mainProblemId; })) {
+      state.mainProblemId = '';
+    }
+    sel.innerHTML = '<option value="">— выберите —</option>' + ps.map(function (h) {
+      var label = (h.problem || '').trim();
+      if (label.length > 80) label = label.slice(0, 80) + '…';
+      return '<option value="' + h.id + '"' + (state.mainProblemId === h.id ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
+    }).join('');
+    sel.value = state.mainProblemId || '';
+    sel.disabled = !!state.finished;
+    why.value = state.mainProblemWhy || '';
+    why.disabled = !!state.finished;
   }
 
-  function pluralCards(n) {
-    var mod10 = n % 10, mod100 = n % 100;
-    if (mod10 === 1 && mod100 !== 11) return 'ка';
-    if ([2, 3, 4].indexOf(mod10) !== -1 && [12, 13, 14].indexOf(mod100) === -1) return 'ки';
-    return 'ек';
-  }
-
-  document.getElementById('addCardBtn').addEventListener('click', function () {
-    state.cards.push({ id: uid(), text: '' });
-    saveState();
-    renderCards();
-    updateCardCount();
-    var textareas = document.querySelectorAll('#cardsList textarea');
-    if (textareas.length) textareas[textareas.length - 1].focus();
+  document.getElementById('mainProblemSelect').addEventListener('change', function (e) {
+    state.mainProblemId = e.target.value; saveState();
+  });
+  document.getElementById('mainProblemWhy').addEventListener('input', function (e) {
+    state.mainProblemWhy = e.target.value; saveState();
   });
 
-  document.getElementById('rationale').value = state.rationale || '';
-  document.getElementById('rationale').addEventListener('input', function (e) {
-    state.rationale = e.target.value; saveState();
-  });
-
-  // ---------- фаза 2: связки (АК-2) — режим фокусировки ----------
+  // ---------- фаза 2: связки (АК-2) ----------
 
   var linksRoot = document.getElementById('linksRoot');
-  // Раньше здесь был жёсткий потолок в 3 связки — не от методологии (АК-2 не
-  // называет число, L5 требует "хотя бы одну" петлю/точку нестабильности) и не от
-  // судьи (AK2_ESCALATION_PROMPT/computeAK2Deterministic верхней границы не знают).
-  // Похоже на неотрефлексированный осколок старой станции 2 (где Агеев просил
-  // "2-3 корневые проблемы" в другом, давно упразднённом скоринге). Живой лимит
-  // формы участник обнаруживает так же легко, как это сделал тестовый прогон —
-  // потыкав кнопку "+" — и считывает как подсказку "здесь нужно ровно 3", что и
-  // есть подталкивание, которого мы стараемся избегать. Убран.
 
-  function cardShortLabel(card) {
-    var t = (card.text || '').trim();
-    return t.length > 70 ? t.slice(0, 70) + '…' : (t || '(без формулировки)');
+  function cardShortLabel(h) {
+    var t = (h.problem || '').trim();
+    return t.length > 70 ? t.slice(0, 70) + '…' : (t || '(без описания)');
   }
 
-  function realCards() {
-    return state.cards.filter(function (c) { return c.text && c.text.trim(); });
-  }
-
-  // Оценка карточек: необязательный тег угроза/возможность; при поставленном
-  // теге раскрывается необязательное поле влияния. Необязательность принципиальна —
-  // обязательный тег сделал бы L1/L2 (АК-2) ненаблюдаемыми: форма думала бы за участника.
+  // Оценка проблем: необязательный тег угроза/возможность (+ поле влияния).
+  // Необязательность принципиальна — иначе L1/L2 АК-2 стали бы ненаблюдаемыми.
   function renderTagCards() {
     var list = document.getElementById('tagCardsList');
     list.innerHTML = '';
-    realCards().forEach(function (card) {
+    var ps = problemsWithText();
+    ps.forEach(function (h) {
       var el = document.createElement('div');
       el.className = 'card' + (state.finished ? ' is-locked' : '');
-      var html = '<p style="margin:0 0 4px; font-size:14px; line-height:1.55;">' + escapeHtml(card.text) + '</p>';
-      html += '<div class="tag-pills">' +
-        '<button class="tag-pill' + (card.tag === 'threat' ? ' is-active' : '') + '" data-tag="threat">угроза</button>' +
-        '<button class="tag-pill' + (card.tag === 'opportunity' ? ' is-active' : '') + '" data-tag="opportunity">возможность</button>' +
+      el.innerHTML =
+        '<p style="margin:0 0 4px; font-size:14px; line-height:1.55;">' + escapeHtml(h.problem) + '</p>' +
+        '<div class="tag-pills">' +
+          '<button class="tag-pill' + (h.tag === 'threat' ? ' is-active' : '') + '" data-tag="threat">угроза</button>' +
+          '<button class="tag-pill' + (h.tag === 'opportunity' ? ' is-active' : '') + '" data-tag="opportunity">возможность</button>' +
         '</div>' +
-        '<textarea class="card-influence" rows="2" placeholder="что это означает для компании — если хотите раскрыть" style="display:' + (card.tag ? '' : 'none') + ';">' + escapeHtml(card.influence || '') + '</textarea>';
-      el.innerHTML = html;
+        '<textarea class="card-influence" rows="2" placeholder="что это означает для компании — если хотите раскрыть" style="display:' + (h.tag ? '' : 'none') + ';">' + escapeHtml(h.influence || '') + '</textarea>';
 
       el.querySelectorAll('.tag-pill').forEach(function (btn) {
         btn.addEventListener('click', function () {
           if (state.finished) return;
           var tag = btn.getAttribute('data-tag');
-          card.tag = card.tag === tag ? '' : tag; // повторный клик снимает тег
+          h.tag = h.tag === tag ? '' : tag;
           saveState();
           renderTagCards();
         });
       });
       el.querySelector('.card-influence').addEventListener('input', function (e) {
-        card.influence = e.target.value; saveState();
+        h.influence = e.target.value; saveState();
       });
-      // замок должен переживать любую перерисовку — ставим disabled прямо здесь,
-      // а не только в lockEverything(), иначе «Ещё раз посмотреть» снимает его
       if (state.finished) el.querySelectorAll('textarea, input, .tag-pill').forEach(function (x) {
         x.setAttribute('disabled', 'disabled');
       });
       list.appendChild(el);
     });
-    if (!realCards().length) {
-      list.innerHTML = '<p class="links-hint">Карточек с текстом нет — вернитесь к карте.</p>';
+    if (!ps.length) {
+      list.innerHTML = '<p class="links-hint">Описанных проблем нет — вернитесь к разбору.</p>';
     }
   }
 
-  // Связки: карточки выбираются кликом по чипам (не печатаются) — тот же принцип,
-  // что и с доменами АК-1: нельзя сослаться на то, чего у тебя нет.
+  // Связки: проблемы выбираются кликом по чипам (не печатаются).
   function renderConnections() {
     var list = document.getElementById('connectionsList');
     var addBtn = document.getElementById('addConnectionBtn');
@@ -732,12 +530,12 @@
     state.connections.forEach(function (conn) {
       var el = document.createElement('div');
       el.className = 'card' + (state.finished ? ' is-locked' : '');
-      var chipsHtml = realCards().map(function (card) {
-        var selected = (conn.cardIds || []).indexOf(card.id) !== -1;
-        return '<button class="conn-chip' + (selected ? ' is-selected' : '') + '" data-card-id="' + card.id + '">' + escapeHtml(cardShortLabel(card)) + '</button>';
+      var chipsHtml = problemsWithText().map(function (h) {
+        var selected = (conn.cardIds || []).indexOf(h.id) !== -1;
+        return '<button class="conn-chip' + (selected ? ' is-selected' : '') + '" data-card-id="' + h.id + '">' + escapeHtml(cardShortLabel(h)) + '</button>';
       }).join('');
       el.innerHTML =
-        '<label>Какие проблемы связаны — выберите из ваших карточек</label>' +
+        '<label>Какие проблемы связаны — выберите из своих</label>' +
         '<div class="conn-chips">' + chipsHtml + '</div>' +
         '<label>В чём механизм: почему одно порождает другое</label>' +
         '<textarea class="conn-mechanism" rows="2">' + escapeHtml(conn.mechanism || '') + '</textarea>' +
@@ -820,37 +618,36 @@
   }
 
   function goToLinksPhase() {
-    if (state.cards.length === 0) {
-      if (!window.confirm('Карта пуста — ни одной карточки. Перейти к связкам всё равно?')) return;
+    if (problemsWithText().length === 0) {
+      if (!window.confirm('Нет ни одной описанной проблемы. Перейти к связкам всё равно?')) return;
     }
     showLinksPhase();
   }
 
   function lockEverything() {
-    document.getElementById('addCardBtn').style.display = 'none';
-    document.getElementById('addGroupBtn').style.display = 'none';
-    document.getElementById('rationale').setAttribute('readonly', 'readonly');
     document.getElementById('finishBtn').setAttribute('disabled', 'disabled');
     document.getElementById('finishBtn').textContent = 'Станция завершена';
     document.getElementById('finishBtn2').setAttribute('disabled', 'disabled');
     document.getElementById('finishBtn2').textContent = 'Станция завершена';
+    document.querySelectorAll('#workScroll textarea, #workScroll select, #workScroll input').forEach(function (el) {
+      el.setAttribute('disabled', 'disabled');
+    });
     document.querySelectorAll('.links-body textarea, .links-body input').forEach(function (el) {
       el.setAttribute('disabled', 'disabled');
     });
-    renderCards();
-    renderNotesList(); // убирает кнопки удаления отметок во вкладке заметок
+    renderProblems();
   }
 
   function finishStation() {
-    var hasTags = state.cards.some(function (c) { return c.tag; });
+    var hasTags = state.highlights.some(function (h) { return h.tag; });
     if (!hasTags && state.connections.length === 0) {
-      if (!window.confirm('Вы не оценили ни одной карточки и не собрали ни одной связки. Завершить станцию всё равно?')) return;
+      if (!window.confirm('Вы не оценили ни одной проблемы и не собрали ни одной связки. Завершить станцию всё равно?')) return;
     }
     state.finished = true;
     state.finishedAt = new Date().toISOString();
     saveState();
     clearTimeout(backendSyncTimer);
-    syncStateToBackend(); // finish shouldn't wait out the debounce — facilitator should see it now
+    syncStateToBackend();
 
     renderTagCards();
     renderConnections();
@@ -867,13 +664,10 @@
 
   // ---------- init render ----------
 
-  renderCards();
-  updateCardCount();
-  renderNotesList();
-  saveState(); // persist any reconciled highlights right away
+  renderProblems();
+  saveState(); // сохранить реконсиленные отметки/производные карточки сразу
 
   if (state.finished) {
-    // после перезагрузки просто восстанавливаем замок и оверлей — без повторных confirm
     renderTagCards();
     renderConnections();
     lockEverything();
