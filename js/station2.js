@@ -25,6 +25,15 @@
         if (!parsed.priorities) parsed.priorities = [];
         if (!parsed.rejected) parsed.rejected = [];
         if (!parsed.step) parsed.step = 'sort';
+        if (!parsed.stance) parsed.stance = '';
+        if (!parsed.stanceOther) parsed.stanceOther = '';
+        if (!parsed.stanceCriteria) parsed.stanceCriteria = '';
+        // миграция: сессия, начатая ДО появления шага 'stance', могла уже уйти
+        // на 'proactive' — тогда вставленный позади текущего шага блок развилки
+        // рендерился «пройденным», т.е. запертым: радио видны, но не кликабельны.
+        // Возвращаем разговор на шаг развилки; набранный текст proactive не
+        // теряется (лежит в state.proactiveText и вернётся при следующем шаге).
+        if (parsed.step === 'proactive' && !parsed.stance && !parsed.finished) parsed.step = 'stance';
         return parsed;
       }
     } catch (e) {}
@@ -494,7 +503,9 @@
       if (upTo >= 0) body.appendChild(buildSortBlock());
       if (upTo >= 1) body.appendChild(buildRationaleBlock());
       if (upTo >= 2) body.appendChild(buildStressBlock());
-      if (upTo >= 3) body.appendChild(buildStanceBlock());
+      // старые ЗАВЕРШЁННЫЕ прогоны (до появления развилки) — без stance;
+      // им пустой запертый блок при просмотре не показываем
+      if (upTo >= 3 && (state.stance || !state.finished)) body.appendChild(buildStanceBlock());
       if (upTo >= 4) body.appendChild(buildProactiveBlock());
       var last = body.lastElementChild;
       if (last && !state.finished) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
