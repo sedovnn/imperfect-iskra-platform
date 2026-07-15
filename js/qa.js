@@ -86,6 +86,10 @@
 
   formEl.addEventListener('submit', function (e) {
     e.preventDefault();
+    // на случай bfcache/возврата «назад»: скрипт загрузки мог не отработать —
+    // снимаем флаг экскурсии прямо при запуске быстрого теста, иначе demo.js
+    // перехватил бы реальную сессию
+    localStorage.removeItem('imp_demo');
     var firstName = document.getElementById('qtFirstName').value.trim();
     var lastName = document.getElementById('qtLastName').value.trim();
     if (!firstName || !lastName) {

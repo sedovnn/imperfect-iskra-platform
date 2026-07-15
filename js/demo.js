@@ -30,6 +30,22 @@
   try { demo = JSON.parse(localStorage.getItem(DEMO_KEY) || 'null'); } catch (e) {}
   if (!demo || !demo.active) return;
 
+  // Защита от протечки демо в реальную сессию. Экскурсия всегда работает под
+  // DEMO_BIB (900). Если флаг демо уже засеян, но текущая сессия — не демо-биб,
+  // значит реальный участник перекрыл демо (напр. «быстрый тест» зарегистрировал
+  // свой bib, а флаг imp_demo завис из-за bfcache/кэша). В этом случае выходим из
+  // демо и снимаем флаг, чтобы не подменять реальный прогон экскурсией.
+  // Свежий запуск экскурсии (seededFor ещё null) сюда не попадает — он и должен
+  // перекрыть любую прошлую сессию своим демо-сеансом.
+  if (demo.seededFor) {
+    var curSess = null;
+    try { curSess = JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) {}
+    if (curSess && curSess.bib && curSess.bib !== DEMO_BIB) {
+      localStorage.removeItem(DEMO_KEY);
+      return;
+    }
+  }
+
   window.imp = window.imp || {};
 
   // ---------- профили ответов ----------
