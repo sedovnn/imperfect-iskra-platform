@@ -849,9 +849,6 @@
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
-    var groupNames = {};
-    (s1.groups || []).forEach(function (g) { groupNames[g.id] = g.name; });
-
     var html = '';
     html += '<div class="fac-detail-meta">' +
       '<span>' + escapeHtml(registration.email) + '</span>' +
@@ -870,39 +867,27 @@
 
     // ---- Станция 1 · Вычитка и карта проблем (АК-1 + АК-2) ----
     var s1Body = renderScoreHtml(s1) + renderAK2Html(s1);
-    if (s1.rationale) {
-      s1Body += '<h4>Как структурировал карту</h4><p class="fac-detail-text">' + escapeHtml(s1.rationale) + '</p>';
-    }
-    s1Body += '<h4>Карточки проблем (' + (s1.cards || []).length + ')</h4>';
-    if (!s1.cards || !s1.cards.length) {
+    var s1cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });
+    s1Body += '<h4>Проблемы (' + s1cards.length + ')</h4>';
+    if (!s1cards.length) {
       s1Body += '<p class="fac-detail-text">Пока пусто.</p>';
     } else {
       s1Body += '<div class="fac-cards">';
-      s1.cards.forEach(function (c) {
+      s1cards.forEach(function (c) {
         s1Body += '<div class="fac-card">' +
-          '<p>' + escapeHtml(c.text || '(без формулировки)') + '</p>' +
-          '<div class="fac-card-meta">' +
-            (c.anchor ? '<span>якорь: ' + escapeHtml(c.anchor) + '</span>' : '<span class="fac-card-warn">якорь не указан</span>') +
-            (c.group && groupNames[c.group] ? '<span>' + escapeHtml(groupNames[c.group]) + '</span>' : '') +
-          '</div></div>';
-      });
-      s1Body += '</div>';
-    }
-    var reviewedCount = Object.keys(s1.appxReviewed || {}).length;
-    s1Body += '<h4>Приложения — изучено ' + reviewedCount + '/8</h4>';
-    s1Body += '<h4>Заметки и выделения (' + (s1.highlights || []).length + ')</h4>';
-    if (!s1.highlights || !s1.highlights.length) {
-      s1Body += '<p class="fac-detail-text">Нет отметок.</p>';
-    } else {
-      s1Body += '<div class="fac-cards">';
-      s1.highlights.forEach(function (h) {
-        s1Body += '<div class="fac-card">' +
-          '<p>«' + escapeHtml(h.snippet) + '»</p>' +
-          (h.note ? '<div class="fac-card-meta"><span>' + escapeHtml(h.note) + '</span></div>' : '') +
+          '<p>' + escapeHtml(c.text) + '</p>' +
+          (c.anchor ? '<div class="fac-card-meta"><span>из цитаты: «' + escapeHtml(c.anchor) + '»</span></div>' : '') +
+          (c.influence ? '<p class="fac-detail-text">' + escapeHtml(c.influence) + '</p>' : '') +
           '</div>';
       });
       s1Body += '</div>';
     }
+    if (s1.mainProblemId) {
+      var mp = s1cards.filter(function (c) { return c.id === s1.mainProblemId; })[0];
+      if (mp) s1Body += '<p class="fac-detail-text"><b>Основная, по участнику:</b> ' + escapeHtml(mp.text) + (s1.mainProblemWhy ? ' — ' + escapeHtml(s1.mainProblemWhy) : '') + '</p>';
+    }
+    var reviewedCount = Object.keys(s1.appxReviewed || {}).length;
+    s1Body += '<h4>Приложения — изучено ' + reviewedCount + '/8</h4>';
     // балл навыка считается только в facilitatorList (participant.*.akSkill/prSkill/skill) —
     // сырые записи станций/комнат (s1/s2/roomX здесь) его не несут, поэтому берём из participant.
     html += taskSectionHtml(

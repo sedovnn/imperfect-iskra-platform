@@ -240,7 +240,10 @@
                mechanism: cn.mechanism || '', conclusion: cn.conclusion || '', isLoop: !!cn.loop };
     });
     put('imp_station1_' + bib, {
-      cards: [], highlights: highlights, connections: connections,
+      // как это делает station1.js deriveCards — чтобы дальше (доссье/связки/кабинет)
+      // проблемы были видны, даже если экскурсия прыгнула на станцию 2 мимо станции 1
+      cards: highlights.map(function (h) { return { id: h.id, text: h.problem, anchor: h.snippet, tag: h.tag || '', influence: h.influence || '' }; }),
+      highlights: highlights, connections: connections,
       mainProblemId: (profile.id === 'weak' ? '' : 'c1'),
       mainProblemWhy: (profile.id === 'strong' ? 'она обнуляет саму бизнес-модель, остальное — следствия' : ''),
       appxOpened: {}, appxReviewed: {},

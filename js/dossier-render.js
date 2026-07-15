@@ -43,22 +43,25 @@
     // ---------- Станция 1 ----------
     if (s1) {
       section('Станция 1 · Вычитка и карта проблем');
-      var groupNames = {};
-      (s1.groups || []).forEach(function (g) { groupNames[g.id] = g.name; });
-      if (s1.rationale) textB('Как я структурировал карту:', s1.rationale);
 
+      // проблема = отметка: описание своими словами + цитата, откуда она
       var cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });
       if (cards.length) {
-        html += '<p class="fac-detail-text"><b>Карточки проблем (' + cards.length + '):</b></p>';
+        html += '<p class="fac-detail-text"><b>Мои проблемы (' + cards.length + '):</b></p>';
         cardsOpen();
         cards.forEach(function (c) {
-          html += '<div class="fac-card"><p>' + esc(c.text) + '</p><div class="fac-card-meta">' +
-            (c.anchor ? '<span>якорь: ' + esc(c.anchor) + '</span>' : '') +
-            (c.group && groupNames[c.group] ? '<span>' + esc(groupNames[c.group]) + '</span>' : '') +
-            (TAG[c.tag] ? '<span>' + TAG[c.tag] + '</span>' : '') +
-            '</div>' + (c.influence ? '<p class="fac-detail-text">' + esc(c.influence) + '</p>' : '') + '</div>';
+          html += '<div class="fac-card"><p>' + esc(c.text) + '</p>' +
+            (c.anchor ? '<div class="fac-card-meta"><span>из цитаты: «' + esc(c.anchor) + '»</span></div>' : '') +
+            (TAG[c.tag] ? '<div class="fac-card-meta"><span>' + TAG[c.tag] + '</span></div>' : '') +
+            (c.influence ? '<p class="fac-detail-text">' + esc(c.influence) + '</p>' : '') + '</div>';
         });
         cardsClose();
+      }
+
+      // основная проблема — рефлексивный выбор (не в балл)
+      if (s1.mainProblemId) {
+        var mainCard = cards.filter(function (c) { return c.id === s1.mainProblemId; })[0];
+        if (mainCard) textB('Основная, по-моему:', mainCard.text + (s1.mainProblemWhy ? ' — ' + s1.mainProblemWhy : ''));
       }
 
       var conns = s1.connections || [];
@@ -67,7 +70,7 @@
         var cardById = {}; (s1.cards || []).forEach(function (c) { cardById[c.id] = c; });
         cardsOpen();
         conns.forEach(function (cn) {
-          var t = (cn.cardIds || []).map(function (id) { return cardById[id] ? '«' + (cardById[id].text || '') + '»' : '(карточка)'; }).join(' + ');
+          var t = (cn.cardIds || []).map(function (id) { return cardById[id] ? '«' + (cardById[id].text || '') + '»' : '(проблема)'; }).join(' + ');
           html += '<div class="fac-card"><p>' + esc(t) + '</p>' +
             (cn.mechanism ? '<div class="fac-card-meta"><span>механизм: ' + esc(cn.mechanism) + '</span></div>' : '') +
             (cn.conclusion ? '<div class="fac-card-meta"><span>вывод: ' + esc(cn.conclusion) + '</span></div>' : '') + '</div>';
@@ -75,16 +78,6 @@
         cardsClose();
       }
 
-      var hls = s1.highlights || [];
-      if (hls.length) {
-        html += '<p class="fac-detail-text"><b>Мои выделения (' + hls.length + '):</b></p>';
-        cardsOpen();
-        hls.forEach(function (h) {
-          html += '<div class="fac-card"><p>«' + esc(h.snippet || h.text || '') + '»</p>' +
-            (h.note ? '<div class="fac-card-meta"><span>' + esc(h.note) + '</span></div>' : '') + '</div>';
-        });
-        cardsClose();
-      }
       if (s1.appxReviewed && Object.keys(s1.appxReviewed).length) {
         text('Приложения изучено: ' + Object.keys(s1.appxReviewed).length + '/8');
       }
