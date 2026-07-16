@@ -186,12 +186,28 @@
     return scores.reduce(function (sum, s) { return sum + s.value; }, 0);
   }
 
+  // Сколько из 10 способностей реально оценено (по одному уровню на способность).
+  function countAbilitiesJudged(p) {
+    var vals = [
+      p.station1.level, p.station1.ak2Level,
+      p.station2.pr1Level, p.station2.pr2Level,
+      p.roomFuture.level1, p.roomFuture.level2,
+      p.roomAlternatives.level1, p.roomAlternatives.level2,
+      p.roomPath.level1, p.roomPath.level2
+    ];
+    return vals.filter(function (v) { return typeof v === 'number'; }).length;
+  }
+
   // Главная таблица — только итоговое число (быстрый скан по всем участникам).
-  // Разбивка по навыкам и объяснение по способностям — в карточке участника
-  // (formatTotal ниже), не здесь.
+  // Балл /50 корректен лишь когда оценены ВСЕ 10 способностей (п.10): при частичном
+  // прохождении показываем «…» + сколько оценено, чтобы неполный балл не читался
+  // как финальный. Разбивка по навыкам — в карточке участника (formatTotal).
   function formatTotalCompact(p) {
+    var judged = countAbilitiesJudged(p);
+    if (judged === 0) return '—';
     var t = totalScore(p);
-    return t === null ? '—' : t + '/50';
+    if (judged < 10 || t === null) return '… (' + judged + '/10)';
+    return t + '/50';
   }
 
   function formatTotal(p) {
@@ -408,7 +424,7 @@
         'Статус «Коридор Лемеха»', 'Горизонт (МК-1)', 'Источник горизонта', 'Развилки будущего (МК-2)', 'Источник развилок', 'Образ будущего, балл',
         'Статус «Очередь в Прожектор»', 'Альтернативы (ГА-1)', 'Источник альтернатив', 'Идеи из областей (ГА-2)', 'Источник идей', 'Альтернативы, балл',
         'Статус «Черновик к комитету»', 'Декомпозиция пути (ПП-1)', 'Источник декомпозиции', 'Барьеры/ресурсы (ПП-2)', 'Источник барьеров', 'Путь к цели, балл',
-        'Итого (из 50)', 'Стратегия финализирована', 'Дата финализации']
+        'Итого (из 50)', 'Оценено способностей (из 10)', 'Стратегия финализирована', 'Дата финализации']
     ];
     currentView.forEach(function (p) {
       rows.push([
@@ -440,6 +456,7 @@
         roomCsvCols(p, 'roomPath', 'level1', 'level2'),
         [
           totalScore(p) === null ? '' : totalScore(p),
+          countAbilitiesJudged(p),
           p.station3.finished ? 'да' : 'нет',
           p.station3.finished ? formatDate(p.station3.finishedAt) : ''
         ]
@@ -679,8 +696,8 @@
     }
     if (s2.stressChoice) {
       html += '<p class="fac-detail-text"><b>Стресс-тест «отложим на полгода»:</b> <span class="fac-pill ' +
-        (s2.stressChoice === 'hold' ? 'is-done' : 'is-progress') + '">' +
-        (s2.stressChoice === 'hold' ? 'настоял на своём' : 'согласился пересобрать') + '</span></p>';
+        (s2.stressChoice === 'hold' ? 'is-done' : (s2.stressChoice === 'calibrate' ? 'is-progress' : 'is-progress')) + '">' +
+        (s2.stressChoice === 'hold' ? 'настоял на своём' : (s2.stressChoice === 'calibrate' ? 'пересобрал частично' : 'согласился пересобрать')) + '</span></p>';
       if (s2.stressComment) {
         html += '<p class="fac-detail-text">' + escapeHtml(s2.stressComment) + '</p>';
       }
@@ -724,7 +741,7 @@
 
   function roomAnswersAlternatives(state) {
     var html = '';
-    if (state.answer1) html += '<p class="fac-detail-text" style="margin-top:10px;"><b>На месте Агеева:</b> ' + escapeHtml(state.answer1) + '</p>';
+    if (state.answer1) html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Почему это сработает:</b> ' + escapeHtml(state.answer1) + '</p>';
     if (state.source) {
       html += '<p class="fac-detail-text"><b>Источник идей (самооценка):</b> ' + escapeHtml(GA2_SOURCE_LABELS[state.source] || state.source) + '</p>';
     }

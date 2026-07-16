@@ -113,7 +113,7 @@
       if (s2.firstAction) textB('Первый ход по приоритету №1:', s2.firstAction);
       if (s2.rationale) textB('Почему №1 первым:', s2.rationale);
       if (s2.stressChoice) {
-        textB('Стресс-тест «отложим на полгода»:', s2.stressChoice === 'hold' ? 'настоял на своём' : 'согласился пересобрать');
+        textB('Стресс-тест «отложим на полгода»:', s2.stressChoice === 'hold' ? 'настоял на своём' : (s2.stressChoice === 'calibrate' ? 'пересобрал частично' : 'согласился пересобрать'));
         if (s2.stressComment) text(s2.stressComment);
       }
       if (s2.proactiveText) textB('При каких условиях пересмотрю выбор:', s2.proactiveText);
@@ -128,7 +128,7 @@
 
     if (ra && (ra.answer1 || ra.source || ra.sourceElaboration)) {
       section('Очередь в «Прожектор»');
-      if (ra.answer1) textB('На месте Агеева:', ra.answer1);
+      if (ra.answer1) textB('Почему это сработает:', ra.answer1);
       if (ra.source) textB('Источник идей:', GA_SOURCE[ra.source] || ra.source);
       if (ra.sourceElaboration) text(ra.sourceElaboration);
     }

@@ -45,7 +45,7 @@
       rejectionRule: '',
       rationale: '',
       firstAction: '',     // «первый ход» — каким действием откроют приоритет №1 (нарратив, не в балл)
-      stressChoice: '',    // 'hold' | 'change'
+      stressChoice: '',    // 'hold' | 'calibrate' | 'change'
       stressComment: '',
       proactiveText: '',
       // рекомендация по развилке из письма Агеева (задание №3 кейса) — спина
@@ -414,8 +414,9 @@
       block.innerHTML =
         '<p class="s2-ageev"><b>Агеев</b> откидывается в кресле: «Теперь то, что вы услышите на правлении. Штерн скажет: „' + escapeHtml(topPriorityText()) + '“ — не горит. Подождём полгода, будет больше данных, вернёмся к вопросу. И часть правления его поддержит. Настаиваете, что это идёт первым, — или пересобираем список?»</p>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Настаиваю: это идёт первым</label>' +
+        '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Пересоберу частично — вот что меняю, а что удерживаю</label>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Соглашусь пересобрать список</label>' +
-        '<textarea class="s2-stress-comment" rows="2" placeholder="почему — в двух словах (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
+        '<textarea class="s2-stress-comment" rows="2" placeholder="почему — в двух словах; если пересобираете частично, назовите, что меняете, а что удерживаете"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitStressBtn" style="margin-top:12px;">Ответить →</button>');
 
       if (!locked) {
@@ -454,9 +455,11 @@
       // реакция Агеева на стресс-тест (п.11): настоял или согласился пересобрать
       var stressReact = state.stressChoice === 'hold'
         ? '<b>Агеев</b> чуть заметно кивает: «Настояли. Правление это запомнит — оно уважает тех, кто не складывается на первом „подождём“».'
-        : (state.stressChoice === 'change'
-          ? '<b>Агеев</b>: «Согласились пересобрать. Это не слабость — иногда это и есть трезвость. Посмотрим, куда выведет».'
-          : '');
+        : (state.stressChoice === 'calibrate'
+          ? '<b>Агеев</b> хмыкает: «Пересобрали частично — сдвинули оболочку, ядро оставили. Если сами понимаете, что именно удержали, это не колебание, а калибровка».'
+          : (state.stressChoice === 'change'
+            ? '<b>Агеев</b>: «Согласились пересобрать. Это не слабость — иногда это и есть трезвость. Посмотрим, куда выведет».'
+            : ''));
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =

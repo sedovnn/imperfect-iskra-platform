@@ -468,7 +468,7 @@
       el.dataset.hlId = h.id;
       var head = h.snippet
         ? '<blockquote class="problem-quote">«' + escapeHtml(h.snippet) + '»</blockquote>'
-        : '<div class="problem-quote-none" style="font-size:12.5px; color:var(--muted-soft); font-style:italic; margin:0 0 6px;">Без прямой цитаты — ваш вывод</div>';
+        : '<div class="problem-quote-none" style="font-size:12.5px; color:var(--muted-soft); font-style:italic; margin:0 0 6px;">вывод из прочитанного — прямой цитаты нет</div>';
       el.innerHTML =
         head +
         '<label>Опишите проблему своими словами</label>' +

@@ -3,10 +3,10 @@
 // к мартовскому комитету») + финализация стратегии. Названия и тизеры комнат —
 // намеренно про сюжет кейса, не про способность: как и станции 1/2 названы по
 // событию («Встреча с Агеевым»), а не по конструкту, чтобы не подсказывать,
-// что именно здесь меряется. Порядок посещения свободный, полнота не гейтится —
-// единственное реальное ограничение — общее время участника на раунд 1 (~2 часа),
-// поэтому финализировать можно и не зайдя во все комнаты: непосещённая комната
-// просто не даёт сигнала по своей способности, это не штраф и не блокер.
+// что именно здесь меряется. Порядок посещения свободный, НО все три обязательны
+// (п.10): финализировать стратегию можно только пройдя каждый разговор — они
+// раскрывают разные грани выбранной позиции и покрывают МК/ГА/ПП. Гейт снят
+// только в режиме экскурсии (demo).
 
 (function () {
   var ROOMS = [
@@ -204,7 +204,7 @@
 
     // Собираем НАСТОЯЩИЙ документ стратегии из решений всего раунда, в порядке
     // как читалась бы стратегическая записка: позиция → первый ход → куда ведёт
-    // (и если не так) → что взвесили и отвергли → путь → барьеры/опора. Каждый
+    // (и если не так) → почему это сработает → путь → барьеры/опора. Каждый
     // блок — из своего источника (станция 2 + три разговора), всё вокруг ОДНОЙ
     // выбранной позиции. Пустые блоки не показываем.
     function buildRecapHtml() {
@@ -246,9 +246,9 @@
         if (c3) cards.push(c3);
       }
 
-      // 4. Что взвесили и отвергли (Очередь в «Прожектор», ГА)
+      // 4. Позиция под сомнением: почему сработает (Очередь в «Прожектор», ГА)
       if (ra && ra.answer1) {
-        cards.push('<p><b>Взвесили и отвергли:</b> ' + esc(ra.answer1) + '</p>');
+        cards.push('<p><b>Почему это сработает:</b> ' + esc(ra.answer1) + '</p>');
       }
 
       // 5. Путь: текущее → целевое + этапы (Черновик к комитету, ПП)
@@ -305,6 +305,28 @@
       else document.getElementById('stationRoot').style.display = '';
     });
 
+    // жёсткий гейт финализации (п.10): все три разговора обязательны — финал
+    // открывается только когда пройдены все. В режиме экскурсии гейт снят.
+    function roomsDone() {
+      return ROOMS.filter(function (r) { return roomStatus(r).text === 'завершена'; }).length;
+    }
+    function finalizeBypass() { return !!(window.imp.isDemo && window.imp.isDemo()); }
+    function updateFinalizeGate() {
+      if (state.finished) return;
+      if (roomsDone() >= ROOMS.length || finalizeBypass()) {
+        openFinalizeBtn.removeAttribute('disabled');
+        openFinalizeBtn.textContent = 'Собрать и финализировать стратегию →';
+        openFinalizeBtn.removeAttribute('title');
+      } else {
+        var missing = ROOMS.filter(function (r) { return roomStatus(r).text !== 'завершена'; })
+          .map(function (r) { return r.title; });
+        openFinalizeBtn.setAttribute('disabled', 'disabled');
+        openFinalizeBtn.textContent = 'Пройдите все три разговора (осталось ' + missing.length + ')';
+        openFinalizeBtn.setAttribute('title', 'Не хватает: ' + missing.join(', '));
+      }
+    }
+    updateFinalizeGate();
+
     // повторный просмотр собранной стратегии после финала — read-only (п.13)
     document.getElementById('reviewStrategyBtn').addEventListener('click', function () {
       strategyRecapEl.innerHTML = buildRecapHtml();
@@ -342,11 +364,12 @@
     }
 
     function finalizeRound() {
-      var visited = ROOMS.filter(function (r) { return roomStatus(r).text === 'завершена'; }).length;
-      if (visited < ROOMS.length) {
-        var left = ROOMS.length - visited;
-        var word = left === 1 ? 'разговор' : 'разговора';
-        if (!window.confirm('Вы не зашли в ' + left + ' ' + word + ' из ' + ROOMS.length + '. Финализировать стратегию с тем, что есть?')) return;
+      // жёсткий гейт (п.10): без всех трёх разговоров финализация невозможна
+      // (кроме режима экскурсии). Кнопка «собрать» и так заблокирована — это
+      // страховка на случай прямого вызова.
+      if (!finalizeBypass() && roomsDone() < ROOMS.length) {
+        window.alert('Финализировать стратегию можно только после всех трёх разговоров.');
+        return;
       }
       if (defenseEl) state.finalDefense = defenseEl.value;
       state.finished = true;
