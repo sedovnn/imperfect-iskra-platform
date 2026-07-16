@@ -6,6 +6,11 @@
 <title>Станция 1 · Вычитка и карта проблем — i(m)perfect</title>
 <meta name="description" content="Раунд 1, станция 1. Прочитайте материалы «Искры» и соберите карту проблем." />
 <link rel="stylesheet" href="css/styles.css" />
+<style>
+  /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
+  .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+  .appx-ref:hover { background: var(--lime); }
+</style>
 </head>
 <body>
 
@@ -53,10 +58,6 @@
           <span><b>Играем только по данным кейса.</b> Аргумент засчитывается, если на него можно указать пальцем в тексте или приложении.</span>
         </div>
         <div class="case-rule" style="margin-top:12px;">
-          <span>🗺</span>
-          <span><b>Карта собирается в два хода.</b> Сначала выпишите проблемы, которые видите (карточки справа). Потом свяжите их — что порождает что, где замыкается петля («Дальше: связки →»). Связи и есть структура карты: плоский список её не показывает.</span>
-        </div>
-        <div class="case-rule" style="margin-top:12px;">
           <span>📎</span>
           <span><b>Приложения — после кейса.</b> Ниже основного текста идут приложения П1–П8, по умолчанию свёрнутые. Раскройте те, что понадобятся.</span>
         </div>
@@ -92,7 +93,6 @@
           <a href="#appx-6" class="case-nav-link" data-appx="6">П6 · Модельный индекс (OMI)</a>
           <a href="#appx-7" class="case-nav-link" data-appx="7">П7 · Пост-мортем «Периметра»</a>
           <a href="#appx-8" class="case-nav-link" data-appx="8">П8 · Мемо «Приоритеты 2024–2026»</a>
-          <div class="case-nav-progress" id="appxProgress">0/8 приложений изучено</div>
         </nav>
 
         <div class="case-main">
@@ -428,9 +428,13 @@
 
         <div class="work-scroll" id="workScroll">
 
-          <p class="links-hint" id="problemsEmpty" style="margin:0 0 4px;">Выделяйте важные места прямо в тексте слева (кнопка «отметить») — каждая цитата появится здесь, и вы опишете, в чём проблема, своими словами.</p>
+          <p class="work-hint" style="margin:0 0 12px; font-size:13px; color:var(--muted); line-height:1.5;"><b>Карта в два хода:</b> 1) выпишите проблемы — выделите фразу в тексте слева и нажмите «отметить»; 2) свяжите их — кнопка «Дальше: связки →» вверху.</p>
+
+          <p class="links-hint" id="problemsEmpty" style="margin:0 0 4px;">Пока пусто — выделите первую проблему в тексте слева, и она появится здесь. Вывод без прямой цитаты можно добавить кнопкой ниже.</p>
 
           <div class="cards-list" id="cardsList"></div>
+
+          <button class="btn btn-ghost btn-small" id="addNoQuoteBtn" style="margin-top:10px;">+ проблема без прямой цитаты</button>
 
           <div class="rationale-block" id="mainProblemBlock" style="display:none; margin-top:22px; padding-top:18px; border-top:1px solid #ececec;">
             <label for="mainProblemSelect">Какая из этих проблем, по-вашему, основная — корень остальных?</label>

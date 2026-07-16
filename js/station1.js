@@ -165,8 +165,12 @@
   });
 
   function updateAppxProgress() {
+    // счётчик «N/8» для участника убран (давил, не мотивировал); сам факт
+    // «изучено» по-прежнему трекается для кабинета фасилитатора. Если элемента нет — выходим.
+    var el = document.getElementById('appxProgress');
+    if (!el) return;
     var n = countableAppxIds.filter(function (id) { return state.appxReviewed[id]; }).length;
-    document.getElementById('appxProgress').textContent = n + '/' + APPX_TOTAL + ' приложений изучено';
+    el.textContent = n + '/' + APPX_TOTAL + ' приложений изучено';
   }
 
   function refreshAppxUi(id) {
@@ -230,6 +234,48 @@
       var details = appxDetails[link.dataset.appx];
       if (details) details.open = true;
     });
+  });
+
+  // Ссылки на приложения прямо в тексте кейса (п.10): «Пn» → кликабельная ссылка,
+  // клик открывает и прокручивает к приложению. Даёт причину открыть приложение
+  // в контексте, вместо давящего счётчика «0/8».
+  (function wrapAppxRefs() {
+    var walker = document.createTreeWalker(caseContent, NodeFilter.SHOW_TEXT, null);
+    var targets = [];
+    var node;
+    while ((node = walker.nextNode())) {
+      if (node.parentElement && node.parentElement.closest('a, mark, h4')) continue;
+      if (/П[1-8](?![0-9])/.test(node.textContent)) targets.push(node);
+    }
+    targets.forEach(function (tn) {
+      var text = tn.textContent;
+      var frag = document.createDocumentFragment();
+      var re = /П([1-8])(?![0-9])/g;
+      var last = 0, m;
+      while ((m = re.exec(text))) {
+        if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+        var a = document.createElement('a');
+        a.className = 'appx-ref';
+        a.setAttribute('data-appx', m[1]);
+        a.setAttribute('href', '#appx-' + m[1]);
+        a.textContent = 'П' + m[1];
+        frag.appendChild(a);
+        last = m.index + m[0].length;
+      }
+      if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+      tn.parentNode.replaceChild(frag, tn);
+    });
+  })();
+
+  caseContent.addEventListener('click', function (e) {
+    var ref = e.target.closest ? e.target.closest('.appx-ref') : null;
+    if (!ref) return;
+    e.preventDefault();
+    var n = ref.getAttribute('data-appx');
+    var details = appxDetails[n];
+    if (details) details.open = true;
+    var article = document.getElementById('appx-' + n);
+    if (article) requestAnimationFrame(function () { article.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
   });
 
   // ---------- домены/разделы кейса ----------
@@ -420,8 +466,11 @@
       var el = document.createElement('div');
       el.className = 'card problem-card' + (state.finished ? ' is-locked' : '');
       el.dataset.hlId = h.id;
+      var head = h.snippet
+        ? '<blockquote class="problem-quote">«' + escapeHtml(h.snippet) + '»</blockquote>'
+        : '<div class="problem-quote-none" style="font-size:12.5px; color:var(--muted-soft); font-style:italic; margin:0 0 6px;">Без прямой цитаты — ваш вывод</div>';
       el.innerHTML =
-        '<blockquote class="problem-quote">«' + escapeHtml(h.snippet) + '»</blockquote>' +
+        head +
         '<label>Опишите проблему своими словами</label>' +
         '<textarea rows="2" data-field="problem"' + (state.finished ? ' disabled' : '') +
           ' placeholder="в чём здесь проблема для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>';
@@ -429,19 +478,48 @@
         var rm = document.createElement('button');
         rm.className = 'card-remove';
         rm.textContent = '✕';
-        rm.title = 'Убрать отметку';
+        rm.title = 'Убрать';
         rm.addEventListener('click', function () { removeHighlight(h.id); });
         el.appendChild(rm);
       }
       var ta = el.querySelector('[data-field="problem"]');
-      ta.addEventListener('input', function (e) { h.problem = e.target.value; saveState(); });
+      ta.addEventListener('input', function (e) { h.problem = e.target.value; saveState(); updateGate(); });
       ta.addEventListener('blur', renderMainProblem); // обновить подписи/состав в выборе основной
-      el.querySelector('.problem-quote').addEventListener('click', function () { scrollToMark(h.id); });
+      if (h.snippet) el.querySelector('.problem-quote').addEventListener('click', function () { scrollToMark(h.id); });
       list.appendChild(el);
     });
+    var addBtn = document.getElementById('addNoQuoteBtn');
+    if (addBtn) addBtn.style.display = state.finished ? 'none' : '';
     updateProblemCount();
     renderMainProblem();
+    updateGate();
   }
+
+  // «Дальше: связки →» активна только после первой описанной проблемы (п.8):
+  // до этого кнопка выглядела как «пропустить экран».
+  function updateGate() {
+    var btn = document.getElementById('finishBtn');
+    if (!btn || state.finished) return;
+    var has = problemsWithText().length > 0;
+    btn.disabled = !has;
+    btn.title = has ? '' : 'Опишите хотя бы одну проблему, чтобы перейти к связкам';
+  }
+
+  // «+ проблема без прямой цитаты» (п.7): для вывода, которого в тексте нет
+  // дословно (следует из ситуации) — не режет верх АК-1 (L4 «за пределами явно сказанного»).
+  (function () {
+    var addNoQuoteBtn = document.getElementById('addNoQuoteBtn');
+    if (!addNoQuoteBtn) return;
+    addNoQuoteBtn.addEventListener('click', function () {
+      if (state.finished) return;
+      var id = uid();
+      state.highlights.push({ id: id, sectionId: '', domains: [], snippet: '', problem: '', tag: '', influence: '' });
+      saveState();
+      renderProblems();
+      var nc = document.querySelector('#cardsList .problem-card[data-hl-id="' + id + '"] [data-field="problem"]');
+      if (nc) nc.focus();
+    });
+  })();
 
   // ---------- рефлексивный шаг: какая проблема основная (не в балл) ----------
 
