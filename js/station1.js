@@ -446,14 +446,14 @@
 
   function pluralProblems(n) {
     var m10 = n % 10, m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return 'а';
-    if ([2, 3, 4].indexOf(m10) !== -1 && [12, 13, 14].indexOf(m100) === -1) return 'ы';
-    return '';
+    if (m10 === 1 && m100 !== 11) return 'ка';    // заметка
+    if ([2, 3, 4].indexOf(m10) !== -1 && [12, 13, 14].indexOf(m100) === -1) return 'ки'; // заметки
+    return 'ок';                                   // заметок
   }
 
   function updateProblemCount() {
     var n = orderedHighlights().length;
-    document.getElementById('cardCount').textContent = n + ' проблем' + pluralProblems(n);
+    document.getElementById('cardCount').textContent = n + ' замет' + pluralProblems(n);
   }
 
   function renderProblems() {
@@ -471,9 +471,9 @@
         : '<div class="problem-quote-none" style="font-size:12.5px; color:var(--muted-soft); font-style:italic; margin:0 0 6px;">вывод из прочитанного — прямой цитаты нет</div>';
       el.innerHTML =
         head +
-        '<label>Опишите проблему своими словами</label>' +
+        '<label>Опишите заметку своими словами</label>' +
         '<textarea rows="2" data-field="problem"' + (state.finished ? ' disabled' : '') +
-          ' placeholder="в чём здесь проблема для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>';
+          ' placeholder="что вы здесь заметили и почему это важно для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>';
       if (!state.finished) {
         var rm = document.createElement('button');
         rm.className = 'card-remove';
