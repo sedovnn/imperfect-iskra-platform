@@ -671,6 +671,9 @@
         html += '<p class="fac-detail-text fac-card-warn">⚑ Защита выше выбора больше чем на 1 уровень — так не должно быть, нужна ручная проверка.</p>';
       }
     }
+    if (s2.firstAction) {
+      html += '<p class="fac-detail-text"><b>Первый ход по приоритету №1:</b> ' + escapeHtml(s2.firstAction) + '</p>';
+    }
     if (s2.rationale) {
       html += '<p class="fac-detail-text"><b>Почему №1 первым:</b> ' + escapeHtml(s2.rationale) + '</p>';
     }

@@ -156,7 +156,11 @@
       var locked = stepLocked('q2');
       var block = document.createElement('div');
       block.className = 's2-block';
+      var react = (state.answer1 || '').trim().length >= 40
+        ? '<b>Лемех</b> слушает, не перебивая, потом медленно: «Хм. Дальше вы заглянули, чем половина моего комитета».'
+        : '<b>Лемех</b> ждёт секунду, будто надеясь на продолжение: «Коротко. Ну ладно, зайдём с другой стороны».';
       block.innerHTML =
+        '<p class="s2-ageev">' + react + '</p>' +
         '<p class="s2-ageev"><b>Лемех</b> щурится: «Допустим. А если мир не подыграет — рынок качнётся не туда, расчёт не сойдётся? Совет спросит первым делом. Что тогда — и как вы вообще поймёте, что пора менять курс?»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');

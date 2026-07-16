@@ -230,7 +230,9 @@
         var top = s2.priorities[0];
         var topText = top && cardById[top.cardId] ? cardById[top.cardId].text : null;
         if (topText) {
-          var c2 = '<p><b>Первый ход:</b> ' + esc(topText) + '</p>';
+          // приоритет №1 — это ПРОБЛЕМА; «первый ход» — действие, которым её открывают
+          var c2 = '<p><b>Приоритет №1:</b> ' + esc(topText) + '</p>';
+          if (s2.firstAction && s2.firstAction.trim()) c2 += meta('первый ход', s2.firstAction);
           if (s2.rationale && s2.rationale.trim()) c2 += meta('почему первым', s2.rationale);
           cards.push(c2);
         }
@@ -287,21 +289,55 @@
       });
     }
 
+    var reviewMode = false; // «посмотреть стратегию ещё раз» после финализации
+
     openFinalizeBtn.addEventListener('click', function () {
       strategyRecapEl.innerHTML = buildRecapHtml();
+      document.getElementById('closeFinalizeBtn').textContent = '← Назад в холл';
+      document.getElementById('finalizeBtn').style.display = '';
+      reviewMode = false;
       document.getElementById('stationRoot').style.display = 'none';
       finalizeScreenEl.style.display = 'flex';
     });
     document.getElementById('closeFinalizeBtn').addEventListener('click', function () {
       finalizeScreenEl.style.display = 'none';
-      document.getElementById('stationRoot').style.display = '';
+      if (reviewMode) { reviewMode = false; document.getElementById('finishOverlay').style.display = 'flex'; }
+      else document.getElementById('stationRoot').style.display = '';
+    });
+
+    // повторный просмотр собранной стратегии после финала — read-only (п.13)
+    document.getElementById('reviewStrategyBtn').addEventListener('click', function () {
+      strategyRecapEl.innerHTML = buildRecapHtml();
+      document.getElementById('finishOverlay').style.display = 'none';
+      document.getElementById('finalizeBtn').style.display = 'none';
+      if (defenseEl) defenseEl.disabled = true;
+      document.getElementById('closeFinalizeBtn').textContent = '← Закрыть';
+      reviewMode = true;
+      finalizeScreenEl.style.display = 'flex';
     });
 
     // ---------- finalize ----------
 
+    // Прощальное письмо Агеева под выбранную позицию (п.13) — эмоция закрытия
+    // после двух часов работы. Живое, не шаблонное; оценок не показываем.
+    function ageevLetterText() {
+      var s2 = readJson(station2Key(session.bib));
+      var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
+      var code = stance ? stance.code : null;
+      if (code === 'fortress')
+        return '«Прочитал вашу записку. Крепость — значит, держим то, что кормит, и не геройствуем. Спорить на совете будут, но иду туда с вашими словами, а не со своими сомнениями». — К. Агеев';
+      if (code === 'secondCurve')
+        return '«Прочитал. Вторая кривая — это ставка, и вы её не спрятали за оговорками. Рискованно. И, кажется, впервые за месяц я не думаю, что мы просто плывём по течению. Иду на совет с вашей запиской». — К. Агеев';
+      if (code === 'other')
+        return '«Прочитал. Вы не приняли ни одну из готовых позиций — и, чёрт возьми, у вас есть основания. Спорить будут. Иду на совет с вашей запиской». — К. Агеев';
+      return '«Прочитал. Спорить на совете будут, но иду туда с вашей запиской». — К. Агеев';
+    }
+
     function showFinishOverlay() {
       finalizeScreenEl.style.display = 'none';
       document.getElementById('stationRoot').style.display = 'none';
+      var letter = document.getElementById('ageevLetter');
+      if (letter) letter.textContent = ageevLetterText();
       document.getElementById('finishOverlay').style.display = 'flex';
     }
 

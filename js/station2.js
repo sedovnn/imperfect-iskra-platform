@@ -28,6 +28,7 @@
         if (!parsed.stance) parsed.stance = '';
         if (!parsed.stanceOther) parsed.stanceOther = '';
         if (!parsed.stanceCriteria) parsed.stanceCriteria = '';
+        if (parsed.firstAction === undefined) parsed.firstAction = '';
         // миграция: сессия, начатая ДО появления шага 'stance', могла уже уйти
         // на 'proactive' — тогда вставленный позади текущего шага блок развилки
         // рендерился «пройденным», т.е. запертым: радио видны, но не кликабельны.
@@ -43,6 +44,7 @@
       rejected: [],        // [{cardId, freed}] — явные отказы
       rejectionRule: '',
       rationale: '',
+      firstAction: '',     // «первый ход» — каким действием откроют приоритет №1 (нарратив, не в балл)
       stressChoice: '',    // 'hold' | 'change'
       stressComment: '',
       proactiveText: '',
@@ -367,16 +369,29 @@
 
     function buildRationaleBlock() {
       var locked = stepLocked('rationale');
+      // реакция Агеева на разбор (п.11): заметил ли отказы
+      var sortReact = state.rejected.length
+        ? '<b>Агеев</b> ведёт пальцем по списку: «Вижу, кое-что вы честно отложили. Хорошо — значит, не пытаетесь спасти всё сразу».'
+        : '<b>Агеев</b>: «Ничего не отложили — ну-ну. Смелость оценю, если выдержит следующий вопрос».';
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
+        '<p class="s2-ageev">' + sortReact + '</p>' +
         '<p class="s2-ageev"><b>Агеев</b> смотрит на верхнюю карточку: «Хорошо. Почему именно „' + escapeHtml(topPriorityText()) + '“ — первым? К чему нас это ведёт?»</p>' +
         '<textarea class="s2-rationale" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
+        // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
+        '<div class="rationale-block" style="margin-top:12px;">' +
+          '<label>С какого конкретного действия вы откроете работу по приоритету №1? <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
+          '<textarea class="s2-first-action" rows="2" placeholder="например: за две недели вынести на комитет решение по юр.контуру «Миры»"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.firstAction || '') + '</textarea>' +
+        '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitRationaleBtn" style="margin-top:12px;">Ответить →</button>');
 
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
           state.rationale = e.target.value; saveState();
+        });
+        block.querySelector('.s2-first-action').addEventListener('input', function (e) {
+          state.firstAction = e.target.value; saveState();
         });
         block.querySelector('#commitRationaleBtn').addEventListener('click', function () {
           if (!state.rationale.trim()) {
@@ -436,9 +451,16 @@
 
     function buildStanceBlock() {
       var locked = stepLocked('stance');
+      // реакция Агеева на стресс-тест (п.11): настоял или согласился пересобрать
+      var stressReact = state.stressChoice === 'hold'
+        ? '<b>Агеев</b> чуть заметно кивает: «Настояли. Правление это запомнит — оно уважает тех, кто не складывается на первом „подождём“».'
+        : (state.stressChoice === 'change'
+          ? '<b>Агеев</b>: «Согласились пересобрать. Это не слабость — иногда это и есть трезвость. Посмотрим, куда выведет».'
+          : '');
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
+        (stressReact ? '<p class="s2-ageev">' + stressReact + '</p>' : '') +
         '<p class="s2-ageev"><b>Агеев</b> кладёт распечатку письма на стол: «И то, ради чего я, собственно, и звал. В правлении две позиции — вы их видели. „Крепость“: защищать рекламное ядро, „Миру“ на партнёрскую модель, железо свернуть. „Вторая кривая“: вынести устройства в отдельную компанию и строить новую выручку к 2030-му. Мне нужна ваша рекомендация — и два критерия, на которых она стоит. Считаете, что обе мимо, — так и скажите, но тогда предложите свою.»</p>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Крепость» — защищать рекламное ядро</label>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Вторая кривая» — ставка на новое направление</label>' +
@@ -486,9 +508,19 @@
 
     function buildProactiveBlock() {
       var locked = state.finished;
+      // реакция Агеева на выбранную позицию (п.11)
+      var st = window.imp.stanceOf && window.imp.stanceOf(state);
+      var stanceReact = st && st.code === 'fortress'
+        ? '<b>Агеев</b>: «Крепость. Осторожно — но вы хотя бы не делаете вид, что всё хорошо».'
+        : (st && st.code === 'secondCurve'
+          ? '<b>Агеев</b> усмехается: «Вторая кривая. Смело. Если вы правы — я буду должен вам ужин».'
+          : (st && st.code === 'other'
+            ? '<b>Агеев</b> откидывается: «Своя позиция. Убедите совет так же, как убедили меня сейчас — и мы сработаемся».'
+            : ''));
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
+        (stanceReact ? '<p class="s2-ageev">' + stanceReact + '</p>' : '') +
         '<p class="s2-ageev"><b>Агеев</b> встаёт: «Последний вопрос. При каких условиях вы сами скажете, что этот выбор устарел — что пора пересматривать?»</p>' +
         '<textarea class="s2-proactive" rows="2" placeholder="необязательно — можно пожать плечами и попрощаться"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить встречу →</button>');

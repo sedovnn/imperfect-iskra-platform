@@ -212,7 +212,12 @@
       var locked = stepLocked('q2');
       var block = document.createElement('div');
       block.className = 's2-block';
+      var pathLaidOut = (state.targetState || '').trim() || (state.stages || []).some(function (s) { return (s.description || '').trim(); });
+      var react = pathLaidOut
+        ? '<b>Штерн</b> кивает на этапы: «Уже похоже на план, а не на лозунг. Хорошо».'
+        : '<b>Штерн</b> поднимает бровь: «Пока это набросок. Ну, посмотрим на второй вопрос».';
       block.innerHTML =
+        '<p class="s2-ageev">' + react + '</p>' +
         '<p class="s2-ageev"><b>Штерн</b> проходится по вашим этапам глазами: «Допустим. Теперь трезво: что реально этому помешает — и есть ли на что опереться? По опыту, мешает всегда что-то вполне конкретное, а не „рынок вообще“.»</p>' +
         '<div class="pp-columns">' +
           '<div class="pp-column"><h4>Барьеры</h4><div class="pp-list" data-list="barriers"></div>' +

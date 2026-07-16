@@ -110,6 +110,7 @@
         cardsClose();
       }
       if (s2.rejectionRule) textB('Правило отказа:', s2.rejectionRule);
+      if (s2.firstAction) textB('Первый ход по приоритету №1:', s2.firstAction);
       if (s2.rationale) textB('Почему №1 первым:', s2.rationale);
       if (s2.stressChoice) {
         textB('Стресс-тест «отложим на полгода»:', s2.stressChoice === 'hold' ? 'настоял на своём' : 'согласился пересобрать');
