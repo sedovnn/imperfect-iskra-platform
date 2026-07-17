@@ -48,6 +48,7 @@
 
       <div class="fac-tab-panel" id="facTabProgress">
         <div class="fac-toolbar">
+          <input type="search" id="facSearch" class="fac-search" placeholder="Поиск по ФИО или №…" aria-label="Поиск участника по имени или номеру" />
           <select id="facWaveFilter" class="fac-select">
             <option value="">Все потоки</option>
           </select>
@@ -57,11 +58,12 @@
           <table class="fac-table" id="facTable">
             <thead>
               <tr>
-                <th>№</th>
-                <th>ФИО</th>
+                <th id="facSortBib" class="fac-sortable" title="Сортировать по номеру участника">№ <span class="fac-sort-arrow" aria-hidden="true"></span></th>
+                <th id="facSortName" class="fac-sortable" title="Сортировать по фамилии">ФИО <span class="fac-sort-arrow" aria-hidden="true"></span></th>
                 <th>Волна</th>
                 <th title="Компактный статус по станциям: незаполненная точка — не начата, жёлтая — в процессе, зелёная — завершена. Полная разбивка по способностям — по клику на строку.">Ход</th>
-                <th id="facSortTotal" class="fac-sortable" title="Сумма баллов по всем пяти навыкам (10 способностей), максимум 50. Пока посчитаны не все способности — показывается «…» и промежуточная сумма.">Итого ▾</th>
+                <th title="Баллы по пяти навыкам: АК — анализ контекста, ПР — приоритизация, МК — образ будущего, ГА — альтернативы, ПП — путь к цели. «·» — навык ещё не оценён.">Навыки</th>
+                <th id="facSortTotal" class="fac-sortable" title="Сумма баллов по всем пяти навыкам (10 способностей), максимум 50. Пока посчитаны не все способности — показывается «…» и промежуточная сумма.">Итого <span class="fac-sort-arrow" aria-hidden="true"></span></th>
               </tr>
             </thead>
             <tbody id="facTableBody"></tbody>

@@ -44,8 +44,12 @@
   var waveLabelInput = document.getElementById('facWaveLabelInput');
   var waveFilterSelect = document.getElementById('facWaveFilter');
   var exportBtn = document.getElementById('facExportBtn');
+  var searchInput = document.getElementById('facSearch');
+  var sortBibHeader = document.getElementById('facSortBib');
+  var sortNameHeader = document.getElementById('facSortName');
 
   var sortState = { key: 'bib', dir: 1 };
+  var searchValue = '';
   var lastParticipants = [];
   var currentDetailParticipant = null;
   var detailLastFocus = null; // куда вернуть фокус после закрытия карточки участника
@@ -236,6 +240,20 @@
     return scores.reduce(function (sum, s) { return sum + s.value; }, 0);
   }
 
+  // Компактная разбивка по пяти навыкам прямо в строке списка (детали — в карточке).
+  var SKILL_CODES = ['АК', 'ПР', 'МК', 'ГА', 'ПП'];
+  function skillMiniHtml(p) {
+    var scores = skillScores(p);
+    var chips = scores.map(function (s, i) {
+      var scored = s.value !== null;
+      var title = SKILL_CODES[i] + ' · ' + s.label + (scored ? ': ' + s.value : ' — не оценено');
+      return '<span class="fac-skill-chip' + (scored ? '' : ' is-empty') + '" title="' + escapeHtml(title) + '">' +
+        '<span class="fac-skill-code">' + SKILL_CODES[i] + '</span>' +
+        '<span class="fac-skill-val">' + (scored ? s.value : '·') + '</span></span>';
+    }).join('');
+    return '<span class="fac-skill-mini">' + chips + '</span>';
+  }
+
   // Сколько из 10 способностей реально оценено (по одному уровню на способность).
   function countAbilitiesJudged(p) {
     var vals = [
@@ -275,6 +293,11 @@
       if (sortState.key === 'total') {
         var at = totalScore(a), bt = totalScore(b);
         return ((at === null ? -1 : at) - (bt === null ? -1 : bt)) * dir;
+      }
+      if (sortState.key === 'name') {
+        var an = (a.firstName + ' ' + a.lastName).trim().toLowerCase();
+        var bn = (b.firstName + ' ' + b.lastName).trim().toLowerCase();
+        return an.localeCompare(bn, 'ru') * dir;
       }
       return (Number(a.bib) - Number(b.bib)) * dir;
     });
@@ -359,6 +382,13 @@
     });
   }
 
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      searchValue = searchInput.value;
+      renderParticipants(lastParticipants);
+    });
+  }
+
   // ---------- participants table ----------
 
   function renderParticipants(participants) {
@@ -368,8 +398,19 @@
     var filtered = waveFilterValue
       ? lastParticipants.filter(function (p) { return String(p.wave) === String(waveFilterValue); })
       : lastParticipants;
+
+    var q = searchValue.trim().toLowerCase();
+    if (q) {
+      var qNum = q.replace(/^№?\s*/, ''); // «№ 111» и «111» ищут одинаково
+      filtered = filtered.filter(function (p) {
+        var name = (p.firstName + ' ' + p.lastName).toLowerCase();
+        return name.indexOf(q) !== -1 || String(p.bib).indexOf(qNum) !== -1;
+      });
+    }
+
     var view = sortParticipants(filtered);
     currentView = view;
+    updateSortIndicators();
 
     countEl.textContent = view.length + ' ' + pluralParticipants(view.length) +
       (waveFilterValue && view.length !== lastParticipants.length ? ' из ' + lastParticipants.length : '');
@@ -385,6 +426,7 @@
         '<td>' + escapeHtml(p.firstName + ' ' + p.lastName) + '</td>' +
         '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + '</td>' +
         '<td>' + progressPillsHtml(p) + '</td>' +
+        '<td>' + skillMiniHtml(p) + '</td>' +
         '<td>' + escapeHtml(formatTotalCompact(p)) +
           (hasFlags(p) ? ' <span class="fac-card-warn" title="Нарушено ограничение зависимостей способностей — см. карточку участника">⚑</span>' : '') + '</td>';
       tr.tabIndex = 0;
@@ -561,11 +603,14 @@
     });
   }
 
+  var SORT_HEADERS = []; // {el, key} — для обновления индикаторов сортировки
+
   function bindSortHeader(headerEl, key, defaultDir) {
     if (!headerEl) return;
     headerEl.tabIndex = 0;
     headerEl.setAttribute('role', 'button');
     headerEl.setAttribute('aria-sort', 'none');
+    SORT_HEADERS.push({ el: headerEl, key: key });
     function toggle() {
       if (sortState.key === key) {
         sortState.dir = sortState.dir * -1;
@@ -573,8 +618,7 @@
         sortState.key = key;
         sortState.dir = defaultDir;
       }
-      headerEl.setAttribute('aria-sort', sortState.dir === 1 ? 'ascending' : 'descending');
-      renderParticipants(lastParticipants);
+      renderParticipants(lastParticipants); // renderParticipants → updateSortIndicators
     }
     headerEl.addEventListener('click', toggle);
     headerEl.addEventListener('keydown', function (e) {
@@ -582,7 +626,21 @@
     });
   }
 
+  // Живой индикатор: активный столбец получает стрелку направления, остальные — ↕.
+  function updateSortIndicators() {
+    SORT_HEADERS.forEach(function (h) {
+      var active = sortState.key === h.key;
+      var arrow = h.el.querySelector('.fac-sort-arrow');
+      if (arrow) arrow.textContent = active ? (sortState.dir === 1 ? '▲' : '▼') : '↕';
+      h.el.classList.toggle('is-sorted', active);
+      h.el.setAttribute('aria-sort', active ? (sortState.dir === 1 ? 'ascending' : 'descending') : 'none');
+    });
+  }
+
+  bindSortHeader(sortBibHeader, 'bib', 1);
+  bindSortHeader(sortNameHeader, 'name', 1);
   bindSortHeader(sortTotalHeader, 'total', -1);
+  updateSortIndicators();
 
   function pluralParticipants(n) {
     var mod10 = n % 10, mod100 = n % 100;

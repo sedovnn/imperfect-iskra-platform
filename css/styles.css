@@ -2567,8 +2567,39 @@ table mark.hl {
   color: var(--muted-soft);
 }
 
-.fac-sortable { cursor: pointer; user-select: none; }
+.fac-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
 .fac-sortable:hover { color: var(--ink); }
+.fac-sortable.is-sorted { color: var(--ink); }
+
+.fac-sort-arrow {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--muted-soft);
+  margin-left: 2px;
+}
+.fac-sortable.is-sorted .fac-sort-arrow { color: var(--ink); }
+
+/* Компактная разбивка по навыкам в строке списка */
+.fac-skill-mini { display: inline-flex; gap: 4px; }
+.fac-skill-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: #f7ffe8;
+  border: 1px solid #cdeaa0;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.fac-skill-chip .fac-skill-code { color: var(--muted); letter-spacing: 0.02em; }
+.fac-skill-chip .fac-skill-val { font-weight: 700; color: var(--ink); }
+.fac-skill-chip.is-empty {
+  background: transparent;
+  border-color: var(--hairline);
+}
+.fac-skill-chip.is-empty .fac-skill-val { color: var(--muted-soft); font-weight: 400; }
 
 .fac-score-cell { display: flex; align-items: center; gap: 8px; }
 
@@ -2733,10 +2764,26 @@ table mark.hl {
 .fac-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   margin-bottom: 14px;
+  flex-wrap: wrap;
 }
+
+.fac-search {
+  flex: 1 1 auto;
+  min-width: 180px;
+  max-width: 320px;
+  font-size: 13px;
+  padding: 8px 12px;
+  border: 1px solid #d8dadd;
+  border-radius: 6px;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--ff-body);
+}
+.fac-search::placeholder { color: var(--muted-soft); }
+.fac-search:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; border-color: var(--ink); }
 
 .fac-select {
   font-size: 13px;
