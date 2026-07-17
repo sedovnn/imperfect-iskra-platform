@@ -305,7 +305,7 @@
         item.innerHTML =
           '<div class="s2-item-rank">' + (i + 1) + '</div>' +
           '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
-          '<input type="text" class="s2-target" placeholder="измеримый ориентир: величина + срок; провал — при чём? (необязательно)" value="' + escapeHtml(p.target || '') + '"' + (locked ? ' disabled' : '') + ' />' +
+          '<input type="text" class="s2-target" placeholder="ориентир: величина и срок" value="' + escapeHtml(p.target || '') + '"' + (locked ? ' disabled' : '') + ' />' +
           '</div>' +
           (showActions ?
             '<div class="s2-item-actions">' +
@@ -330,7 +330,7 @@
         var item = document.createElement('div');
         item.className = 's2-item is-rejected';
         item.innerHTML = '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
-          '<input type="text" class="s2-freed" placeholder="что это освобождает — люди/деньги/время (необязательно)" value="' + escapeHtml(r.freed || '') + '"' + (locked ? ' disabled' : '') + ' />' +
+          '<input type="text" class="s2-freed" placeholder="что освобождает: люди / деньги / время" value="' + escapeHtml(r.freed || '') + '"' + (locked ? ' disabled' : '') + ' />' +
           '</div>' +
           (showActions ? '<div class="s2-item-actions"><button class="s2-act" data-act="back" title="вернуть в карту"' + (locked ? ' disabled' : '') + '>✕</button></div>' : '');
         if (!locked) {

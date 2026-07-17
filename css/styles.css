@@ -909,7 +909,7 @@ footer {
 /* ---------- станция 2 «Встреча с Агеевым» (ПР-1 + ПР-2) ---------- */
 
 .s2-body {
-  max-width: 980px;
+  max-width: 1180px;
   margin: 0 auto;
   padding: 28px 32px 90px;
   overflow-y: auto;
@@ -938,13 +938,15 @@ footer {
 }
 
 .s2-col {
-  border: 1px dashed #d6d8d2;
+  background: #fafafa;
+  border: 1px solid #ececec;
   border-radius: 14px;
-  padding: 14px;
+  padding: 16px;
   min-height: 180px;
 }
-.s2-col.is-priorities { border-style: solid; border-color: var(--ink); }
-.s2-col.is-drop-target { background: #f7ffe0; }
+/* «Приоритеты» — целевая колонка: белый фон + ink-рамка, выделяется среди серых. */
+.s2-col.is-priorities { background: var(--paper); border-color: var(--ink); }
+.s2-col.is-drop-target { background: #f7ffe0; border-color: var(--lime-line); }
 .s2-col h4 {
   font-family: var(--ff-display);
   font-size: 15px;
@@ -1028,6 +1030,7 @@ footer {
 
 .s2-body textarea {
   width: 100%;
+  max-width: 720px; /* проза остаётся читаемой ширины, даже когда s2-body широкий */
   border: 1px solid #e3e3e0;
   border-radius: 10px;
   padding: 10px 12px;
@@ -1036,6 +1039,8 @@ footer {
   line-height: 1.5;
   resize: vertical;
 }
+/* но текстареа внутри карточек-колонок должны заполнять карточку целиком */
+.s2-col textarea, .s2-item textarea { max-width: none; }
 
 @media (max-width: 900px) {
   .s2-columns { grid-template-columns: 1fr; }
