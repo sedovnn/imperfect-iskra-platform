@@ -765,7 +765,7 @@ footer {
 }
 
 .links-section { margin-bottom: 40px; }
-.links-section h3 {
+.links-section h2 {
   font-family: var(--ff-display);
   font-size: 19px;
   margin: 0 0 4px;
@@ -1706,6 +1706,7 @@ footer {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin: 0; /* сбрасываем дефолтные поля h1 — это визуально метка в шапке */
 }
 
 .station-header-right {
@@ -1893,11 +1894,32 @@ footer {
 
 .case-content article { margin-bottom: 40px; }
 
-.case-content h4 {
+.case-content h2 {
   font-family: var(--ff-display);
   font-size: 18px;
   font-weight: 800;
   margin: 0 0 16px;
+}
+
+/* Сноски приложений — были повторяющимся инлайном; --muted вместо --muted-soft
+   даёт AA (7.13:1) на мелком тексте (WCAG 1.4.3). */
+.appx-footnote {
+  margin-top: 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.case-disclaimer {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin: 32px 0 60px;
+}
+/* Заголовок рабочей области (h2) — был инлайн-стиль */
+.work-title {
+  font-family: var(--ff-display);
+  font-size: 19px;
+  margin: 0;
 }
 
 .case-content p {
@@ -1991,7 +2013,7 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
 
 .appx-doc[open] > summary::after { transform: rotate(-180deg); }
 
-.appx-doc > summary h4 {
+.appx-doc > summary h3 {
   margin: 0;
   font-size: 15.5px;
 }
