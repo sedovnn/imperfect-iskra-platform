@@ -666,6 +666,11 @@ footer {
   .btn-sm { min-height: 44px; }
 }
 
+/* Компактные кнопки шапки станций (?, «Мои ответы», «Закрыть») и размер
+   плашки-номера — были повторяющимся инлайном на station1/2/3 и в комнатах. */
+.btn-xs { padding: 6px 12px; font-size: 14px; }
+.station-header .bib { font-size: 14px; padding: 6px 12px; }
+
 /* Лид-абзац на тёмной панели кейса (вместо инлайн-стиля). */
 .case-lead {
   color: #c7c9cc;
