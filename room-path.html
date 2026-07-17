@@ -64,11 +64,12 @@
       </div>
       <div class="station-header-right">
         <button type="button" class="btn btn-ghost btn-xs" id="reopenIntroBtn" title="Показать правила этого экрана">?</button>
-        <button type="button" class="btn btn-ghost btn-xs js-open-dossier" id="openDossierBtn">Мои ответы</button>
         <span class="bib" id="hdrBib">№ 000</span>
         <a class="btn btn-ghost" href="station3.html" style="padding:11px 18px; font-size:14px;">← В холл</a>
       </div>
     </header>
+
+    <div class="imp-spine" id="impSpine" aria-label="Ваша линия" style="display:none;"></div>
 
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
@@ -85,7 +86,10 @@
   </div>
 </div>
 
+<button type="button" class="dossier-dock js-open-dossier" aria-label="Открыть мои ответы">Мои ответы</button>
+
 <script src="js/main.js"></script>
+<script src="js/spine.js"></script>
 <script src="js/api.js"></script>
 <script src="js/demo.js"></script>
 <script src="js/dossier-render.js"></script>

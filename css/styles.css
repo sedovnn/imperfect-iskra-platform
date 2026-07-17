@@ -1124,6 +1124,61 @@ button.hub-room-card {
    порядок правил в файле не важен. */
 .gate-card.finalize-card { max-width: 680px; }
 
+/* «Ваша линия» — полоса решений под шапкой (spine.js), одинаковая на ст.2/3 и в
+   комнатах. Приглушённая: серая подложка + волосяная линия, без лаймового сигнала
+   (лайм бережём для акцентов). Значения — ink, метки — muted. */
+.imp-spine {
+  flex: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 8px 24px;
+  border-bottom: 1px solid var(--hairline);
+  background: #fafafa;
+  font-size: 12.5px;
+}
+.imp-spine-label {
+  font-family: var(--ff-body);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+.imp-spine-chip { color: var(--ink); }
+.imp-spine-k { color: var(--muted); }
+.imp-spine-sep { color: var(--muted-soft); }
+@media (max-width: 600px) {
+  .imp-spine { padding: 8px 20px; gap: 8px; font-size: 12px; }
+}
+
+/* «Мои ответы» — докнутый язычок у правого края: заметно и одинаково на всех
+   станциях/комнатах (вместо неприметной кнопки в шапке). Открывает то же досье. */
+.dossier-dock {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 70;
+  writing-mode: vertical-rl;
+  padding: 16px 7px;
+  background: var(--ink);
+  color: var(--lime);
+  border: none;
+  border-radius: 12px 0 0 12px;
+  font-family: var(--ff-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.dossier-dock:hover { background: var(--lime-dim); color: var(--ink); }
+.dossier-dock:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+@media (max-width: 600px) {
+  .dossier-dock { font-size: 12px; padding: 12px 6px; }
+}
+
 /* .dossier-overlay — в отличие от остальных .gate-экранов (полноэкранных,
    взаимоисключающих шагов раунда), эта панель должна уметь появиться ПОВЕРХ
    уже показанного .gate-экрана — например, поверх finishOverlay, где кнопка
