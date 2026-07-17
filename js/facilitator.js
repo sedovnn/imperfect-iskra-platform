@@ -48,6 +48,7 @@
   var sortState = { key: 'bib', dir: 1 };
   var lastParticipants = [];
   var currentDetailParticipant = null;
+  var detailLastFocus = null; // куда вернуть фокус после закрытия карточки участника
 
   // «Ход раунда» — живой мониторинг во время игры (кто где, компактно).
   // «Регистрации и потоки» — админ-задачи другого темпа (волны, контакты,
@@ -386,7 +387,13 @@
         '<td>' + progressPillsHtml(p) + '</td>' +
         '<td>' + escapeHtml(formatTotalCompact(p)) +
           (hasFlags(p) ? ' <span class="fac-card-warn" title="Нарушено ограничение зависимостей способностей — см. карточку участника">⚑</span>' : '') + '</td>';
+      tr.tabIndex = 0;
+      tr.setAttribute('role', 'button');
+      tr.setAttribute('aria-label', 'Открыть карточку участника ' + formatBib(p.bib) + ', ' + p.firstName + ' ' + p.lastName);
       tr.addEventListener('click', function () { openDetail(p); });
+      tr.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetail(p); }
+      });
       tableBody.appendChild(tr);
     });
   }
@@ -556,14 +563,22 @@
 
   function bindSortHeader(headerEl, key, defaultDir) {
     if (!headerEl) return;
-    headerEl.addEventListener('click', function () {
+    headerEl.tabIndex = 0;
+    headerEl.setAttribute('role', 'button');
+    headerEl.setAttribute('aria-sort', 'none');
+    function toggle() {
       if (sortState.key === key) {
         sortState.dir = sortState.dir * -1;
       } else {
         sortState.key = key;
         sortState.dir = defaultDir;
       }
+      headerEl.setAttribute('aria-sort', sortState.dir === 1 ? 'ascending' : 'descending');
       renderParticipants(lastParticipants);
+    }
+    headerEl.addEventListener('click', toggle);
+    headerEl.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
     });
   }
 
@@ -577,11 +592,21 @@
   }
 
   function openDetail(participant) {
+    var wasOpen = detail.classList.contains('show');
     currentDetailParticipant = participant;
     detailBib.textContent = formatBib(participant.bib);
     detailName.textContent = participant.firstName + ' ' + participant.lastName;
     detailBody.innerHTML = '<p class="fac-detail-loading">Загружаю карту участника…</p>';
     detail.classList.add('show');
+    // Фокус-менеджмент только при первом открытии (openDetail зовётся повторно
+    // для перерисовки после пересчёта — тогда фокус и обработчик не трогаем).
+    if (!wasOpen) {
+      detailLastFocus = document.activeElement;
+      detail.setAttribute('aria-hidden', 'false');
+      document.addEventListener('keydown', onDetailKeydown);
+      // Прямой focus() (не requestAnimationFrame — тот заморожен в скрытой вкладке).
+      if (detailClose) detailClose.focus();
+    }
 
     window.imp.callApi('facilitatorDetail', { password: currentPassword(), bib: participant.bib }).then(function (res) {
       if (!res || !res.ok) {
@@ -1051,8 +1076,36 @@
     return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null);
   }
 
-  detailClose.addEventListener('click', function () { detail.classList.remove('show'); });
-  detail.addEventListener('click', function (e) { if (e.target === detail) detail.classList.remove('show'); });
+  function closeDetail() {
+    if (!detail.classList.contains('show')) return;
+    detail.classList.remove('show');
+    detail.setAttribute('aria-hidden', 'true');
+    document.removeEventListener('keydown', onDetailKeydown);
+    currentDetailParticipant = null;
+    if (detailLastFocus && detailLastFocus.focus) {
+      try { detailLastFocus.focus(); } catch (e) {}
+    }
+    detailLastFocus = null;
+  }
+
+  function onDetailKeydown(e) {
+    if (e.key === 'Escape') { e.preventDefault(); closeDetail(); }
+    else if (e.key === 'Tab') { trapTab(e, detail.querySelector('.fac-detail-panel')); }
+  }
+
+  // Удержание фокуса внутри открытой карточки (WCAG 2.4.3).
+  function trapTab(e, container) {
+    if (!container) return;
+    var nodes = container.querySelectorAll('a[href], button:not([disabled]), textarea, input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])');
+    var list = Array.prototype.filter.call(nodes, function (el) { return el.offsetParent !== null; });
+    if (!list.length) return;
+    var first = list[0], last = list[list.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+
+  detailClose.addEventListener('click', closeDetail);
+  detail.addEventListener('click', function (e) { if (e.target === detail) closeDetail(); });
 
   // silent auto-login if a password from earlier this tab session still works
   var cached = currentPassword();

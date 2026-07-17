@@ -693,6 +693,23 @@ footer {
   .imp-toast { transition: opacity 0.01s; transform: translate(-50%, 0); }
 }
 
+/* Видимый фокус для клавиатуры (WCAG 2.4.7). Только :focus-visible —
+   мышиные клики не рисуют контур. Поля ввода сохраняют свою смену border. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+/* Строка таблицы фокусируется как единое действие — контур внутрь,
+   чтобы не перекрывать соседние строки. */
+.fac-table tbody tr:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -2px;
+}
+.field input:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
 .field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
