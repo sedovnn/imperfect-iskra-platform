@@ -41,10 +41,46 @@
   });
 
   // ---------- экскурсия (демо-прохождение) ----------
+  // Гейт паролем — как у кабинета: пароль не хранится во фронте, проверяется на
+  // бэкенде (action 'verifyPassword'). Сначала экран пароля, потом выбор профиля.
   var demoPicker = document.getElementById('demoPicker');
+  var demoPassForm = document.getElementById('demoPassForm');
+  var demoPassInput = document.getElementById('demoPass');
+  var demoPassError = document.getElementById('demoPassError');
+  var demoPassSubmit = document.getElementById('demoPassSubmit');
+
   document.getElementById('btnDemoTour').addEventListener('click', function () {
     optionsEl.style.display = 'none';
+    demoPassError.classList.remove('show');
+    demoPassInput.value = '';
+    demoPassForm.style.display = '';
+    demoPassInput.focus();
+  });
+  document.getElementById('demoPassBack').addEventListener('click', function (e) {
+    e.preventDefault();
+    demoPassForm.style.display = 'none';
+    demoPassError.classList.remove('show');
+    optionsEl.style.display = '';
+  });
+  function openDemoPicker() {
+    demoPassForm.style.display = 'none';
     demoPicker.style.display = '';
+  }
+  demoPassForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var pw = demoPassInput.value.trim();
+    if (!pw) { demoPassError.classList.add('show'); return; }
+    demoPassError.classList.remove('show');
+    // локально без бэкенда проверять негде — пропускаем (демо всё равно клиентское)
+    if (!window.imp.isApiConfigured()) { openDemoPicker(); return; }
+    demoPassSubmit.disabled = true;
+    demoPassSubmit.textContent = 'Проверяю…';
+    window.imp.callApi('verifyPassword', { password: pw }).then(function (res) {
+      demoPassSubmit.disabled = false;
+      demoPassSubmit.textContent = 'Далее →';
+      if (res && res.ok) { openDemoPicker(); }
+      else { demoPassError.classList.add('show'); demoPassInput.focus(); }
+    });
   });
   document.getElementById('demoBack').addEventListener('click', function (e) {
     e.preventDefault();

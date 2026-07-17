@@ -18,25 +18,25 @@
     <h2>Куда пойти?</h2>
 
     <div id="qaOptions" style="display:flex; flex-direction:column; gap:12px; margin-top:22px;">
-      <a href="facilitator.html" class="hub-room-card">
-        <div class="hub-room-top"><h3>Кабинет фасилитатора</h3></div>
-        <p>Список участников, ход раунда, пересчёт баллов. Нужен пароль.</p>
-      </a>
-
       <button type="button" class="hub-room-card" id="btnQuickTest" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
         <div class="hub-room-top"><h3>Быстрый тестовый прогон</h3></div>
         <p>Только имя и фамилия — сразу в раунд, без лишних полей.</p>
-      </button>
-
-      <button type="button" class="hub-room-card" id="btnDemoTour" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
-        <div class="hub-room-top"><h3>Экскурсия по платформе</h3></div>
-        <p>Все экраны раунда с примерами заполнения, без стопов, с пояснениями механики. Ничего не сохраняется на бэкенд.</p>
       </button>
 
       <a href="register.html?recover=1" class="hub-room-card">
         <div class="hub-room-top"><h3>Войти по фамилии и номеру</h3></div>
         <p>Если уже проходили раунд на этом или другом устройстве.</p>
       </a>
+
+      <a href="facilitator.html" class="hub-room-card">
+        <div class="hub-room-top"><h3>Кабинет фасилитатора</h3></div>
+        <p>Список участников, ход раунда, пересчёт баллов. Нужен пароль.</p>
+      </a>
+
+      <button type="button" class="hub-room-card" id="btnDemoTour" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+        <div class="hub-room-top"><h3>Экскурсия по платформе</h3></div>
+        <p>Все экраны раунда с примерами заполнения, без стопов, с пояснениями механики. Нужен пароль. Ничего не сохраняется на бэкенд.</p>
+      </button>
     </div>
 
     <form id="quickTestForm" novalidate style="display:none; margin-top:4px;">
@@ -52,6 +52,17 @@
       <div class="form-error" id="quickTestError">Введите имя и фамилию.</div>
       <button class="btn btn-primary btn-block" id="quickTestSubmit" type="submit" style="margin-top:16px;">Начать →</button>
       <p class="recover-link"><a href="#" id="quickTestBack">← Назад</a></p>
+    </form>
+
+    <form id="demoPassForm" novalidate style="display:none; margin-top:4px;">
+      <p class="section-lead" style="margin:0 0 18px;">Экскурсия — служебный режим. Введите пароль (тот же, что у кабинета фасилитатора).</p>
+      <div class="field">
+        <label for="demoPass">Пароль</label>
+        <input type="password" id="demoPass" autocomplete="off" />
+      </div>
+      <div class="form-error" id="demoPassError">Неверный пароль.</div>
+      <button class="btn btn-primary btn-block" id="demoPassSubmit" type="submit" style="margin-top:16px;">Далее →</button>
+      <p class="recover-link"><a href="#" id="demoPassBack">← Назад</a></p>
     </form>
 
     <div id="demoPicker" style="display:none; margin-top:4px;">
