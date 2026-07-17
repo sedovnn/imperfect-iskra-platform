@@ -738,7 +738,7 @@ footer {
 
 .field-hint {
   font-size: 12.5px;
-  color: var(--muted-soft);
+  color: var(--muted); /* 7.13:1 — подпись поля должна проходить AA (используется и на register) */
   margin-top: 6px;
 }
 
@@ -1069,6 +1069,26 @@ footer {
 }
 .hub-room-card:hover { border-color: var(--ink); }
 .hub-room-card.is-locked { cursor: default; opacity: 0.6; }
+/* Кнопка-карточка выглядит как ссылка-карточка (вместо повторяющегося инлайн-ресета). */
+button.hub-room-card {
+  width: 100%;
+  text-align: left;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+/* Заголовок карточки-шлюза как h1 (семантика страницы), но в размере h2. */
+.gate-title {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: clamp(28px, 3.2vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin: 0;
+  max-width: 20ch;
+  overflow-wrap: break-word;
+}
 
 .hub-room-top {
   display: flex;

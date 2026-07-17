@@ -15,10 +15,10 @@
 <div class="gate" style="display:flex;">
   <div class="gate-card" style="max-width:460px;">
     <p class="kicker">Служебный вход</p>
-    <h2>Куда пойти?</h2>
+    <h1 class="gate-title">Куда пойти?</h1>
 
     <div id="qaOptions" style="display:flex; flex-direction:column; gap:12px; margin-top:22px;">
-      <button type="button" class="hub-room-card" id="btnQuickTest" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+      <button type="button" class="hub-room-card" id="btnQuickTest">
         <div class="hub-room-top"><h3>Быстрый тестовый прогон</h3></div>
         <p>Только имя и фамилия — сразу в раунд, без лишних полей.</p>
       </button>
@@ -33,7 +33,7 @@
         <p>Список участников, ход раунда, пересчёт баллов. Нужен пароль.</p>
       </a>
 
-      <button type="button" class="hub-room-card" id="btnDemoTour" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+      <button type="button" class="hub-room-card" id="btnDemoTour">
         <div class="hub-room-top"><h3>Экскурсия по платформе</h3></div>
         <p>Все экраны раунда с примерами заполнения, без стопов, с пояснениями механики. Нужен пароль. Ничего не сохраняется на бэкенд.</p>
       </button>
@@ -68,15 +68,15 @@
     <div id="demoPicker" style="display:none; margin-top:4px;">
       <p class="section-lead" style="margin:0 0 18px;">Выберите профиль ответов — с ним пройдёте все экраны. Профиль можно переключать прямо во время экскурсии.</p>
       <div style="display:flex; flex-direction:column; gap:10px;">
-        <button type="button" class="hub-room-card demo-profile-btn" data-profile="strong" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+        <button type="button" class="hub-room-card demo-profile-btn" data-profile="strong">
           <div class="hub-room-top"><h3>Сильный прогон</h3></div>
           <p>Развёрнутые ответы, широкий контекст, дальний горизонт. Позиция «Вторая кривая».</p>
         </button>
-        <button type="button" class="hub-room-card demo-profile-btn" data-profile="mid" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+        <button type="button" class="hub-room-card demo-profile-btn" data-profile="mid">
           <div class="hub-room-top"><h3>Средний прогон</h3></div>
           <p>Верные, но более поверхностные ответы. Позиция «Крепость».</p>
         </button>
-        <button type="button" class="hub-room-card demo-profile-btn" data-profile="weak" style="width:100%; text-align:left; background:none; font:inherit; cursor:pointer;">
+        <button type="button" class="hub-room-card demo-profile-btn" data-profile="weak">
           <div class="hub-room-top"><h3>Слабый прогон</h3></div>
           <p>Общие слова без опоры на кейс — видно, как срабатывают «полы» (L1). Своя позиция.</p>
         </button>
