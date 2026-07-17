@@ -189,7 +189,7 @@ h1 {
 
 .hero-note {
   font-size: 14px;
-  color: var(--muted-soft);
+  color: var(--muted); /* 7.13:1 — мелкий текст должен проходить AA */
 }
 
 .hero-grid {
@@ -241,7 +241,7 @@ section + section { border-top: 1px solid #ececec; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--muted-soft);
+  color: var(--muted); /* 7.13:1 — мелкий uppercase должен проходить AA */
   margin: 0 0 10px;
 }
 
@@ -495,7 +495,7 @@ footer {
   justify-content: space-between;
   align-items: center;
   font-size: 13px;
-  color: var(--muted-soft);
+  color: var(--muted); /* 7.13:1 — AA даже для меты футера */
   flex-wrap: wrap;
   gap: 12px;
 }
@@ -661,6 +661,18 @@ footer {
 
 /* --- малый вариант кнопки (вместо инлайн-патчей размеров/font-size) --- */
 .btn-sm { padding: 11px 20px; font-size: 14px; }
+/* На тач-устройствах добираем до 44px тап-таргета (WCAG 2.5.5). */
+@media (pointer: coarse) {
+  .btn-sm { min-height: 44px; }
+}
+
+/* Лид-абзац на тёмной панели кейса (вместо инлайн-стиля). */
+.case-lead {
+  color: #c7c9cc;
+  font-size: 15px;
+  line-height: 1.6;
+  margin-top: 16px;
+}
 
 /* --- опасное действие: удаление (семантический красный, не бренд-акцент) --- */
 .btn-danger { background: var(--ink); color: #ff7a6b; border-color: var(--ink); }
