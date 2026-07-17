@@ -613,7 +613,8 @@
           '<button class="tag-pill' + (h.tag === 'threat' ? ' is-active' : '') + '" data-tag="threat">угроза</button>' +
           '<button class="tag-pill' + (h.tag === 'opportunity' ? ' is-active' : '') + '" data-tag="opportunity">возможность</button>' +
         '</div>' +
-        '<textarea class="card-influence" rows="2" placeholder="что это означает для компании — если хотите раскрыть" style="display:' + (h.tag ? '' : 'none') + ';">' + escapeHtml(h.influence || '') + '</textarea>';
+        '<textarea class="card-influence" rows="2" placeholder="что это означает для компании — если хотите раскрыть" style="display:' + (h.tag ? '' : 'none') + ';">' + escapeHtml(h.influence || '') + '</textarea>' +
+        (h.snippet ? '<div class="card-anchor" title="' + escapeHtml(h.snippet) + '">из кейса: «' + escapeHtml(h.snippet) + '»</div>' : '');
 
       el.querySelectorAll('.tag-pill').forEach(function (btn) {
         btn.addEventListener('click', function () {

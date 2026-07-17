@@ -386,6 +386,19 @@ h2 {
 }
 .case-rule b { color: var(--ink); }
 
+/* Ссылка на исходную цитату в карточке фазы 2 (связки): мелко, приглушённо,
+   в правом нижнем углу; длинная цитата в одну строку с «…», полная — в title. */
+.card-anchor {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Бриф-«advance organizer» в начале кейса: цель чтения перед погружением. */
 .case-brief {
   margin: 20px 0 8px;
