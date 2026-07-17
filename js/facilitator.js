@@ -717,76 +717,110 @@
     return '<button class="fac-recalc-btn fac-recalc-btn-labeled" data-recalc="' + station + '">↻ ' + escapeHtml(label) + '</button>';
   }
 
+  // ——— общие примитивы тела задания: единый вид способности во всех станциях ———
+  // Способность = свой блок (имя+код, уровень справа, пояснение оценки). Сырой
+  // материал участника выносится отдельными .fac-datasec, чтобы оценка и данные
+  // не сливались в одно плоское полотно. Пересчёт — в подвале задания (recalcFooter).
+  function abilityBlock(label, code, level, inner) {
+    var scored = typeof level === 'number';
+    return '<div class="fac-ability">' +
+      '<div class="fac-ability-head">' +
+        '<h4 class="fac-ability-name">' + escapeHtml(label) + ' <span class="fac-ability-code">' + escapeHtml(code) + '</span></h4>' +
+        '<span class="fac-ability-level' + (scored ? '' : ' is-empty') + '">' + (scored ? 'L' + level : '—') + '</span>' +
+      '</div>' + (inner || '') + '</div>';
+  }
+  function srcLine(source) {
+    return '<p class="fac-ability-src">' + (source === 'ai' ? 'подтверждено ИИ' : 'определено кодом') + '</p>';
+  }
+  function judgeBlock(label, reasoning) {
+    if (!reasoning || !reasoning.reasoning) return '';
+    return '<details class="fac-judge-reasoning"><summary>' + escapeHtml(label) + '</summary>' +
+      '<p class="fac-judge-text">' + escapeHtml(reasoning.reasoning) + '</p></details>';
+  }
+  function warnLine(text) {
+    return '<p class="fac-flag">⚑ ' + escapeHtml(text) + '</p>';
+  }
+  function factChecks(items) {  // [{label, on}] → чек-лист вместо «·»-строки признаков
+    return '<ul class="fac-checks">' + items.map(function (it) {
+      return '<li class="' + (it.on ? 'is-on' : 'is-off') + '">' + escapeHtml(it.label) + '</li>';
+    }).join('') + '</ul>';
+  }
+  function dataSection(title, inner) {  // сырой материал участника (не оценка)
+    return '<div class="fac-datasec"><h5 class="fac-datasec-title">' + escapeHtml(title) + '</h5>' + inner + '</div>';
+  }
+  function recalcFooter(station, label) {
+    return '<div class="fac-task-foot">' + recalcButtonHtml(station, label) + '</div>';
+  }
+
   function renderScoreHtml(s1) {
+    var inner = '';
     if (typeof s1.level !== 'number') {
-      return '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span></h4><p class="fac-detail-text">Не оценено.</p>' + recalcButtonHtml(1, 'Пересчитать навык АК');
+      inner = '<p class="fac-detail-text">Не оценено.</p>';
+    } else {
+      inner += srcLine(s1.levelSource);
+      var domains = s1.domainsCovered || [];
+      inner += '<p class="fac-detail-text"><span class="fac-k">Домены (' + domains.length + '/5):</span> ' +
+        (domains.length ? domains.map(function (d) { return AK1_DOMAIN_LABELS[d] || d; }).join(', ') : 'нет') + '</p>';
+      if (s1.levelSource === 'ai') {
+        inner += factChecks([
+          { label: 'выходит за пределы явного в кейсе', on: s1.beyondCase },
+          { label: 'видит взаимное влияние факторов', on: s1.seesInterdependency },
+          { label: 'называет фактор второго порядка', on: s1.namesSecondOrder }
+        ]);
+      }
+      inner += judgeBlock('Обоснование судьи', s1.judgeReasoning);
     }
-    var html = '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span> — L' + s1.level + '</h4>';
-    html += recalcButtonHtml(1, 'Пересчитать навык АК');
-    html += '<p class="fac-detail-text">Источник: ' + (s1.levelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
-    var domains = s1.domainsCovered || [];
-    html += '<p class="fac-detail-text">Охваченные домены (' + domains.length + '/5): ' +
-      (domains.length ? domains.map(function (d) { return AK1_DOMAIN_LABELS[d] || d; }).join(', ') : 'нет') + '</p>';
-    if (s1.levelSource === 'ai') {
-      html += '<p class="fac-detail-text">Выходит за пределы явного в кейсе: ' + (s1.beyondCase ? 'да' : 'нет') +
-        ' · Видит взаимное влияние факторов: ' + (s1.seesInterdependency ? 'да' : 'нет') +
-        ' · Называет фактор второго порядка: ' + (s1.namesSecondOrder ? 'да' : 'нет') + '</p>';
-    }
-    if (s1.judgeReasoning && s1.judgeReasoning.reasoning) {
-      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи</summary>' +
-        '<p class="fac-card-warn">' + escapeHtml(s1.judgeReasoning.reasoning) + '</p></details>';
-    }
-    return html;
+    return abilityBlock('Широта охвата', 'АК-1', s1.level, inner);
   }
 
   var TAG_LABELS = { threat: 'угроза', opportunity: 'возможность' };
 
   function renderAK2Html(s1) {
-    var html = '<h4>Глубина взаимосвязей <span class="fac-code-hint">(АК-2)</span>' + (typeof s1.ak2Level === 'number' ? ' — L' + s1.ak2Level : '') + '</h4>';
+    var inner = '';
     if (typeof s1.ak2Level !== 'number') {
-      html += '<p class="fac-detail-text">Не оценено — см. кнопку «пересчитать» в разделе «Широта охвата» выше.</p>';
+      inner = '<p class="fac-detail-text">Не оценено.</p>';
     } else {
-      html += '<p class="fac-detail-text">Источник: ' + (s1.ak2LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
+      inner += srcLine(s1.ak2LevelSource);
       if (typeof s1.level === 'number' && s1.ak2Level > s1.level) {
-        html += '<p class="fac-detail-text fac-card-warn">⚑ Глубина выше широты — нельзя глубоко анализировать то, чего не заметил, нужна ручная проверка.</p>';
+        inner += warnLine('Глубина выше широты — нельзя глубоко анализировать незамеченное, нужна ручная проверка.');
       }
+      inner += judgeBlock('Обоснование судьи АК-2', s1.ak2JudgeReasoning);
     }
+    var html = abilityBlock('Глубина взаимосвязей', 'АК-2', s1.ak2Level, inner);
 
     var cardById = {};
     (s1.cards || []).forEach(function (c) { cardById[c.id] = c; });
 
     var tagged = (s1.cards || []).filter(function (c) { return c.tag === 'threat' || c.tag === 'opportunity'; });
     if (tagged.length) {
-      html += '<div class="fac-cards">';
+      var t = '<div class="fac-cards">';
       tagged.forEach(function (c) {
-        html += '<div class="fac-card"><p>' + escapeHtml(c.text || '(без формулировки)') + '</p>' +
-          '<div class="fac-card-meta"><span>' + (TAG_LABELS[c.tag] || c.tag) + '</span></div>' +
-          (c.influence ? '<p class="fac-detail-text">' + escapeHtml(c.influence) + '</p>' : '') +
+        t += '<div class="fac-card"><p>' + escapeHtml(c.text || '(без формулировки)') + '</p>' +
+          '<div class="fac-card-meta"><span class="fac-tag">' + (TAG_LABELS[c.tag] || c.tag) + '</span></div>' +
+          (c.influence ? '<p class="fac-card-note">' + escapeHtml(c.influence) + '</p>' : '') +
           '</div>';
       });
-      html += '</div>';
+      t += '</div>';
+      html += dataSection('Помеченные факторы', t);
     }
 
     if ((s1.connections || []).length) {
-      html += '<h4 style="margin-top:16px;">Корневые связки (' + s1.connections.length + ')</h4><div class="fac-cards">';
+      var cc = '<div class="fac-cards">';
       s1.connections.forEach(function (conn) {
         var cardTexts = (conn.cardIds || []).map(function (id) {
           var c = cardById[id];
           return c ? '«' + (c.text || '').slice(0, 60) + '»' : '(карточка удалена)';
         }).join(' + ');
-        html += '<div class="fac-card">' +
+        cc += '<div class="fac-card">' +
           '<p>' + escapeHtml(cardTexts || '(карточки не выбраны)') + '</p>' +
-          (conn.mechanism ? '<div class="fac-card-meta"><span>механизм: ' + escapeHtml(conn.mechanism) + '</span></div>' : '') +
-          (conn.conclusion ? '<div class="fac-card-meta"><span>вывод: ' + escapeHtml(conn.conclusion) + '</span></div>' : '') +
-          (conn.isLoop ? '<div class="fac-card-meta"><span>заявлена петля</span></div>' : '') +
-          '</div>';
+          '<div class="fac-card-meta">' +
+            (conn.mechanism ? '<span>механизм: ' + escapeHtml(conn.mechanism) + '</span>' : '') +
+            (conn.conclusion ? '<span>вывод: ' + escapeHtml(conn.conclusion) + '</span>' : '') +
+            (conn.isLoop ? '<span>заявлена петля</span>' : '') +
+          '</div></div>';
       });
-      html += '</div>';
-    }
-
-    if (s1.ak2JudgeReasoning && s1.ak2JudgeReasoning.reasoning) {
-      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи АК-2</summary>' +
-        '<p class="fac-card-warn">' + escapeHtml(s1.ak2JudgeReasoning.reasoning) + '</p></details>';
+      cc += '</div>';
+      html += dataSection('Корневые связки (' + s1.connections.length + ')', cc);
     }
     return html;
   }
@@ -801,79 +835,67 @@
     (s2.cardsSnapshot || []).forEach(function (c) { cardById[c.id] = c; });
     function textOf(id) { var c = cardById[id]; return c ? c.text : '(карточка не найдена)'; }
 
-    var html = '<p class="fac-detail-text">' + (s2.finished ? 'Завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'В процессе') + '</p>';
+    var html = '<p class="fac-detail-text fac-status-line">' + (s2.finished ? 'Завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'В процессе') + '</p>';
 
-    html += '<h4 style="margin-top:14px;">Выбор приоритетов <span class="fac-code-hint">(ПР-1)</span>' + (typeof s2.pr1Level === 'number' ? ' — L' + s2.pr1Level : '') + '</h4>';
-    if (s2.finished) html += recalcButtonHtml(2, 'Пересчитать навык ПР');
-    if (typeof s2.pr1Level === 'number') {
-      html += '<p class="fac-detail-text">Источник: ' + (s2.pr1LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
-    } else {
-      html += '<p class="fac-detail-text">' + (s2.finished ? 'Не оценено — нажмите «пересчитать» выше.' : 'Уровень появится после завершения.') + '</p>';
-    }
+    // ——— ПР-1 · выбор приоритетов ———
+    var pr1Inner = typeof s2.pr1Level === 'number'
+      ? srcLine(s2.pr1LevelSource) + judgeBlock('Обоснование судьи ПР-1', s2.pr1JudgeReasoning)
+      : '<p class="fac-detail-text">' + (s2.finished ? 'Не оценено.' : 'Уровень появится после завершения.') + '</p>';
+    html += abilityBlock('Выбор приоритетов', 'ПР-1', s2.pr1Level, pr1Inner);
 
     if ((s2.priorities || []).length) {
-      html += '<div class="fac-cards">';
+      var pr = '<div class="fac-cards">';
       s2.priorities.forEach(function (p, i) {
-        html += '<div class="fac-card"><p><b>' + (i + 1) + '.</b> ' + escapeHtml(textOf(p.cardId)) + '</p>' +
+        pr += '<div class="fac-card"><p><b>' + (i + 1) + '.</b> ' + escapeHtml(textOf(p.cardId)) + '</p>' +
           (p.target ? '<div class="fac-card-meta"><span>ориентир: ' + escapeHtml(p.target) + '</span></div>' : '') +
           '</div>';
       });
-      html += '</div>';
+      pr += '</div>';
+      html += dataSection('Приоритеты', pr);
     }
     if ((s2.rejected || []).length) {
-      html += '<p class="fac-detail-text"><b>Не сейчас (явные отказы):</b></p><div class="fac-cards">';
+      var rj = '<div class="fac-cards">';
       s2.rejected.forEach(function (r) {
-        html += '<div class="fac-card"><p>' + escapeHtml(textOf(r.cardId)) + '</p>' +
+        rj += '<div class="fac-card"><p>' + escapeHtml(textOf(r.cardId)) + '</p>' +
           (r.freed ? '<div class="fac-card-meta"><span>освобождает: ' + escapeHtml(r.freed) + '</span></div>' : '') +
           '</div>';
       });
-      html += '</div>';
-    }
-    if (s2.rejectionRule) {
-      html += '<p class="fac-detail-text">Правило отказа: ' + escapeHtml(s2.rejectionRule) + '</p>';
-    }
-    if (s2.pr1JudgeReasoning && s2.pr1JudgeReasoning.reasoning) {
-      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи ПР-1</summary>' +
-        '<p class="fac-card-warn">' + escapeHtml(s2.pr1JudgeReasoning.reasoning) + '</p></details>';
+      rj += '</div>';
+      if (s2.rejectionRule) rj += '<p class="fac-detail-text"><span class="fac-k">Правило отказа:</span> ' + escapeHtml(s2.rejectionRule) + '</p>';
+      html += dataSection('Явные отказы («не сейчас»)', rj);
+    } else if (s2.rejectionRule) {
+      html += dataSection('Правило отказа', '<p class="fac-detail-text">' + escapeHtml(s2.rejectionRule) + '</p>');
     }
 
-    html += '<h4 style="margin-top:16px;">Защита выбора <span class="fac-code-hint">(ПР-2)</span>' + (typeof s2.pr2Level === 'number' ? ' — L' + s2.pr2Level : '') + '</h4>';
+    // ——— ПР-2 · защита выбора ———
+    var pr2Inner = '';
     if (typeof s2.pr2Level === 'number') {
-      html += '<p class="fac-detail-text">Источник: ' + (s2.pr2LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
+      pr2Inner += srcLine(s2.pr2LevelSource);
       if (typeof s2.pr1Level === 'number' && s2.pr2Level > s2.pr1Level + 1) {
-        html += '<p class="fac-detail-text fac-card-warn">⚑ Защита выше выбора больше чем на 1 уровень — так не должно быть, нужна ручная проверка.</p>';
+        pr2Inner += warnLine('Защита выше выбора больше чем на 1 уровень — так не должно быть, нужна ручная проверка.');
       }
     }
-    if (s2.firstAction) {
-      html += '<p class="fac-detail-text"><b>Первый ход по приоритету №1:</b> ' + escapeHtml(s2.firstAction) + '</p>';
-    }
-    if (s2.rationale) {
-      html += '<p class="fac-detail-text"><b>Почему №1 первым:</b> ' + escapeHtml(s2.rationale) + '</p>';
-    }
+    pr2Inner += judgeBlock('Обоснование судьи ПР-2', s2.pr2JudgeReasoning);
+    html += abilityBlock('Защита выбора', 'ПР-2', s2.pr2Level, pr2Inner);
+
+    var defend = '';
+    if (s2.firstAction) defend += '<p class="fac-detail-text"><span class="fac-k">Первый ход по приоритету №1:</span> ' + escapeHtml(s2.firstAction) + '</p>';
+    if (s2.rationale) defend += '<p class="fac-detail-text"><span class="fac-k">Почему №1 первым:</span> ' + escapeHtml(s2.rationale) + '</p>';
     if (s2.stressChoice) {
-      html += '<p class="fac-detail-text"><b>Стресс-тест «отложим на полгода»:</b> <span class="fac-pill ' +
-        (s2.stressChoice === 'hold' ? 'is-done' : (s2.stressChoice === 'calibrate' ? 'is-progress' : 'is-progress')) + '">' +
+      defend += '<p class="fac-detail-text"><span class="fac-k">Стресс-тест «отложим на полгода»:</span> <span class="fac-pill ' +
+        (s2.stressChoice === 'hold' ? 'is-done' : 'is-progress') + '">' +
         (s2.stressChoice === 'hold' ? 'настоял на своём' : (s2.stressChoice === 'calibrate' ? 'пересобрал частично' : 'согласился пересобрать')) + '</span></p>';
-      if (s2.stressComment) {
-        html += '<p class="fac-detail-text">' + escapeHtml(s2.stressComment) + '</p>';
-      }
+      if (s2.stressComment) defend += '<p class="fac-detail-text">' + escapeHtml(s2.stressComment) + '</p>';
     }
-    if (s2.proactiveText) {
-      html += '<p class="fac-detail-text"><b>Условия пересмотра выбора:</b> ' + escapeHtml(s2.proactiveText) + '</p>';
-    }
+    if (s2.proactiveText) defend += '<p class="fac-detail-text"><span class="fac-k">Условия пересмотра выбора:</span> ' + escapeHtml(s2.proactiveText) + '</p>';
     if (s2.stance) {
       var stanceLabel = s2.stance === 'fortress' ? '«Крепость»'
         : s2.stance === 'secondCurve' ? '«Вторая кривая»'
         : (s2.stanceOther ? '«' + s2.stanceOther + '» (своя)' : 'обе неверны (своя не сформулирована)');
-      html += '<p class="fac-detail-text"><b>Рекомендация по развилке:</b> ' + escapeHtml(stanceLabel) + '</p>';
-      if (s2.stanceCriteria) {
-        html += '<p class="fac-detail-text">Критерии: ' + escapeHtml(s2.stanceCriteria) + '</p>';
-      }
+      defend += '<p class="fac-detail-text"><span class="fac-k">Рекомендация по развилке:</span> ' + escapeHtml(stanceLabel) + '</p>';
+      if (s2.stanceCriteria) defend += '<p class="fac-detail-text"><span class="fac-k">Критерии:</span> ' + escapeHtml(s2.stanceCriteria) + '</p>';
     }
-    if (s2.pr2JudgeReasoning && s2.pr2JudgeReasoning.reasoning) {
-      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи ПР-2</summary>' +
-        '<p class="fac-card-warn">' + escapeHtml(s2.pr2JudgeReasoning.reasoning) + '</p></details>';
-    }
+    if (defend) html += dataSection('Защита стратегии', defend);
     return html;
   }
 
@@ -890,19 +912,19 @@
 
   function roomAnswersFuture(state) {
     var html = '';
-    if (state.answer1) html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Про горизонт:</b> ' + escapeHtml(state.answer1) + '</p>';
-    if (state.answer2) html += '<p class="fac-detail-text"><b>Если пойдёт не так:</b> ' + escapeHtml(state.answer2) + '</p>';
+    if (state.answer1) html += '<p class="fac-detail-text"><span class="fac-k">Про горизонт:</span> ' + escapeHtml(state.answer1) + '</p>';
+    if (state.answer2) html += '<p class="fac-detail-text"><span class="fac-k">Если пойдёт не так:</span> ' + escapeHtml(state.answer2) + '</p>';
     return html;
   }
 
   function roomAnswersAlternatives(state) {
     var html = '';
-    if (state.answer1) html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Почему это сработает:</b> ' + escapeHtml(state.answer1) + '</p>';
+    if (state.answer1) html += '<p class="fac-detail-text"><span class="fac-k">Почему это сработает:</span> ' + escapeHtml(state.answer1) + '</p>';
     if (state.source) {
-      html += '<p class="fac-detail-text"><b>Источник идей (самооценка):</b> ' + escapeHtml(GA2_SOURCE_LABELS[state.source] || state.source) + '</p>';
+      html += '<p class="fac-detail-text"><span class="fac-k">Источник идей (самооценка):</span> ' + escapeHtml(GA2_SOURCE_LABELS[state.source] || state.source) + '</p>';
     }
     if (state.sourceElaboration) {
-      html += '<p class="fac-detail-text"><b>Элаборация:</b> ' + escapeHtml(state.sourceElaboration) + '</p>';
+      html += '<p class="fac-detail-text"><span class="fac-k">Элаборация:</span> ' + escapeHtml(state.sourceElaboration) + '</p>';
     }
     return html;
   }
@@ -910,7 +932,7 @@
   function roomAnswersPath(state) {
     var html = '';
     if (state.currentState || state.targetState) {
-      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Текущее → целевое:</b> ' +
+      html += '<p class="fac-detail-text"><span class="fac-k">Текущее → целевое:</span> ' +
         escapeHtml(state.currentState || '—') + ' → ' + escapeHtml(state.targetState || '—') + '</p>';
     }
     if ((state.stages || []).length) {
@@ -925,12 +947,12 @@
     var barriers = (state.barriers || []).filter(function (b) { return b.text; });
     var enablers = (state.enablers || []).filter(function (e) { return e.text; });
     if (barriers.length) {
-      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Барьеры:</b></p><div class="fac-cards">';
+      html += '<p class="fac-detail-text fac-subk"><span class="fac-k">Барьеры:</span></p><div class="fac-cards">';
       barriers.forEach(function (b) { html += '<div class="fac-card"><p>' + escapeHtml(b.text) + '</p></div>'; });
       html += '</div>';
     }
     if (enablers.length) {
-      html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Опора / ресурсы:</b></p><div class="fac-cards">';
+      html += '<p class="fac-detail-text fac-subk"><span class="fac-k">Опора / ресурсы:</span></p><div class="fac-cards">';
       enablers.forEach(function (e) { html += '<div class="fac-card"><p>' + escapeHtml(e.text) + '</p></div>'; });
       html += '</div>';
     }
@@ -964,22 +986,16 @@
     }
   };
 
-  function renderRoomAbilityHtml(ability, state, extraTop) {
+  function renderRoomAbilityHtml(ability, state) {
     var level = typeof state[ability.levelKey] === 'number' ? state[ability.levelKey] : null;
-    var html = '<h4 style="margin-top:16px;">' + escapeHtml(ability.label) + ' <span class="fac-code-hint">(' + ability.code + ')</span>' +
-      (level !== null ? ' — L' + level : '') + '</h4>';
-    if (extraTop) html += extraTop;
+    var inner;
     if (level !== null) {
-      html += '<p class="fac-detail-text">Источник: ' + (state[ability.sourceKey] === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
+      inner = srcLine(state[ability.sourceKey]) +
+        judgeBlock('Обоснование судьи (' + ability.code + ')', ability.reasoningKey && state[ability.reasoningKey]);
     } else {
-      html += '<p class="fac-detail-text">' + (state.finished ? 'Не оценено.' : 'Уровень появится после завершения.') + '</p>';
+      inner = '<p class="fac-detail-text">' + (state.finished ? 'Не оценено.' : 'Уровень появится после завершения.') + '</p>';
     }
-    var reasoning = ability.reasoningKey && state[ability.reasoningKey];
-    if (reasoning && reasoning.reasoning) {
-      html += '<details class="fac-judge-reasoning"><summary>Обоснование судьи (' + ability.code + ')</summary>' +
-        '<p class="fac-card-warn">' + escapeHtml(reasoning.reasoning) + '</p></details>';
-    }
-    return html;
+    return abilityBlock(ability.label, ability.code, level, inner);
   }
 
   function renderRoomHtml(configKey, state) {
@@ -987,10 +1003,11 @@
     if (!state) {
       return '<p class="fac-detail-text">Ещё не начата.</p>';
     }
-    var html = '<p class="fac-detail-text">' + (state.finished ? 'Завершена ' + escapeHtml(formatDate(state.finishedAt)) : 'В процессе') + '</p>';
-    html += renderRoomAbilityHtml(config.ability1, state, state.finished ? recalcButtonHtml(config.recalcStation, config.recalcLabel) : '');
-    html += renderRoomAbilityHtml(config.ability2, state, '');
-    html += config.answersHtml(state);
+    var html = '<p class="fac-detail-text fac-status-line">' + (state.finished ? 'Завершена ' + escapeHtml(formatDate(state.finishedAt)) : 'В процессе') + '</p>';
+    html += renderRoomAbilityHtml(config.ability1, state);
+    html += renderRoomAbilityHtml(config.ability2, state);
+    var ans = config.answersHtml(state);
+    if (ans) html += dataSection('Ответы участника', ans);
     return html;
   }
 
@@ -1061,26 +1078,28 @@
     // ---- Станция 1 · Вычитка и карта проблем (АК-1 + АК-2) ----
     var s1Body = renderScoreHtml(s1) + renderAK2Html(s1);
     var s1cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });
-    s1Body += '<h4>Проблемы (' + s1cards.length + ')</h4>';
+    var problemsInner = '';
     if (!s1cards.length) {
-      s1Body += '<p class="fac-detail-text">Пока пусто.</p>';
+      problemsInner += '<p class="fac-detail-text">Пока пусто.</p>';
     } else {
-      s1Body += '<div class="fac-cards">';
+      problemsInner += '<div class="fac-cards">';
       s1cards.forEach(function (c) {
-        s1Body += '<div class="fac-card">' +
+        problemsInner += '<div class="fac-card">' +
           '<p>' + escapeHtml(c.text) + '</p>' +
           (c.anchor ? '<div class="fac-card-meta"><span>из цитаты: «' + escapeHtml(c.anchor) + '»</span></div>' : '') +
-          (c.influence ? '<p class="fac-detail-text">' + escapeHtml(c.influence) + '</p>' : '') +
+          (c.influence ? '<p class="fac-card-note">' + escapeHtml(c.influence) + '</p>' : '') +
           '</div>';
       });
-      s1Body += '</div>';
+      problemsInner += '</div>';
     }
     if (s1.mainProblemId) {
       var mp = s1cards.filter(function (c) { return c.id === s1.mainProblemId; })[0];
-      if (mp) s1Body += '<p class="fac-detail-text"><b>Основная, по участнику:</b> ' + escapeHtml(mp.text) + (s1.mainProblemWhy ? ' — ' + escapeHtml(s1.mainProblemWhy) : '') + '</p>';
+      if (mp) problemsInner += '<p class="fac-detail-text"><span class="fac-k">Основная, по участнику:</span> ' + escapeHtml(mp.text) + (s1.mainProblemWhy ? ' — ' + escapeHtml(s1.mainProblemWhy) : '') + '</p>';
     }
+    s1Body += dataSection('Проблемы (' + s1cards.length + ')', problemsInner);
     var reviewedCount = Object.keys(s1.appxReviewed || {}).length;
-    s1Body += '<h4>Приложения — изучено ' + reviewedCount + '/8</h4>';
+    s1Body += dataSection('Приложения', '<p class="fac-detail-text">Изучено ' + reviewedCount + ' из 8</p>');
+    s1Body += recalcFooter(1, 'Пересчитать навык АК');
     // балл навыка считается только в facilitatorList (participant.*.akSkill/prSkill/skill) —
     // сырые записи станций/комнат (s1/s2/roomX здесь) его не несут, поэтому берём из participant.
     html += taskSectionHtml(
@@ -1094,7 +1113,7 @@
     html += taskSectionHtml(
       'Станция 2 · Встреча с Агеевым', 'station2', participant,
       abilityBadgeHtml('ПР-1', s2 && s2.pr1Level) + abilityBadgeHtml('ПР-2', s2 && s2.pr2Level) + skillBadgeHtml('навык ПР', participant.station2 && participant.station2.prSkill),
-      renderPRHtml(s2),
+      renderPRHtml(s2) + (s2 ? recalcFooter(2, 'Пересчитать навык ПР') : ''),
       participant.station2 && participant.station2.prFlag ? 'Нарушено ограничение зависимостей способностей' : null
     );
 
@@ -1107,7 +1126,7 @@
         abilityBadgeHtml(config.ability1.code, state && state[config.ability1.levelKey]) +
           abilityBadgeHtml(config.ability2.code, state && state[config.ability2.levelKey]) +
           skillBadgeHtml('навык', participant[key] && participant[key].skill),
-        renderRoomHtml(key, state)
+        renderRoomHtml(key, state) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : '')
       );
     });
 

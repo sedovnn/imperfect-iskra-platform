@@ -2849,8 +2849,103 @@ table mark.hl {
 .fac-recalc-btn:disabled { opacity: 0.5; cursor: default; }
 
 .fac-judge-reasoning { margin-top: 10px; }
-.fac-judge-reasoning summary { cursor: pointer; font-size: 12.5px; color: var(--muted-soft); margin-bottom: 10px; }
+.fac-judge-reasoning summary { cursor: pointer; font-size: 12.5px; color: var(--muted-soft); }
+.fac-judge-reasoning[open] summary { margin-bottom: 8px; }
 .fac-judge-reasoning .fac-card { margin-bottom: 10px; }
+
+/* ——— тело задания: способность как самостоятельный блок ——— */
+/* .fac-detail-body h4 (uppercase-серый) перебивает одиночный класс по
+   специфичности, поэтому имя способности скоупим под .fac-task-body. */
+.fac-ability {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  background: #fafafa;
+}
+.fac-ability-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fac-task-body .fac-ability-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink);
+}
+.fac-ability-code { font-size: 12px; font-weight: 600; color: var(--muted-soft); }
+.fac-ability-level {
+  flex: none;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.fac-ability-level.is-empty { color: var(--muted-soft); font-weight: 400; }
+.fac-ability-src { margin: 8px 0 0; font-size: 12px; color: var(--muted-soft); }
+.fac-ability .fac-detail-text { margin-top: 8px; }
+.fac-ability .fac-judge-reasoning { margin-top: 10px; }
+
+/* обоснование судьи — нейтральный текст, НЕ тревога (раньше был красным warn) */
+.fac-judge-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* флаг-нарушение — настоящее предупреждение, остаётся акцентным */
+.fac-flag { margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: #c4362b; font-weight: 500; }
+
+/* чек-лист структурных признаков вместо «·»-строки «да/нет» */
+.fac-checks { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.fac-checks li { position: relative; padding-left: 22px; font-size: 13px; line-height: 1.4; }
+.fac-checks li::before { position: absolute; left: 2px; top: 0; font-weight: 700; }
+.fac-checks li.is-on { color: var(--ink); }
+.fac-checks li.is-on::before { content: '✓'; color: #4a8a00; }
+.fac-checks li.is-off { color: var(--muted-soft); }
+.fac-checks li.is-off::before { content: '–'; color: var(--muted-soft); }
+
+/* сырой материал участника — тихий заголовок-ярлык (отличается от имени способности) */
+.fac-datasec { margin-top: 18px; }
+.fac-task-body .fac-datasec-title {
+  margin: 0 0 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-soft);
+}
+.fac-datasec .fac-subk { margin-top: 12px; }
+
+/* строковый ярлык внутри факта */
+.fac-k { color: var(--muted-soft); font-weight: 600; }
+.fac-card-note { margin: 6px 0 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
+.fac-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 999px;
+  padding: 1px 9px;
+}
+.fac-status-line { margin-bottom: 2px; font-size: 12.5px; color: var(--muted-soft); }
+
+/* подвал задания: единственное действие «пересчитать» */
+.fac-task-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hairline);
+}
+.fac-task-foot .fac-recalc-btn-labeled { margin: 0; }
 
 .fac-task {
   border: 1px solid #ececec;
