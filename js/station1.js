@@ -267,6 +267,42 @@
     });
   })();
 
+  // возврат к ссылке, с которой ушли в приложение
+  var appxReturnBtn = document.getElementById('appxReturnBtn');
+  var appxReturnFrom = null;
+  var appxReturnObs = null;
+
+  function showAppxReturn(originEl) {
+    appxReturnFrom = originEl;
+    if (!appxReturnBtn) return;
+    appxReturnBtn.style.display = '';
+    if (appxReturnObs) appxReturnObs.disconnect();
+    if ('IntersectionObserver' in window) {
+      var hasLeft = false;
+      appxReturnObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+          if (!en.isIntersecting) hasLeft = true;       // ушли к приложению
+          else if (hasLeft) hideAppxReturn();           // сами вернулись — прячем
+        });
+      }, { threshold: 0.5 });
+      appxReturnObs.observe(originEl);
+    }
+  }
+  function hideAppxReturn() {
+    if (appxReturnBtn) appxReturnBtn.style.display = 'none';
+    if (appxReturnObs) { appxReturnObs.disconnect(); appxReturnObs = null; }
+  }
+  if (appxReturnBtn) {
+    appxReturnBtn.addEventListener('click', function () {
+      if (!appxReturnFrom) { hideAppxReturn(); return; }
+      var el = appxReturnFrom;
+      el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      el.classList.add('appx-ref-flash');
+      setTimeout(function () { el.classList.remove('appx-ref-flash'); }, 1200);
+      hideAppxReturn();
+    });
+  }
+
   caseContent.addEventListener('click', function (e) {
     var ref = e.target.closest ? e.target.closest('.appx-ref') : null;
     if (!ref) return;
@@ -276,6 +312,7 @@
     if (details) details.open = true;
     var article = document.getElementById('appx-' + n);
     if (article) requestAnimationFrame(function () { article.scrollIntoView({ block: 'start', behavior: 'smooth' }); });
+    showAppxReturn(ref);
   });
 
   // ---------- домены/разделы кейса ----------
