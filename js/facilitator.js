@@ -649,6 +649,255 @@
     return 'участников';
   }
 
+  // ---------- отчёт участника «сравнение с ИИ» (облегчённое резюме) ----------
+
+  // ИИ-паритет: медианные уровни каждого навыка (из 10) у эталонной модели на
+  // текущей версии кейса «Искра». ЕДИНСТВЕННОЕ место, где заданы эти числа —
+  // обновлять здесь после очередной серии референс-прогонов. Сумма пяти = общий
+  // ИИ-паритет /50. Значения ниже — рабочая планка до свежего перемера на текущей
+  // (после правок методологии) версии; держим их честно помеченными в самом отчёте
+  // («тестовый прогон · этап разработки» + «перемеряется при обновлении кейса»).
+  var AI_PARITY = { ak: 10, pr: 8, mk: 8, ga: 9, pp: 7 };
+  var AI_PARITY_META = { n: 5, measuredAt: 'июль 2026', caseVersion: 'v1', parityZone: 1 };
+
+  // Порядок = методология (АК, ПР, МК, ГА, ПП). Описания — сжатые из «текстов о
+  // навыках» (16_baza, раздел 2), по одной строке на навык, покрывают обе способности.
+  var REPORT_SKILLS = [
+    { code: 'АК', key: 'ak', name: 'Анализ контекста', desc: 'Как широко вы сканируете внешнюю среду и как глубоко связываете обнаруженные факторы в единую картину.' },
+    { code: 'ПР', key: 'pr', name: 'Приоритизация', desc: 'Как вы сужаете пространство действий до управляемого набора приоритетов — с осознанными отказами и обоснованием выбора.' },
+    { code: 'МК', key: 'mk', name: 'Моделирование картины будущего', desc: 'Как далеко в будущее и в скольких вариантах вы мыслите — от продления текущих трендов до принципиально иных сценариев.' },
+    { code: 'ГА', key: 'ga', name: 'Генерация стратегических альтернатив', desc: 'Насколько систематически вы порождаете разные по механизму варианты решения и из скольких разных областей берёте идеи.' },
+    { code: 'ПП', key: 'pp', name: 'Построение пути к цели', desc: 'Как вы раскладываете цель на этапы и как удерживаете маршрут, когда план сталкивается с ограничениями.' }
+  ];
+
+  // Стили отчёта — брендбук StratOS (киноварь #FF4800 / Jordy Blue / Inter Tight),
+  // это отчётный носитель futureproof, НЕ продуктовый DESIGN.md (лайм/Unbounded).
+  var REPORT_CSS = '' +
+    ':root{--verm:#FF4800;--verm-d:#CC3700;--blue:#89BBF1;--blue-d:#3f7fc4;--g1:#A6A69F;--g2:#CACAC5;--g3:#DBDBD9;--g4:#EDEDEC;--g5:#F6F6F5;--ink:#181818;--white:#fff;--ff:"Inter Tight",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;}' +
+    '*{box-sizing:border-box}' +
+    'body{margin:0;background:var(--white);color:var(--ink);font-family:var(--ff);line-height:1.5;-webkit-font-smoothing:antialiased;}' +
+    '.page{max-width:1120px;margin:0 auto;padding:44px 72px 56px;border-bottom:1px solid var(--g4);}' +
+    '.phead{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:44px;}' +
+    '.brand{font-weight:700;letter-spacing:-.01em;}.brand .ar{color:var(--verm);}' +
+    '.phead .meta{color:var(--g1);text-transform:uppercase;letter-spacing:.14em;font-weight:600;font-size:11px;}' +
+    '.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--g1);font-weight:600;margin:0 0 14px;}' +
+    'h1{font-size:60px;line-height:.98;letter-spacing:-.025em;font-weight:600;text-transform:uppercase;margin:0 0 20px;text-wrap:balance;}' +
+    'h1 .v{color:var(--verm);}' +
+    '.lede{font-size:18px;line-height:1.4;max-width:60ch;margin:0;}.lede b{font-weight:600;}' +
+    '.cmeta{display:flex;gap:56px;flex-wrap:wrap;margin-top:48px;}' +
+    '.cmeta .m .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--g1);font-weight:600;margin:0 0 6px;}' +
+    '.cmeta .m .val{font-size:20px;font-weight:600;}.cmeta .m .val .ring{color:var(--blue-d);}' +
+    '.notice{margin-top:40px;background:var(--g5);border:1px solid var(--g4);border-radius:4px;padding:18px 20px;max-width:760px;}' +
+    '.notice b{color:var(--verm);}.notice p{margin:0;font-size:13.5px;color:#5c574f;line-height:1.55;}' +
+    '.hero{display:flex;align-items:flex-end;gap:48px;margin-top:34px;padding-bottom:26px;border-bottom:1px solid var(--g3);}' +
+    '.hnum .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--g1);font-weight:600;display:flex;align-items:center;gap:7px;margin-bottom:4px;}' +
+    '.hnum .k .d{width:9px;height:9px;border-radius:50%;background:var(--verm);}' +
+    '.hnum .k .o{width:9px;height:9px;border-radius:50%;border:2px solid var(--blue-d);box-sizing:border-box;}' +
+    '.hnum .n{font-size:64px;font-weight:600;line-height:.9;font-variant-numeric:tabular-nums;}' +
+    '.hnum .n .s{font-size:20px;color:var(--g1);font-weight:400;}' +
+    '.hnum.you .n{color:var(--verm);}' +
+    '.hsum{margin-left:auto;font-size:14px;color:#5c574f;line-height:1.7;text-align:right;}' +
+    '.hsum b{color:var(--ink);font-weight:600;}' +
+    '.srows{margin-top:26px;}' +
+    '.srow{padding:20px 0;border-bottom:1px solid var(--g4);}' +
+    '.srow .top{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}' +
+    '.srow .sk{font-size:16px;font-weight:600;}' +
+    '.srow .sk .tag{display:inline-block;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;color:var(--white);padding:2px 7px;border-radius:3px;margin-left:8px;vertical-align:2px;}' +
+    '.srow .sk .tag.s{background:var(--verm);}.srow .sk .tag.g{background:var(--blue);}' +
+    '.srow .sk .code{color:var(--g1);font-weight:600;font-size:12px;}' +
+    '.srow .skdesc{font-size:13px;color:#5c574f;line-height:1.5;margin:7px 0 14px;max-width:72ch;}' +
+    '.sbar{position:relative;height:12px;}' +
+    '.sbar .base{position:absolute;left:0;right:0;top:50%;height:2px;background:var(--g3);transform:translateY(-50%);border-radius:2px;}' +
+    '.sbar .mk{position:absolute;top:50%;transform:translate(-50%,-50%);}' +
+    '.sbar .you{width:13px;height:13px;border-radius:50%;background:var(--verm);z-index:2;}' +
+    '.sbar .ai{width:14px;height:14px;border-radius:50%;border:2.5px solid var(--blue-d);background:var(--white);box-sizing:border-box;z-index:1;}' +
+    '.srow .delta{flex:none;text-align:right;font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1;}' +
+    '.srow .delta.up{color:var(--verm);}.srow .delta.dn{color:var(--blue-d);}.srow .delta.eq{color:var(--g1);}' +
+    '.srow .delta small{display:block;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--g1);font-weight:600;margin-top:4px;}' +
+    '.axis{margin-top:8px;}' +
+    '.axis .ticks{display:flex;justify-content:space-between;font-size:9.5px;color:var(--g2);font-variant-numeric:tabular-nums;}' +
+    '.caption{font-size:12px;color:var(--g1);margin-top:20px;line-height:1.5;}.caption b{color:#5c574f;font-weight:600;}' +
+    '.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-top:34px;}' +
+    '.c3 .rule{height:2px;margin-bottom:14px;}' +
+    '.c3.up .rule{background:var(--verm);}.c3.eq .rule{background:var(--g2);}.c3.dn .rule{background:var(--blue);}' +
+    '.c3 h4{font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin:0 0 10px;}' +
+    '.c3 p{margin:0;font-size:13.5px;color:#4d4840;line-height:1.55;}' +
+    '.measure{margin-top:34px;background:var(--g5);border:1px solid var(--g4);padding:20px 22px;}' +
+    '.measure .k{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--g1);font-weight:700;margin:0 0 8px;}' +
+    '.measure p{margin:0 0 14px;font-size:13.5px;color:#4d4840;line-height:1.55;max-width:74ch;}' +
+    '.chips{display:flex;flex-wrap:wrap;gap:8px;}' +
+    '.chip{font-size:11.5px;color:#5c574f;background:var(--white);border:1px solid var(--g3);border-radius:3px;padding:5px 10px;}' +
+    '.foot{background:var(--ink);color:var(--white);}' +
+    '.foot .page{border-bottom:none;padding-top:26px;padding-bottom:26px;}' +
+    '.foot .row{display:flex;justify-content:space-between;align-items:center;}' +
+    '.foot .brand{color:var(--white);}.foot .brand .ar{color:var(--verm);}' +
+    '.foot .meta{color:#8a857c;font-size:11px;letter-spacing:.14em;text-transform:uppercase;}' +
+    '@media(max-width:640px){.page{padding:34px 24px 40px;}h1{font-size:40px;}.hero{flex-wrap:wrap;gap:24px;}.hsum{margin-left:0;text-align:left;}.cols3{grid-template-columns:1fr;gap:20px;}}' +
+    '@media print{body{background:#fff;}.page{max-width:none;break-after:page;border-bottom:none;}.foot{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}';
+
+  function reportYouSkills(p) {
+    return {
+      ak: p.station1 && typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null,
+      pr: p.station2 && typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null,
+      mk: p.roomFuture && typeof p.roomFuture.skill === 'number' ? p.roomFuture.skill : null,
+      ga: p.roomAlternatives && typeof p.roomAlternatives.skill === 'number' ? p.roomAlternatives.skill : null,
+      pp: p.roomPath && typeof p.roomPath.skill === 'number' ? p.roomPath.skill : null
+    };
+  }
+
+  function reportReady(p) {
+    return countAbilitiesJudged(p) === 10;
+  }
+
+  function formatLongDate(iso) {
+    if (!iso) return '—';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+  }
+
+  function deltaClass(d) { return d >= 2 ? 'up' : (d <= -2 ? 'dn' : 'eq'); }
+  function deltaLabel(d) { return d >= 2 ? 'выше ИИ' : (d <= -2 ? 'ниже ИИ' : 'наравне'); }
+  function deltaText(d) { return d > 0 ? '+' + d : (d < 0 ? '−' + Math.abs(d) : '0'); }
+
+  // Собирает готовый standalone-HTML отчёта из реальных баллов участника.
+  function buildReportHtml(p, registration) {
+    var you = reportYouSkills(p);
+    var rows = REPORT_SKILLS.map(function (s) {
+      var yv = you[s.key], av = AI_PARITY[s.key];
+      return { code: s.code, key: s.key, name: s.name, desc: s.desc, you: yv, ai: av, delta: yv - av };
+    });
+
+    var youTotal = rows.reduce(function (sum, r) { return sum + r.you; }, 0);
+    var aiTotal = rows.reduce(function (sum, r) { return sum + r.ai; }, 0);
+
+    // strongest — максимальная дельта, growth — минимальная (не совпадающая со strongest).
+    var maxD = rows[0].delta, minD = rows[0].delta;
+    rows.forEach(function (r) { if (r.delta > maxD) maxD = r.delta; if (r.delta < minD) minD = r.delta; });
+    var strongest = null, growth = null;
+    rows.forEach(function (r) { if (strongest === null && r.delta === maxD) strongest = r; });
+    rows.forEach(function (r) { if (growth === null && r.delta === minD && r !== strongest) growth = r; });
+
+    var above = rows.filter(function (r) { return r.delta >= 2; }).length;
+    var parity = rows.filter(function (r) { return r.delta >= -1 && r.delta <= 1; }).length;
+    var below = rows.filter(function (r) { return r.delta <= -2; }).length;
+
+    // Порядок вывода: сильная сторона → зона роста → остальные в порядке методологии.
+    var ordered = [];
+    if (strongest) ordered.push(strongest);
+    if (growth) ordered.push(growth);
+    rows.forEach(function (r) { if (ordered.indexOf(r) === -1) ordered.push(r); });
+
+    var rowsHtml = ordered.map(function (r) {
+      var tag = '';
+      if (r === strongest && r.delta >= 2) tag = ' <span class="tag s">Сильная сторона</span>';
+      else if (r === growth && r.delta <= -2) tag = ' <span class="tag g">Зона роста</span>';
+      var youStyle = 'left:' + (r.you * 10) + '%' + (r.you === r.ai ? '; width:7px; height:7px;' : '');
+      return '' +
+        '<div class="srow">' +
+          '<div class="top">' +
+            '<div class="sk">' + escapeHtml(r.name) + ' <span class="code">· ' + escapeHtml(r.code) + '</span>' + tag + '</div>' +
+            '<div class="delta ' + deltaClass(r.delta) + '">' + deltaText(r.delta) + '<small>' + deltaLabel(r.delta) + '</small></div>' +
+          '</div>' +
+          '<p class="skdesc">' + escapeHtml(r.desc) + '</p>' +
+          '<div class="sbar"><span class="base"></span>' +
+            '<span class="mk ai" style="left:' + (r.ai * 10) + '%"></span>' +
+            '<span class="mk you" style="' + youStyle + '"></span>' +
+          '</div>' +
+        '</div>';
+    }).join('');
+
+    var name = ((registration && registration.firstName) || p.firstName || '') + ' ' + ((registration && registration.lastName) || p.lastName || '');
+    var dateIso = (p.station3 && p.station3.finishedAt) || (registration && registration.registeredAt) || '';
+    var chips = [
+      'кейс «Искра» · ' + AI_PARITY_META.caseVersion,
+      'референс-модели · фикс.',
+      'n = ' + AI_PARITY_META.n + ' прогонов · медиана',
+      'замер: ' + AI_PARITY_META.measuredAt,
+      'зона паритета: ±' + AI_PARITY_META.parityZone
+    ].map(function (c) { return '<span class="chip">' + escapeHtml(c) + '</span>'; }).join('');
+
+    return '<!doctype html>\n<html lang="ru">\n<head>\n' +
+'<meta charset="utf-8">\n' +
+'<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+'<title>StratOS · Отчёт · ' + escapeHtml(name.trim()) + '</title>\n' +
+'<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
+'<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
+'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&display=swap">\n' +
+'<style>' + REPORT_CSS + '</style>\n</head>\n<body>\n' +
+
+'<section class="page">' +
+  '<div class="phead"><span class="brand">futureproof <span class="ar">▸</span></span><span class="meta">Strat OS · Assessment / 01</span></div>' +
+  '<p class="eyebrow">Диагностический отчёт · превью · сравнение с ИИ</p>' +
+  '<h1>Стратегическое<br><span class="v">мышление</span></h1>' +
+  '<p class="lede">Ваш профиль по пяти навыкам — и его положение относительно ИИ-паритета: уровня, который на этом же кейсе показывает эталонная нейросеть.</p>' +
+  '<div class="cmeta">' +
+    '<div class="m"><p class="k">Участник</p><div class="val">' + escapeHtml(name.trim() || '—') + '</div></div>' +
+    '<div class="m"><p class="k">Дата прохождения</p><div class="val">' + escapeHtml(formatLongDate(dateIso)) + '</div></div>' +
+    '<div class="m"><p class="k">Модуль</p><div class="val">Кейс «Искра» · ' + escapeHtml(AI_PARITY_META.caseVersion) + '</div></div>' +
+    '<div class="m"><p class="k">ИИ-паритет</p><div class="val"><span class="ring">○</span> ' + aiTotal + ' / 50</div></div>' +
+  '</div>' +
+  '<div class="notice"><p><b>Тестовый прогон · этап разработки.</b> Это предварительное превью отчёта. Оценка ещё не прошла фасилитацию — если после разбора результаты уточнятся, мы сообщим вам отдельно. Пока это демонстрация того, что вы получите в полной версии.</p></div>' +
+'</section>' +
+
+'<section class="page">' +
+  '<div class="phead"><span class="brand">futureproof <span class="ar">▸</span></span><span class="meta">Резюме</span></div>' +
+  '<h1 style="font-size:46px;">Ваш профиль <span class="v">относительно ИИ</span></h1>' +
+  '<p class="lede" style="font-size:17px;">По каждому навыку — где вы относительно ИИ-паритета. Разница в один балл — в пределах точности измерения, это паритет.</p>' +
+  '<div class="hero">' +
+    '<div class="hnum you"><div class="k"><span class="d"></span>Вы</div><div class="n">' + youTotal + '<span class="s"> / 50</span></div></div>' +
+    '<div class="hnum"><div class="k"><span class="o"></span>ИИ-паритет</div><div class="n">' + aiTotal + '<span class="s"> / 50</span></div></div>' +
+    '<div class="hsum">Выше ИИ — <b>' + above + ' ' + skillWord(above) + '</b><br>Наравне — <b>' + parity + ' ' + skillWord(parity) + '</b><br>Ниже ИИ — <b>' + below + ' ' + skillWord(below) + '</b></div>' +
+  '</div>' +
+  '<div class="srows">' + rowsHtml + '</div>' +
+  '<div class="axis"><div class="ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div></div>' +
+  '<p class="caption"><b>●</b> — ваш уровень навыка, <b>○</b> — уровень ИИ-паритета (оба из 10 = сумма двух способностей). Разбор по обеим способностям каждого навыка — в детализации навыка на следующих страницах полной версии.</p>' +
+'</section>' +
+
+'<section class="page">' +
+  '<div class="phead"><span class="brand">futureproof <span class="ar">▸</span></span><span class="meta">Как читать сравнение</span></div>' +
+  '<h1 style="font-size:46px;">Что такое <span class="v">ИИ-паритет</span></h1>' +
+  '<p class="lede" style="font-size:17px;">Тот же кейс, те же вопросы, тот же оценщик — но отвечает эталонная нейросеть. Её медианный результат и есть ИИ-паритет: точка отсчёта, которая показывает, где сегодня проходит граница машинного стратегического мышления.</p>' +
+  '<p class="lede" style="font-size:16px; margin-top:16px; color:#4d4840;">Это не соревнование и не вердикт. ИИ-паритет отвечает на один практический вопрос: <b>в чём ваше мышление сильнее того, что уже умеет машина, — а где машина вас догнала.</b> Первое — ваша незаменимая зона. Второе — зона, где стоит либо расти, либо сознательно опираться на инструменты.</p>' +
+  '<div class="cols3">' +
+    '<div class="c3 up"><div class="rule"></div><h4>Выше ИИ</h4><p>Дельта +2 и больше. На этом навыке вы делаете то, чего эталонная модель на этом кейсе не показала. Это опора вашего профиля — и аргумент вашей роли рядом с ИИ-инструментами.</p></div>' +
+    '<div class="c3 eq"><div class="rule"></div><h4>Наравне</h4><p>Дельта в пределах ±1 — разница внутри точности измерения. Вы и машина на этом навыке сегодня неразличимы. Хороший результат — и повод решить, где вы хотите оторваться.</p></div>' +
+    '<div class="c3 dn"><div class="rule"></div><h4>Ниже ИИ</h4><p>Дельта −2 и больше. Машина на этом кейсе показывает уровень выше вашего. Это не приговор, а карта: именно здесь шаг развития даёт наибольший прирост относительной ценности.</p></div>' +
+  '</div>' +
+  '<div class="measure"><p class="k">Как измерен ИИ-паритет</p>' +
+    '<p>Эталонная модель проходит кейс тем же маршрутом, что и вы, без подсказок и без ограничения интерфейсом. Ответы оценивает тот же оценщик, что и ваши. Планка — медиана серии прогонов; она перемеряется при каждом обновлении кейса или оценщика.</p>' +
+    '<div class="chips">' + chips + '</div>' +
+  '</div>' +
+'</section>' +
+
+'<div class="foot"><div class="page"><div class="row">' +
+  '<span class="brand">FUTUREPROOF <span class="ar">▸</span></span>' +
+  '<span class="meta">Strat OS · Assessment · Превью · сравнение с ИИ · тестовый прогон</span>' +
+'</div></div></div>' +
+
+'</body>\n</html>';
+  }
+
+  function skillWord(n) {
+    var mod10 = n % 10, mod100 = n % 100;
+    if (mod10 === 1 && mod100 !== 11) return 'навык';
+    if ([2, 3, 4].indexOf(mod10) !== -1 && [12, 13, 14].indexOf(mod100) === -1) return 'навыка';
+    return 'навыков';
+  }
+
+  function downloadReport(p, registration) {
+    var html = buildReportHtml(p, registration);
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'imperfect-otchet-' + String(p.bib).padStart(3, '0') + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   function openDetail(participant) {
     var wasOpen = detail.classList.contains('show');
     currentDetailParticipant = participant;
@@ -679,6 +928,18 @@
           });
         });
       });
+      var reportBtn = detailBody.querySelector('[data-report]');
+      if (reportBtn) {
+        reportBtn.addEventListener('click', function () {
+          if (reportBtn.disabled) return;
+          try {
+            downloadReport(participant, res.registration);
+            impToast('Отчёт сформирован — файл скачивается.');
+          } catch (e) {
+            impToast('Не удалось сформировать отчёт: ' + (e && e.message ? e.message : 'ошибка'), 'error');
+          }
+        });
+      }
     });
   }
 
@@ -1021,6 +1282,19 @@
     html += '<p class="fac-detail-text">' + (station3 && station3.finished
       ? 'Стратегия финализирована ' + escapeHtml(formatDate(station3.finishedAt))
       : 'Стратегия ещё не финализирована') + '</p>';
+
+    // ---- Отчёт участника «сравнение с ИИ» (скачать → в личку) ----
+    // Собирается на клиенте из уже посчитанных баллов; кнопка активна только когда
+    // оценены все 10 способностей (иначе балл /50 и дельты неполны).
+    if (participant) {
+      var ready = reportReady(participant);
+      html += '<div class="fac-report-block">' +
+        '<button class="btn btn-primary btn-sm" data-report="1"' + (ready ? '' : ' disabled') + '>Сформировать отчёт (сравнение с ИИ) →</button>' +
+        '<span class="fac-detail-text" style="margin:0;">' + (ready
+          ? 'Скачает готовый HTML-отчёт — превью для участника, можно отправить в личку.'
+          : 'Отчёт можно сформировать, когда оценены все 10 способностей (сейчас ' + countAbilitiesJudged(participant) + '/10).') +
+        '</span></div>';
+    }
 
     // ---- Станция 1 · Вычитка и карта проблем (АК-1 + АК-2) ----
     var s1Body = renderScoreHtml(s1) + renderAK2Html(s1);

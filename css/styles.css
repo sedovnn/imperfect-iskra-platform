@@ -2642,6 +2642,18 @@ table mark.hl {
   margin: 0;
 }
 
+/* Блок кнопки «Сформировать отчёт» в карточке участника — кнопка + пояснение. */
+.fac-report-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 14px 0 4px;
+  padding: 14px 0 2px;
+  border-top: 1px solid var(--hair, rgba(0,0,0,0.08));
+}
+.fac-report-block .fac-detail-text { flex: 1; min-width: 220px; }
+
 .fac-detail-loading {
   font-size: 14px;
   color: var(--muted-soft);
