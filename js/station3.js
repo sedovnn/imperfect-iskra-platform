@@ -327,6 +327,29 @@
     }
     updateFinalizeGate();
 
+    // Кросс-девайс: гейт финала и рекап читают завершённость комнат из localStorage.
+    // Если участник прошёл комнаты на другом устройстве или вошёл по фамилии (recover),
+    // локально пусто → кнопка «Финализировать» залочена и станция 3 никогда не
+    // сохраняется, хотя на бэкенде все три комнаты завершены. Подтягиваем их статус
+    // с бэкенда (сидируем localStorage непройденных локально), затем перерисовываем.
+    if (window.imp.isApiConfigured()) {
+      var roomLoadActions = { future: 'loadRoomFuture', alternatives: 'loadRoomAlternatives', path: 'loadRoomPath' };
+      var pendingRooms = 0;
+      ROOMS.forEach(function (room) {
+        var localFin = false;
+        try { var lr = localStorage.getItem(room.storageKey(session.bib)); localFin = !!(lr && JSON.parse(lr).finished); } catch (e) {}
+        if (localFin) return; // локально уже завершена — не трогаем
+        pendingRooms++;
+        window.imp.callApi(roomLoadActions[room.key], { bib: session.bib }).then(function (res) {
+          if (res && res.ok && res.state && res.state.finished) {
+            localStorage.setItem(room.storageKey(session.bib), JSON.stringify(res.state));
+          }
+        }).catch(function () {}).then(function () {
+          if (--pendingRooms === 0) { renderRooms(); updateFinalizeGate(); }
+        });
+      });
+    }
+
     // повторный просмотр собранной стратегии после финала — read-only (п.13)
     document.getElementById('reviewStrategyBtn').addEventListener('click', function () {
       strategyRecapEl.innerHTML = buildRecapHtml();
