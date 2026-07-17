@@ -386,6 +386,26 @@ h2 {
 }
 .case-rule b { color: var(--ink); }
 
+/* Бриф-«advance organizer» в начале кейса: цель чтения перед погружением. */
+.case-brief {
+  margin: 20px 0 8px;
+  padding: 16px 20px;
+  background: var(--lime-tint);
+  border: 1px solid var(--lime-line);
+  border-radius: 12px;
+}
+.case-brief-title {
+  font-family: var(--ff-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+.case-brief ol { margin: 0; padding-left: 20px; }
+.case-brief ol li { margin: 0 0 6px; }
+.case-brief ol li:last-child { margin-bottom: 0; }
+.case-brief-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+
 /* Возврат к ссылке-приложению: всплывающая пилюля после прыжка в приложение. */
 .appx-return {
   position: fixed;
