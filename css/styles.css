@@ -2947,6 +2947,70 @@ table mark.hl {
 }
 .fac-task-foot .fac-recalc-btn-labeled { margin: 0; }
 
+/* ——— вердикт судьи: главное в способности. Выделен лаймом, свёрнут (длинный) ——— */
+.fac-verdict {
+  margin-top: 10px;
+  border: 1px solid var(--lime-line);
+  border-radius: 10px;
+  background: var(--lime-tint);
+  overflow: hidden;
+}
+.fac-verdict-sum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 13px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.fac-verdict-sum::-webkit-details-marker { display: none; }
+.fac-verdict-sum::before {
+  content: '▸';
+  color: var(--ink);
+  transition: transform 0.15s ease;
+}
+.fac-verdict[open] .fac-verdict-sum::before { transform: rotate(90deg); }
+.fac-verdict[open] .fac-verdict-sum { border-bottom: 1px solid var(--lime-line); }
+.fac-verdict-text {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+/* ——— материалы участника: вторичны, свёрнуты, тихие ——— */
+.fac-materials {
+  margin-top: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.fac-materials-sum {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  list-style: none;
+  padding: 11px 14px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.fac-materials-sum::-webkit-details-marker { display: none; }
+.fac-materials-sum::before {
+  content: '▸';
+  color: var(--muted-soft);
+  transition: transform 0.15s ease;
+}
+.fac-materials[open] .fac-materials-sum::before { transform: rotate(90deg); }
+.fac-materials[open] .fac-materials-sum { border-bottom: 1px solid var(--hairline); }
+.fac-materials-body { padding: 2px 14px 14px; }
+.fac-materials-body .fac-datasec:first-child { margin-top: 14px; }
+
 .fac-task {
   border: 1px solid #ececec;
   border-radius: 12px;

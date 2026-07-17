@@ -732,10 +732,19 @@
   function srcLine(source) {
     return '<p class="fac-ability-src">' + (source === 'ai' ? 'подтверждено ИИ' : 'определено кодом') + '</p>';
   }
-  function judgeBlock(label, reasoning) {
+  // Вердикт судьи — самое важное в способности: выделен цветом, но свёрнут
+  // (длинный; раскрывают, только если результат смутил). Отдельный от контроля.
+  function judgeBlock(reasoning) {
     if (!reasoning || !reasoning.reasoning) return '';
-    return '<details class="fac-judge-reasoning"><summary>' + escapeHtml(label) + '</summary>' +
-      '<p class="fac-judge-text">' + escapeHtml(reasoning.reasoning) + '</p></details>';
+    return '<details class="fac-verdict"><summary class="fac-verdict-sum">Вердикт судьи</summary>' +
+      '<p class="fac-verdict-text">' + escapeHtml(reasoning.reasoning) + '</p></details>';
+  }
+  // Всё, что участник написал/ответил — вторично, нужно только при сомнении в
+  // вердикте. Сворачиваем в один тихий блок под способностями.
+  function materialsBlock(inner) {
+    if (!inner) return '';
+    return '<details class="fac-materials"><summary class="fac-materials-sum">Материалы участника</summary>' +
+      '<div class="fac-materials-body">' + inner + '</div></details>';
   }
   function warnLine(text) {
     return '<p class="fac-flag">⚑ ' + escapeHtml(text) + '</p>';
@@ -757,7 +766,7 @@
     if (typeof s1.level !== 'number') {
       inner = '<p class="fac-detail-text">Не оценено.</p>';
     } else {
-      inner += srcLine(s1.levelSource);
+      inner += judgeBlock(s1.judgeReasoning) + srcLine(s1.levelSource);
       var domains = s1.domainsCovered || [];
       inner += '<p class="fac-detail-text"><span class="fac-k">Домены (' + domains.length + '/5):</span> ' +
         (domains.length ? domains.map(function (d) { return AK1_DOMAIN_LABELS[d] || d; }).join(', ') : 'нет') + '</p>';
@@ -768,7 +777,6 @@
           { label: 'называет фактор второго порядка', on: s1.namesSecondOrder }
         ]);
       }
-      inner += judgeBlock('Обоснование судьи', s1.judgeReasoning);
     }
     return abilityBlock('Широта охвата', 'АК-1', s1.level, inner);
   }
@@ -780,16 +788,20 @@
     if (typeof s1.ak2Level !== 'number') {
       inner = '<p class="fac-detail-text">Не оценено.</p>';
     } else {
-      inner += srcLine(s1.ak2LevelSource);
       if (typeof s1.level === 'number' && s1.ak2Level > s1.level) {
         inner += warnLine('Глубина выше широты — нельзя глубоко анализировать незамеченное, нужна ручная проверка.');
       }
-      inner += judgeBlock('Обоснование судьи АК-2', s1.ak2JudgeReasoning);
+      inner += judgeBlock(s1.ak2JudgeReasoning) + srcLine(s1.ak2LevelSource);
     }
-    var html = abilityBlock('Глубина взаимосвязей', 'АК-2', s1.ak2Level, inner);
+    return abilityBlock('Глубина взаимосвязей', 'АК-2', s1.ak2Level, inner);
+  }
 
+  // Все сырые материалы станции 1 (помеченные факторы, связки, проблемы,
+  // приложения) — под сворачиваемым «Материалы участника».
+  function renderS1Materials(s1) {
     var cardById = {};
     (s1.cards || []).forEach(function (c) { cardById[c.id] = c; });
+    var out = '';
 
     var tagged = (s1.cards || []).filter(function (c) { return c.tag === 'threat' || c.tag === 'opportunity'; });
     if (tagged.length) {
@@ -801,7 +813,7 @@
           '</div>';
       });
       t += '</div>';
-      html += dataSection('Помеченные факторы', t);
+      out += dataSection('Помеченные факторы', t);
     }
 
     if ((s1.connections || []).length) {
@@ -820,9 +832,33 @@
           '</div></div>';
       });
       cc += '</div>';
-      html += dataSection('Корневые связки (' + s1.connections.length + ')', cc);
+      out += dataSection('Корневые связки (' + s1.connections.length + ')', cc);
     }
-    return html;
+
+    var s1cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });
+    var problemsInner = '';
+    if (!s1cards.length) {
+      problemsInner += '<p class="fac-detail-text">Пока пусто.</p>';
+    } else {
+      problemsInner += '<div class="fac-cards">';
+      s1cards.forEach(function (c) {
+        problemsInner += '<div class="fac-card">' +
+          '<p>' + escapeHtml(c.text) + '</p>' +
+          (c.anchor ? '<div class="fac-card-meta"><span>из цитаты: «' + escapeHtml(c.anchor) + '»</span></div>' : '') +
+          (c.influence ? '<p class="fac-card-note">' + escapeHtml(c.influence) + '</p>' : '') +
+          '</div>';
+      });
+      problemsInner += '</div>';
+    }
+    if (s1.mainProblemId) {
+      var mp = s1cards.filter(function (c) { return c.id === s1.mainProblemId; })[0];
+      if (mp) problemsInner += '<p class="fac-detail-text"><span class="fac-k">Основная, по участнику:</span> ' + escapeHtml(mp.text) + (s1.mainProblemWhy ? ' — ' + escapeHtml(s1.mainProblemWhy) : '') + '</p>';
+    }
+    out += dataSection('Проблемы (' + s1cards.length + ')', problemsInner);
+
+    var reviewedCount = Object.keys(s1.appxReviewed || {}).length;
+    out += dataSection('Приложения', '<p class="fac-detail-text">Изучено ' + reviewedCount + ' из 8</p>');
+    return out;
   }
 
   // Станция 2 «Встреча с Агеевым» — навык ПР: приоритеты/отказы (ПР-1),
@@ -835,14 +871,23 @@
     (s2.cardsSnapshot || []).forEach(function (c) { cardById[c.id] = c; });
     function textOf(id) { var c = cardById[id]; return c ? c.text : '(карточка не найдена)'; }
 
-    var html = '<p class="fac-detail-text fac-status-line">' + (s2.finished ? 'Завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'В процессе') + '</p>';
-
     // ——— ПР-1 · выбор приоритетов ———
     var pr1Inner = typeof s2.pr1Level === 'number'
-      ? srcLine(s2.pr1LevelSource) + judgeBlock('Обоснование судьи ПР-1', s2.pr1JudgeReasoning)
+      ? judgeBlock(s2.pr1JudgeReasoning) + srcLine(s2.pr1LevelSource)
       : '<p class="fac-detail-text">' + (s2.finished ? 'Не оценено.' : 'Уровень появится после завершения.') + '</p>';
-    html += abilityBlock('Выбор приоритетов', 'ПР-1', s2.pr1Level, pr1Inner);
+    var ab = abilityBlock('Выбор приоритетов', 'ПР-1', s2.pr1Level, pr1Inner);
 
+    // ——— ПР-2 · защита выбора ———
+    var pr2Inner = '';
+    if (typeof s2.pr2Level === 'number' && typeof s2.pr1Level === 'number' && s2.pr2Level > s2.pr1Level + 1) {
+      pr2Inner += warnLine('Защита выше выбора больше чем на 1 уровень — так не должно быть, нужна ручная проверка.');
+    }
+    pr2Inner += judgeBlock(s2.pr2JudgeReasoning);
+    if (typeof s2.pr2Level === 'number') pr2Inner += srcLine(s2.pr2LevelSource);
+    ab += abilityBlock('Защита выбора', 'ПР-2', s2.pr2Level, pr2Inner);
+
+    // ——— материалы участника ———
+    var mat = '';
     if ((s2.priorities || []).length) {
       var pr = '<div class="fac-cards">';
       s2.priorities.forEach(function (p, i) {
@@ -851,7 +896,7 @@
           '</div>';
       });
       pr += '</div>';
-      html += dataSection('Приоритеты', pr);
+      mat += dataSection('Приоритеты', pr);
     }
     if ((s2.rejected || []).length) {
       var rj = '<div class="fac-cards">';
@@ -862,21 +907,10 @@
       });
       rj += '</div>';
       if (s2.rejectionRule) rj += '<p class="fac-detail-text"><span class="fac-k">Правило отказа:</span> ' + escapeHtml(s2.rejectionRule) + '</p>';
-      html += dataSection('Явные отказы («не сейчас»)', rj);
+      mat += dataSection('Явные отказы («не сейчас»)', rj);
     } else if (s2.rejectionRule) {
-      html += dataSection('Правило отказа', '<p class="fac-detail-text">' + escapeHtml(s2.rejectionRule) + '</p>');
+      mat += dataSection('Правило отказа', '<p class="fac-detail-text">' + escapeHtml(s2.rejectionRule) + '</p>');
     }
-
-    // ——— ПР-2 · защита выбора ———
-    var pr2Inner = '';
-    if (typeof s2.pr2Level === 'number') {
-      pr2Inner += srcLine(s2.pr2LevelSource);
-      if (typeof s2.pr1Level === 'number' && s2.pr2Level > s2.pr1Level + 1) {
-        pr2Inner += warnLine('Защита выше выбора больше чем на 1 уровень — так не должно быть, нужна ручная проверка.');
-      }
-    }
-    pr2Inner += judgeBlock('Обоснование судьи ПР-2', s2.pr2JudgeReasoning);
-    html += abilityBlock('Защита выбора', 'ПР-2', s2.pr2Level, pr2Inner);
 
     var defend = '';
     if (s2.firstAction) defend += '<p class="fac-detail-text"><span class="fac-k">Первый ход по приоритету №1:</span> ' + escapeHtml(s2.firstAction) + '</p>';
@@ -895,8 +929,10 @@
       defend += '<p class="fac-detail-text"><span class="fac-k">Рекомендация по развилке:</span> ' + escapeHtml(stanceLabel) + '</p>';
       if (s2.stanceCriteria) defend += '<p class="fac-detail-text"><span class="fac-k">Критерии:</span> ' + escapeHtml(s2.stanceCriteria) + '</p>';
     }
-    if (defend) html += dataSection('Защита стратегии', defend);
-    return html;
+    if (defend) mat += dataSection('Защита стратегии', defend);
+
+    var statusLine = '<p class="fac-detail-text fac-status-line">' + (s2.finished ? 'Завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'В процессе') + '</p>';
+    return { abilities: statusLine + ab, materials: mat };
   }
 
   // МК/ГА/ПП живут в комнатах финального отрезка — все три структурно одинаковы
@@ -990,8 +1026,7 @@
     var level = typeof state[ability.levelKey] === 'number' ? state[ability.levelKey] : null;
     var inner;
     if (level !== null) {
-      inner = srcLine(state[ability.sourceKey]) +
-        judgeBlock('Обоснование судьи (' + ability.code + ')', ability.reasoningKey && state[ability.reasoningKey]);
+      inner = judgeBlock(ability.reasoningKey && state[ability.reasoningKey]) + srcLine(state[ability.sourceKey]);
     } else {
       inner = '<p class="fac-detail-text">' + (state.finished ? 'Не оценено.' : 'Уровень появится после завершения.') + '</p>';
     }
@@ -1001,14 +1036,13 @@
   function renderRoomHtml(configKey, state) {
     var config = ROOM_CONFIGS[configKey];
     if (!state) {
-      return '<p class="fac-detail-text">Ещё не начата.</p>';
+      return { abilities: '<p class="fac-detail-text">Ещё не начата.</p>', materials: '' };
     }
-    var html = '<p class="fac-detail-text fac-status-line">' + (state.finished ? 'Завершена ' + escapeHtml(formatDate(state.finishedAt)) : 'В процессе') + '</p>';
-    html += renderRoomAbilityHtml(config.ability1, state);
-    html += renderRoomAbilityHtml(config.ability2, state);
+    var ab = '<p class="fac-detail-text fac-status-line">' + (state.finished ? 'Завершена ' + escapeHtml(formatDate(state.finishedAt)) : 'В процессе') + '</p>';
+    ab += renderRoomAbilityHtml(config.ability1, state);
+    ab += renderRoomAbilityHtml(config.ability2, state);
     var ans = config.answersHtml(state);
-    if (ans) html += dataSection('Ответы участника', ans);
-    return html;
+    return { abilities: ab, materials: ans ? dataSection('Ответы участника', ans) : '' };
   }
 
   // Карточка участника раньше была одним длинным полотном — все шесть заданий
@@ -1076,32 +1110,10 @@
     }
 
     // ---- Станция 1 · Вычитка и карта проблем (АК-1 + АК-2) ----
-    var s1Body = renderScoreHtml(s1) + renderAK2Html(s1);
-    var s1cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });
-    var problemsInner = '';
-    if (!s1cards.length) {
-      problemsInner += '<p class="fac-detail-text">Пока пусто.</p>';
-    } else {
-      problemsInner += '<div class="fac-cards">';
-      s1cards.forEach(function (c) {
-        problemsInner += '<div class="fac-card">' +
-          '<p>' + escapeHtml(c.text) + '</p>' +
-          (c.anchor ? '<div class="fac-card-meta"><span>из цитаты: «' + escapeHtml(c.anchor) + '»</span></div>' : '') +
-          (c.influence ? '<p class="fac-card-note">' + escapeHtml(c.influence) + '</p>' : '') +
-          '</div>';
-      });
-      problemsInner += '</div>';
-    }
-    if (s1.mainProblemId) {
-      var mp = s1cards.filter(function (c) { return c.id === s1.mainProblemId; })[0];
-      if (mp) problemsInner += '<p class="fac-detail-text"><span class="fac-k">Основная, по участнику:</span> ' + escapeHtml(mp.text) + (s1.mainProblemWhy ? ' — ' + escapeHtml(s1.mainProblemWhy) : '') + '</p>';
-    }
-    s1Body += dataSection('Проблемы (' + s1cards.length + ')', problemsInner);
-    var reviewedCount = Object.keys(s1.appxReviewed || {}).length;
-    s1Body += dataSection('Приложения', '<p class="fac-detail-text">Изучено ' + reviewedCount + ' из 8</p>');
-    s1Body += recalcFooter(1, 'Пересчитать навык АК');
-    // балл навыка считается только в facilitatorList (participant.*.akSkill/prSkill/skill) —
-    // сырые записи станций/комнат (s1/s2/roomX здесь) его не несут, поэтому берём из participant.
+    // Порядок тела: способности (уровень + вердикт) → «Материалы участника»
+    // (свёрнуто) → пересчёт. Балл навыка берём из participant (сырые записи его не несут).
+    var s1Body = renderScoreHtml(s1) + renderAK2Html(s1) +
+      materialsBlock(renderS1Materials(s1)) + recalcFooter(1, 'Пересчитать навык АК');
     html += taskSectionHtml(
       'Станция 1 · Вычитка и карта проблем', 'station1', participant,
       abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill),
@@ -1110,10 +1122,11 @@
     );
 
     // ---- Станция 2 · Встреча с Агеевым (ПР-1 + ПР-2) ----
+    var pr = renderPRHtml(s2);
     html += taskSectionHtml(
       'Станция 2 · Встреча с Агеевым', 'station2', participant,
       abilityBadgeHtml('ПР-1', s2 && s2.pr1Level) + abilityBadgeHtml('ПР-2', s2 && s2.pr2Level) + skillBadgeHtml('навык ПР', participant.station2 && participant.station2.prSkill),
-      renderPRHtml(s2) + (s2 ? recalcFooter(2, 'Пересчитать навык ПР') : ''),
+      pr.abilities + materialsBlock(pr.materials) + (s2 ? recalcFooter(2, 'Пересчитать навык ПР') : ''),
       participant.station2 && participant.station2.prFlag ? 'Нарушено ограничение зависимостей способностей' : null
     );
 
@@ -1121,12 +1134,13 @@
     ['roomFuture', 'roomAlternatives', 'roomPath'].forEach(function (key) {
       var config = ROOM_CONFIGS[key];
       var state = key === 'roomFuture' ? roomFuture : (key === 'roomAlternatives' ? roomAlternatives : roomPath);
+      var room = renderRoomHtml(key, state);
       html += taskSectionHtml(
         config.title, key, participant,
         abilityBadgeHtml(config.ability1.code, state && state[config.ability1.levelKey]) +
           abilityBadgeHtml(config.ability2.code, state && state[config.ability2.levelKey]) +
           skillBadgeHtml('навык', participant[key] && participant[key].skill),
-        renderRoomHtml(key, state) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : '')
+        room.abilities + materialsBlock(room.materials) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : '')
       );
     });
 
