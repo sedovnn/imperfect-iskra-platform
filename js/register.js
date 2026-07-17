@@ -315,18 +315,27 @@
     }
     recoverError.classList.remove('show');
 
+    // отдача на нажатие: восстановление ждёт ответа бэкенда (холодный старт —
+    // секунды); без этого кажется, что кнопка не сработала.
+    var recBtn = recoverForm.querySelector('button[type="submit"], button:not([type])');
+    var recBtnText = recBtn ? recBtn.textContent : '';
+    function recRestore() { if (recBtn) { recBtn.disabled = false; recBtn.textContent = recBtnText; } }
+    if (recBtn) { recBtn.disabled = true; recBtn.textContent = 'Проверяю…'; }
+
     if (window.imp.isApiConfigured()) {
       window.imp.callApi('recover', { bib: enteredBib, lastName: enteredLastName }).then(function (res) {
         if (res && res.ok && res.record) {
           localStorage.setItem('imp_current_session', JSON.stringify(res.record));
           backendConfirmed = true; // подтверждено самим бэкендом
-          showConfirm(res.record, true);
+          showConfirm(res.record, true); // экран подтверждения — кнопку восстанавливать не нужно
         } else {
           recoverLocal(enteredBib, enteredLastName.toLowerCase());
+          recRestore();
         }
       });
     } else {
       recoverLocal(enteredBib, enteredLastName.toLowerCase());
+      recRestore();
     }
   });
 
