@@ -2732,7 +2732,7 @@ table mark.hl {
   flex-wrap: wrap;
   gap: 14px;
   font-size: 12.5px;
-  color: var(--muted-soft);
+  color: var(--muted);
 }
 
 .fac-detail-text {
@@ -2750,7 +2750,7 @@ table mark.hl {
   flex-wrap: wrap;
   margin: 14px 0 4px;
   padding: 14px 0 2px;
-  border-top: 1px solid var(--hair, rgba(0,0,0,0.08));
+  border-top: 1px solid var(--hairline);
 }
 .fac-report-block .fac-detail-text { flex: 1; min-width: 220px; }
 
@@ -2862,10 +2862,7 @@ table mark.hl {
 .fac-task + .fac-task { margin-top: 12px; }
 
 .fac-task-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  display: block;
   padding: 14px 16px;
   cursor: pointer;
   list-style: none;
@@ -2875,23 +2872,37 @@ table mark.hl {
 
 .fac-task-summary::-webkit-details-marker { display: none; }
 
-.fac-task-summary::before {
-  content: '▸';
-  display: inline-block;
-  margin-right: 8px;
-  color: var(--muted-soft);
-  transition: transform 0.15s ease;
+/* строка заголовка: [▸ название] ......... [статус] */
+.fac-task-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.fac-task[open] > .fac-task-summary::before { transform: rotate(90deg); }
+.fac-task-title {
+  font-weight: 600;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.fac-task-title::before {
+  content: '▸';
+  color: var(--muted-soft);
+  transition: transform 0.15s ease;
+  flex: none;
+}
+.fac-task[open] .fac-task-title::before { transform: rotate(90deg); }
 
-.fac-task-title { font-weight: 600; }
-
+/* бейджи способностей/навыка — отдельной строкой под заголовком, слева */
 .fac-task-badges {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  justify-content: flex-end;
+  justify-content: flex-start;
+  margin-top: 10px;
+  padding-left: 20px; /* выровнять под текст заголовка, после маркера ▸ */
 }
 
 .fac-task-body {
