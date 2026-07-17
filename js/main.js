@@ -31,7 +31,17 @@
       var s = sessionStorage.getItem('imp_current_session');
       if (s) return JSON.parse(s);
     } catch (e) {}
-    try { return JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) { return null; }
+    try {
+      var real = JSON.parse(localStorage.getItem('imp_current_session') || 'null');
+      // самолечение старой протечки: до фикса экскурсия писала демо-сессию (bib 900)
+      // в общий localStorage. Если демо в этой вкладке не активно, а в localStorage
+      // лежит демо-биб — это протечка, а не реальная сессия: игнорируем и вычищаем.
+      if (real && real.bib === 900 && !sessionStorage.getItem('imp_demo')) {
+        localStorage.removeItem('imp_current_session');
+        return null;
+      }
+      return real;
+    } catch (e) { return null; }
   };
 
   // Позиция по развилке Агеева («Крепость» / «Вторая кривая» / своя) выбирается на
