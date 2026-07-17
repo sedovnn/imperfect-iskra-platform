@@ -25,9 +25,13 @@
   var DEMO_KEY = 'imp_demo';
   var DEMO_BIB = 900; // локальный, на бэкенд не уходит
 
-  // читаем флаг демо СРАЗУ — если его нет, выходим и ни на что не влияем
+  // читаем флаг демо СРАЗУ — если его нет, выходим и ни на что не влияем.
+  // Флаг живёт в sessionStorage (изолирован по ВКЛАДКЕ): экскурсия, запущенная в
+  // одной вкладке, не может активироваться в другой (там своя sessionStorage).
+  // Читаем ТОЛЬКО sessionStorage — иначе утёкший localStorage-флаг снова протёк бы
+  // между вкладками, ровно тот баг, который чиним.
   var demo = null;
-  try { demo = JSON.parse(localStorage.getItem(DEMO_KEY) || 'null'); } catch (e) {}
+  try { demo = JSON.parse(sessionStorage.getItem(DEMO_KEY) || 'null'); } catch (e) {}
   if (!demo || !demo.active) return;
 
   // Защита от протечки демо в реальную сессию. Экскурсия всегда работает под
@@ -39,9 +43,9 @@
   // перекрыть любую прошлую сессию своим демо-сеансом.
   if (demo.seededFor) {
     var curSess = null;
-    try { curSess = JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) {}
+    try { curSess = JSON.parse(sessionStorage.getItem('imp_current_session') || 'null'); } catch (e) {}
     if (curSess && curSess.bib && curSess.bib !== DEMO_BIB) {
-      localStorage.removeItem(DEMO_KEY);
+      sessionStorage.removeItem(DEMO_KEY);
       return;
     }
   }
@@ -227,11 +231,13 @@
     // размеченный HTML кейса пере-создаётся под новый профиль (см. injectDemoMarks)
     localStorage.removeItem('imp_station1_html_' + bib);
 
-    put('imp_current_session', {
+    // сессия демо — в sessionStorage (per-tab), чтобы не перезаписать общую
+    // реальную сессию в других вкладках. Читатели берут её через window.imp.loadSession.
+    sessionStorage.setItem('imp_current_session', JSON.stringify({
       id: 'demo_session', bib: bib, case: 'iskra',
       firstName: 'Экскурсия', lastName: '(' + profile.label + ')',
       wave: 'demo', registeredAt: nowISO()
-    });
+    }));
 
     // станция 1 — проблемы рождаются из отметок: цитата (snippet) + описание (problem).
     var s1 = profile.station1;
@@ -308,7 +314,7 @@
   if (!demo.seededFor || demo.seededFor !== profileId) {
     seed(profile);
     demo.seededFor = profileId;
-    localStorage.setItem(DEMO_KEY, JSON.stringify(demo));
+    sessionStorage.setItem(DEMO_KEY, JSON.stringify(demo));
   }
 
   // ---------- переключение флагов .finished под текущую страницу ----------
@@ -458,13 +464,16 @@
   function setProfile(id) {
     demo.profile = id;
     demo.seededFor = null; // заставит пере-сеять на следующей загрузке
-    localStorage.setItem(DEMO_KEY, JSON.stringify(demo));
+    sessionStorage.setItem(DEMO_KEY, JSON.stringify(demo));
     // остаёмся на том же экране, но с новым профилем
     location.reload();
   }
 
   function exitDemo() {
     var bib = DEMO_BIB;
+    // сессия и флаг демо — в sessionStorage (per-tab)
+    ['imp_current_session', DEMO_KEY].forEach(function (k) { sessionStorage.removeItem(k); });
+    // засеянные данные экскурсии и служебные флаги — в localStorage (+ DEMO_KEY на случай legacy)
     ['imp_current_session', DEMO_KEY, 'imp_demo_note_collapsed',
      'imp_station1_' + bib, 'imp_station1_html_' + bib, 'imp_station2_' + bib,
      'imp_station3_' + bib, 'imp_room_future_' + bib, 'imp_room_alternatives_' + bib,

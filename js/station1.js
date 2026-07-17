@@ -18,7 +18,7 @@
 
   function loadSession() {
     try {
-      return JSON.parse(localStorage.getItem('imp_current_session') || 'null');
+      return window.imp.loadSession();
     } catch (e) { return null; }
   }
 

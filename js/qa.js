@@ -9,7 +9,7 @@
   // экскурсии, чтобы demo.js не перехватил обычный «быстрый прогон» или вход
   // по фамилии (иначе он пере-сеял бы демо-профиль поверх реальной сессии).
   // Кнопка экскурсии ниже выставляет флаг заново непосредственно перед запуском.
-  localStorage.removeItem('imp_demo');
+  sessionStorage.removeItem('imp_demo'); localStorage.removeItem('imp_demo');
 
   var optionsEl = document.getElementById('qaOptions');
   var formEl = document.getElementById('quickTestForm');
@@ -89,7 +89,9 @@
   });
   document.querySelectorAll('.demo-profile-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
-      localStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: btn.getAttribute('data-profile'), seededFor: null }));
+      // флаг экскурсии — в sessionStorage: изолирован по вкладке, не протекает в
+      // другие вкладки/реальные сессии (см. demo.js / main.js loadSession)
+      sessionStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: btn.getAttribute('data-profile'), seededFor: null }));
       window.location.href = 'station1.html';
     });
   });
@@ -125,7 +127,7 @@
     // на случай bfcache/возврата «назад»: скрипт загрузки мог не отработать —
     // снимаем флаг экскурсии прямо при запуске быстрого теста, иначе demo.js
     // перехватил бы реальную сессию
-    localStorage.removeItem('imp_demo');
+    sessionStorage.removeItem('imp_demo'); localStorage.removeItem('imp_demo');
     var firstName = document.getElementById('qtFirstName').value.trim();
     var lastName = document.getElementById('qtLastName').value.trim();
     if (!firstName || !lastName) {

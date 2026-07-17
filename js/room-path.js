@@ -18,7 +18,7 @@
   function uid() { return 'id_' + Math.random().toString(36).slice(2, 10); }
 
   function loadSession() {
-    try { return JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) { return null; }
+    try { return window.imp.loadSession(); } catch (e) { return null; }
   }
 
   function loadState(bib) {

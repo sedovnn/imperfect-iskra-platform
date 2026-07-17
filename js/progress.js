@@ -19,7 +19,7 @@
   if (curIdx === -1) return; // не экран раунда
 
   var session = null;
-  try { session = JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) {}
+  try { session = window.imp.loadSession(); } catch (e) {}
   if (!session || !session.bib) return;
 
   var host = document.querySelector('#stationRoot .station-header');

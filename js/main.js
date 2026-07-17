@@ -21,7 +21,16 @@
     return narrow && (coarse || touch);
   };
 
+  // Сессию читаем sessionStorage → localStorage. sessionStorage изолирован по
+  // ВКЛАДКЕ: режим «Экскурсия» держит свою демо-сессию (bib 900) только там, где
+  // запущен, и не перезаписывает общую (localStorage) реальную сессию в других
+  // вкладках. Реальный участник живёт в localStorage (общий между его вкладками —
+  // это ожидаемо). Все экраны читают сессию через этот хелпер.
   window.imp.loadSession = function () {
+    try {
+      var s = sessionStorage.getItem('imp_current_session');
+      if (s) return JSON.parse(s);
+    } catch (e) {}
     try { return JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) { return null; }
   };
 

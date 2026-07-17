@@ -13,7 +13,7 @@
   function station1Key(bib) { return 'imp_station1_' + bib; }
 
   function loadSession() {
-    try { return JSON.parse(localStorage.getItem('imp_current_session') || 'null'); } catch (e) { return null; }
+    try { return window.imp.loadSession(); } catch (e) { return null; }
   }
 
   function loadState(bib) {
