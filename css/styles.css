@@ -1708,6 +1708,15 @@ footer {
   white-space: nowrap;
 }
 
+/* На узком экране правый блок шапки не помещается рядом с несжимаемым
+   логотипом и наезжал на него — разрешаем перенос на вторую строку. */
+@media (max-width: 600px) {
+  .station-header { flex-wrap: wrap; row-gap: 8px; padding: 12px 20px; }
+  /* Счётчик участников на мобиле избыточен (то же видно в списке) —
+     убираем, чтобы логотип и «Обновить» уместились в одну строку. */
+  #facCount { display: none; }
+}
+
 .station-intro {
   position: fixed;
   inset: 0;
@@ -2374,8 +2383,15 @@ table mark.hl {
 .fac-body {
   flex: 1;
   overflow-y: auto;
-  overflow-x: auto;
+  overflow-x: hidden;
   padding: 28px 32px;
+}
+
+/* Таблица шире экрана прокручивается в собственном контейнере — так вкладки,
+   фильтр и заголовки страницы остаются на месте, а не уезжают вбок вместе с ней. */
+.fac-table-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .fac-table {
