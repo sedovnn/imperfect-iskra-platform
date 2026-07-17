@@ -68,6 +68,55 @@
     return div.innerHTML;
   }
 
+  // Внутрисистемный тост вместо native alert (по токенам бренда).
+  function impToast(message, kind) {
+    var t = document.createElement('div');
+    t.className = 'imp-toast' + (kind === 'error' ? ' is-error' : '');
+    t.setAttribute('role', 'status');
+    t.setAttribute('aria-live', 'polite');
+    t.textContent = message;
+    document.body.appendChild(t);
+    // двойной rAF, чтобы стартовое opacity:0 успело примениться до перехода
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { t.classList.add('is-in'); });
+    });
+    setTimeout(function () {
+      t.classList.remove('is-in');
+      setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 260);
+    }, kind === 'error' ? 5200 : 3600);
+  }
+
+  // Внутрисистемный диалог подтверждения вместо native confirm. Возвращает Promise<boolean>.
+  function impConfirm(message, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+      var ov = document.createElement('div');
+      ov.className = 'imp-confirm';
+      var msgHtml = escapeHtml(message).replace(/\n/g, '<br>');
+      ov.innerHTML =
+        '<div class="imp-confirm-card" role="alertdialog" aria-modal="true">' +
+          '<p class="imp-confirm-msg">' + msgHtml + '</p>' +
+          '<div class="imp-confirm-actions">' +
+            '<button type="button" class="btn btn-ghost" data-act="cancel">' + escapeHtml(opts.cancelLabel || 'Отмена') + '</button>' +
+            '<button type="button" class="btn ' + (opts.danger ? 'btn-danger' : 'btn-primary') + '" data-act="ok">' + escapeHtml(opts.confirmLabel || 'Подтвердить') + '</button>' +
+          '</div>' +
+        '</div>';
+      function close(val) {
+        document.removeEventListener('keydown', onKey);
+        if (ov.parentNode) ov.parentNode.removeChild(ov);
+        resolve(val);
+      }
+      function onKey(e) { if (e.key === 'Escape') close(false); }
+      ov.addEventListener('click', function (e) { if (e.target === ov) close(false); });
+      ov.querySelector('[data-act="cancel"]').addEventListener('click', function () { close(false); });
+      ov.querySelector('[data-act="ok"]').addEventListener('click', function () { close(true); });
+      document.addEventListener('keydown', onKey);
+      document.body.appendChild(ov);
+      var okBtn = ov.querySelector('[data-act="ok"]');
+      if (okBtn) okBtn.focus();
+    });
+  }
+
   function formatBib(n) {
     return '№ ' + String(n).padStart(3, '0');
   }
@@ -251,13 +300,15 @@
       chip.className = 'fac-wave-chip';
       chip.innerHTML = escapeHtml(w.label) + ' <button class="fac-wave-remove" title="Убрать поток">✕</button>';
       chip.querySelector('.fac-wave-remove').addEventListener('click', function () {
-        if (!window.confirm('Убрать поток «' + w.label + '»? Уже зарегистрированные на него участники сохранят запись — поток просто исчезнет из выбора для новых регистраций.')) return;
-        window.imp.callApi('removeWave', { password: currentPassword(), id: w.id }).then(function (res) {
-          if (res && res.ok) {
-            loadWaves();
-          } else {
-            window.alert('Не удалось убрать поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
-          }
+        impConfirm('Убрать поток «' + w.label + '»? Уже зарегистрированные на него участники сохранят запись — поток просто исчезнет из выбора для новых регистраций.', { confirmLabel: 'Убрать поток', danger: true }).then(function (ok) {
+          if (!ok) return;
+          window.imp.callApi('removeWave', { password: currentPassword(), id: w.id }).then(function (res) {
+            if (res && res.ok) {
+              loadWaves();
+            } else {
+              impToast('Не удалось убрать поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'), 'error');
+            }
+          });
         });
       });
       wavesListEl.appendChild(chip);
@@ -294,7 +345,7 @@
           waveLabelInput.value = '';
           loadWaves();
         } else {
-          window.alert('Не удалось добавить поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
+          impToast('Не удалось добавить поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'), 'error');
         }
       });
     });
@@ -383,19 +434,21 @@
   }
 
   function deleteParticipant(p, btn) {
-    var confirmed = window.confirm(
+    impConfirm(
       'Удалить участника ' + formatBib(p.bib) + ' (' + p.firstName + ' ' + p.lastName + ')?\n' +
-      'Это удалит регистрацию и весь прогресс по станциям 1, 2 и 3. Действие необратимо.'
-    );
-    if (!confirmed) return;
-    btn.disabled = true;
-    window.imp.callApi('deleteParticipant', { password: currentPassword(), bib: p.bib }).then(function (res) {
-      if (res && res.ok) {
-        refresh();
-      } else {
-        btn.disabled = false;
-        window.alert('Не удалось удалить участника: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
-      }
+      'Это удалит регистрацию и весь прогресс по станциям 1, 2 и 3. Действие необратимо.',
+      { confirmLabel: 'Удалить', danger: true }
+    ).then(function (confirmed) {
+      if (!confirmed) return;
+      btn.disabled = true;
+      window.imp.callApi('deleteParticipant', { password: currentPassword(), bib: p.bib }).then(function (res) {
+        if (res && res.ok) {
+          refresh();
+        } else {
+          btn.disabled = false;
+          impToast('Не удалось удалить участника: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'), 'error');
+        }
+      });
     });
   }
 
@@ -496,7 +549,7 @@
       } else {
         btn.disabled = false;
         btn.textContent = originalText;
-        window.alert('Не удалось пересчитать балл: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'));
+        impToast('Не удалось пересчитать балл: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'), 'error');
       }
     });
   }
@@ -566,7 +619,7 @@
       return '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span></h4><p class="fac-detail-text">Не оценено.</p>' + recalcButtonHtml(1, 'Пересчитать навык АК');
     }
     var html = '<h4>Широта охвата <span class="fac-code-hint">(АК-1)</span> — L' + s1.level + '</h4>';
-    html += recalcButtonHtml(1, 'пересчитать навык АК');
+    html += recalcButtonHtml(1, 'Пересчитать навык АК');
     html += '<p class="fac-detail-text">Источник: ' + (s1.levelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
     var domains = s1.domainsCovered || [];
     html += '<p class="fac-detail-text">Охваченные домены (' + domains.length + '/5): ' +
@@ -648,7 +701,7 @@
     var html = '<p class="fac-detail-text">' + (s2.finished ? 'Завершена ' + escapeHtml(formatDate(s2.finishedAt)) : 'В процессе') + '</p>';
 
     html += '<h4 style="margin-top:14px;">Выбор приоритетов <span class="fac-code-hint">(ПР-1)</span>' + (typeof s2.pr1Level === 'number' ? ' — L' + s2.pr1Level : '') + '</h4>';
-    if (s2.finished) html += recalcButtonHtml(2, 'пересчитать навык ПР');
+    if (s2.finished) html += recalcButtonHtml(2, 'Пересчитать навык ПР');
     if (typeof s2.pr1Level === 'number') {
       html += '<p class="fac-detail-text">Источник: ' + (s2.pr1LevelSource === 'ai' ? 'подтверждено ИИ' : 'детерминировано кодом') + '</p>';
     } else {
@@ -785,7 +838,7 @@
     roomFuture: {
       title: '«Коридор Лемеха»',
       recalcStation: 3,
-      recalcLabel: 'пересчитать навык МК',
+      recalcLabel: 'Пересчитать навык МК',
       answersHtml: roomAnswersFuture,
       ability1: { label: 'Горизонт рассуждения', code: 'МК-1', levelKey: 'mk1Level', sourceKey: 'mk1LevelSource' },
       ability2: { label: 'Работа с развилками будущего', code: 'МК-2', levelKey: 'mk2Level', sourceKey: 'mk2LevelSource', reasoningKey: 'mk2JudgeReasoning' }
@@ -793,7 +846,7 @@
     roomAlternatives: {
       title: '«Очередь в „Прожектор"»',
       recalcStation: 4,
-      recalcLabel: 'пересчитать навык ГА',
+      recalcLabel: 'Пересчитать навык ГА',
       answersHtml: roomAnswersAlternatives,
       ability1: { label: 'Генерация альтернатив', code: 'ГА-1', levelKey: 'ga1Level', sourceKey: 'ga1LevelSource' },
       ability2: { label: 'Идеи из разных областей', code: 'ГА-2', levelKey: 'ga2Level', sourceKey: 'ga2LevelSource', reasoningKey: 'ga2JudgeReasoning' }
@@ -801,7 +854,7 @@
     roomPath: {
       title: '«Черновик к мартовскому комитету»',
       recalcStation: 5,
-      recalcLabel: 'пересчитать навык ПП',
+      recalcLabel: 'Пересчитать навык ПП',
       answersHtml: roomAnswersPath,
       ability1: { label: 'Декомпозиция цели и маршрута', code: 'ПП-1', levelKey: 'pp1Level', sourceKey: 'pp1LevelSource' },
       ability2: { label: 'Работа с барьерами и ресурсами', code: 'ПП-2', levelKey: 'pp2Level', sourceKey: 'pp2LevelSource', reasoningKey: 'pp2JudgeReasoning' }
@@ -968,7 +1021,7 @@
     }
 
     var body = '';
-    body += recalcButtonHtml('3c', 'пересчитать контроль');
+    body += recalcButtonHtml('3c', 'Пересчитать контроль');
     if (!hasDefense) {
       body += '<p class="fac-detail-text">Финальная защита не заполнена — контроль не считался.</p>';
       return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null);

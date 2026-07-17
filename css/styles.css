@@ -637,6 +637,7 @@ footer {
 
 .field input[type="text"],
 .field input[type="email"],
+.field input[type="password"],
 .field select {
   width: 100%;
   font-family: var(--ff-body);
@@ -653,6 +654,43 @@ footer {
 .field select:focus {
   outline: none;
   border-color: var(--ink);
+}
+
+/* --- малый вариант кнопки (вместо инлайн-патчей размеров/font-size) --- */
+.btn-sm { padding: 11px 20px; font-size: 14px; }
+
+/* --- опасное действие: удаление (семантический красный, не бренд-акцент) --- */
+.btn-danger { background: var(--ink); color: #ff7a6b; border-color: var(--ink); }
+.btn-danger:hover { box-shadow: 6px 6px 0 #ff7a6b, 6px 6px 0 1px var(--ink); }
+
+/* --- внутрисистемный тост (вместо native alert) --- */
+.imp-toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px);
+  z-index: 4000; max-width: min(520px, calc(100vw - 32px));
+  background: var(--ink); color: var(--paper);
+  font-family: var(--ff-body); font-size: 14px; line-height: 1.45;
+  padding: 14px 18px; border-radius: 14px; box-shadow: 6px 6px 0 var(--lime);
+  opacity: 0; transition: opacity .2s ease, transform .2s cubic-bezier(.2,.8,.2,1);
+}
+.imp-toast.is-in { opacity: 1; transform: translate(-50%, 0); }
+.imp-toast.is-error { color: #ff8a7d; box-shadow: 6px 6px 0 #ff7a6b; }
+
+/* --- внутрисистемный диалог подтверждения (вместо native confirm) --- */
+.imp-confirm {
+  position: fixed; inset: 0; z-index: 4001; padding: 24px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 10, 10, 0.5);
+}
+.imp-confirm-card {
+  background: var(--paper); color: var(--ink);
+  border-radius: var(--radius); padding: 28px 28px 24px;
+  max-width: 460px; width: 100%; box-shadow: 10px 10px 0 var(--lime);
+}
+.imp-confirm-msg { font-family: var(--ff-body); font-size: 15px; line-height: 1.55; margin: 0 0 22px; }
+.imp-confirm-actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .imp-toast { transition: opacity 0.01s; transform: translate(-50%, 0); }
 }
 
 .field-row {
