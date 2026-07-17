@@ -7,11 +7,14 @@
 :root {
   --lime: #a6ff00;
   --lime-dim: #8fe600;
+  --lime-tint: #f7ffe8;
+  --lime-line: #cdeaa0;
   --ink: #0a0a0a;
   --paper: #ffffff;
   --muted: #56585c;
   --muted-soft: #8a8d92;
   --line: #16171a;
+  --hairline: #ececec;
   --frame: clamp(10px, 2vw, 22px);
   --radius: 18px;
   --maxw: 1180px;
@@ -832,9 +835,9 @@ footer {
   line-height: 1.65;
   max-width: 720px;
   margin: 0 0 18px;
-  padding-left: 16px;
-  border-left: 3px solid var(--lime);
 }
+/* Реплики Агеева опознаёт жирная метка-имя (по DESIGN.md), а не боковая полоса. */
+.s2-ageev b { color: var(--ink); }
 
 .s2-columns {
   display: grid;
@@ -1020,9 +1023,9 @@ footer {
   max-width: 640px;
   margin-bottom: 22px;
   padding: 14px 18px;
-  border-left: 3px solid var(--lime);
-  background: #f7ffe8;
-  border-radius: 0 10px 10px 0;
+  background: var(--lime-tint);
+  border: 1px solid var(--lime-line);
+  border-radius: 12px;
 }
 .hub-stance-callback p {
   margin: 0;
@@ -1908,9 +1911,9 @@ blockquote.letter,
 blockquote.dialogue {
   margin: 0 0 14px;
   padding: 18px 22px;
-  border-left: 3px solid var(--ink);
   background: #fafafa;
-  border-radius: 0 12px 12px 0;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
 }
 
 blockquote.letter p, blockquote.dialogue p { font-size: 14px; margin: 0 0 12px; }
