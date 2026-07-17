@@ -404,7 +404,13 @@ h2 {
 .case-brief ol { margin: 0; padding-left: 20px; }
 .case-brief ol li { margin: 0 0 6px; }
 .case-brief ol li:last-child { margin-bottom: 0; }
-.case-brief-note { margin: 10px 0 0; font-size: 13px; color: var(--muted); }
+.case-brief-note {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--lime-line);
+  font-size: 13px;
+  color: var(--muted);
+}
 
 /* Возврат к ссылке-приложению: всплывающая пилюля после прыжка в приложение. */
 .appx-return {
