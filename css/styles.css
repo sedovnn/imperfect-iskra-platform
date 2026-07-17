@@ -2847,6 +2847,27 @@ table mark.hl {
 .fac-progress-dot.is-progress { border-color: #f0dca0; background: #fff6e0; color: #6b5900; }
 .fac-progress-dot.is-done { border-color: #cdeaa0; background: #f7ffe8; color: #4c7a0d; }
 
+/* Не-цветовой признак статуса (WCAG 1.4.1): форма-глиф в дополнение к цвету. */
+.fac-progress-dot::before { font-weight: 400; margin-right: 3px; }
+.fac-progress-dot.is-done::before { content: "\2713"; }      /* ✓ */
+.fac-progress-dot.is-progress::before { content: "\25D0"; }  /* ◐ */
+.fac-progress-dot.is-none::before { content: "\25CB"; }      /* ○ */
+
+/* Легенда статусов над таблицей «Ход» */
+.fac-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.fac-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+.fac-legend-glyph { font-size: 12px; line-height: 1; }
+.fac-legend-glyph.g-done { color: #4c7a0d; }
+.fac-legend-glyph.g-progress { color: #6b5900; }
+.fac-legend-glyph.g-none { color: var(--muted-soft); }
+
 .fac-recalc-btn-labeled {
   width: auto;
   height: auto;
