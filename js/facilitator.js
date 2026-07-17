@@ -1076,7 +1076,14 @@
     });
 
     // ---- Финальная защита + контроль (§7-8) ----
-    html += renderControlHtml(station3);
+    // «основную» берём из ЖИВЫХ записей станций/комнат, а не из снимка в controlJson:
+    // снимок морозится в момент прогона контроля и показывает '—', если тогда база
+    // ещё не была оценена (падение судьи / пересчёт позже / тестовый bib).
+    html += renderControlHtml(station3, {
+      pr2: s2 ? s2.pr2Level : null,
+      mk2: roomFuture ? roomFuture.mk2Level : null,
+      ga1: roomAlternatives ? roomAlternatives.ga1Level : null
+    });
 
     return html;
   }
@@ -1085,12 +1092,25 @@
   // Флаг ⚑ ставит арбитр-ИИ только на реальные расхождения (не на артефакт недо-вызова).
   var CONTROL_LABELS = { pr2: 'ПР-2 · обоснование выбора', mk2: 'МК-2 · развилки будущего', ga1: 'ГА-1 · генерация альтернатив' };
 
-  function renderControlHtml(station3) {
+  function renderControlHtml(station3, livePrimary) {
+    livePrimary = livePrimary || {};
+    // живой уровень способности приоритетнее замороженного снимка контроля
+    function primOf(k, c) {
+      var lv = livePrimary[k];
+      return (lv !== undefined && lv !== null) ? lv : c.primary;
+    }
+    // снимок устарел, если контроль заморозил пусто, а живая оценка уже есть
+    function isStale(k, c) {
+      return c.primary === null && livePrimary[k] !== undefined && livePrimary[k] !== null;
+    }
     var hasDefense = station3 && station3.finalDefense && String(station3.finalDefense).trim();
     var control = station3 && station3.control;
-    var anyFlag = false;
+    var anyFlag = false, anyStale = false;
     if (control && control.comparisons) {
-      Object.keys(control.comparisons).forEach(function (k) { if (control.comparisons[k].flag) anyFlag = true; });
+      Object.keys(control.comparisons).forEach(function (k) {
+        if (control.comparisons[k].flag) anyFlag = true;
+        if (isStale(k, control.comparisons[k])) anyStale = true;
+      });
     }
     var badges = '';
     if (control && control.comparisons) {
@@ -1098,8 +1118,9 @@
         var c = control.comparisons[k];
         if (!c) return;
         var cls = c.flag ? '' : 'is-done';
+        var prim = primOf(k, c);
         badges += '<span class="fac-pill ' + cls + '">' + escapeHtml(c.code) + ' контр.L' + c.control +
-          (c.primary === null ? '' : ' / осн.L' + c.primary) + (c.flag ? ' ⚑' : '') + '</span>';
+          (prim === null || prim === undefined ? '' : ' / осн.L' + prim) + (c.flag ? ' ⚑' : '') + '</span>';
       });
     }
 
@@ -1115,11 +1136,15 @@
       ['pr2', 'mk2', 'ga1'].forEach(function (k) {
         var c = control.comparisons[k];
         if (!c) return;
+        var prim = primOf(k, c);
+        var gap = (prim === null || prim === undefined) ? null : Math.abs(prim - c.control);
+        var stale = isStale(k, c);
         body += '<div class="fac-card"><p>' + escapeHtml(CONTROL_LABELS[k] || k) +
           (c.flag ? ' <span class="fac-card-warn">⚑ расхождение</span>' : '') + '</p>' +
           '<div class="fac-card-meta"><span>контрольная: L' + c.control + '</span>' +
-          '<span>основная: ' + (c.primary === null ? '—' : 'L' + c.primary) + '</span>' +
-          (c.gap === null ? '' : '<span>разница: ' + c.gap + '</span>') + '</div>' +
+          '<span>основная: ' + (prim === null || prim === undefined ? '—' : 'L' + prim) + '</span>' +
+          (gap === null ? '' : '<span>разница: ' + gap + '</span>') + '</div>' +
+          (stale ? '<p class="fac-card-warn">Снимок контроля устарел (считался до оценки базы) — нажмите «Пересчитать контроль», чтобы обновить флаг.</p>' : '') +
           (c.arbiterNote ? '<p class="fac-detail-text">Арбитр: ' + escapeHtml(c.arbiterNote) + '</p>' : '') +
           '</div>';
       });
