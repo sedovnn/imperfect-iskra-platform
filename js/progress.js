@@ -35,7 +35,8 @@
     '.rp-step.is-done{color:#1a1e26;}' +
     '.rp-step.is-current{color:#1a1e26;font-weight:700;background:var(--lime,#c8f560);border-radius:6px;padding:2px 8px;}' +
     '.rp-sep{color:#c8cdd4;}' +
-    '.round-time{color:#5c6675;white-space:nowrap;font-variant-numeric:tabular-nums;}';
+    '.round-time{color:#5c6675;white-space:nowrap;font-variant-numeric:tabular-nums;}' +
+    '.round-time-label{color:#8a8f98;text-transform:uppercase;letter-spacing:.04em;font-size:11px;margin-right:6px;}';
   document.head.appendChild(st);
 
   var stepsHtml = STEPS.map(function (s, i) {
@@ -46,7 +47,8 @@
   var bar = document.createElement('div');
   bar.className = 'round-progress';
   bar.innerHTML = '<div class="round-steps">' + stepsHtml + '</div>' +
-    '<div class="round-time" id="roundTime" title="активное время работы — на паузе, когда вы уходите со страницы">—</div>';
+    '<div class="round-time" title="активное время работы — на паузе, когда вы уходите со страницы">' +
+    '<span class="round-time-label">Прошло времени</span> <span id="roundTime">—</span></div>';
   host.parentNode.insertBefore(bar, host.nextSibling);
 
   // ---------- мягкий счётчик активного времени ----------

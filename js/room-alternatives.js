@@ -1,13 +1,31 @@
 // i(m)perfect — «Очередь в «Прожектор»» (кейс «Искра»). Навык ГА целиком:
 // самостоятельная генерация альтернатив (ГА-1) + привлечение идей из разных
-// областей (ГА-2). Первый вопрос остаётся открытым и ничем не подсказанным —
-// это единственный источник для ГА-1, где граница 2→3 буквально требует, чтобы
-// генерация была самостоятельной, а не запрошенной («не только потому, что
-// вопрос прямо просил»); любая структура здесь испортила бы этот сигнал.
-// Второй шаг — про ГА-2 (широта источника идей), а не про спонтанность, поэтому
-// у него есть дешёвый структурный пол: самотег источника (как тег угроза/
-// возможность у АК-2) + необязательная элаборация. Тег не решает уровень сам —
-// ИИ всё ещё проверяет содержание элаборации на L3+.
+// областей (ГА-2).
+//
+// ПЕРЕСОБРАНО (валидация 2026-07-18): прежняя версия просила ЗАЩИТИТЬ одну
+// позицию — это не вызывало гейт ГА 2→3 («две альтернативы на разных
+// механизмах»), и сильный кросс-отраслевой сигнал (3→4) повисал, не в силах
+// засчитаться. Ключевое ограничение: ГА-1 2→3 требует, чтобы генерация была
+// САМОСТОЯТЕЛЬНОЙ («не только потому, что вопрос прямо просил») — поэтому
+// напрямую просить список альтернатив нельзя, это навсегда рубит сигнал на L2.
+//
+// Решение — провокация вместо просьбы. Три шага:
+//   q1  Олег Брагин (из первой сотни, 20 лет на платформе) УТВЕРЖДАЕТ, что ход
+//       тут один и очевидный, и предлагает его переубедить → участник САМ
+//       разворачивает другие ходы, чтобы возразить (спонтанная генерация,
+//       ложится в answer1 — единственный источник ГА-1). Брагин говорит
+//       обобщённо, не цитируя позицию участника, чтобы не якорить его на одной
+//       формулировке.
+//   q2  Брагин добивает про под-решения внутри ответа («где сам сомневался,
+//       что отбросил») → subdecisions (ГА-1 3→4).
+//   q3  Позже, отдельным шагом — человек с ДРУГОГО этажа (логистика Меридиана)
+//       роняет структурную рифму из своего мира (не готовое решение) и уходит;
+//       Брагин легитимизирует перенос («тут все друг у друга подсматривают») и
+//       спрашивает, откуда идея → источник + элаборация (ГА-2). Рифму участник
+//       переносит сам — источник не подаётся готовым.
+//
+// Поля те же (answer1/subdecisions/sources/sourceElaboration) — судью ГА в
+// backend/code.js и деплой не трогаем, промпт уже читает всё это и верен §10.
 
 (function () {
   var session = null;
@@ -36,6 +54,10 @@
         if (!parsed.sources) parsed.sources = parsed.source ? [parsed.source] : [];
         if (parsed.subdecisions === undefined) parsed.subdecisions = '';
         if (parsed.sourceElaboration === undefined) parsed.sourceElaboration = '';
+        // миграция шагов: прежний поток был ['q1','q2','done'] (q2 = под-решения +
+        // источник вместе). Теперь ['q1','q2','q3','done']. Старый step 'q2'
+        // совпадает по смыслу (под-решения); поля источника, если уже заполнены,
+        // подтянутся на q3 предзаполненными — потери нет.
         delete parsed.source;
         return parsed;
       }
@@ -124,16 +146,6 @@
   function initWorkspace() {
     state = loadState(session.bib);
 
-    // позиция со станции 2 — предмет разговора: сосед задаёт ОТКРЫТЫЙ вопрос
-    // «сработает ли она?» и НЕ просит перечислять альтернативы — спонтанная
-    // генерация альтернатив (сам развернул «взвешивал ещё то и это») засчитывается
-    // в пользу ГА-1 (граница 2→3), запрошенная — нет. Любая подсказка тут испортила
-    // бы сигнал (см. GA_ESCALATION_PROMPT в backend/code.js).
-    var s2 = null;
-    try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
-    var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
-    var stancePhrase = stance ? ('к ' + stance.label) : 'к какому-то решению';
-
     var introKey = 'imp_room_alternatives_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
@@ -146,17 +158,20 @@
     });
 
     var body = document.getElementById('roomBody');
-    var STEPS = ['q1', 'q2', 'done'];
+    var STEPS = ['q1', 'q2', 'q3', 'done'];
     function stepIndex(s) { return STEPS.indexOf(s); }
     function stepLocked(s) { return state.finished || stepIndex(s) < stepIndex(state.step); }
 
+    // q1 — Брагин УТВЕРЖДАЕТ, что ход один, и предлагает переубедить. Списка не
+    // просим: генерация всплывает как возражение → спонтанность (ГА-1 2→3 «б»)
+    // сохранена. Обобщённо, без цитаты позиции участника — чтобы не якорить.
     function buildQ1Block() {
       var locked = stepLocked('q1');
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Сосед по очереди</b> кивает на ваш бейдж: «Так вы тот самый консультант? У нас полкампуса гадает, что вы Агееву насоветуете. Говорят, склоняетесь ' + escapeHtml(stancePhrase) + '. И как — по-вашему, сработает? Почему вы в этом уверены?»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
+        '<p class="s2-ageev"><b>Олег Брагин</b> скользит взглядом по вашему бейджу: «Консультант, значит. Я тут двадцать лет — ещё когда поиск на коленке собирали. И знаешь, вы все приходите к одному и тому же: один нормальный ход, остальное красивые слова. Если видишь тут другой заход — валяй, убеди меня.»</p>' +
+        '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ Брагину"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
@@ -174,6 +189,32 @@
       return block;
     }
 
+    // q2 — Брагин добивает про под-решения ВНУТРИ ответа (ГА-1 3→4). Не
+    // запрашивает альтернативы к главному вопросу — спрашивает, где сам колебался.
+    function buildQ2Block() {
+      var locked = stepLocked('q2');
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML =
+        '<p class="s2-ageev">' + ((state.answer1 || '').trim().length >= 40
+          ? '<b>Брагин</b> хмыкает: «Ладно. Не пустой звук — уже кое-что».'
+          : '<b>Брагин</b> пожимает плечами: «Ну, допустим».') + '</p>' +
+        '<p class="s2-ageev"><b>Брагин</b> отхлёбывает кофе: «А сам-то по дороге где сомневался? Что ещё крутил в голове и почему отбросил?»</p>' +
+        '<textarea class="ga-subdec" rows="3" placeholder="если крутили другие ходы — коротко (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.subdecisions) + '</textarea>' +
+        (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
+      if (!locked) {
+        block.querySelector('.ga-subdec').addEventListener('input', function (e) {
+          state.subdecisions = e.target.value; saveState();
+        });
+        block.querySelector('#commitQ2Btn').addEventListener('click', function () {
+          state.step = 'q3';
+          saveState();
+          render();
+        });
+      }
+      return block;
+    }
+
     // плейсхолдер элаборации подстраивается под выбор: приглашает показать паттерн/пример,
     // а не просто «если хотите» — чтобы верхние уровни ГА-2 демонстрировались, а не заявлялись.
     function elabPlaceholder() {
@@ -182,19 +223,17 @@
       return 'если хотите — коротко, что именно навело (необязательно)';
     }
 
-    function buildQ2Block() {
-      var locked = stepLocked('q2');
+    // q3 — ПОЗЖЕ, отдельным шагом. Человек с другого этажа роняет структурную
+    // рифму (не готовое решение) и уходит; Брагин легитимизирует перенос и
+    // спрашивает источник → ГА-2 (широта источника идей). Рифму участник
+    // переносит сам — источник не подаётся готовым.
+    function buildQ3Block() {
+      var locked = stepLocked('q3');
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev">' + ((state.answer1 || '').trim().length >= 40
-          ? '<b>Сосед</b> хмыкает: «Слушаю — видно, что вы это не с потолка взяли».'
-          : '<b>Сосед</b> пожимает плечами: «Ну, версия так версия. Ладно».') + '</p>' +
-        // ГА-1: место для под-решений/развилок ВНУТРИ ответа — не запрашивает альтернативы для главного вопроса
-        '<p class="s2-ageev"><b>Сосед</b> отхлёбывает кофе: «А по дороге к этому — где сами колебались? Что ещё рассматривали и почему отбросили?»</p>' +
-        '<textarea class="ga-subdec" rows="3" placeholder="если рассматривали другие ходы — коротко (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.subdecisions) + '</textarea>' +
-        // ГА-2: источник(и) идей — без перечисления типов в самом вопросе
-        '<p class="s2-ageev" style="margin-top:14px;"><b>Сосед по очереди</b> забирает свой капучино: «Любопытно. А это откуда у вас вообще? Что навело? Просто интересно, как люди до таких вещей доходят.»</p>' +
+        '<p class="s2-ageev"><b>Женщина с логистики Меридиана</b>, вполуха из очереди позади: «У нас та же песня была — одна система тянула три разных процесса разом и постоянно клинила». Забирает свой стакан, уходит к лифтам.</p>' +
+        '<p class="s2-ageev"><b>Брагин</b> провожает её взглядом: «Тут все друг у друга подсматривают, кофейня такая. А ты сам к своему как пришёл — из опыта, где-то видел?»</p>' +
         '<div class="rationale-block" style="margin-top:6px;"><label>Отметьте всё, что применили</label></div>';
 
       var optWrap = document.createElement('div');
@@ -217,9 +256,6 @@
       block.appendChild(elabWrap);
 
       if (!locked) {
-        block.querySelector('.ga-subdec').addEventListener('input', function (e) {
-          state.subdecisions = e.target.value; saveState();
-        });
         optWrap.querySelectorAll('input[name="ga2Source"]').forEach(function (c) {
           c.addEventListener('change', function () {
             var v = c.value, i = state.sources.indexOf(v);
@@ -247,6 +283,7 @@
       var upTo = state.finished ? STEPS.length - 1 : stepIndex(state.step);
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
+      if (upTo >= 2) body.appendChild(buildQ3Block());
       var last = body.lastElementChild;
       if (last && !state.finished) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }

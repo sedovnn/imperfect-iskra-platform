@@ -489,7 +489,10 @@
   }
 
   function updateProblemCount() {
-    var n = orderedHighlights().length;
+    // пустой черновик «вывод без цитаты» (без цитаты и без текста) — ещё не проблема
+    var n = orderedHighlights().filter(function (h) {
+      return (h.snippet && h.snippet.trim()) || (h.problem && h.problem.trim());
+    }).length;
     document.getElementById('cardCount').textContent = n + ' проблем' + pluralProblems(n);
   }
 
@@ -520,7 +523,7 @@
         el.appendChild(rm);
       }
       var ta = el.querySelector('[data-field="problem"]');
-      ta.addEventListener('input', function (e) { h.problem = e.target.value; saveState(); updateGate(); });
+      ta.addEventListener('input', function (e) { h.problem = e.target.value; saveState(); updateGate(); updateProblemCount(); });
       ta.addEventListener('blur', renderMainProblem); // обновить подписи/состав в выборе основной
       if (h.snippet) el.querySelector('.problem-quote').addEventListener('click', function () { scrollToMark(h.id); });
       list.appendChild(el);

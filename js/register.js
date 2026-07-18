@@ -233,6 +233,16 @@
     };
 
     if (!isValid(data)) {
+      var miss = [];
+      if (!data.firstName) miss.push('имя');
+      if (!data.lastName) miss.push('фамилию');
+      if (!data.email) miss.push('email');
+      if (!data.wave) miss.push('волну');
+      var parts = [];
+      if (miss.length) parts.push('заполните ' + miss.join(', '));
+      if (!data.consent) parts.push('отметьте согласие на обработку персональных данных');
+      var msg = parts.join('; ') + '.';
+      formError.textContent = msg.charAt(0).toUpperCase() + msg.slice(1);
       formError.classList.add('show');
       return;
     }
