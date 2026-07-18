@@ -305,7 +305,7 @@
         item.innerHTML =
           '<div class="s2-item-rank">' + (i + 1) + '</div>' +
           '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
-          '<input type="text" class="s2-target" placeholder="ориентир: величина и срок" value="' + escapeHtml(p.target || '') + '"' + (locked ? ' disabled' : '') + ' />' +
+          '<input type="text" class="s2-target" placeholder="измеримая цель: число и срок (напр. «рост 15% за год»)" value="' + escapeHtml(p.target || '') + '"' + (locked ? ' disabled' : '') + ' />' +
           '</div>' +
           (showActions ?
             '<div class="s2-item-actions">' +
