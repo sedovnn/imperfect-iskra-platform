@@ -1100,6 +1100,31 @@ footer {
 }
 .pp-list-item textarea { flex: 1; min-width: 0; }
 
+/* ПП-2: карточка барьера — что мешает + тип «стена/можно обойти» + чем закрываем */
+.pp-barrier-card {
+  border: 1px solid #ececec;
+  border-radius: 12px;
+  background: #fff;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.pp-barrier-top { display: flex; gap: 8px; align-items: flex-start; }
+.pp-barrier-top textarea { flex: 1; min-width: 0; }
+.pp-type { display: flex; gap: 8px; margin: 8px 0; }
+.pp-type-btn {
+  font: inherit;
+  font-size: 13px;
+  padding: 5px 12px;
+  border: 1px solid var(--line, #16171a);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink, #0a0a0a);
+  cursor: pointer;
+}
+.pp-type-btn.is-on { background: var(--lime, #a6ff00); border-color: var(--ink, #0a0a0a); font-weight: 600; }
+.pp-type-btn:disabled { cursor: default; opacity: .7; }
+.pp-barrier-counter { width: 100%; }
+
 @media (max-width: 900px) {
   .pp-columns { grid-template-columns: 1fr; }
 }

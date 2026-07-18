@@ -956,8 +956,14 @@
   function roomAnswersAlternatives(state) {
     var html = '';
     if (state.answer1) html += '<p class="fac-detail-text"><span class="fac-k">Почему это сработает:</span> ' + escapeHtml(state.answer1) + '</p>';
-    if (state.source) {
-      html += '<p class="fac-detail-text"><span class="fac-k">Источник идей (самооценка):</span> ' + escapeHtml(GA2_SOURCE_LABELS[state.source] || state.source) + '</p>';
+    if (state.subdecisions) {
+      html += '<p class="fac-detail-text"><span class="fac-k">Под-решения / что отбросил:</span> ' + escapeHtml(state.subdecisions) + '</p>';
+    }
+    var srcs = state.sources || (state.source ? String(state.source).split(',') : []);
+    srcs = srcs.map(function (s) { return String(s).trim(); }).filter(function (s) { return s; });
+    if (srcs.length) {
+      html += '<p class="fac-detail-text"><span class="fac-k">Источники идей (самооценка):</span> ' +
+        escapeHtml(srcs.map(function (s) { return GA2_SOURCE_LABELS[s] || s; }).join('; ')) + '</p>';
     }
     if (state.sourceElaboration) {
       html += '<p class="fac-detail-text"><span class="fac-k">Элаборация:</span> ' + escapeHtml(state.sourceElaboration) + '</p>';
@@ -976,15 +982,25 @@
       state.stages.forEach(function (st, i) {
         html += '<div class="fac-card"><p><b>Этап ' + (i + 1) + '.</b> ' + escapeHtml(st.description || '(не описан)') + '</p>' +
           (st.rationale ? '<div class="fac-card-meta"><span>почему здесь: ' + escapeHtml(st.rationale) + '</span></div>' : '') +
+          (st.doneWhen ? '<div class="fac-card-meta"><span>завершён, когда: ' + escapeHtml(st.doneWhen) + '</span></div>' : '') +
           '</div>';
       });
       html += '</div>';
     }
+    if (state.contingency) {
+      html += '<p class="fac-detail-text"><span class="fac-k">Что меняет маршрут:</span> ' + escapeHtml(state.contingency) + '</p>';
+    }
     var barriers = (state.barriers || []).filter(function (b) { return b.text; });
     var enablers = (state.enablers || []).filter(function (e) { return e.text; });
     if (barriers.length) {
+      var BTYPE = { fixed: 'стена', surmountable: 'можно обойти' };
       html += '<p class="fac-detail-text fac-subk"><span class="fac-k">Барьеры:</span></p><div class="fac-cards">';
-      barriers.forEach(function (b) { html += '<div class="fac-card"><p>' + escapeHtml(b.text) + '</p></div>'; });
+      barriers.forEach(function (b) {
+        html += '<div class="fac-card"><p>' + escapeHtml(b.text) + '</p>' +
+          (b.type ? '<div class="fac-card-meta"><span>' + (BTYPE[b.type] || b.type) + '</span></div>' : '') +
+          (b.counter ? '<div class="fac-card-meta"><span>чем закрываем: ' + escapeHtml(b.counter) + '</span></div>' : '') +
+          '</div>';
+      });
       html += '</div>';
     }
     if (enablers.length) {

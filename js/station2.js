@@ -270,7 +270,7 @@
         '</div>' +
         '<div class="rationale-block" style="margin-top:18px;">' +
           '<label>Правило отказа <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно — какие инициативы вы отсекаете в принципе, а не перечнем)</span></label>' +
-          '<textarea class="s2-rejection-rule" rows="2" placeholder="например: всё, что не ускоряет приоритет 1 или 2 и требует больше одной команды, — не берём"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
+          '<textarea class="s2-rejection-rule" rows="2" placeholder="по какому принципу вы отсекаете инициативы — правилом, а не перечнем"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitSortBtn" style="margin-top:14px;">Зафиксировать приоритеты →</button>');
 
@@ -453,12 +453,14 @@
     function buildStanceBlock() {
       var locked = stepLocked('stance');
       // реакция Агеева на стресс-тест (п.11): настоял или согласился пересобрать
+      // реакция Агеева на стресс-тест: нейтральная, три варианта равновесны —
+      // не поощряем «настоять» соц-желательно, иначе смещаем замер устойчивости (ПР-2).
       var stressReact = state.stressChoice === 'hold'
-        ? '<b>Агеев</b> чуть заметно кивает: «Настояли. Правление это запомнит — оно уважает тех, кто не складывается на первом „подождём“».'
+        ? '<b>Агеев</b> кивает: «Настояли. Услышал вашу позицию — на совете передам как есть».'
         : (state.stressChoice === 'calibrate'
-          ? '<b>Агеев</b> хмыкает: «Пересобрали частично — сдвинули оболочку, ядро оставили. Если сами понимаете, что именно удержали, это не колебание, а калибровка».'
+          ? '<b>Агеев</b> хмыкает: «Пересобрали частично. Понял, что меняете, а что держите».'
           : (state.stressChoice === 'change'
-            ? '<b>Агеев</b>: «Согласились пересобрать. Это не слабость — иногда это и есть трезвость. Посмотрим, куда выведет».'
+            ? '<b>Агеев</b>: «Пересобрали. Ок, посмотрим, куда это выведет».'
             : ''));
       var block = document.createElement('div');
       block.className = 's2-block';
@@ -471,7 +473,7 @@
         '<textarea class="s2-stance-other" rows="2" placeholder="ваша позиция одной фразой" style="display:' + (state.stance === 'other' ? '' : 'none') + ';"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceOther) + '</textarea>' +
         '<div class="rationale-block" style="margin-top:12px;">' +
           '<label>Два критерия, на которых стоит рекомендация</label>' +
-          '<textarea class="s2-stance-criteria" rows="3" placeholder="например: 1) где через 3 года будет маржа группы; 2) что мы теряем безвозвратно, если не сделаем этого сейчас"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceCriteria) + '</textarea>' +
+          '<textarea class="s2-stance-criteria" rows="3" placeholder="два критерия, на которых держится ваша рекомендация"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceCriteria) + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitStanceBtn" style="margin-top:12px;">Дать рекомендацию →</button>');
 

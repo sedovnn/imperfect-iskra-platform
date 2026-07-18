@@ -32,12 +32,15 @@
       var raw = localStorage.getItem(storageKey(bib));
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (parsed.source === undefined) parsed.source = '';
+        // миграция: source (одна строка) → sources (массив, несколько источников)
+        if (!parsed.sources) parsed.sources = parsed.source ? [parsed.source] : [];
+        if (parsed.subdecisions === undefined) parsed.subdecisions = '';
         if (parsed.sourceElaboration === undefined) parsed.sourceElaboration = '';
+        delete parsed.source;
         return parsed;
       }
     } catch (e) {}
-    return { answer1: '', source: '', sourceElaboration: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
+    return { answer1: '', sources: [], subdecisions: '', sourceElaboration: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
   }
 
   function escapeHtml(s) {
@@ -171,6 +174,14 @@
       return block;
     }
 
+    // плейсхолдер элаборации подстраивается под выбор: приглашает показать паттерн/пример,
+    // а не просто «если хотите» — чтобы верхние уровни ГА-2 демонстрировались, а не заявлялись.
+    function elabPlaceholder() {
+      if (state.sources.indexOf('pattern') !== -1) return 'сформулируйте паттерн одной фразой — что общего вы видите за разными случаями';
+      if (state.sources.indexOf('example') !== -1) return 'назовите пример и из какой он области';
+      return 'если хотите — коротко, что именно навело (необязательно)';
+    }
+
     function buildQ2Block() {
       var locked = stepLocked('q2');
       var block = document.createElement('div');
@@ -179,8 +190,12 @@
         '<p class="s2-ageev">' + ((state.answer1 || '').trim().length >= 40
           ? '<b>Сосед</b> хмыкает: «Слушаю — видно, что вы это не с потолка взяли».'
           : '<b>Сосед</b> пожимает плечами: «Ну, версия так версия. Ладно».') + '</p>' +
-        '<p class="s2-ageev"><b>Сосед по очереди</b> забирает свой капучино: «Любопытно. А откуда это у вас вообще — из своего опыта, из того как обычно делают, из конкретного примера где-то видели? Просто интересно, как люди до таких вещей доходят.»</p>' +
-        '<div class="rationale-block" style="margin-top:6px;"><label>Это в основном...</label></div>';
+        // ГА-1: место для под-решений/развилок ВНУТРИ ответа — не запрашивает альтернативы для главного вопроса
+        '<p class="s2-ageev"><b>Сосед</b> отхлёбывает кофе: «А по дороге к этому — где сами колебались? Что ещё рассматривали и почему отбросили?»</p>' +
+        '<textarea class="ga-subdec" rows="3" placeholder="если рассматривали другие ходы — коротко (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.subdecisions) + '</textarea>' +
+        // ГА-2: источник(и) идей — без перечисления типов в самом вопросе
+        '<p class="s2-ageev" style="margin-top:14px;"><b>Сосед по очереди</b> забирает свой капучино: «Любопытно. А это откуда у вас вообще? Что навело? Просто интересно, как люди до таких вещей доходят.»</p>' +
+        '<div class="rationale-block" style="margin-top:6px;"><label>Отметьте всё, что применили</label></div>';
 
       var optWrap = document.createElement('div');
       optWrap.style.cssText = 'display:flex; flex-direction:column; gap:8px; margin:8px 0 12px;';
@@ -188,31 +203,38 @@
         var lbl = document.createElement('label');
         lbl.className = 's2-radio';
         lbl.innerHTML =
-          '<input type="radio" name="ga2Source" value="' + opt.value + '"' +
-          (state.source === opt.value ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> ' + escapeHtml(opt.label);
+          '<input type="checkbox" name="ga2Source" value="' + opt.value + '"' +
+          (state.sources.indexOf(opt.value) !== -1 ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> ' + escapeHtml(opt.label);
         optWrap.appendChild(lbl);
       });
       block.appendChild(optWrap);
 
       var elabWrap = document.createElement('div');
       elabWrap.innerHTML =
-        '<textarea class="s2-rationale" rows="3" placeholder="если хотите — опишите, что это за пример или паттерн (необязательно)"' +
+        '<textarea class="ga-elab" rows="3" placeholder="' + escapeHtml(elabPlaceholder()) + '"' +
         (locked ? ' disabled' : '') + '>' + escapeHtml(state.sourceElaboration) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
       block.appendChild(elabWrap);
 
       if (!locked) {
-        optWrap.querySelectorAll('input[name="ga2Source"]').forEach(function (r) {
-          r.addEventListener('change', function () {
-            if (r.checked) { state.source = r.value; saveState(); }
+        block.querySelector('.ga-subdec').addEventListener('input', function (e) {
+          state.subdecisions = e.target.value; saveState();
+        });
+        optWrap.querySelectorAll('input[name="ga2Source"]').forEach(function (c) {
+          c.addEventListener('change', function () {
+            var v = c.value, i = state.sources.indexOf(v);
+            if (c.checked && i === -1) state.sources.push(v);
+            else if (!c.checked && i !== -1) state.sources.splice(i, 1);
+            saveState();
+            block.querySelector('.ga-elab').setAttribute('placeholder', elabPlaceholder());
           });
         });
-        block.querySelector('.s2-rationale').addEventListener('input', function (e) {
+        block.querySelector('.ga-elab').addEventListener('input', function (e) {
           state.sourceElaboration = e.target.value; saveState();
         });
         block.querySelector('#finishBtn').addEventListener('click', function () {
-          if (!state.source) {
-            if (!window.confirm('Не выбрать вариант — так и зафиксируем?')) return;
+          if (!state.sources.length) {
+            if (!window.confirm('Не отметить ни одного источника — так и зафиксируем?')) return;
           }
           finishRoom();
         });

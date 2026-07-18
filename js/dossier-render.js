@@ -126,10 +126,13 @@
       if (rf.answer2) textB('Если пойдёт не так:', rf.answer2);
     }
 
-    if (ra && (ra.answer1 || ra.source || ra.sourceElaboration)) {
+    var raSources = (ra && (ra.sources || (ra.source ? String(ra.source).split(',') : []))) || [];
+    raSources = raSources.map(function (s) { return String(s).trim(); }).filter(function (s) { return s; });
+    if (ra && (ra.answer1 || ra.subdecisions || raSources.length || ra.sourceElaboration)) {
       section('Очередь в «Прожектор»');
       if (ra.answer1) textB('Почему это сработает:', ra.answer1);
-      if (ra.source) textB('Источник идей:', GA_SOURCE[ra.source] || ra.source);
+      if (ra.subdecisions) textB('Что ещё рассматривал / отбросил:', ra.subdecisions);
+      if (raSources.length) textB('Источники идей:', raSources.map(function (s) { return GA_SOURCE[s] || s; }).join('; '));
       if (ra.sourceElaboration) text(ra.sourceElaboration);
     }
 
@@ -142,13 +145,16 @@
         cardsOpen();
         stages.forEach(function (st, i) {
           html += '<div class="fac-card"><p><b>Этап ' + (i + 1) + '.</b> ' + esc(st.description) + '</p>' +
-            (st.rationale ? '<div class="fac-card-meta"><span>почему здесь: ' + esc(st.rationale) + '</span></div>' : '') + '</div>';
+            (st.rationale ? '<div class="fac-card-meta"><span>почему здесь: ' + esc(st.rationale) + '</span></div>' : '') +
+            (st.doneWhen ? '<div class="fac-card-meta"><span>завершён, когда: ' + esc(st.doneWhen) + '</span></div>' : '') + '</div>';
         });
         cardsClose();
       }
+      if (rp.contingency) textB('Что меняет маршрут:', rp.contingency);
       var barriers = (rp.barriers || []).filter(function (b) { return b.text; });
       var enablers = (rp.enablers || []).filter(function (e) { return e.text; });
-      if (barriers.length) { html += '<p class="fac-detail-text"><b>Барьеры:</b></p>'; cardsOpen(); barriers.forEach(function (b) { html += '<div class="fac-card"><p>' + esc(b.text) + '</p></div>'; }); cardsClose(); }
+      var BT = { fixed: 'стена', surmountable: 'можно обойти' };
+      if (barriers.length) { html += '<p class="fac-detail-text"><b>Барьеры:</b></p>'; cardsOpen(); barriers.forEach(function (b) { html += '<div class="fac-card"><p>' + esc(b.text) + '</p>' + (b.type ? '<div class="fac-card-meta"><span>' + (BT[b.type] || b.type) + '</span></div>' : '') + (b.counter ? '<div class="fac-card-meta"><span>чем закрываем: ' + esc(b.counter) + '</span></div>' : '') + '</div>'; }); cardsClose(); }
       if (enablers.length) { html += '<p class="fac-detail-text"><b>Опора / ресурсы:</b></p>'; cardsOpen(); enablers.forEach(function (e) { html += '<div class="fac-card"><p>' + esc(e.text) + '</p></div>'; }); cardsClose(); }
     }
 
