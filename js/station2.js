@@ -377,7 +377,7 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev">' + sortReact + '</p>' +
-        '<p class="s2-ageev"><b>Агеев</b> смотрит на верхнюю карточку: «Хорошо. Почему именно „' + escapeHtml(topPriorityText()) + '“ — первым? К чему нас это ведёт?»</p>' +
+        '<p class="s2-ageev"><b>Агеев</b> смотрит на верхнюю карточку: «Хорошо. Почему „' + escapeHtml(topPriorityText()) + '“ — первым? К чему это ведёт — и что при этом приходится подвинуть?»</p>' +
         '<textarea class="s2-rationale" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
         // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
         '<div class="rationale-block" style="margin-top:12px;">' +
