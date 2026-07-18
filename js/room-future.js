@@ -1,8 +1,26 @@
 // i(m)perfect — «Коридор Лемеха» (кейс «Искра»). Навык МК целиком: горизонт
 // рассуждения (МК-1) + тип мышления о будущем — экстраполяция / образ / сценарии /
-// «другая реальность» (МК-2). Два открытых обмена репликами, без заранее
-// подписанных горизонтов — участник сам решает, как далеко зайти; ИИ читает
-// содержание, а не факт того, что участник заполнил конкретное поле.
+// «другая реальность» (МК-2).
+//
+// ПЕРЕСОБРАНО (валидация 2026-07-18, МК-1): прежняя версия спрашивала только
+// «где „Искра" окажется?» — участник давал образ будущего без горизонта, и
+// МК-1 (дальность горизонта) нечем было мерить, потолок упирался в ≈L3. Правка
+// та же, что у ГА: добавлен бит, который даёт горизонту МЕСТО ПРОЯВИТЬСЯ, не
+// подсказывая его. Горизонт нельзя тянуть в даль репликой (иначе меряем
+// подсказку, а не мышление) — но спросить «на сколько лет вы смотрите и что за
+// это время меняется» можно: судья и так оценивает не названную цифру, а
+// глубину рассуждения на выбранном горизонте (см. MK_ESCALATION_PROMPT).
+//
+// Три бита (все — Лемех, на «вы»):
+//   q1  «где „Искра" окажется?»  → образ будущего (vision, МК-2).
+//   q2  «на сколько лет вперёд вы смотрите и что за это время меняется?»
+//       → горизонт (horizon, МК-1). Нейтрально, свой срок в годах + что к нему.
+//   q3  «какие развороты возможны и по каким признакам поймёте, какой из них
+//       начинается?» → развороты (answer2, МК-2 сценарии/сигналы).
+//
+// Маппинг под неизменный бэкенд: answer1 = vision + horizon (склейка), answer2
+// = развороты. Судью МК в backend/code.js и деплой не трогаем — callJudgeMK
+// читает answer1/answer2 и верен §10.
 
 (function () {
   var session = null;
@@ -18,9 +36,26 @@
   function loadState(bib) {
     try {
       var raw = localStorage.getItem(storageKey(bib));
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        // миграция: прежде answer1 = один ответ (образ будущего). Теперь answer1
+        // склеивается из двух битов — картинка (vision) + горизонт (horizon).
+        // Старый answer1 становится картинкой; горизонт пуст. Смена шага-цепочки
+        // (добавлен q2-горизонт перед разворотами) для незавершённых прогонов
+        // даёт максимум один повторный проход шага, без потери answer2.
+        if (parsed.vision === undefined) parsed.vision = parsed.answer1 || '';
+        if (parsed.horizon === undefined) parsed.horizon = '';
+        return parsed;
+      }
     } catch (e) {}
-    return { answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
+    return { vision: '', horizon: '', answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
+  }
+
+  // answer1 (то, что видит судья) — склейка картинки и горизонта.
+  function syncAnswer1() {
+    var v = (state.vision || '').trim();
+    var h = (state.horizon || '').trim();
+    state.answer1 = h ? (v + '\n\n[на сколько лет вперёд и что меняется по дороге] ' + h) : v;
   }
 
   function escapeHtml(s) {
@@ -44,7 +79,6 @@
 
   function syncStateToBackend() {
     if (!window.imp.isApiConfigured()) return;
-    // бэкенд для этой комнаты подключим отдельным шагом — до этого best-effort и молча не срабатывает
     window.imp.callApi('saveRoomFuture', { bib: session.bib, state: state });
   }
 
@@ -105,7 +139,7 @@
   function initWorkspace() {
     state = loadState(session.bib);
 
-    // позиция, выбранная на станции 2, — предмет разговора. Лемех давит на ГРАНЬ
+    // позиция, выбранная на станции 2, — предмет разговора: Лемех давит на грань
     // будущего именно ВАШЕГО выбора, а не задаёт вопрос в пустоту.
     var s2 = null;
     try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
@@ -124,24 +158,25 @@
     });
 
     var body = document.getElementById('roomBody');
-    var STEPS = ['q1', 'q2', 'done'];
+    var STEPS = ['q1', 'q2', 'q3', 'done'];
     function stepIndex(s) { return STEPS.indexOf(s); }
     function stepLocked(s) { return state.finished || stepIndex(s) < stepIndex(state.step); }
 
+    // q1 — образ будущего (МК-2). Горизонт тут не спрашивается сознательно.
     function buildQ1Block() {
       var locked = stepLocked('q1');
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b> придерживает двери лифта: «Погодите-ка. Мне ' + escapeHtml(stancePhrase) + ' через полгода нести на совет Меридиана, а я пока сам не понимаю, куда оно нас в итоге приводит. Без презентационных формулировок, своими словами — если пойдём по-вашему, где „Искра“ окажется?»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
+        '<p class="s2-ageev"><b>Лемех</b> придерживает двери лифта: «Погодите-ка. Мне ' + escapeHtml(stancePhrase) + ' через полгода нести на совет Меридиана, а я пока сам не понимаю, куда оно нас в итоге приводит. Своими словами, без презентаций — если пойдём по-вашему, где „Искра“ окажется?»</p>' +
+        '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.vision) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
-          state.answer1 = e.target.value; saveState();
+          state.vision = e.target.value; syncAnswer1(); saveState();
         });
         block.querySelector('#commitQ1Btn').addEventListener('click', function () {
-          if (!state.answer1.trim()) {
+          if (!state.vision.trim()) {
             if (!window.confirm('Ничего не ответить Лемеху — так и зафиксируем?')) return;
           }
           state.step = 'q2';
@@ -152,16 +187,41 @@
       return block;
     }
 
+    // q2 — горизонт (МК-1). Спрашивает СВОЙ срок в годах и что к нему меняется,
+    // не подсказывая направление (см. комментарий в шапке).
     function buildQ2Block() {
       var locked = stepLocked('q2');
       var block = document.createElement('div');
       block.className = 's2-block';
-      var react = (state.answer1 || '').trim().length >= 40
+      block.innerHTML =
+        '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на сколько лет вперёд вы смотрите — и что за это время меняется? Не „когда-нибудь“, а по шагам: что и к какому году.»</p>' +
+        '<textarea class="ga-horizon" rows="4" placeholder="ваш горизонт в годах и что к нему меняется"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
+        (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
+      if (!locked) {
+        block.querySelector('.ga-horizon').addEventListener('input', function (e) {
+          state.horizon = e.target.value; syncAnswer1(); saveState();
+        });
+        block.querySelector('#commitQ2Btn').addEventListener('click', function () {
+          state.step = 'q3';
+          saveState();
+          render();
+        });
+      }
+      return block;
+    }
+
+    // q3 — развороты будущего (МК-2, сценарии + сигналы). Смысл прежний,
+    // формулировка вопроса — читаемее.
+    function buildQ3Block() {
+      var locked = stepLocked('q3');
+      var block = document.createElement('div');
+      var react = (state.horizon || '').trim().length >= 40
         ? '<b>Лемех</b> слушает, не перебивая, потом медленно: «Хм. Дальше вы заглянули, чем половина моего комитета».'
         : '<b>Лемех</b> ждёт секунду, будто надеясь на продолжение: «Коротко. Ну ладно, зайдём с другой стороны».';
+      block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev">' + react + '</p>' +
-        '<p class="s2-ageev"><b>Лемех</b> щурится: «Допустим. Но будущее ведь может пойти по-разному. Какие развороты тут вообще возможны — и по чему вы поймёте, какой из них разворачивается?»</p>' +
+        '<p class="s2-ageev"><b>Лемех</b> щурится: «Но будущее ведь может пойти по-разному. Какие развороты тут возможны — и по каким признакам вы заранее поймёте, какой из них начинается?»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
       if (!locked) {
@@ -178,6 +238,7 @@
       var upTo = state.finished ? STEPS.length - 1 : stepIndex(state.step);
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
+      if (upTo >= 2) body.appendChild(buildQ3Block());
       var last = body.lastElementChild;
       if (last && !state.finished) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }
@@ -188,6 +249,7 @@
     }
 
     function finishRoom() {
+      syncAnswer1();
       state.finished = true;
       state.finishedAt = new Date().toISOString();
       saveState();
@@ -196,7 +258,6 @@
       render();
       showFinishOverlay();
     }
-
 
     render();
 
