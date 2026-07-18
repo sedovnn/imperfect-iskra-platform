@@ -426,10 +426,12 @@ deep +
     ".srow-scale{display:flex;justify-content:space-between;gap:16px;margin-top:8px;font-size:11.5px;color:var(--muted-soft);}",
     ".srow-scale .you-val{color:var(--ink);font-weight:600;text-align:right;}",
     ".srow-scale .you-break{color:var(--muted-soft);font-weight:400;}",
-    ".edge{margin:12px 0 0;font-size:12.5px;line-height:1.5;color:var(--muted);padding:11px 14px;border-radius:12px;}",
-    ".edge .ek{font-weight:700;color:var(--ink);}",
-    ".edge.up{background:var(--lime-tint);border:1px solid var(--lime-line);}",
-    ".edge.dn{background:#f5f5f3;border:1px solid var(--hair);}",
+    ".edge{margin:12px 0 0;font-size:12.5px;line-height:1.5;padding:11px 14px;border-radius:12px;}",
+    ".edge .ek{font-weight:700;}",
+    ".edge.up{background:var(--lime-tint);border:1px solid var(--lime-line);color:var(--muted);}",
+    ".edge.up .ek{color:var(--ink);}",
+    ".edge.dn{background:var(--ink);border:1px solid var(--ink);color:#e6e6e3;}",
+    ".edge.dn .ek{color:var(--lime);}",
     ".axis{margin-top:8px;}.axis .ticks{display:flex;justify-content:space-between;font-size:9.5px;color:var(--muted-soft);}",
     ".caption{font-size:12px;color:var(--muted-soft);margin-top:18px;line-height:1.5;}.caption b{color:var(--muted);font-weight:600;}",
     ".miniscale{margin-top:34px;}",
@@ -493,7 +495,7 @@ deep +
     ".fp{font-family:var(--ff-d);font-weight:900;font-size:20px;letter-spacing:-0.02em;color:var(--paper);}.fp .ar{color:var(--lime);}",
     ".foot-meta{color:var(--muted-soft);font-size:11px;letter-spacing:.13em;text-transform:uppercase;}",
     "@media(max-width:720px){.page{padding:34px 24px;}.ov-head{gap:24px;}.cols3,.sw-grid,.ms-grid,.ml{grid-template-columns:1fr;}.skill-intro{flex-direction:column;}.skill-level-block{text-align:left;}.scale-row{grid-template-columns:1fr;gap:4px;}.foot-in{padding:22px 24px;}}",
-    "@media print{body{background:#fff;}.frame{padding:0;}.sheet{max-width:none;border-radius:0;}.page{break-after:page;border-bottom:none;}.devbox,.foot,.tag.s,.tag.g,.scale-row.current,.notice,.ov-pos{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}"
+    "@media print{body{background:#fff;}.frame{padding:0;}.sheet{max-width:none;border-radius:0;}.page{break-after:page;border-bottom:none;}.devbox,.foot,.tag.s,.tag.g,.scale-row.current,.notice,.ov-pos,.edge.up,.edge.dn{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}"
   ].join('');
 
   window.impReport = { build: build, download: download, RUNS: AI_RUNS };
