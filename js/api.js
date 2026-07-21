@@ -20,6 +20,12 @@
 
     var body = Object.assign({ action: action }, payload || {});
 
+    // маркер ИИ-помощи: к каждому сохранению цепляем агрегаты ввода (не содержание).
+    // Отдельным top-level полем, чтобы не трогать state страницы. Бэкенд читает params.telemetry.
+    if (/^save/.test(action) && window.imp.telemetry && typeof window.imp.telemetry.snapshot === 'function') {
+      try { body.telemetry = window.imp.telemetry.snapshot(); } catch (e) {}
+    }
+
     return fetch(API_URL, {
       method: 'POST',
       // text/plain — намеренно не application/json: иначе браузер шлёт CORS-preflight,

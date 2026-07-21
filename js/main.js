@@ -13,6 +13,59 @@
 
   window.imp = window.imp || {};
 
+  // ---- Телеметрия ввода: маркер ИИ-помощи. Копим ТОЛЬКО агрегаты (как вводили:
+  // вставки, темп набора, правки), НЕ содержание нажатий. Делегированные слушатели
+  // на document — устойчивы к динамически добавляемым полям (карточки, шаги комнат).
+  // snapshot() отдаёт суммарную картину по странице; api.js цепляет её к save*.
+  (function initTelemetry() {
+    var stats = new Map();
+    var IDLE = 5000; // паузы длиннее — не «активный набор», в activeMs не идут
+    function isTracked(el) {
+      if (!el) return false;
+      if (el.isContentEditable) return true;
+      if (el.tagName === 'TEXTAREA') return true;
+      if (el.tagName === 'INPUT') return /^(text|search|email|url|tel|number|)$/i.test(el.type || '');
+      return false;
+    }
+    function statFor(el) {
+      var s = stats.get(el);
+      if (!s) { s = { pasted: 0, maxPaste: 0, keys: 0, back: 0, activeMs: 0, lastKey: 0, tabBlur: 0 }; stats.set(el, s); }
+      return s;
+    }
+    document.addEventListener('paste', function (e) {
+      if (!isTracked(e.target)) return;
+      var s = statFor(e.target), txt = '';
+      try { txt = (e.clipboardData || window.clipboardData).getData('text') || ''; } catch (_) {}
+      s.pasted += txt.length; if (txt.length > s.maxPaste) s.maxPaste = txt.length;
+    }, true);
+    document.addEventListener('keydown', function (e) {
+      if (!isTracked(e.target)) return;
+      var s = statFor(e.target), now = Date.now();
+      if (s.lastKey) { var d = now - s.lastKey; if (d > 0 && d < IDLE) s.activeMs += d; }
+      s.lastKey = now; s.keys++;
+      if (e.key === 'Backspace' || e.key === 'Delete') s.back++;
+    }, true);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden' && isTracked(document.activeElement)) statFor(document.activeElement).tabBlur++;
+    }, true);
+
+    window.imp.telemetry = {
+      snapshot: function () {
+        var t = { pastedChars: 0, finalChars: 0, keystrokes: 0, backspaces: 0, activeMs: 0, maxPasteChars: 0, tabBlur: 0, fieldCount: 0 };
+        stats.forEach(function (s, el) {
+          var len = 0;
+          try { len = (el.isContentEditable ? (el.textContent || '') : (el.value || '')).length; } catch (_) {}
+          if (len === 0 && s.keys === 0 && s.pasted === 0) return;
+          t.finalChars += len; t.pastedChars += s.pasted; t.keystrokes += s.keys;
+          t.backspaces += s.back; t.activeMs += s.activeMs; t.tabBlur += s.tabBlur;
+          if (s.maxPaste > t.maxPasteChars) t.maxPasteChars = s.maxPaste;
+          t.fieldCount++;
+        });
+        return { v: 1, totals: t };
+      }
+    };
+  })();
+
   // грубая проверка формата устройства — предупреждение, не блокировка
   window.imp.isHandheld = function () {
     var narrow = window.matchMedia('(max-width: 820px)').matches;
