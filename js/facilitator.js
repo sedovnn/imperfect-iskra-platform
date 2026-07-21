@@ -594,6 +594,73 @@
     '3c': 'judgeStation3Control'
   };
 
+  // ---- ручная корректировка балла по контролю (§7-8): ПР-2/МК-2/ГА-1 ----
+  // Балл судьи сохраняется, правка обратима. Показываем в карточке контроля.
+  function overrideControlsHtml(ability, controlLevel, ovInfo) {
+    var html = '<div class="fac-ov">';
+    if (ovInfo && ovInfo.overrideLevel !== null && ovInfo.overrideLevel !== undefined) {
+      html += '<p class="fac-detail-text"><b>Скорректировано вручную:</b> судья ' +
+        (ovInfo.judgeLevel === null || ovInfo.judgeLevel === undefined ? '—' : 'L' + ovInfo.judgeLevel) +
+        ' → <b>L' + ovInfo.overrideLevel + '</b>' +
+        (ovInfo.via === 'control' ? ' (принята контрольная)' : '') +
+        (ovInfo.reason ? ' · «' + escapeHtml(ovInfo.reason) + '»' : '') + '</p>' +
+        '<button class="fac-ov-btn" data-ovclear="' + ability + '">Сбросить к оценке судьи</button>';
+    } else {
+      html += '<button class="fac-ov-btn" data-ovaccept="' + ability + '" data-level="' + controlLevel + '">Принять контрольную (L' + controlLevel + ')</button>' +
+        '<div class="fac-ov-manual">' +
+        '<select data-ovlevel="' + ability + '"><option value="">уровень…</option>' +
+        [1, 2, 3, 4, 5].map(function (n) { return '<option value="' + n + '">L' + n + '</option>'; }).join('') + '</select>' +
+        '<input type="text" data-ovreason="' + ability + '" placeholder="причина корректировки" />' +
+        '<button class="fac-ov-btn" data-ovset="' + ability + '">Сохранить</button>' +
+        '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function refreshAfterOverride(participant) {
+    if (currentDetailParticipant && currentDetailParticipant.bib === participant.bib) openDetail(participant);
+    if (typeof refresh === 'function') refresh(); // обновить итог в списке
+  }
+
+  function applyOverride(participant, ability, level, reason, via, btn) {
+    if (btn) btn.disabled = true;
+    window.imp.callApi('setScoreOverride', {
+      password: currentPassword(), bib: participant.bib, ability: ability, level: level, reason: reason, via: via
+    }).then(function (res) {
+      if (res && res.ok) { impToast('Оценка скорректирована: L' + level); refreshAfterOverride(participant); }
+      else { if (btn) btn.disabled = false; impToast('Не удалось сохранить корректировку', 'error'); }
+    });
+  }
+
+  function wireScoreOverrides(root, participant) {
+    root.querySelectorAll('[data-ovaccept]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyOverride(participant, btn.getAttribute('data-ovaccept'), Number(btn.getAttribute('data-level')), 'принята контрольная оценка', 'control', btn);
+      });
+    });
+    root.querySelectorAll('[data-ovset]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var k = btn.getAttribute('data-ovset');
+        var sel = root.querySelector('[data-ovlevel="' + k + '"]');
+        var reasonEl = root.querySelector('[data-ovreason="' + k + '"]');
+        var lvl = sel ? Number(sel.value) : 0;
+        if (!(lvl >= 1 && lvl <= 5)) { impToast('Выберите уровень L1–L5', 'error'); return; }
+        applyOverride(participant, k, lvl, reasonEl ? reasonEl.value : '', 'manual', btn);
+      });
+    });
+    root.querySelectorAll('[data-ovclear]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var k = btn.getAttribute('data-ovclear');
+        btn.disabled = true;
+        window.imp.callApi('clearScoreOverride', { password: currentPassword(), bib: participant.bib, ability: k }).then(function (res) {
+          if (res && res.ok) { impToast('Корректировка сброшена'); refreshAfterOverride(participant); }
+          else { btn.disabled = false; impToast('Не удалось сбросить', 'error'); }
+        });
+      });
+    });
+  }
+
   function recalcScore(bib, btn, station, onSuccess) {
     var action = RECALC_ACTIONS[station];
     var originalText = btn.textContent;
@@ -679,7 +746,7 @@
         detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить — попробуйте «Обновить» и открыть снова.</p>';
         return;
       }
-      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.roomFuture, res.roomAlternatives, res.roomPath, res.station3, participant);
+      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.roomFuture, res.roomAlternatives, res.roomPath, res.station3, participant, res.overrides || {});
       detailBody.querySelectorAll('[data-recalc]').forEach(function (btn) {
         btn.addEventListener('click', function () {
           recalcScore(participant.bib, btn, btn.getAttribute('data-recalc'), function () {
@@ -687,6 +754,7 @@
           });
         });
       });
+      wireScoreOverrides(detailBody, participant);
       var reportBtn = detailBody.querySelector('[data-report]');
       if (reportBtn) {
         reportBtn.addEventListener('click', function () {
@@ -1092,7 +1160,7 @@
       '</details>';
   }
 
-  function renderDetailHtml(registration, s1, s2, roomFuture, roomAlternatives, roomPath, station3, participant) {
+  function renderDetailHtml(registration, s1, s2, roomFuture, roomAlternatives, roomPath, station3, participant, overrides) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
@@ -1168,7 +1236,7 @@
       pr2: s2 ? s2.pr2Level : null,
       mk2: roomFuture ? roomFuture.mk2Level : null,
       ga1: roomAlternatives ? roomAlternatives.ga1Level : null
-    });
+    }, overrides || {});
 
     return html;
   }
@@ -1177,8 +1245,9 @@
   // Флаг ⚑ ставит арбитр-ИИ только на реальные расхождения (не на артефакт недо-вызова).
   var CONTROL_LABELS = { pr2: 'ПР-2 · обоснование выбора', mk2: 'МК-2 · развилки будущего', ga1: 'ГА-1 · генерация альтернатив' };
 
-  function renderControlHtml(station3, livePrimary) {
+  function renderControlHtml(station3, livePrimary, overrides) {
     livePrimary = livePrimary || {};
+    overrides = overrides || {};
     // живой уровень способности приоритетнее замороженного снимка контроля
     function primOf(k, c) {
       var lv = livePrimary[k];
@@ -1231,6 +1300,7 @@
           (gap === null ? '' : '<span>разница: ' + gap + '</span>') + '</div>' +
           (stale ? '<p class="fac-card-warn">Снимок контроля устарел (считался до оценки базы) — нажмите «Пересчитать контроль», чтобы обновить флаг.</p>' : '') +
           (c.arbiterNote ? '<p class="fac-detail-text">Арбитр: ' + escapeHtml(c.arbiterNote) + '</p>' : '') +
+          overrideControlsHtml(k, c.control, overrides[k]) +
           '</div>';
       });
       body += '</div>';

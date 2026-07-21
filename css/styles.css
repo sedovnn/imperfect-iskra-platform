@@ -2871,6 +2871,23 @@ table mark.hl {
 }
 
 .fac-recalc-btn:hover { color: var(--ink); border-color: var(--ink); }
+
+/* Ручная корректировка балла по контролю (§7-8) */
+.fac-ov { margin-top: 8px; border-top: 1px dashed rgba(0, 0, 0, .15); padding-top: 8px; }
+.fac-ov-manual { margin-top: 6px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.fac-ov-manual input[type="text"] { flex: 1; min-width: 120px; padding: 4px 8px; border: 1px solid #d8dadd; border-radius: 6px; }
+.fac-ov-manual select { padding: 4px 6px; border: 1px solid #d8dadd; border-radius: 6px; }
+.fac-ov-btn {
+  background: none;
+  border: 1px solid #d8dadd;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.fac-ov-btn:hover { border-color: var(--ink); background: var(--paper, #fff); }
+.fac-ov-btn:disabled { opacity: .5; cursor: default; }
 .fac-recalc-btn:disabled { opacity: 0.5; cursor: default; }
 
 .fac-judge-reasoning { margin-top: 10px; }
