@@ -1145,6 +1145,15 @@
       : '<span class="fac-pill">' + escapeHtml(label) + ' —</span>';
   }
 
+  // Чип маркера ИИ-помощи (процессный сигнал: вставка/скорость ввода). НЕ влияет на
+  // балл — только подсказывает, как трактовать. Данные приходят в state.aiMarkerLevel/Note.
+  function aiMarkerChipHtml(state) {
+    if (!state || (state.aiMarkerLevel !== 'soft' && state.aiMarkerLevel !== 'strong')) return '';
+    var strong = state.aiMarkerLevel === 'strong';
+    var note = state.aiMarkerNote || (strong ? 'Похоже, ответ вставлен извне.' : 'Возможны признаки ИИ-помощи.');
+    return '<span class="fac-pill fac-ai-chip ' + (strong ? 'is-ai-strong' : 'is-ai-soft') + '" title="' + escapeHtml(note) + '">⚡ ' + (strong ? 'ИИ-помощь' : 'ИИ?') + '</span>';
+  }
+
   function taskSectionHtml(title, statusKey, participant, badgesHtml, bodyHtml, warn) {
     var status = statusKey ? stationStatusLabel(participant, statusKey) : null;
     var statusPill = status ? '<span class="fac-pill ' + status.cls + '">' + escapeHtml(status.text) + '</span>' : '';
@@ -1171,6 +1180,17 @@
       '<span>регистрация ' + escapeHtml(formatDate(registration.registeredAt)) + '</span>' +
       '<span>' + (s1.finished ? 'завершена ' + escapeHtml(formatDate(s1.finishedAt)) : 'в процессе') + '</span>' +
       '</div>';
+    // сводный маркер ИИ-помощи: если хоть на одной станции есть признак — плашка сверху
+    var aiStates = [s1, s2, roomFuture, roomAlternatives, roomPath, station3];
+    var aiStrong = aiStates.some(function (x) { return x && x.aiMarkerLevel === 'strong'; });
+    var aiSoft = aiStates.some(function (x) { return x && x.aiMarkerLevel === 'soft'; });
+    if (aiStrong || aiSoft) {
+      html += '<p class="fac-ai-banner ' + (aiStrong ? 'is-ai-strong' : 'is-ai-soft') + '">⚡ ' +
+        (aiStrong
+          ? 'Есть признаки использования ИИ (вставка/скорость ввода). Балл стоит читать как оценку отбора и редактуры, а не самостоятельного порождения.'
+          : 'Возможны признаки ИИ-помощи на отдельных заданиях — см. отметки ⚡ ниже. На балл не влияет, только трактовка.') +
+        '</p>';
+    }
     if (participant) {
       html += '<p class="fac-detail-text" style="margin-top:10px;"><b>Итого: ' + escapeHtml(formatTotal(participant)) + '</b></p>';
     }
@@ -1200,7 +1220,7 @@
       materialsBlock(renderS1Materials(s1)) + recalcFooter(1, 'Пересчитать навык АК');
     html += taskSectionHtml(
       'Станция 1 · Вычитка и карта проблем', 'station1', participant,
-      abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill),
+      abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill) + aiMarkerChipHtml(s1),
       s1Body,
       participant.station1 && participant.station1.akFlag ? 'Нарушено ограничение зависимостей способностей' : null
     );
@@ -1209,7 +1229,7 @@
     var pr = renderPRHtml(s2);
     html += taskSectionHtml(
       'Станция 2 · Встреча с Агеевым', 'station2', participant,
-      abilityBadgeHtml('ПР-1', s2 && s2.pr1Level) + abilityBadgeHtml('ПР-2', s2 && s2.pr2Level) + skillBadgeHtml('навык ПР', participant.station2 && participant.station2.prSkill),
+      abilityBadgeHtml('ПР-1', s2 && s2.pr1Level) + abilityBadgeHtml('ПР-2', s2 && s2.pr2Level) + skillBadgeHtml('навык ПР', participant.station2 && participant.station2.prSkill) + aiMarkerChipHtml(s2),
       pr.abilities + materialsBlock(pr.materials) + (s2 ? recalcFooter(2, 'Пересчитать навык ПР') : ''),
       participant.station2 && participant.station2.prFlag ? 'Нарушено ограничение зависимостей способностей' : null
     );
@@ -1223,7 +1243,7 @@
         config.title, key, participant,
         abilityBadgeHtml(config.ability1.code, state && state[config.ability1.levelKey]) +
           abilityBadgeHtml(config.ability2.code, state && state[config.ability2.levelKey]) +
-          skillBadgeHtml('навык', participant[key] && participant[key].skill),
+          skillBadgeHtml('навык', participant[key] && participant[key].skill) + aiMarkerChipHtml(state),
         room.abilities + materialsBlock(room.materials) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : '')
       );
     });

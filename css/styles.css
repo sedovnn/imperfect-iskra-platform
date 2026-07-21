@@ -2888,6 +2888,21 @@ table mark.hl {
 }
 .fac-ov-btn:hover { border-color: var(--ink); background: var(--paper, #fff); }
 .fac-ov-btn:disabled { opacity: .5; cursor: default; }
+
+/* Маркер ИИ-помощи (процессный сигнал; на балл не влияет) */
+.fac-ai-chip { cursor: help; border-color: #e0a23c; color: #9a6a12; }
+.fac-ai-chip.is-ai-strong { border-color: #d1553f; color: #b03a26; font-weight: 600; }
+.fac-ai-banner {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  border: 1px solid #e0a23c;
+  background: rgba(224, 162, 60, .1);
+  color: #7a5210;
+}
+.fac-ai-banner.is-ai-strong { border-color: #d1553f; background: rgba(209, 85, 63, .1); color: #8f2f1e; }
 .fac-recalc-btn:disabled { opacity: 0.5; cursor: default; }
 
 .fac-judge-reasoning { margin-top: 10px; }
