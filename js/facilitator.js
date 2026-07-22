@@ -1169,10 +1169,50 @@
       '</details>';
   }
 
+  // ---- кросс-комнатный контроль: показываем в карточке комнаты, где навык проявился ----
+  // (ГА-1 — в Станции 1 по выводам связок; ПП-1 — в «Будущем»). Данные в
+  // station3.control.crossRoom; флаг = здесь выше, чем в своей комнате.
+  function crossRoomBadgeHtml(cr, key) {
+    if (!cr || !cr[key]) return '';
+    var c = cr[key];
+    return '<span class="fac-pill ' + (c.flag ? '' : 'is-done') + '">' + escapeHtml(c.code) +
+      ' контроль L' + c.cross + (c.home === null || c.home === undefined ? '' : ' / дома L' + c.home) +
+      (c.flag ? ' ⚑' : '') + '</span>';
+  }
+  function crossAcceptHtml(ability, level, code, ovInfo) {
+    if (ovInfo && ovInfo.overrideLevel !== null && ovInfo.overrideLevel !== undefined) {
+      return '<div class="fac-ov"><p class="fac-detail-text"><b>Скорректировано:</b> судья ' +
+        (ovInfo.judgeLevel === null || ovInfo.judgeLevel === undefined ? '—' : 'L' + ovInfo.judgeLevel) +
+        ' → <b>L' + ovInfo.overrideLevel + '</b>' + (ovInfo.reason ? ' · «' + escapeHtml(ovInfo.reason) + '»' : '') + '</p>' +
+        '<button class="fac-ov-btn" data-ovclear="' + ability + '">Сбросить к оценке судьи</button></div>';
+    }
+    return '<div class="fac-ov"><button class="fac-ov-btn" data-ovaccept="' + ability + '" data-level="' + level +
+      '">Зачесть как ' + escapeHtml(code) + ' (L' + level + ')</button>' +
+      '<p class="fac-detail-text">Ручной уровень для ' + escapeHtml(code) + ' — в секции «Финальная защита и контроль».</p></div>';
+  }
+  function crossRoomBlockHtml(cr, key, ovInfo) {
+    if (!cr || !cr[key]) return '';
+    var c = cr[key];
+    // ГА-1: только «зачесть/сбросить» (data-ключ дублирует §7-8, но эти хендлеры читают
+    // свой атрибут — безопасно; ручной ввод ГА-1 остаётся в секции контроля). ПП-1 —
+    // полный виджет (ключ уникален).
+    var ov = '';
+    if (c.flag) ov = (key === 'ga1') ? crossAcceptHtml('ga1', c.cross, c.code, ovInfo) : overrideControlsHtml('pp1', c.cross, ovInfo);
+    return '<div class="fac-card" style="margin-top:12px;"><p>' + escapeHtml(c.code + ' · контроль (навык проявился здесь)') +
+      (c.flag ? ' <span class="fac-card-warn">⚑ выше, чем в своей комнате</span>' : '') + '</p>' +
+      '<p class="fac-detail-text">Оценка по чужому тексту (не оптимизирован под способность), по карте утечек. Балл автоматически не меняется — сверьте и решите вручную.</p>' +
+      '<div class="fac-card-meta"><span>здесь: L' + c.cross + '</span>' +
+      '<span>в своей комнате: ' + (c.home === null || c.home === undefined ? '—' : 'L' + c.home) + '</span></div>' +
+      ov +
+      (c.reasoning ? '<details class="fac-judge-reasoning"><summary>Обоснование судьи</summary><p class="fac-card-warn">' + escapeHtml(c.reasoning) + '</p></details>' : '') +
+      '</div>';
+  }
+
   function renderDetailHtml(registration, s1, s2, roomFuture, roomAlternatives, roomPath, station3, participant, overrides) {
     if (!s1) {
       return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
     }
+    var crossRoom = station3 && station3.control && station3.control.crossRoom ? station3.control.crossRoom : {};
     var html = '';
     html += '<div class="fac-detail-meta">' +
       '<span>' + escapeHtml(registration.email) + '</span>' +
@@ -1217,12 +1257,14 @@
     // Порядок тела: способности (уровень + вердикт) → «Материалы участника»
     // (свёрнуто) → пересчёт. Балл навыка берём из participant (сырые записи его не несут).
     var s1Body = renderScoreHtml(s1) + renderAK2Html(s1) +
+      crossRoomBlockHtml(crossRoom, 'ga1', overrides && overrides.ga1) +
       materialsBlock(renderS1Materials(s1)) + recalcFooter(1, 'Пересчитать навык АК');
     html += taskSectionHtml(
       'Станция 1 · Вычитка и карта проблем', 'station1', participant,
-      abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill) + aiMarkerChipHtml(s1),
+      abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill) + crossRoomBadgeHtml(crossRoom, 'ga1') + aiMarkerChipHtml(s1),
       s1Body,
-      participant.station1 && participant.station1.akFlag ? 'Нарушено ограничение зависимостей способностей' : null
+      (participant.station1 && participant.station1.akFlag) ? 'Нарушено ограничение зависимостей способностей'
+        : ((crossRoom.ga1 && crossRoom.ga1.flag) ? 'ГА-1 проявлен здесь выше, чем в своей комнате — контроль' : null)
     );
 
     // ---- Станция 2 · Встреча с Агеевым (ПР-1 + ПР-2) ----
@@ -1239,12 +1281,17 @@
       var config = ROOM_CONFIGS[key];
       var state = key === 'roomFuture' ? roomFuture : (key === 'roomAlternatives' ? roomAlternatives : roomPath);
       var room = renderRoomHtml(key, state);
+      // ПП-1 всплывает в «Будущем» — кросс-контроль показываем в этой карточке
+      var crBadge = key === 'roomFuture' ? crossRoomBadgeHtml(crossRoom, 'pp1') : '';
+      var crBlock = key === 'roomFuture' ? crossRoomBlockHtml(crossRoom, 'pp1', overrides && overrides.pp1) : '';
+      var crWarn = (key === 'roomFuture' && crossRoom.pp1 && crossRoom.pp1.flag) ? 'ПП-1 проявлен здесь выше, чем в своей комнате — контроль' : null;
       html += taskSectionHtml(
         config.title, key, participant,
         abilityBadgeHtml(config.ability1.code, state && state[config.ability1.levelKey]) +
           abilityBadgeHtml(config.ability2.code, state && state[config.ability2.levelKey]) +
-          skillBadgeHtml('навык', participant[key] && participant[key].skill) + aiMarkerChipHtml(state),
-        room.abilities + materialsBlock(room.materials) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : '')
+          skillBadgeHtml('навык', participant[key] && participant[key].skill) + crBadge + aiMarkerChipHtml(state),
+        room.abilities + crBlock + materialsBlock(room.materials) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : ''),
+        crWarn
       );
     });
 
