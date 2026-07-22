@@ -130,6 +130,8 @@
     try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
     var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
     var stancePhrase = stance ? stance.label : 'выбранный вами курс';
+    // первый ход со станции 2 — подставляем как опору, чтобы путь не начинался с чистого листа
+    var firstMove = (s2 && s2.firstAction ? String(s2.firstAction).trim() : '');
 
     var introKey = 'imp_room_path_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
@@ -155,6 +157,7 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «Ну, ' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не лозунг. Покажите по-честному: отсюда, где мы сейчас, — до туда. Какими этапами?»</p>' +
+        (firstMove ? '<div class="pp-firstmove">Ваш первый ход со станции 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
           '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
           '<div class="field"><label>Целевое состояние</label><input type="text" class="pp-target" placeholder="куда должны прийти"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.targetState) + '" /></div>' +
@@ -177,8 +180,10 @@
               (locked ? '' : '<button class="pp-stage-remove" title="Убрать этап">✕</button>') +
             '</div>' +
             '<textarea class="pp-stage-desc" rows="2" placeholder="что происходит на этом этапе"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.description) + '</textarea>' +
-            '<textarea class="pp-stage-rationale" rows="2" placeholder="почему на этом месте (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.rationale) + '</textarea>' +
-            '<textarea class="pp-stage-donewhen" rows="2" placeholder="этап завершён, когда… — индикатор перехода (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.doneWhen) + '</textarea>';
+            '<details class="pp-stage-more"' + ((st.rationale || st.doneWhen) ? ' open' : '') + '><summary>детали этапа: почему здесь · завершён когда (необязательно)</summary>' +
+              '<textarea class="pp-stage-rationale" rows="2" placeholder="почему на этом месте"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.rationale) + '</textarea>' +
+              '<textarea class="pp-stage-donewhen" rows="2" placeholder="этап завершён, когда… — индикатор перехода"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.doneWhen) + '</textarea>' +
+            '</details>';
           if (!locked) {
             item.querySelector('.pp-stage-desc').addEventListener('input', function (e) { st.description = e.target.value; saveState(); });
             item.querySelector('.pp-stage-rationale').addEventListener('input', function (e) { st.rationale = e.target.value; saveState(); });

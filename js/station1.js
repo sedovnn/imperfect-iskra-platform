@@ -139,8 +139,23 @@
 
   var introKey = 'imp_station1_intro_seen_' + session.bib;
   var introEl = document.getElementById('stationIntro');
+  var introNameEl = document.getElementById('introName');
+  // диегетический ввод имени (Агеев спрашивает): префилл, если имя уже есть,
+  // и сохранение в сессию — им Агеев обращается к участнику дальше.
+  if (introNameEl && session.name) introNameEl.value = session.name;
+  function persistName() {
+    if (!introNameEl) return;
+    var nm = (introNameEl.value || '').trim();
+    if (!nm) return;
+    session.name = nm;
+    try {
+      sessionStorage.setItem('imp_current_session', JSON.stringify(session));
+      localStorage.setItem('imp_current_session', JSON.stringify(session));
+    } catch (e) {}
+  }
   if (localStorage.getItem(introKey)) introEl.style.display = 'none';
   document.getElementById('dismissIntro').addEventListener('click', function () {
+    persistName();
     introEl.style.display = 'none';
     localStorage.setItem(introKey, '1');
   });

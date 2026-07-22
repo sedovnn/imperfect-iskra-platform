@@ -7,22 +7,27 @@
 <meta name="description" content="Раунд 1, станция 1. Прочитайте материалы «Искры» и соберите карту проблем." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Inter:wght@400;500;600;700&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=1" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=2" />
 <style>
   /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
   .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
-  .appx-ref:hover { background: var(--lime); }
+  .appx-ref:hover { background: var(--accent-tint); }
+  /* диегетический ввод имени во вступлении (Агеев спрашивает) */
+  .intro-name { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--hairline); }
+  .intro-name-q { font-size: 15px; line-height: 1.55; color: var(--ink); margin: 0 0 10px; }
+  .intro-name input { width: 100%; max-width: 420px; height: 48px; padding: 0 14px; font-family: inherit; font-size: 16px; color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius); outline: none; }
+  .intro-name input:focus { border-color: var(--ink); }
 </style>
 </head>
 <body>
 
 <div id="gate" class="gate">
   <div class="gate-card">
-    <p class="kicker">Нужен номер участника</p>
-    <h2>Сначала регистрация</h2>
+    <p class="kicker">Нужен вход</p>
+    <h2>Сначала вход по коду</h2>
     <p class="section-lead" style="margin:0 0 24px;">Станция 1 привязана к вашему стартовому номеру — без него прогресс негде сохранить.</p>
-    <a class="btn btn-primary btn-block" href="register.html">Получить номер участника →</a>
+    <a class="btn btn-primary btn-block" href="index.html">Войти по коду →</a>
   </div>
 </div>
 
@@ -42,7 +47,7 @@
 
     <header class="station-header">
       <div class="station-header-left">
-        <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
+        <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
         <h1 class="station-name">Станция 1 · Вычитка и карта проблем</h1>
       </div>
@@ -72,7 +77,11 @@
             <span class="intro-note">Клик по отметке в тексте подсвечивает её карточку; убрать — крестиком на карточке.</span>
           </span>
         </div>
-        <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к материалам ↓</button>
+        <div class="intro-name">
+          <p class="intro-name-q"><b>Агеев</b> уже прощается: «И последнее — как мне к вам обращаться в понедельник?»</p>
+          <input type="text" id="introName" maxlength="60" autocomplete="off" placeholder="Имя или как вам удобно" />
+        </div>
+        <button class="btn btn-primary" id="dismissIntro" style="margin-top:20px;">К материалам ↓</button>
       </div>
     </div>
 
@@ -462,7 +471,7 @@
 
     <header class="station-header">
       <div class="station-header-left">
-        <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
+        <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
         <h1 class="station-name">Станция 1 · Связки: что порождает что</h1>
       </div>
@@ -508,7 +517,7 @@
 <script src="js/main.js?v=1"></script>
 <script src="js/api.js?v=1"></script>
 <script src="js/demo.js?v=1"></script>
-<script src="js/station1.js?v=2"></script>
+<script src="js/station1.js?v=3"></script>
 <script src="js/progress.js?v=2"></script>
 </body>
 </html>

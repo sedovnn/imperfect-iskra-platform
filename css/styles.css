@@ -5,21 +5,36 @@
    @import здесь — @import создаёт лишний блокирующий рейс CSS→шрифты. */
 
 :root {
-  --lime: #a6ff00;
-  --lime-dim: #8fe600;
-  --lime-tint: #f7ffe8;
-  --lime-line: #cdeaa0;
-  --ink: #0a0a0a;
+  /* FutureProof · i(m)perfect — акцент вермилион, окно ИИ — Jordy Blue.
+     Лайм (агентство INSAIM) удалён; см. DESIGN.md. Легаси-имена --lime*
+     временно алиасят вермилион, чтобы точечные акценты флипнулись без
+     переименования 55 мест; флуд-случаи (фон, рамка) правятся явно ниже
+     и постепенно переезжают на семантические имена. */
+  --accent: #ff4800;
+  --accent-dim: #e63f00;
+  --accent-tint: #fff2ec;
+  --accent-line: #ffd7c7;
+  --jb: #89bbf1;
+  --band: #eaf3fb;
+  --band-line: #bcd9f2;
+  --ink: #181818;
   --paper: #ffffff;
-  --muted: #56585c;
-  --muted-soft: #8a8d92;
-  --line: #16171a;
-  --hairline: #ececec;
-  --frame: clamp(10px, 2vw, 22px);
-  --radius: 18px;
+  --muted: #6b6e73;
+  --muted-soft: #9a9da2;
+  --hairline: #e7e7e7;
+  --soft: #f5f5f6;
+  --frame: 0px;
+  --radius: 4px;
   --maxw: 1180px;
-  --ff-display: 'Unbounded', sans-serif;
-  --ff-body: 'Inter', sans-serif;
+  --ff-display: 'Inter Tight', sans-serif;
+  --ff-body: 'Inter Tight', sans-serif;
+
+  /* legacy aliases → вермилион (временные, убрать по мере миграции секций) */
+  --lime: #ff4800;
+  --lime-dim: #e63f00;
+  --lime-tint: #fff2ec;
+  --lime-line: #ffd7c7;
+  --line: #181818;
 }
 
 * { box-sizing: border-box; }
@@ -27,7 +42,7 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--lime);
+  background: var(--paper);
 }
 
 body {
@@ -37,7 +52,7 @@ body {
 }
 
 .frame {
-  border: var(--frame) solid var(--lime);
+  border: 0;
   min-height: 100vh;
   background: var(--paper);
 }
@@ -59,23 +74,37 @@ a { color: inherit; }
   padding: 28px 0 24px;
 }
 
+/* Продукт-лок futureproof ▸ i(m)perfect. Стрелка — точный бренд-SVG из
+   отчёта-референса (треугольник, не юникод). i(m)perfect — приглушённый серый. */
 .logo {
-  font-family: var(--ff-display);
-  font-weight: 900;
-  font-size: 22px;
-  letter-spacing: -0.02em;
+  font-family: var(--ff-body);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
   text-decoration: none;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.logo span.mark {
-  background: var(--ink);
-  color: var(--lime);
-  padding: 2px 8px;
-  border-radius: 6px;
+.logo-arrow {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  position: relative;
+  top: 1px;
 }
+.logo-arrow svg { display: block; width: 100%; height: 100%; }
+
+.logo-prod {
+  margin-left: 3px;
+  font-weight: 600;
+  color: var(--muted-soft);
+}
+
+/* легаси: старый бокс-«m» больше не в разметке, но правило безвредно оставить пустым */
+.logo span.mark { background: transparent; color: inherit; padding: 0; border-radius: 0; }
 
 .nav-case {
   font-size: 13px;
@@ -106,30 +135,28 @@ a { color: inherit; }
   gap: 10px;
   font-family: var(--ff-body);
   font-weight: 700;
-  font-size: 16px;
-  padding: 16px 28px;
-  border-radius: 999px;
-  border: 2px solid var(--ink);
+  font-size: 15px;
+  padding: 14px 24px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.14s ease, border-color 0.14s ease, color 0.14s ease;
   white-space: nowrap;
 }
 
-.btn:hover { transform: translateY(-2px); }
-.btn:active { transform: translateY(0); }
-
 .btn-primary {
-  background: var(--ink);
-  color: var(--lime);
+  background: var(--accent);
+  color: var(--paper);
 }
-.btn-primary:hover { box-shadow: 6px 6px 0 var(--lime), 6px 6px 0 1px var(--ink); }
+.btn-primary:hover { background: var(--accent-dim); }
 
 .btn-ghost {
   background: transparent;
   color: var(--ink);
+  border-color: var(--hairline);
 }
-.btn-ghost:hover { box-shadow: 6px 6px 0 var(--ink); }
+.btn-ghost:hover { border-color: var(--ink); }
 
 .btn-block { width: 100%; }
 
@@ -379,9 +406,9 @@ h2 {
   align-items: flex-start;
   font-size: 13.5px;
   color: var(--muted);
-  background: #f7ffe8;
-  border: 1px solid #dcf5ad;
-  border-radius: 12px;
+  background: var(--soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
   padding: 14px 16px;
 }
 .case-rule b { color: var(--ink); }
@@ -763,7 +790,7 @@ footer {
   z-index: 4000; max-width: min(520px, calc(100vw - 32px));
   background: var(--ink); color: var(--paper);
   font-family: var(--ff-body); font-size: 14px; line-height: 1.45;
-  padding: 14px 18px; border-radius: 14px; box-shadow: 6px 6px 0 var(--lime);
+  padding: 14px 18px; border-radius: var(--radius); border: 1px solid var(--ink);
   opacity: 0; transition: opacity .2s ease, transform .2s cubic-bezier(.2,.8,.2,1);
 }
 .imp-toast.is-in { opacity: 1; transform: translate(-50%, 0); }
@@ -778,7 +805,7 @@ footer {
 .imp-confirm-card {
   background: var(--paper); color: var(--ink);
   border-radius: var(--radius); padding: 28px 28px 24px;
-  max-width: 460px; width: 100%; box-shadow: 10px 10px 0 var(--lime);
+  max-width: 460px; width: 100%; border: 1px solid var(--hairline);
 }
 .imp-confirm-msg { font-family: var(--ff-body); font-size: 15px; line-height: 1.55; margin: 0 0 22px; }
 .imp-confirm-actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
@@ -821,7 +848,7 @@ footer {
   margin-top: 6px;
   min-height: 15px;
 }
-.anchor-status.is-linked { color: #4c7a0d; }
+.anchor-status.is-linked { color: var(--ink); }
 .anchor-status.is-unlinked { color: #a35b00; }
 
 /* ---------- станция 1, фаза 2 (связки / АК-2) — режим фокусировки ---------- */
@@ -893,8 +920,9 @@ footer {
   max-width: 100%;
 }
 .conn-chip.is-selected {
-  background: var(--lime);
-  border: 1px solid var(--ink);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent);
+  color: var(--ink);
 }
 
 .conn-loop {
@@ -938,15 +966,15 @@ footer {
 }
 
 .s2-col {
-  background: #fafafa;
-  border: 1px solid #ececec;
-  border-radius: 14px;
+  background: var(--soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
   padding: 16px;
   min-height: 180px;
 }
-/* «Приоритеты» — целевая колонка: белый фон + ink-рамка, выделяется среди серых. */
-.s2-col.is-priorities { background: var(--paper); border-color: var(--ink); }
-.s2-col.is-drop-target { background: #f7ffe0; border-color: var(--lime-line); }
+/* «Приоритеты» — целевая колонка: белый фон + вермилионовая грань, выделяется среди серых. */
+.s2-col.is-priorities { background: var(--paper); border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.s2-col.is-drop-target { background: var(--accent-tint); border-color: var(--accent-line); }
 .s2-col h4 {
   font-family: var(--ff-display);
   font-size: 15px;
@@ -955,9 +983,9 @@ footer {
 .s2-col .links-hint { margin-bottom: 10px; }
 
 .s2-item {
-  border: 1px solid #ececec;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--paper);
   padding: 10px 12px;
   margin-bottom: 10px;
   display: flex;
@@ -967,15 +995,15 @@ footer {
 }
 .s2-item:active { cursor: grabbing; }
 .s2-item p { margin: 0; font-size: 13.5px; line-height: 1.5; }
-.s2-item.is-priority { border-color: var(--ink); }
+.s2-item.is-priority { border-color: var(--accent); background: var(--accent-tint); }
 
 .s2-item-rank {
   flex: none;
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--ink);
-  color: var(--lime);
+  background: var(--accent);
+  color: var(--paper);
   font-size: 12px;
   font-weight: 700;
   display: flex;
@@ -1047,6 +1075,26 @@ footer {
 }
 
 /* ---------- ПП: конструктор этапов + барьеры/ресурсы (room-path.js) ---------- */
+
+.pp-firstmove {
+  border: 1px solid var(--lime-line);
+  background: var(--lime-tint);
+  padding: 8px 12px;
+  margin: 0 0 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.pp-stage-more { margin-top: 6px; }
+.pp-stage-more > summary {
+  font-size: 13px;
+  color: var(--muted-soft);
+  cursor: pointer;
+  list-style: none;
+  padding: 4px 0;
+}
+.pp-stage-more > summary::-webkit-details-marker { display: none; }
+.pp-stage-more[open] > summary { margin-bottom: 6px; }
 
 .pp-stage-item {
   border: 1px solid #ececec;
@@ -1121,7 +1169,7 @@ footer {
   color: var(--ink, #0a0a0a);
   cursor: pointer;
 }
-.pp-type-btn.is-on { background: var(--lime, #a6ff00); border-color: var(--ink, #0a0a0a); font-weight: 600; }
+.pp-type-btn.is-on { background: var(--accent-tint); border-color: var(--accent); font-weight: 600; }
 .pp-type-btn:disabled { cursor: default; opacity: .7; }
 .pp-barrier-counter { width: 100%; }
 
@@ -1144,9 +1192,9 @@ footer {
   max-width: 640px;
   margin-bottom: 22px;
   padding: 14px 18px;
-  background: var(--lime-tint);
-  border: 1px solid var(--lime-line);
-  border-radius: 12px;
+  background: var(--soft);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
 }
 .hub-stance-callback p {
   margin: 0;
@@ -1164,8 +1212,8 @@ footer {
 
 .hub-room-card {
   display: block;
-  border: 1px solid #ececec;
-  border-radius: 16px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
   padding: 20px;
   text-decoration: none;
   color: var(--ink);
@@ -1343,8 +1391,8 @@ button.hub-room-card {
 .finalize-textarea {
   width: 100%;
   min-height: 220px;
-  border: 1px solid #e3e3e0;
-  border-radius: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
   padding: 16px 18px;
   font-size: 15px;
   font-family: inherit;
@@ -1584,7 +1632,7 @@ button.hub-room-card {
   white-space: nowrap;
 }
 
-.tag.tag-key { border-color: #cdeaa0; background: #f7ffe8; color: #4c7a0d; }
+.tag.tag-key { border-color: var(--hairline); background: var(--soft); color: var(--ink); }
 .tag.tag-moves { border-color: #d8d2f5; background: #f5f2ff; color: #6247aa; }
 .tag.tag-none { border-color: #e5e5e5; background: #fafafa; color: var(--muted-soft); }
 
@@ -1683,7 +1731,7 @@ button.hub-room-card {
   font-size: 14px;
 }
 
-.timing-row.is-reflection { background: #f7ffe8; margin: 0 -16px; padding: 14px 16px; border-radius: 10px; border-bottom-color: transparent; }
+.timing-row.is-reflection { background: var(--soft); margin: 0 -16px; padding: 14px 16px; border-radius: 10px; border-bottom-color: transparent; }
 .timing-row .t-min { font-weight: 700; font-family: var(--ff-display); }
 
 /* ---------- score cards ---------- */
@@ -1809,7 +1857,7 @@ button.hub-room-card {
   color: var(--muted-soft);
 }
 
-.board-tab.active { color: var(--ink); background: #f7ffe8; }
+.board-tab.active { color: var(--ink); background: var(--soft); }
 
 .board-row {
   display: flex;
@@ -1843,25 +1891,18 @@ button.hub-room-card {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--lime);
+  background: var(--paper);
   padding: 24px;
 }
 
 /* переход перед комнатами — структурно самый крупный стык раунда 1
    (конец эталонных станций, начало рубрики ходов), поэтому темнее и
    тяжелее остальных лёгких gate-экранов */
-.gate-finish { background: var(--ink); }
-.gate-finish .gate-card { background: var(--ink); border: 1px solid rgba(255, 255, 255, 0.14); }
-.gate-finish .gate-card .kicker { color: var(--lime); }
-.gate-finish .gate-card h2 { color: var(--paper); }
-.gate-finish .gate-card .section-lead { color: rgba(255, 255, 255, 0.68); }
-.gate-finish .gate-card .btn-ghost { color: var(--paper); border-color: rgba(255, 255, 255, 0.5); }
-.gate-finish .gate-card .btn-ghost:hover { box-shadow: 6px 6px 0 var(--paper); }
-/* .btn-primary — чёрный фон + чёрная рамка — на тёмной .gate-finish карточке (тоже
-   чёрной) была полностью невидима как кнопка: виден только парящий лаймовый текст,
-   без формы/границ. Из-за этого казалось, что после комнаты некуда вернуться. */
-.gate-finish .gate-card .btn-primary { background: var(--lime); color: var(--ink); border-color: var(--lime); }
-.gate-finish .gate-card .btn-primary:hover { box-shadow: 6px 6px 0 var(--paper), 6px 6px 0 1px var(--ink); }
+/* Финиш-оверлей раунда — светлый брендовый экран (по утверждённому макету
+   станции 3): белый лист, вермилионовый kicker-«галочка», дисплей-заголовок,
+   письмо Агеева editorial-курсивом. Тёмная «арена»-версия убрана. */
+.gate-finish { background: var(--paper); }
+.gate-finish .gate-card .kicker { color: var(--accent); }
 
 .gate-card {
   background: var(--paper);
@@ -1942,7 +1983,7 @@ button.hub-room-card {
   position: fixed;
   inset: 0;
   z-index: 80;
-  background: #f7ffe8;
+  background: var(--soft);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1957,7 +1998,7 @@ button.hub-room-card {
   background: var(--paper);
   border-radius: var(--radius);
   padding: 40px 44px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+  border: 1px solid var(--hairline);
 }
 
 .station-intro-inner p { font-size: 14.5px; line-height: 1.6; color: var(--muted); margin: 0 0 14px; }
@@ -2010,7 +2051,7 @@ button.hub-room-card {
   content: '·';
   float: right;
   font-weight: 900;
-  color: #d0a400;
+  color: var(--accent);
 }
 
 .case-nav-link.is-opened {
@@ -2178,11 +2219,10 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
    collapsed by default, so a stray scroll can't silently "read" one for you */
 
 .appx-doc {
-  border: 1.5px solid var(--ink);
-  border-radius: 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
   margin-bottom: 22px;
-  background: #fdfdfb;
-  box-shadow: 5px 5px 0 #ececec;
+  background: var(--paper);
 }
 
 .case-content article[id^="appx-"]:last-of-type .appx-doc { margin-bottom: 0; }
@@ -2250,9 +2290,9 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
 }
 
 .appx-doc-badge.is-reviewed {
-  border-color: #cdeaa0;
-  background: #f7ffe8;
-  color: #4c7a0d;
+  border-color: var(--hairline);
+  background: var(--soft);
+  color: var(--ink);
 }
 
 .appx-body {
@@ -2288,7 +2328,9 @@ table th:first-child, table td:first-child {
 table th { background: #fafafa; font-weight: 700; }
 
 mark.hl {
-  background: var(--lime);
+  background: var(--accent-tint);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  color: var(--ink);
   padding: 1px 2px;
   border-radius: 3px;
   cursor: grab;
@@ -2597,7 +2639,7 @@ table mark.hl {
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--ink);
-  background: #f7ffe8;
+  background: var(--soft);
   border-radius: 8px;
   padding: 6px 8px;
   margin-bottom: 8px;
@@ -2617,7 +2659,7 @@ table mark.hl {
 
 .card input[data-field="anchor"].is-drop-target {
   border-color: var(--lime-dim);
-  background: #f7ffe8;
+  background: var(--soft);
 }
 
 /* ---------- facilitator cabinet ---------- */
@@ -2678,14 +2720,16 @@ table mark.hl {
   font-size: 11.5px;
   font-weight: 700;
   padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid #d8dadd;
+  border-radius: 3px;
+  border: 1px solid var(--hairline);
   color: var(--muted-soft);
   white-space: nowrap;
 }
 
-.fac-pill.is-progress { border-color: #f0dca0; background: #fff6e0; color: #6b5900; }
-.fac-pill.is-done { border-color: #cdeaa0; background: #f7ffe8; color: #4c7a0d; }
+/* «в процессе» — вермилион (текущее/активное); «завершена» — НЕЙТРАЛЬНАЯ,
+   чтобы участник не читал её как оценку (см. решение по станции 3). */
+.fac-pill.is-progress { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-dim); }
+.fac-pill.is-done { border-color: var(--hairline); background: var(--soft); color: var(--ink); }
 
 .fac-detail {
   display: none;
@@ -2793,8 +2837,8 @@ table mark.hl {
 }
 
 .fac-card {
-  border: 1px solid #ececec;
-  border-radius: 10px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
   padding: 12px 14px;
 }
 
@@ -2841,8 +2885,8 @@ table mark.hl {
   gap: 3px;
   padding: 2px 6px;
   border-radius: 6px;
-  background: #f7ffe8;
-  border: 1px solid #cdeaa0;
+  background: var(--soft);
+  border: 1px solid var(--hairline);
   font-size: 11px;
   line-height: 1.2;
   white-space: nowrap;
@@ -3298,7 +3342,7 @@ table mark.hl {
 }
 
 .fac-progress-dot.is-progress { border-color: #f0dca0; background: #fff6e0; color: #6b5900; }
-.fac-progress-dot.is-done { border-color: #cdeaa0; background: #f7ffe8; color: #4c7a0d; }
+.fac-progress-dot.is-done { border-color: var(--hairline); background: var(--soft); color: var(--ink); }
 
 /* Не-цветовой признак статуса (WCAG 1.4.1): форма-глиф в дополнение к цвету. */
 .fac-progress-dot::before { font-weight: 400; margin-right: 3px; }
@@ -3317,7 +3361,7 @@ table mark.hl {
 }
 .fac-legend-item { display: inline-flex; align-items: center; gap: 5px; }
 .fac-legend-glyph { font-size: 12px; line-height: 1; }
-.fac-legend-glyph.g-done { color: #4c7a0d; }
+.fac-legend-glyph.g-done { color: var(--ink); }
 .fac-legend-glyph.g-progress { color: #6b5900; }
 .fac-legend-glyph.g-none { color: var(--muted-soft); }
 

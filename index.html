@@ -3,152 +3,139 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>i(m)perfect · кейс «Искра»</title>
-<meta name="description" content="Раунд 1 на кейсе «Искра»: соло, до 2 часов. Регистрация выдаёт номер участника." />
+<title>Вход — futureproof · i(m)perfect · «Искра»</title>
+<meta name="description" content="Вход в диагностику стратегического мышления «Искра». Введите номер участника и пароль." />
+<meta name="robots" content="noindex, nofollow" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Inter:wght@400;500;600;700&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=1" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=2" />
+<style>
+  /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
+     лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
+  .entry { min-height: 100vh; display: flex; flex-direction: column; }
+  .entry-wrap { max-width: var(--maxw); width: 100%; margin: 0 auto; padding: 0 clamp(20px, 4vw, 56px); flex: 1; display: flex; flex-direction: column; }
+  .entry-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
+  .entry-sec { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-soft); }
+  .entry-main { flex: 1; display: flex; align-items: center; padding: clamp(40px, 7vh, 96px) 0; }
+  .entry-col { max-width: 460px; }
+  .entry-col h1 { font-family: var(--ff-display); font-weight: 800; font-size: clamp(38px, 6vw, 60px); line-height: 1.0; letter-spacing: -.015em; text-transform: uppercase; margin: 20px 0 0; }
+  .entry-col h1 .hl { color: var(--accent); }
+  .entry-lead { font-size: 16px; line-height: 1.55; color: var(--muted); margin-top: 18px; max-width: 42ch; }
+  .entry-form { margin-top: 34px; }
+  .entry-form .field { margin-bottom: 20px; }
+  .code-input { width: 100%; height: 56px; padding: 0 16px; font-family: inherit; font-weight: 700; font-size: 24px; letter-spacing: .3em; color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius); outline: none; background: var(--paper); }
+  .code-input::placeholder { letter-spacing: .3em; color: var(--muted-soft); font-weight: 500; }
+  .code-input:focus, .pass-input:focus { border-color: var(--ink); }
+  .pass-input { width: 100%; height: 52px; padding: 0 14px; font-family: inherit; font-size: 16px; color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius); outline: none; }
+  .entry-hint { font-size: 13px; color: var(--muted-soft); margin-top: 14px; }
+  .entry-err { display: none; margin-top: 14px; font-size: 13px; color: #c4362b; }
+  .entry-err.show { display: block; }
+  /* футер + скрытое тех-меню */
+  .entry-foot { border-top: 1px solid var(--hairline); padding: 16px 0 26px; display: flex; align-items: center; justify-content: space-between; }
+  .entry-fnote { font-size: 12px; color: var(--muted-soft); }
+  .dotmenu { position: relative; }
+  .dotmenu-trigger { cursor: pointer; font-size: 12px; color: var(--gray-3, #c9ccd0); letter-spacing: .3em; user-select: none; padding: 6px 4px; background: none; border: none; }
+  .dotmenu-trigger:hover { color: var(--muted); }
+  .dotmenu-list { position: absolute; right: 0; bottom: 36px; background: var(--paper); border: 1px solid var(--hairline); border-radius: var(--radius); min-width: 220px; padding: 6px; display: none; }
+  .dotmenu-list.open { display: block; }
+  .dotmenu-list a { display: block; padding: 10px 12px; font-size: 13px; color: var(--ink); text-decoration: none; border-radius: var(--radius); }
+  .dotmenu-list a:hover { background: var(--soft); }
+  .dotmenu-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-soft); padding: 8px 12px 4px; }
+</style>
 </head>
 <body>
-<div class="frame">
-  <div class="wrap">
-    <nav class="nav">
-      <a class="logo" href="index.html">i<span class="mark">m</span>perfect</a>
-      <div class="nav-case">кейс «Искра»</div>
-      <div class="nav-links">
-        <a href="#case">Кейс</a>
-        <a class="btn btn-ghost btn-sm" href="register.html?recover=1">Войти →</a>
-        <a class="btn btn-ghost btn-sm" href="register.html">Записаться</a>
-      </div>
-    </nav>
-  </div>
+<div class="frame entry">
+  <div class="entry-wrap">
 
-  <header class="hero">
-    <div class="wrap">
-      <div style="max-width:640px;">
-        <div class="eyebrow">бизнес-симуляция</div>
-        <h1>Мышление, которое исчезает, если рядом ИИ.</h1>
-        <p class="hero-sub">Сегодня — раунд 1, соло: один кейс, ваша карта проблем, встреча с клиентом и три разговора в свободном порядке. Без права спросить ИИ, что делать дальше.</p>
-        <div class="hero-cta">
-          <a class="btn btn-primary" href="register.html">Получить номер участника →</a>
-          <span class="hero-note">Ноутбук · до 2 часов · вы — номер, а не имя</span>
-        </div>
-      </div>
-    </div>
-  </header>
+    <header class="entry-head">
+      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      <div class="entry-sec">Диагностика</div>
+    </header>
 
-  <section id="case">
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <p class="kicker">Кейс</p>
-          <h2>«Искра» — компания на развилке, которую вы не выбирали</h2>
-        </div>
-        <p class="section-lead">Кейс одинаков для всех — условие сравнимости. Персонализируется то, как разворачивается материал, а не сам кейс.</p>
-      </div>
+    <main class="entry-main">
+      <div class="entry-col">
+        <p class="kicker">Стратегическое мышление · наедине с кейсом</p>
+        <h1>Вход в<br><span class="hl">«Искру»</span></h1>
+        <p class="entry-lead">Однодневная диагностика без ИИ-помощи. Введите номер участника и пароль — их выдал организатор.</p>
 
-      <div class="case-panel">
-        <div class="case-side">
-          <div>
-            <div class="case-tag">«Искра»</div>
-            <p class="case-lead">Поиск и реклама на домашнем рынке: рекордная доля и довольное правление — но конкуренты, интерфейсы и новый собственник меняются быстрее, чем стратегия.</p>
+        <form class="entry-form" id="entryForm" novalidate>
+          <div class="field">
+            <label for="entryCode">Код участника — 6 цифр</label>
+            <input class="code-input" id="entryCode" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="000000" />
           </div>
-          <div class="case-meta">
-            <div><b>Роль:</b> независимый консультант</div>
-            <div><b>Материалы:</b> справка + 8 приложений</div>
-            <div><b>Правило:</b> аргумент должен опираться на текст кейса</div>
+          <div class="field">
+            <label for="entryPass">Пароль</label>
+            <input class="pass-input" id="entryPass" type="password" autocomplete="current-password" placeholder="••••••" />
           </div>
-        </div>
-        <div class="case-body">
-          <p class="quote">«В четверг вечером позвонил Кирилл Агеев…»</p>
-          <p>Так начинается кейс. Дальше — пакет документов и разворачивающаяся история: новый акционер с параллельной повесткой, отток людей, гонка технологий и развилка, у которой нет очевидно правильного ответа.</p>
-          <div class="case-rule">
-            <span>→</span>
-            <span><b>Играем только по данным кейса.</b> Внешнее знание о прототипе компании не учитывается — важно то, что можно показать пальцем в тексте.</span>
-          </div>
+          <button type="submit" class="btn btn-primary btn-block">Войти →</button>
+          <p class="entry-err" id="entryErr">Проверьте код (6 цифр) и пароль.</p>
+          <p class="entry-hint">Не нашли код? Обратитесь к организатору сессии.</p>
+        </form>
+      </div>
+    </main>
+
+    <footer class="entry-foot">
+      <div class="entry-fnote">© futureproof · сессия «Искра»</div>
+      <div class="dotmenu">
+        <button type="button" class="dotmenu-trigger" id="dotmenuTrigger" aria-label="Служебное меню">▸ ▸ ▸</button>
+        <div class="dotmenu-list" id="dotmenuList">
+          <div class="dotmenu-label">Служебное</div>
+          <a href="facilitator.html">Кабинет фасилитатора</a>
+          <a href="vitrina.html">Витрина / демо</a>
         </div>
       </div>
-    </div>
-  </section>
-
-  <section id="route">
-    <div class="wrap">
-      <div class="section-head">
-        <div>
-          <p class="kicker">Сегодня</p>
-          <h2>Кейс, встреча с клиентом и холл с тремя разговорами</h2>
-        </div>
-        <p class="section-lead">Порядок первых двух шагов фиксирован для всех. Дальше — холл: три разговора в любом порядке. Порядок свободный, но пройти нужно все три — только тогда можно финализировать стратегию. Держитесь общего бюджета времени на раунд.</p>
-      </div>
-
-      <div class="route">
-        <div class="route-item">
-          <div class="route-node">1</div>
-          <div class="route-body">
-            <h3>Вычитка и карта проблем</h3>
-            <p>Кейс и 8 приложений. Выделяете проблемы прямо в тексте, описываете каждую своими словами и показываете, как они связаны.</p>
-          </div>
-        </div>
-
-        <div class="route-item">
-          <div class="route-node">2</div>
-          <div class="route-body">
-            <h3>Встреча с Агеевым</h3>
-            <p>Раскладываете свою карту по приоритетам, объясняете клиенту, почему первым идёт именно это, и держите выбор под давлением — отступить и переиграть нельзя.</p>
-          </div>
-        </div>
-
-        <div class="route-item is-room">
-          <div class="route-node">3</div>
-          <div class="route-body">
-            <h3>Холл: три разговора</h3>
-            <p>«Коридор Лемеха», «Очередь в „Прожектор"», «Черновик к мартовскому комитету» — заходите в любом порядке. Когда готовы — финализируете стратегию, и раунд 1 закрыт.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <div class="logistics">
-        <div class="logi">
-          <h4>Устройство</h4>
-          <p>Ноутбук на весь раунд. Большой объём текста, выделение, заметки, сборка карты — на телефоне не работает.</p>
-        </div>
-        <div class="logi">
-          <h4>Время</h4>
-          <p>Ориентировочно до 2 часов. Жёсткого лимита нет — важнее разобраться, чем уложиться в тайминг.</p>
-        </div>
-        <div class="logi">
-          <h4>Холл</h4>
-          <p>Три разговора в свободном порядке — пройти нужно все три: каждый раскрывает свою грань вашей позиции, и без них стратегию не финализировать.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    <div class="wrap">
-      <div class="final-cta">
-        <div>
-          <h2>Готовы начать?</h2>
-          <p>Регистрация занимает минуту и выдаёт номер участника.</p>
-        </div>
-        <a class="btn btn-primary" href="register.html">Получить номер участника →</a>
-      </div>
-    </div>
-  </section>
-
-  <div class="wrap">
-    <footer>
-      <div>i(m)perfect · бизнес-симуляция «Искра»</div>
-      <div>futureproof · v0.5</div>
     </footer>
+
   </div>
 </div>
-<a href="qa.html" class="corner-peek" aria-hidden="true" tabindex="-1"><img src="assets/peek.png" alt="" /></a>
+
 <script src="js/main.js?v=1"></script>
+<script src="js/api.js?v=1"></script>
+<script>
+/* Окно входа. ⚠ Настоящая аутентификация по номеру+паролю — это ещё не
+   построенный access-бэкенд (выдача 6-значного кода + пароля в кабинете).
+   Пока — рабочий мостик к текущей модели сессии: валидный 6-значный код
+   становится bib, сессия ставится локально, переход на станцию 1. Пароль
+   ловится в сессию, но НЕ проверяется до появления бэкенд-аутентификации.
+   Заменить блок onsubmit на реальный вызов авторизации, когда бэкенд готов. */
+(function () {
+  var trigger = document.getElementById('dotmenuTrigger');
+  var list = document.getElementById('dotmenuList');
+  trigger.addEventListener('click', function (e) {
+    e.stopPropagation();
+    list.classList.toggle('open');
+  });
+  document.addEventListener('click', function () { list.classList.remove('open'); });
+
+  var form = document.getElementById('entryForm');
+  var codeEl = document.getElementById('entryCode');
+  var passEl = document.getElementById('entryPass');
+  var errEl = document.getElementById('entryErr');
+
+  codeEl.addEventListener('input', function () {
+    codeEl.value = codeEl.value.replace(/\D/g, '').slice(0, 6);
+    errEl.classList.remove('show');
+  });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var code = (codeEl.value || '').trim();
+    var pass = (passEl.value || '').trim();
+    if (!/^\d{6}$/.test(code) || !pass) {
+      errEl.classList.add('show');
+      return;
+    }
+    // МОСТИК (до access-бэкенда): код → сессия. Пароль сохраняем, не валидируем.
+    var bib = parseInt(code, 10);
+    var session = { bib: bib, pass: pass };
+    try {
+      sessionStorage.setItem('imp_current_session', JSON.stringify(session));
+      localStorage.setItem('imp_current_session', JSON.stringify(session));
+    } catch (err) {}
+    window.location.href = 'station1.html';
+  });
+})();
+</script>
 </body>
 </html>

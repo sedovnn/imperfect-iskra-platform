@@ -2,7 +2,7 @@
 // Шкала ОДНА: уровни 1–5. Способность = уровень 1–5 (с названием). Навык = среднее
 // двух способностей (1–5, с названием). ИИ = ОКНО на той же шкале 1–5 (от худшей
 // модели к лучшей). Человек: ниже окна / в окне / выше. Никаких /10 и /50.
-// Стиль — продуктовый DESIGN.md (лайм на почти-чёрном/бумаге, Unbounded + Inter),
+// Стиль — продуктовый DESIGN.md (FP: вермилион-акцент, окно ИИ — Jordy Blue, Inter Tight),
 // структура — по спеке отчёта (15_report_frame / 17_report_example). Подпись futureproof в футере.
 // Тексты — из window.IMP_REPORT_TEXTS (js/report-texts.js). Экспорт: window.impReport.build/.download.
 (function () {
@@ -85,7 +85,7 @@
     };
   }
 
-  var LOGO = 'i<span class="mark">m</span>perfect';
+  var LOGO = 'futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span>';
 
   var SKILL_DESC = {
     ak: 'Как широко вы сканируете внешнюю среду и как глубоко связываете обнаруженные факторы в единую картину.',
@@ -258,7 +258,7 @@
 '<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
 '<title>i(m)perfect · Отчёт · ' + esc(name || '—') + '</title>\n' +
 '<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800;900&family=Inter:wght@400;500;600;700&display=swap">\n' +
+'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap">\n' +
 '<style>' + REPORT_CSS + '</style>\n</head>\n<body>\n<div class="frame"><div class="sheet">\n' +
 
 // ОБЛОЖКА
@@ -347,7 +347,7 @@ deep +
 '</section>' +
 
 // ФУТЕР
-'<footer class="foot"><div class="foot-in"><span class="fp">futureproof <span class="ar">▸</span></span>' +
+'<footer class="foot"><div class="foot-in"><span class="fp">futureproof <span class="ar"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span></span>' +
   '<span class="foot-meta">i(m)perfect · ассессмент «Искра» · тестовый прогон</span></div></footer>' +
 
 '\n</div></div>\n</body>\n</html>';
@@ -367,15 +367,16 @@ deep +
   }
 
   var REPORT_CSS = [
-    ":root{--lime:#a6ff00;--lime-tint:#f7ffe8;--lime-line:#cdeaa0;--ink:#0a0a0a;--paper:#fff;--muted:#56585c;--muted-soft:#8a8d92;--hair:#ececec;--bandbg:#f0f0ee;--bandln:#cfcfca;--radius:18px;--ff-d:'Unbounded',sans-serif;--ff-b:'Inter',sans-serif;}",
+    ":root{--lime:#ff4800;--lime-tint:#fff2ec;--lime-line:#ffd7c7;--accent:#ff4800;--ink:#181818;--paper:#fff;--muted:#6b6e73;--muted-soft:#9a9da2;--hair:#e7e7e7;--bandbg:#eaf3fb;--bandln:#bcd9f2;--radius:6px;--ff-d:'Inter Tight',sans-serif;--ff-b:'Inter Tight',sans-serif;}",
     "*{box-sizing:border-box;}",
-    "body{margin:0;background:var(--lime);color:var(--ink);font-family:var(--ff-b);line-height:1.55;-webkit-font-smoothing:antialiased;}",
+    "body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ff-b);line-height:1.55;-webkit-font-smoothing:antialiased;}",
     ".frame{padding:clamp(10px,2vw,22px);}",
     ".sheet{max-width:1180px;margin:0 auto;background:var(--paper);border-radius:var(--radius);overflow:hidden;}",
     ".page{padding:56px 72px;border-bottom:1px solid var(--hair);}",
     ".phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:40px;}",
-    ".brand{font-family:var(--ff-d);font-weight:900;font-size:20px;letter-spacing:-0.02em;display:inline-flex;align-items:baseline;gap:7px;}",
-    ".brand .mark{background:var(--ink);color:var(--lime);padding:1px 7px;border-radius:6px;}",
+    ".brand{font-family:var(--ff-b);font-weight:700;font-size:18px;letter-spacing:-0.01em;display:inline-flex;align-items:center;gap:4px;color:var(--ink);}",
+    ".brand .logo-arrow{display:inline-block;width:12px;height:12px;position:relative;top:1px;}.brand .logo-arrow svg{display:block;width:100%;height:100%;}",
+    ".brand .logo-prod{margin-left:3px;font-weight:600;color:var(--muted-soft);}",
     ".phead .meta{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted-soft);}",
     ".eyebrow{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-soft);margin:0 0 16px;}",
     ".cover-h1{font-family:var(--ff-d);font-weight:900;font-size:clamp(44px,6vw,76px);line-height:1.0;letter-spacing:-0.02em;text-transform:uppercase;margin:0 0 22px;text-wrap:balance;}",
@@ -475,7 +476,7 @@ deep +
     ".scale-num{font-family:var(--ff-d);font-weight:700;font-size:15px;color:var(--muted-soft);}",
     ".scale-label{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;}",
     ".scale-desc{font-size:13.5px;color:var(--muted-soft);line-height:1.5;}",
-    ".scale-row.current{background:var(--lime-tint);border:1px solid var(--lime-line);border-radius:14px;padding:16px;margin:6px -16px;box-shadow:5px 5px 0 var(--lime);border-bottom:1px solid var(--lime-line);}",
+    ".scale-row.current{background:var(--lime-tint);border:1px solid var(--lime-line);border-radius:6px;padding:16px;margin:6px -16px;box-shadow:inset 3px 0 0 var(--accent);border-bottom:1px solid var(--lime-line);}",
     ".scale-row.current .scale-num,.scale-row.current .scale-label{color:var(--ink);}",
     ".scale-row.current .scale-desc{color:var(--ink);font-size:15px;}",
     ".sw-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:24px;}",
@@ -492,7 +493,7 @@ deep +
     // footer
     ".foot{background:var(--ink);}",
     ".foot-in{max-width:1180px;margin:0 auto;padding:26px 72px;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;}",
-    ".fp{font-family:var(--ff-d);font-weight:900;font-size:20px;letter-spacing:-0.02em;color:var(--paper);}.fp .ar{color:var(--lime);}",
+    ".fp{font-family:var(--ff-b);font-weight:700;font-size:18px;letter-spacing:-0.01em;color:var(--paper);display:inline-flex;align-items:center;gap:4px;}.fp .ar{display:inline-block;width:12px;height:12px;position:relative;top:1px;}.fp .ar svg{display:block;width:100%;height:100%;}",
     ".foot-meta{color:var(--muted-soft);font-size:11px;letter-spacing:.13em;text-transform:uppercase;}",
     "@media(max-width:720px){.page{padding:34px 24px;}.ov-head{gap:24px;}.cols3,.sw-grid,.ms-grid,.ml{grid-template-columns:1fr;}.skill-intro{flex-direction:column;}.skill-level-block{text-align:left;}.scale-row{grid-template-columns:1fr;gap:4px;}.foot-in{padding:22px 24px;}}",
     "@media print{body{background:#fff;}.frame{padding:0;}.sheet{max-width:none;border-radius:0;}.page{break-after:page;border-bottom:none;}.devbox,.foot,.tag.s,.tag.g,.scale-row.current,.notice,.ov-pos,.edge.up,.edge.dn{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}"
