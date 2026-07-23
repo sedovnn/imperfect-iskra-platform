@@ -8,21 +8,29 @@
 (function () {
   'use strict';
 
-  // РЕАЛЬНЫЕ прогоны эталонных моделей (кейс «Искра», июль 2026): средний уровень
-  // 1–5 по каждой способности, 5 прогонов на модель. Порядок в массиве = модели
-  // [Opus, Haiku, Алиса, ChatGPT, GigaChat]. ЕДИНСТВЕННОЕ место с числами.
-  var AI_RUNS = {
-    ak1: [5.0, 5.0, 3.2, 4.2, 3.0], ak2: [5.0, 4.4, 3.2, 4.2, 3.0],
-    pr1: [4.0, 3.2, 3.8, 3.2, 2.4], pr2: [3.6, 3.2, 2.6, 2.4, 2.2],
-    mk1: [3.4, 3.8, 3.0, 3.0, 2.8], mk2: [4.0, 4.0, 4.0, 2.6, 2.8],
-    ga1: [2.2, 2.0, 3.0, 2.6, 2.2], ga2: [3.2, 2.8, 4.2, 3.2, 2.2],
-    pp1: [4.2, 4.4, 4.0, 4.0, 3.6], pp2: [3.4, 3.4, 3.0, 3.0, 3.0]
+  // РЕАЛЬНЫЕ прогоны эталонных моделей (кейс «Искра», пакет v4 «равные условия»,
+  // судья @51, июль 2026): МЕДИАНА 3 прогонов, балл НАВЫКА = сумма двух способностей
+  // (шкала 2–10). Источник — _ai_dispersion_report.md, ЕДИНСТВЕННОЕ место с числами.
+  // Порядок массива = [Opus, Haiku, ChatGPT, Алиса, GigaChat]. Индекс 0 (Opus) —
+  // ПЕРЕДОВАЯ модель: в полосу-окно НЕ входит, показывается отдельной точкой
+  // «лучшая модель уже здесь». Полоса-окно = размах четырёх массовых моделей.
+  var AI_SKILL = {
+    ak: [9, 7, 8, 7, 8],
+    pr: [7, 6, 7, 5, 5],
+    mk: [6, 6, 6, 6, 6],
+    ga: [9, 4, 4, 3, 3],
+    pp: [10, 10, 9, 9, 9]
   };
-  var AI_META = { n: 5, measuredAt: 'июль 2026', caseVersion: 'v1', models: 'Opus, Haiku, Алиса, ChatGPT, GigaChat' };
+  var FRONTIER = 0;            // индекс передовой модели (Opus)
+  var MASS = [1, 2, 3, 4];     // массовые бизнес-модели: окно = их размах [min,max]
+  var AI_META = {
+    massN: 4, measuredAt: 'июль 2026', caseVersion: 'v1',
+    massModels: 'Haiku, ChatGPT, Алиса (YandexGPT), GigaChat',
+    frontier: 'Claude Opus 4.8', frontierShort: 'Opus'
+  };
 
   var RESUME_ORDER = ['ak', 'pr', 'mk', 'ga', 'pp'];       // методология
   var DEEPDIVE_ORDER = ['mk', 'pp', 'ak', 'pr', 'ga'];     // как в 17_report_example
-  var ALL_ABILITIES = ['ak1', 'ak2', 'pr1', 'pr2', 'mk1', 'mk2', 'ga1', 'ga2', 'pp1', 'pp2'];
   var LEVEL_NAMES = ['', 'Базовый', 'Устойчивый', 'Развитый', 'Зрелый', 'Системный'];
 
   function esc(s) {
@@ -60,18 +68,24 @@
     return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   }
 
-  // Окно ИИ навыка (из 10): у каждой модели балл навыка = СУММА двух способностей
-  // (без усреднения — сохраняем разрешение), окно = [min, max] по моделям.
-  function skillWindow(sk) {
-    var ks = abilityKeys(sk), a = AI_RUNS[ks[0]], b = AI_RUNS[ks[1]], lo = Infinity, hi = -Infinity;
-    for (var i = 0; i < a.length; i++) { var v = a[i] + b[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
-    return { lo: round1(lo), hi: round1(hi) };
+  // Балл каждой модели по всему профилю (из 50) = сумма пяти навыков.
+  function modelTotals() {
+    var n = AI_SKILL.ak.length, sums = [];
+    for (var i = 0; i < n; i++) { var s = 0; RESUME_ORDER.forEach(function (k) { s += AI_SKILL[k][i]; }); sums.push(s); }
+    return sums;
   }
-  // Окно ИИ по всему профилю (из 50): общий балл модели = сумма 10 способностей.
+  // Окно ИИ навыка (из 10): полоса = размах МАССОВЫХ моделей [min,max]; top = балл
+  // передовой модели (Opus), выносится отдельной точкой над/в полосе.
+  function skillWindow(sk) {
+    var a = AI_SKILL[sk], lo = Infinity, hi = -Infinity;
+    MASS.forEach(function (i) { if (a[i] < lo) lo = a[i]; if (a[i] > hi) hi = a[i]; });
+    return { lo: round1(lo), hi: round1(hi), top: round1(a[FRONTIER]) };
+  }
+  // Окно ИИ по всему профилю (из 50): полоса = размах массовых, top = Opus.
   function overallWindow() {
-    var lo = Infinity, hi = -Infinity;
-    for (var i = 0; i < 5; i++) { var s = 0; ALL_ABILITIES.forEach(function (k) { s += AI_RUNS[k][i]; }); if (s < lo) lo = s; if (s > hi) hi = s; }
-    return { lo: round1(lo), hi: round1(hi) };
+    var sums = modelTotals(), lo = Infinity, hi = -Infinity;
+    MASS.forEach(function (i) { if (sums[i] < lo) lo = sums[i]; if (sums[i] > hi) hi = sums[i]; });
+    return { lo: round1(lo), hi: round1(hi), top: round1(sums[FRONTIER]) };
   }
 
   // Уровни способностей участника (целые 1–5) из facilitatorList; балл навыка = сумма двух.
@@ -135,9 +149,10 @@
       '<p class="skdesc">' + esc(r.desc) + '</p>' +
       '<div class="sbar"><span class="base"></span>' +
         '<span class="band" style="' + bandStyle + '"></span>' +
+        '<span class="ai-top" style="left:' + pctSkill(r.w.top) + '%" title="передовая модель (' + esc(AI_META.frontierShort) + '): ' + num1(r.w.top) + ' / 10"></span>' +
         '<span class="you" style="left:' + pctSkill(r.you) + '%"></span>' +
       '</div>' +
-      '<div class="srow-scale"><span class="ai-range">Окно ИИ: ' + num1(r.w.lo) + '–' + num1(r.w.hi) + ' / 10</span>' +
+      '<div class="srow-scale"><span class="ai-range">Окно ИИ: ' + num1(r.w.lo) + '–' + num1(r.w.hi) + ' / 10 · передовая ' + num1(r.w.top) + '</span>' +
         '<span class="you-val">вы: ' + r.you + ' / 10' +
         ' <span class="you-break">(' + esc(r.code1) + ' L' + r.a1 + ' + ' + esc(r.code2) + ' L' + r.a2 + ')</span></span></div>' +
       (r.pos === 'above' ? '<p class="edge up"><span class="ek">Здесь вы обходите ИИ.</span> ' + esc(SKILL_EDGE[r.key].you) + '</p>' :
@@ -230,7 +245,7 @@
     }).join('');
     var chips = [
       'кейс «Искра» · ' + AI_META.caseVersion,
-      AI_META.n + ' моделей · вслепую',
+      AI_META.massN + ' массовые модели + передовая · вслепую',
       'замер: ' + AI_META.measuredAt
     ].map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
 
@@ -280,14 +295,15 @@
 '<section class="page">' +
   '<div class="phead"><span class="brand">' + LOGO + '</span><span class="meta">Резюме</span></div>' +
   '<h2 class="sec-h">Ваш профиль относительно ИИ</h2>' +
-  '<p class="lede">Окно ИИ — диапазон уровней от слабейшей до сильнейшей из пяти моделей на этом кейсе. По каждому навыку видно, попадаете ли вы ниже окна, внутрь него наравне с ИИ или выше.</p>' +
+  '<p class="lede">Окно ИИ — диапазон уровней от слабейшей до сильнейшей из четырёх массовых моделей автоматизации на этом кейсе. Передовая модель (' + esc(AI_META.frontierShort) + ') показана отдельной голубой точкой — «лучшая модель уже здесь». По каждому навыку видно, попадаете ли вы ниже окна, внутрь него наравне с ИИ или выше.</p>' +
   '<div class="overall">' +
     '<div class="ov-head">' +
       '<div class="ov-cell"><div class="ovk"><span class="d"></span>Ваш общий балл</div><div class="ovn">' + hSum + '<span class="ovs"> / 50</span></div></div>' +
       '<div class="ov-cell"><div class="ovk"><span class="band-sw"></span>Окно ИИ</div><div class="ovn">' + num1(oW.lo) + '–' + num1(oW.hi) + '<span class="ovs"> / 50</span></div></div>' +
+      '<div class="ov-cell"><div class="ovk"><span class="top-sw"></span>Передовая · ' + esc(AI_META.frontierShort) + '</div><div class="ovn">' + num1(oW.top) + '<span class="ovs"> / 50</span></div></div>' +
       '<div class="ov-pos ' + posClass(oPos) + '">' + posLabel(oPos) + '</div>' +
     '</div>' +
-    '<div class="ov-track"><span class="base"></span><span class="band" style="left:' + pctTotal(oW.lo) + '%; right:' + (100 - pctTotal(oW.hi)) + '%"></span><span class="you" style="left:' + pctTotal(hSum) + '%"></span></div>' +
+    '<div class="ov-track"><span class="base"></span><span class="band" style="left:' + pctTotal(oW.lo) + '%; right:' + (100 - pctTotal(oW.hi)) + '%"></span><span class="ai-top" style="left:' + pctTotal(oW.top) + '%" title="передовая модель (' + esc(AI_META.frontierShort) + ')"></span><span class="you" style="left:' + pctTotal(hSum) + '%"></span></div>' +
     '<div class="ov-ticks"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span></div>' +
   '</div>' +
   '<div class="hsum-row"><span class="hs-item up"><b>' + above + '</b> ' + skillWord(above) + ' выше ИИ</span>' +
@@ -295,7 +311,7 @@
     '<span class="hs-item dn"><b>' + below + '</b> ' + skillWord(below) + ' ниже ИИ</span></div>' +
   '<div class="srows">' + ordered.map(resumeRow).join('') + '</div>' +
   '<div class="axis"><div class="ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div></div>' +
-  '<p class="caption"><b>●</b> — ваш балл навыка (сумма двух способностей, шкала 0–10); закрашенная полоса — окно ИИ, от слабейшей модели к сильнейшей. Каждая способность — на одном из пяти уровней; балл навыка — их сумма, поэтому 0–10, общий — сумма десяти, поэтому /50. Полный разбор — дальше в отчёте.</p>' +
+  '<p class="caption"><b style="color:#ff4800;">●</b> — ваш балл навыка (сумма двух способностей, шкала 0–10); закрашенная полоса — окно ИИ, размах четырёх массовых моделей; <b style="color:#2f6bb0;">●</b> — передовая модель (' + esc(AI_META.frontierShort) + '). Каждая способность — на одном из пяти уровней; балл навыка — их сумма, поэтому 0–10, общий — сумма десяти, поэтому /50. Полный разбор — дальше в отчёте.</p>' +
   (miniScale ? '<div class="miniscale"><p class="k">Пять уровней каждой способности</p><p class="ms-lead">На этих пяти уровнях оценивается каждая из десяти способностей. Балл навыка — сумма двух его способностей (2–10), общий балл — сумма всех десяти (10–50).</p><div class="ms-grid">' + miniScale + '</div></div>' : '') +
 '</section>' +
 
@@ -303,17 +319,17 @@
 '<section class="page">' +
   '<div class="phead"><span class="brand">' + LOGO + '</span><span class="meta">Как читать сравнение</span></div>' +
   '<h2 class="sec-h">Что такое окно ИИ</h2>' +
-  '<p class="lede">Тот же кейс, те же вопросы, тот же оценщик — но проходят пять эталонных нейросетей. Их результаты расходятся: от слабейшей модели к сильнейшей. Этот разброс и есть окно ИИ — полоса, внутри которой сегодня живёт машинное стратегическое мышление.</p>' +
+  '<p class="lede">Тот же кейс, те же вопросы, тот же оценщик — но проходят эталонные нейросети. Четыре массовые модели автоматизации задают полосу-окно (от слабейшей к сильнейшей) — внутри неё сегодня живёт машинное стратегическое мышление. Отдельная голубая точка — передовая модель (' + esc(AI_META.frontierShort) + '): куда шагнул фронтир.</p>' +
   '<p class="lede sub">Это не соревнование и не вердикт. Окно отвечает на один практический вопрос: <b>где ваше мышление в одной зоне с машиной, где вы её превосходите, а где пока не дотягиваете.</b> Смысл не в том, чтобы обогнать лучшую модель, а в том, чтобы понять свою позицию рядом с инструментом.</p>' +
   '<div class="cols3">' +
-    '<div class="c3 up"><div class="c3-h">Выше окна</div><p>Ваш уровень выше сильнейшей из моделей. На этом навыке вы делаете то, чего не показала ни одна из пяти. Это опора профиля и аргумент вашей роли рядом с ИИ.</p></div>' +
+    '<div class="c3 up"><div class="c3-h">Выше окна</div><p>Ваш уровень выше сильнейшей из массовых моделей. На этом навыке вы делаете то, чего они не показали. Это опора профиля и аргумент вашей роли рядом с ИИ.</p></div>' +
     '<div class="c3 eq"><div class="c3-h">В окне</div><p>Ваш уровень внутри диапазона моделей — вы в одной зоне с ИИ. Нормальная, рабочая позиция: где именно внутри окна, видно на шкале навыка.</p></div>' +
-    '<div class="c3 dn"><div class="c3-h">Ниже окна</div><p>Ваш уровень ниже даже слабейшей из моделей. Не приговор, а карта: именно здесь шаг развития даёт наибольший прирост относительной ценности.</p></div>' +
+    '<div class="c3 dn"><div class="c3-h">Ниже окна</div><p>Ваш уровень ниже даже слабейшей из массовых моделей. Не приговор, а карта: именно здесь шаг развития даёт наибольший прирост относительной ценности.</p></div>' +
   '</div>' +
   '<div class="measure"><p class="k">Как измерено окно ИИ<span class="ast">*</span></p>' +
-    '<p>Пять эталонных моделей проходят кейс тем же маршрутом, что и вы, без подсказок и без ограничения интерфейсом. Ответы оценивает тот же оценщик, что и ваши, по тем же уровням. Границы окна — слабейший и сильнейший результат; окно перемеряется при каждом обновлении кейса или оценщика.</p>' +
+    '<p>Эталонные модели проходят кейс тем же маршрутом, что и вы, без подсказок и без ограничения интерфейсом. Ответы оценивает тот же оценщик, что и ваши, по тем же уровням. Границы окна — слабейший и сильнейший результат среди четырёх массовых моделей; передовая модель (' + esc(AI_META.frontierShort) + ') вынесена отдельной точкой. Окно перемеряется при каждом обновлении кейса или оценщика.</p>' +
     '<div class="chips">' + chips + '</div>' +
-    '<p class="foot-note"><span class="ast">*</span> В сравнении участвуют: ' + esc(AI_META.models) + '. Набор моделей уточняется по мере прогона новых.</p>' +
+    '<p class="foot-note"><span class="ast">*</span> Массовые модели (полоса-окно): ' + esc(AI_META.massModels) + '. Передовая модель (точка): ' + esc(AI_META.frontier) + '. Набор моделей уточняется по мере прогона новых.</p>' +
   '</div>' +
 '</section>' +
 
@@ -367,7 +383,7 @@ deep +
   }
 
   var REPORT_CSS = [
-    ":root{--lime:#ff4800;--lime-tint:#fff2ec;--lime-line:#ffd7c7;--accent:#ff4800;--ink:#181818;--paper:#fff;--muted:#6b6e73;--muted-soft:#9a9da2;--hair:#e7e7e7;--bandbg:#eaf3fb;--bandln:#bcd9f2;--radius:6px;--ff-d:'Inter Tight',sans-serif;--ff-b:'Inter Tight',sans-serif;}",
+    ":root{--lime:#ff4800;--lime-tint:#fff2ec;--lime-line:#ffd7c7;--accent:#ff4800;--ink:#181818;--paper:#fff;--muted:#6b6e73;--muted-soft:#9a9da2;--hair:#e7e7e7;--bandbg:#eaf3fb;--bandln:#bcd9f2;--jb:#89bbf1;--jb-ink:#2f6bb0;--radius:6px;--ff-d:'Inter Tight',sans-serif;--ff-b:'Inter Tight',sans-serif;}",
     "*{box-sizing:border-box;}",
     "body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ff-b);line-height:1.55;-webkit-font-smoothing:antialiased;}",
     ".frame{padding:clamp(10px,2vw,22px);}",
@@ -404,7 +420,9 @@ deep +
     ".ov-track{position:relative;height:24px;}",
     ".ov-track .base{position:absolute;left:0;right:0;top:50%;height:2px;background:var(--hair);transform:translateY(-50%);border-radius:2px;}",
     ".ov-track .band{position:absolute;top:50%;transform:translateY(-50%);height:20px;background:var(--bandbg);border:1px solid var(--bandln);border-radius:7px;}",
-    ".ov-track .you{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:var(--lime);border:2px solid var(--ink);z-index:2;}",
+    ".ov-track .you{position:absolute;top:50%;transform:translate(-50%,-50%);width:18px;height:18px;border-radius:50%;background:var(--lime);border:2px solid var(--ink);z-index:3;}",
+    ".ov-track .ai-top{position:absolute;top:50%;transform:translate(-50%,-50%);width:15px;height:15px;border-radius:50%;background:var(--jb);border:2px solid var(--jb-ink);z-index:2;}",
+    ".ov-cell .ovk .top-sw{width:12px;height:12px;border-radius:50%;background:var(--jb);border:1.5px solid var(--jb-ink);}",
     ".ov-ticks{display:flex;justify-content:space-between;margin-top:7px;font-size:10px;color:var(--muted-soft);}",
     ".hsum-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;}",
     ".hs-item{font-size:13px;color:var(--muted);border:1px solid var(--hair);border-radius:8px;padding:8px 14px;}",
@@ -422,6 +440,7 @@ deep +
     ".sbar .base{position:absolute;left:0;right:0;top:50%;height:2px;background:var(--hair);transform:translateY(-50%);border-radius:2px;}",
     ".sbar .band{position:absolute;top:50%;transform:translateY(-50%);height:16px;background:var(--bandbg);border:1px solid var(--bandln);border-radius:8px;z-index:1;}",
     ".sbar .you{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--lime);border:1.5px solid var(--ink);z-index:3;}",
+    ".sbar .ai-top{position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;background:var(--jb);border:1.5px solid var(--jb-ink);z-index:2;}",
     ".pos{flex:none;text-align:right;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1.2;white-space:nowrap;}",
     ".pos.up{color:var(--ink);}.pos.dn{color:var(--muted);}.pos.eq{color:var(--muted-soft);}",
     ".srow-scale{display:flex;justify-content:space-between;gap:16px;margin-top:8px;font-size:11.5px;color:var(--muted-soft);}",
@@ -499,5 +518,5 @@ deep +
     "@media print{body{background:#fff;}.frame{padding:0;}.sheet{max-width:none;border-radius:0;}.page{break-after:page;border-bottom:none;}.devbox,.foot,.tag.s,.tag.g,.scale-row.current,.notice,.ov-pos,.edge.up,.edge.dn{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}"
   ].join('');
 
-  window.impReport = { build: build, download: download, RUNS: AI_RUNS };
+  window.impReport = { build: build, download: download, SKILL: AI_SKILL };
 })();

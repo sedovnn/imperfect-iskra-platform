@@ -45,11 +45,17 @@
   .vit-win p { font-size: 14px; color: var(--muted); max-width: 64ch; margin-bottom: 18px; }
   .vit-mini { position: relative; height: 22px; max-width: 520px; }
   .vit-mini .base { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--hairline); transform: translateY(-50%); }
-  .vit-mini .bnd { position: absolute; top: 50%; transform: translateY(-50%); height: 18px; background: #eaf3fb; border: 1px solid #bcd9f2; border-radius: 8px; left: 40%; right: 18%; }
-  .vit-mini .you { position: absolute; top: 50%; left: 64%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--ink); }
-  .vit-mini-leg { display: flex; gap: 22px; margin-top: 12px; font-size: 12.5px; color: var(--muted); }
+  /* полоса = размах 4 массовых моделей (30–34 из 50); точка Opus = 41/50; вы ≈ 31/50 */
+  .vit-mini .bnd { position: absolute; top: 50%; transform: translateY(-50%); height: 18px; background: #eaf3fb; border: 1px solid #bcd9f2; border-radius: 8px; left: 60%; right: 32%; }
+  .vit-mini .top { position: absolute; top: 50%; left: 82%; transform: translate(-50%, -50%); width: 13px; height: 13px; border-radius: 50%; background: var(--jb); border: 2px solid var(--jb-ink); z-index: 2; }
+  .vit-mini .you { position: absolute; top: 50%; left: 62%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--ink); z-index: 3; }
+  .vit-mini-leg { display: flex; gap: 22px; margin-top: 12px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
   .vit-mini-leg .d { color: var(--accent); font-weight: 700; }
+  .vit-mini-leg .td { color: var(--jb-ink); font-weight: 700; }
   .vit-mini-leg .sw { display: inline-block; width: 16px; height: 10px; border-radius: 3px; background: #eaf3fb; border: 1px solid #bcd9f2; vertical-align: -1px; margin-right: 5px; }
+  .vit-example { margin-top: 18px; font-size: 13px; }
+  .vit-example a { color: var(--jb-ink); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--band-line); }
+  .vit-example a:hover { border-bottom-color: var(--jb-ink); }
   .vit-foot { border-top: 1px solid var(--band-line); margin-top: 52px; padding: 20px 0 40px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--jb-ink); }
   .vit-foot a { color: var(--jb-ink); text-decoration: none; font-weight: 600; }
 </style>
@@ -110,9 +116,10 @@
 
     <div class="vit-win">
       <h3>Что такое окно ИИ</h3>
-      <p>Тот же кейс проходят пять эталонных нейросетей. Их разброс — от слабейшей к сильнейшей — и есть окно ИИ. Ваш результат ложится на ту же шкалу: внутри окна вы наравне с машиной, выше или ниже — там, где различаетесь.</p>
-      <div class="vit-mini"><span class="base"></span><span class="bnd"></span><span class="you"></span></div>
-      <div class="vit-mini-leg"><span><span class="d">●</span> вы</span><span><span class="sw"></span> окно ИИ</span></div>
+      <p>Тот же кейс проходят эталонные нейросети. Четыре массовые модели автоматизации задают полосу-окно — от слабейшей к сильнейшей. Передовая модель отдельной голубой точкой: «лучшая модель уже здесь». Ваш результат ложится на ту же шкалу: внутри окна вы наравне с машиной, выше или ниже — там, где различаетесь.</p>
+      <div class="vit-mini"><span class="base"></span><span class="bnd"></span><span class="top"></span><span class="you"></span></div>
+      <div class="vit-mini-leg"><span><span class="d">●</span> вы</span><span><span class="sw"></span> окно ИИ (4 модели)</span><span><span class="td">●</span> передовая модель</span></div>
+      <p class="vit-example"><a href="report-example.html">Открыть пример отчёта · средний профиль →</a></p>
     </div>
 
     <footer class="vit-foot">

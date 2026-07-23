@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Пример отчёта — i(m)perfect · «Искра»</title>
+<meta name="robots" content="noindex, nofollow" />
+</head>
+<body>
+<!-- Служебная страница витрины: пример отчёта на СИНТЕТИЧЕСКОМ «среднем» профиле.
+     Уровни подобраны так, чтобы навыки задели все три зоны окна ИИ:
+     АК (4+4=8) и ПР (3+3=6) — в окне; ГА (3+2=5) — выше окна (массовые модели по ГА
+     слабы, 3–4); МК (3+2=5) и ПП (4+3=7) — ниже окна. Данные локальные, не с бэкенда. -->
+<script src="js/report-texts.js?v=1"></script>
+<script src="js/report.js?v=3"></script>
+<script>
+  (function () {
+    var P = {
+      firstName: 'Пример', lastName: '',
+      station1: { level: 4, ak2Level: 4 },
+      station2: { pr1Level: 3, pr2Level: 3 },
+      roomFuture: { level1: 3, level2: 2 },
+      roomAlternatives: { level1: 3, level2: 2 },
+      roomPath: { level1: 4, level2: 3 },
+      station3: { finishedAt: '2026-07-20' }
+    };
+    var REG = { firstName: 'Пример профиль', lastName: '(средний)', registeredAt: '2026-07-20' };
+    var html;
+    try {
+      html = window.impReport.build(P, REG);
+    } catch (e) {
+      document.body.innerHTML = '<pre style="padding:24px;font:14px monospace;color:#b00">Не удалось собрать пример отчёта: ' + (e && e.message) + '</pre>';
+      return;
+    }
+    document.open();
+    document.write(html);
+    document.close();
+  })();
+</script>
+</body>
+</html>
