@@ -2204,7 +2204,9 @@ button.hub-room-card {
 }
 .notes-view-section:first-child { margin-top: 0; }
 
-.case-content article { margin-bottom: 40px; }
+/* Потолок читаемой ширины кейса: на очень широких экранах строки не растягиваются
+   в нечитаемо длинные; на ноутах колонка уже потолка — правило не мешает. */
+.case-content article { margin-bottom: 40px; max-width: 760px; }
 
 .case-content h2 {
   font-family: var(--ff-display);
