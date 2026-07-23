@@ -3,7 +3,7 @@
 // Что это. Служебный проходной режим для команды: пройти ВСЕ экраны раунда 1
 // с примерами заполнения, без стопов и без создания реальных строк на бэкенде,
 // с короткими пояснениями «что здесь меряется и как зашита механика».
-// Запускается из служебного входа (qa.html) с выбором профиля ответов.
+// Запускается из витрины (vitrina.html) с выбором профиля ответов.
 //
 // Как устроено (важно для будущего меня):
 //  1. Экраны участника — отдельные страницы, каждая гейтится на .finished
@@ -365,13 +365,13 @@
       abilities: ['pr1', 'pr2'],
       how: 'Навык «Приоритизация». <b>ПР-1</b> — что выбрано: ранжирование своих же карточек + явные отказы. <b>ПР-2</b> — почему и держится ли под давлением (стресс-тест Агеева). <b>Развилка</b> («Крепость»/«Вторая кривая»/своя) — это <b>не отдельный балл</b>, а ось всего финала: на неё ссылается холл и три разговора, из неё собирается документ стратегии.',
       tip: 'Разговор идёт только вперёд — зафиксированные шаги залочены. Это by design, а не баг.' },
-    { file: 'station3.html', label: '3 · Холл трёх разговоров', tag: 'Свободный порядок',
+    { file: 'station3.html', label: '3 · Холл трёх разговоров', tag: 'Фиксированный порядок',
       abilities: [],
-      how: 'Хаб: три разговора в любом порядке, <b>но все три обязательны</b> (п.10) — финализировать стратегию можно только пройдя каждый; кнопка показывает, сколько осталось. Плашка вверху ссылается на выбранную позицию — «слух разошёлся по этажам».',
-      tip: 'Названия комнат — про сюжет, не про способность: чтобы не подсказывать, что здесь меряется.' },
+      how: 'Хаб: три разговора в <b>фиксированном</b> порядке (Будущее → Путь → Альтернативы) — следующий открывается только после завершения предыдущего, чтобы не рвать ход мысли. Все три обязательны (п.10): финализировать стратегию можно только пройдя каждый. Плашка вверху ссылается на выбранную позицию — «слух разошёлся по этажам».',
+      tip: 'Названия комнат — про сюжет, не про способность: чтобы не подсказывать, что здесь меряется. «Путь» не последним — чтобы не попадал в хвост усталости.' },
     { file: 'room-future.html', label: 'Коридор Лемеха', tag: 'Навык МК',
       abilities: ['mk1', 'mk2'],
-      how: 'Навык «Моделирование будущего». <b>МК-1</b> — как далеко горизонт рассуждения. <b>МК-2</b> — тип мышления о будущем (экстраполяция / образ / сценарии / «другая реальность»). Реплика Лемеха подставляет <b>вашу</b> позицию с развилки. Горизонт намеренно не подсказывается — участник сам решает, как далеко зайти.',
+      how: 'Навык «Моделирование будущего». <b>МК-1</b> — горизонт рассуждения + <b>амбициозность</b> цели (на какой результат готов работать, даже если застанет его не он, и обоснование направления). <b>МК-2</b> — тип мышления о будущем (экстраполяция / образ / 2–3 разных сценария). Реплика Лемеха подставляет <b>вашу</b> позицию с развилки. Горизонт и амбиция не подсказываются — участник сам задаёт планку.',
       tip: 'Обратите внимание: текст реплики меняется в зависимости от позиции — переключите профиль и сравните.' },
     { file: 'room-alternatives.html', label: 'Очередь в «Прожектор»', tag: 'Навык ГА',
       abilities: ['ga1', 'ga2'],
@@ -381,10 +381,10 @@
       abilities: ['pp1', 'pp2'],
       how: 'Навык «Путь к цели». <b>ПП-1</b> — декомпозиция: текущее → целевое состояние + этапы. <b>ПП-2</b> — барьеры и ресурсы, связка «барьер → чем перекрыть». Здесь есть реальный структурный каркас (в отличие от МК/ГА), потому что граничные тесты ПП — про структуру и содержание, а не про спонтанность.',
       tip: 'Каркас организует текст участника, но связность этапов и качество барьер→ресурс по-прежнему решает ИИ.' },
-    { file: 'station3.html#finalize', label: 'Финал · Документ стратегии', tag: 'Сборка + контроль',
+    { file: 'station3.html#finalize', label: 'Финал · StratOS-документ', tag: 'Сборка + контроль',
       abilities: [],
-      how: 'Документ стратегии собирается из решений всего раунда вокруг <b>одной</b> позиции: позиция+критерии → первый ход → куда ведёт → что отвергли → путь → барьеры/опора. Поле «защиты» — это <b>контрольный вопрос</b> (§7–8 методологии): пере-оценивает ПР-2/МК-2/ГА-1 на глубине; при расхождении с основными оценками ≥2 включается арбитр-ИИ.',
-      tip: 'Это и есть ответ на «что вообще получилось» — не три несвязанных ответа, а единый документ.' }
+      how: 'Финал — <b>редактируемый StratOS-документ</b> (fp ▸ stratos): ответы всего раунда автоматически собираются в артефакты StratOS (горизонт, БАЦ, декомпозиция по ССП, текущее состояние, фокус через отказ, ценностное предложение, проекты, риски), участник может свести нестыковки и отредактировать прямо здесь. Поле «защиты» — <b>контрольный вопрос</b> (§7–8): пере-оценивает ПР-2/МК-2/ГА-1 на глубине; при расхождении ≥2 включается арбитр-ИИ.',
+      tip: 'Оценка целостности правки и PDF-выгрузка — отдельный трек (пока не считается). Отсылка к продукту StratOS.' }
   ];
 
   var ABILITY_NAMES = {
@@ -418,34 +418,34 @@
   // ---------- стили экскурсионного UI (инжектим, styles.css не трогаем) ----------
 
   var css = '' +
-    '.demo-bar{position:fixed;left:0;right:0;bottom:0;z-index:99998;background:#12141a;color:#fff;' +
-      'display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;padding:10px 16px;font-family:system-ui,sans-serif;' +
-      'font-size:13px;box-shadow:0 -2px 14px rgba(0,0,0,.25);max-height:40vh;overflow:auto;}' +
-    '.demo-bar b{color:#c8f560;}' +
+    '.demo-bar{position:fixed;left:0;right:0;bottom:0;z-index:99998;background:#181818;color:#fff;' +
+      'display:flex;align-items:center;flex-wrap:wrap;gap:10px 12px;padding:10px 16px;font-family:"Inter Tight",system-ui,sans-serif;' +
+      'font-size:13px;box-shadow:0 -1px 0 rgba(0,0,0,.25);max-height:40vh;overflow:auto;}' +
+    '.demo-bar b{color:#ff4800;}' +
     '.demo-bar .demo-spacer{flex:1;}' +
-    '.demo-bar button,.demo-bar select{font:inherit;border-radius:8px;border:1px solid #3a3f4b;' +
-      'background:#1c1f27;color:#fff;padding:7px 12px;cursor:pointer;}' +
-    '.demo-bar button:hover{background:#262a34;}' +
+    '.demo-bar button,.demo-bar select{font:inherit;border-radius:4px;border:1px solid #3a3f4b;' +
+      'background:#242832;color:#fff;padding:7px 12px;cursor:pointer;}' +
+    '.demo-bar button:hover{background:#2e333f;}' +
     '.demo-bar button:disabled{opacity:.4;cursor:default;}' +
-    '.demo-bar .demo-primary{background:#c8f560;color:#12141a;border-color:#c8f560;font-weight:700;}' +
+    '.demo-bar .demo-primary{background:#ff4800;color:#fff;border-color:#ff4800;font-weight:700;}' +
     '.demo-bar .demo-exit{border-color:#6b3a3a;color:#ffb4b4;}' +
     '.demo-bar select{max-width:190px;}' +
-    '.demo-badge{position:fixed;top:0;left:0;right:0;z-index:99997;background:#c8f560;color:#12141a;' +
-      'text-align:center;font:700 12px system-ui,sans-serif;letter-spacing:.04em;padding:4px;}' +
+    '.demo-badge{position:fixed;top:0;left:0;right:0;z-index:99997;background:#ff4800;color:#fff;' +
+      'text-align:center;font:700 12px "Inter Tight",system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:4px;}' +
     '.demo-note{position:fixed;right:16px;bottom:64px;z-index:99998;width:340px;max-width:calc(100vw - 32px);' +
-      'background:#fff;color:#1a1e26;border:1px solid #d6dbe2;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);' +
-      'font-family:system-ui,sans-serif;overflow:hidden;}' +
+      'background:#fff;color:#181818;border:1px solid #e7e7e7;border-radius:4px;box-shadow:0 6px 20px rgba(0,0,0,.12);' +
+      'font-family:"Inter Tight",system-ui,sans-serif;overflow:hidden;}' +
     '.demo-note-head{display:flex;align-items:center;justify-content:space-between;gap:8px;' +
-      'padding:11px 14px;background:#12141a;color:#fff;cursor:pointer;}' +
-    '.demo-note-head .demo-note-tag{font:700 11px system-ui;letter-spacing:.05em;text-transform:uppercase;color:#c8f560;flex:1;min-width:0;}' +
+      'padding:11px 14px;background:#181818;color:#fff;cursor:pointer;}' +
+    '.demo-note-head .demo-note-tag{font:700 11px "Inter Tight",system-ui;letter-spacing:.06em;text-transform:uppercase;color:#ff4800;flex:1;min-width:0;}' +
     '.demo-note-head .demo-note-toggle{font-size:15px;opacity:.7;}' +
     '.demo-note-body{padding:13px 15px;font-size:13.5px;line-height:1.55;max-height:52vh;overflow:auto;}' +
-    '.demo-note-body h5{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#7a8393;}' +
+    '.demo-note-body h5{margin:0 0 4px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:#9a9da2;}' +
     '.demo-note-how{margin:0 0 12px;}' +
-    '.demo-note-tip{margin:0 0 12px;padding:9px 11px;background:#f3f6ea;border-radius:9px;font-size:12.5px;color:#495a2a;}' +
+    '.demo-note-tip{margin:0 0 12px;padding:9px 11px;background:#fff2ec;border-radius:4px;font-size:12.5px;color:#6b6e73;}' +
     '.demo-levels{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}' +
-    '.demo-levels span{font-size:11.5px;background:#eef1f5;border-radius:6px;padding:3px 7px;}' +
-    '.demo-levels span b{color:#12141a;}' +
+    '.demo-levels span{font-size:11.5px;background:#f5f5f6;border-radius:4px;padding:3px 7px;}' +
+    '.demo-levels span b{color:#181818;}' +
     '.demo-note.collapsed .demo-note-body{display:none;}' +
     'body{padding-bottom:56px!important;}';
 
@@ -481,7 +481,7 @@
     ['station1', 'station2', 'station3', 'room_future', 'room_alternatives', 'room_path'].forEach(function (k) {
       localStorage.removeItem('imp_' + k + '_intro_seen_' + bib);
     });
-    location.href = 'qa.html';
+    location.href = 'vitrina.html';
   }
 
   function buildUI() {

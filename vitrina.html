@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Витрина — futureproof · i(m)perfect · «Искра»</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=4" />
+<style>
+  .vit { max-width: 1000px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 48px); }
+  .vit-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
+  .vit-sec { font-size: 11px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--muted-soft); }
+  .vit-hero { padding: 48px 0 8px; }
+  .vit-hero h1 { font-size: clamp(36px, 6vw, 68px); font-weight: 800; text-transform: uppercase; letter-spacing: -.02em; line-height: .98; margin: 18px 0 0; }
+  .vit-hero h1 .hl { color: var(--accent); }
+  .vit-sub { font-size: 18px; line-height: 1.55; color: var(--muted); max-width: 60ch; margin-top: 20px; }
+  .vit-sub b { color: var(--ink); }
+  .vit-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--radius); overflow: hidden; margin: 44px 0 0; }
+  .vit-cell { background: var(--paper); padding: 22px 24px; }
+  .vit-cell .n { font-size: 30px; font-weight: 800; letter-spacing: -.01em; }
+  .vit-cell .l { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .vit-sec-h { font-size: 11px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--muted-soft); padding-top: 26px; border-top: 1px solid var(--hairline); margin: 48px 0 18px; }
+  .vit-day { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .vit-step { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 18px 20px; }
+  .vit-step .sn { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .vit-step h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .vit-step p { font-size: 13.5px; color: var(--muted); }
+  /* демо-запуск */
+  .vit-demo { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 24px 26px; margin: 44px 0 0; }
+  .vit-demo h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  .vit-demo p { font-size: 14px; color: var(--muted); max-width: 64ch; margin-bottom: 18px; }
+  .vit-profiles { display: flex; gap: 12px; flex-wrap: wrap; }
+  .vit-prof { flex: 1; min-width: 180px; text-align: left; background: var(--paper); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; font-family: inherit; }
+  .vit-prof:hover { border-color: var(--ink); }
+  .vit-prof .pt { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .vit-prof .pd { font-size: 12.5px; color: var(--muted-soft); margin-top: 4px; line-height: 1.4; }
+  .vit-demo-note { font-size: 12px; color: var(--muted-soft); margin-top: 14px; }
+  /* окно ИИ мини */
+  .vit-win { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 24px 26px; margin: 44px 0 0; }
+  .vit-win h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .vit-win p { font-size: 14px; color: var(--muted); max-width: 64ch; margin-bottom: 18px; }
+  .vit-mini { position: relative; height: 22px; max-width: 520px; }
+  .vit-mini .base { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--hairline); transform: translateY(-50%); }
+  .vit-mini .bnd { position: absolute; top: 50%; transform: translateY(-50%); height: 18px; background: #eaf3fb; border: 1px solid #bcd9f2; border-radius: 8px; left: 40%; right: 18%; }
+  .vit-mini .you { position: absolute; top: 50%; left: 64%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--ink); }
+  .vit-mini-leg { display: flex; gap: 22px; margin-top: 12px; font-size: 12.5px; color: var(--muted); }
+  .vit-mini-leg .d { color: var(--accent); font-weight: 700; }
+  .vit-mini-leg .sw { display: inline-block; width: 16px; height: 10px; border-radius: 3px; background: #eaf3fb; border: 1px solid #bcd9f2; vertical-align: -1px; margin-right: 5px; }
+  .vit-foot { border-top: 1px solid var(--hairline); margin-top: 52px; padding: 20px 0 40px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted-soft); }
+  .vit-foot a { color: var(--ink); text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="vit">
+
+    <header class="vit-head">
+      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      <div class="vit-sec">Витрина · демо</div>
+    </header>
+
+    <div class="vit-hero">
+      <p class="kicker">Диагностика стратегического мышления</p>
+      <h1>Стратегическое<br>мышление — <span class="hl">в деле</span></h1>
+      <p class="vit-sub"><b>i(m)perfect</b> — однодневная диагностика стратегического мышления руководителя на живом бизнес-кейсе «Искра». Без ИИ-помощи, наедине с материалами. В конце — профиль по пяти навыкам и <b>окно ИИ</b>: где вы сильнее машины, а где она вас догнала.</p>
+    </div>
+
+    <div class="vit-strip">
+      <div class="vit-cell"><div class="n">5</div><div class="l">навыков стратегического мышления</div></div>
+      <div class="vit-cell"><div class="n">10</div><div class="l">способностей, уровни L1–L5</div></div>
+      <div class="vit-cell"><div class="n">~2 ч</div><div class="l">один кейс, три станции</div></div>
+    </div>
+
+    <div class="vit-sec-h">Как устроен день</div>
+    <div class="vit-day">
+      <div class="vit-step"><div class="sn">Станция 1</div><h3>Вычитка и карта проблем</h3><p>Читаете материалы «Искры» и собираете карту: что происходит и как связано.</p></div>
+      <div class="vit-step"><div class="sn">Станция 2</div><h3>Встреча с Агеевым</h3><p>Приоритеты, защита выбора под давлением и рекомендация по развилке.</p></div>
+      <div class="vit-step"><div class="sn">Финал</div><h3>Три разговора + стратегия</h3><p>Раскрываете грани позиции и собираете всё в StratOS-документ стратегии.</p></div>
+    </div>
+
+    <div class="vit-demo">
+      <h3>Пройти как участник</h3>
+      <p>Демо-прохождение: все станции предзаполнены, блокировок нет — ходите по любым экранам и смотрите платформу глазами руководителя. Данные демо локальные, на сервер не уходят.</p>
+      <div class="vit-profiles">
+        <button type="button" class="vit-prof" data-profile="strong"><div class="pt">Сильный профиль</div><div class="pd">развёрнутые ответы, дальний горизонт, петли связей</div></button>
+        <button type="button" class="vit-prof" data-profile="mid"><div class="pt">Средний профиль</div><div class="pd">верные, но более поверхностные ответы</div></button>
+        <button type="button" class="vit-prof" data-profile="weak"><div class="pt">Слабый профиль</div><div class="pd">общие слова без опоры на кейс — видно «полы» L1</div></button>
+      </div>
+      <p class="vit-demo-note" id="vitDemoErr" style="display:none;"></p>
+    </div>
+
+    <div class="vit-win">
+      <h3>Что такое окно ИИ</h3>
+      <p>Тот же кейс проходят пять эталонных нейросетей. Их разброс — от слабейшей к сильнейшей — и есть окно ИИ. Ваш результат ложится на ту же шкалу: внутри окна вы наравне с машиной, выше или ниже — там, где различаетесь.</p>
+      <div class="vit-mini"><span class="base"></span><span class="bnd"></span><span class="you"></span></div>
+      <div class="vit-mini-leg"><span><span class="d">●</span> вы</span><span><span class="sw"></span> окно ИИ</span></div>
+    </div>
+
+    <footer class="vit-foot">
+      <div>© futureproof · сессия «Искра»</div>
+      <div><a href="index.html">← ко входу</a> &nbsp;·&nbsp; <a href="facilitator.html">кабинет фасилитатора</a></div>
+    </footer>
+
+  </div>
+</div>
+
+<script src="js/main.js?v=1"></script>
+<script>
+/* Витрина: запуск демо-прохода. Ставит флаг imp_demo — demo.js на станции 1
+   подхватит его, сеет выбранный профиль и снимает гейты (проход без блокировок). */
+(function () {
+  document.querySelectorAll('.vit-prof').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      try {
+        sessionStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: btn.getAttribute('data-profile'), seededFor: null }));
+        localStorage.removeItem('imp_demo');
+      } catch (e) {}
+      window.location.href = 'station1.html';
+    });
+  });
+})();
+</script>
+</body>
+</html>
