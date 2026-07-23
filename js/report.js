@@ -24,7 +24,7 @@
   var FRONTIER = 0;            // индекс передовой модели (Opus)
   var MASS = [1, 2, 3, 4];     // массовые бизнес-модели: окно = их размах [min,max]
   var AI_META = {
-    massN: 4, measuredAt: 'июль 2026', caseVersion: 'v1',
+    massN: 4, measuredAt: 'июль 2026', caseVersion: 'v2',
     massModels: 'Haiku, ChatGPT, Алиса (YandexGPT), GigaChat',
     frontier: 'Claude Opus 4.8', frontierShort: 'Opus'
   };
