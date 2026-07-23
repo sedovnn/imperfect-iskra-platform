@@ -754,9 +754,8 @@
   }
 
   function goToLinksPhase() {
-    if (problemsWithText().length === 0) {
-      if (!window.confirm('Нет ни одной описанной проблемы. Перейти к связкам всё равно?')) return;
-    }
+    // переход уже гейтится: кнопка «Дальше: связки →» неактивна без описанной
+    // проблемы (updateGate). Попап-обход убран — обходить нечего.
     showLinksPhase();
   }
 
@@ -775,10 +774,8 @@
   }
 
   function finishStation() {
-    var hasTags = state.highlights.some(function (h) { return h.tag; });
-    if (!hasTags && state.connections.length === 0) {
-      if (!window.confirm('Вы не оценили ни одной проблемы и не собрали ни одной связки. Завершить станцию всё равно?')) return;
-    }
+    // связки/оценки НЕ форсируем: их отсутствие — честный низкий АК-2, а не стоп.
+    // Защита от «пустого прогона» — на входе в связки (нужна ≥1 описанная проблема).
     state.finished = true;
     state.finishedAt = new Date().toISOString();
     saveState();

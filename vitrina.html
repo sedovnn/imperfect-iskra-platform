@@ -30,12 +30,13 @@
   .vit-step h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
   .vit-step p { font-size: 13.5px; color: var(--muted); }
   /* демо-запуск */
-  .vit-demo { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 24px 26px; margin: 44px 0 0; }
-  .vit-demo h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  /* демо-запуск — главное действие витрины: вермилион, чтобы не терялся среди служебных блоков */
+  .vit-demo { border: 1px solid var(--accent-line); background: var(--accent-tint); border-radius: var(--radius); padding: 24px 26px; margin: 44px 0 0; }
+  .vit-demo h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--accent); }
   .vit-demo p { font-size: 14px; color: var(--muted); max-width: 64ch; margin-bottom: 18px; }
   .vit-profiles { display: flex; gap: 12px; flex-wrap: wrap; }
   .vit-prof { flex: 1; min-width: 180px; text-align: left; background: var(--paper); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; font-family: inherit; }
-  .vit-prof:hover { border-color: var(--ink); }
+  .vit-prof:hover { border-color: var(--accent); }
   .vit-prof .pt { font-size: 14px; font-weight: 700; color: var(--ink); }
   .vit-prof .pd { font-size: 12.5px; color: var(--muted-soft); margin-top: 4px; line-height: 1.4; }
   .vit-demo-note { font-size: 12px; color: var(--muted-soft); margin-top: 14px; }
@@ -56,8 +57,8 @@
   .vit-example { margin-top: 18px; font-size: 13px; }
   .vit-example a { color: var(--jb-ink); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--band-line); }
   .vit-example a:hover { border-bottom-color: var(--jb-ink); }
-  .vit-foot { border-top: 1px solid var(--band-line); margin-top: 52px; padding: 20px 0 40px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--jb-ink); }
-  .vit-foot a { color: var(--jb-ink); text-decoration: none; font-weight: 600; }
+  .vit-foot { border-top: 1px solid var(--hairline); margin-top: 52px; padding: 20px 0 40px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .vit-foot a { color: var(--ink); text-decoration: none; font-weight: 600; }
 </style>
 </head>
 <body>
