@@ -1401,6 +1401,28 @@ button.hub-room-card {
   margin-top: 14px;
 }
 
+/* StratOS-документ финала: редактируемые артефакты (fp ▸ stratos). */
+.stratos-doc { margin: 0 0 4px; }
+.stratos-art { padding: 14px 0; border-top: 1px solid var(--hairline); }
+.stratos-art:first-child { border-top: none; padding-top: 4px; }
+.stratos-art-h { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); margin-bottom: 8px; }
+.stratos-hint { font-weight: 400; letter-spacing: 0; color: var(--muted-soft); font-size: 12px; }
+.stratos-in, .stratos-ta {
+  width: 100%;
+  font-family: inherit;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  background: var(--paper);
+  resize: vertical;
+}
+.stratos-in { height: 44px; }
+.stratos-in:focus, .stratos-ta:focus { outline: none; border-color: var(--ink); }
+.stratos-in:disabled, .stratos-ta:disabled { background: var(--soft); color: var(--muted); }
+
 .finalize-actions {
   display: flex;
   justify-content: space-between;

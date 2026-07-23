@@ -51,7 +51,7 @@
       var raw = localStorage.getItem(storageKey(bib));
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    return { finished: false, finalDefense: '', startedAt: new Date().toISOString() };
+    return { finished: false, finalDefense: '', stratos: null, startedAt: new Date().toISOString() };
   }
 
   var backendSyncTimer = null;
@@ -213,77 +213,86 @@
       try { var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch (e) { return null; }
     }
 
-    // Собираем НАСТОЯЩИЙ документ стратегии из решений всего раунда, в порядке
-    // как читалась бы стратегическая записка: позиция → первый ход → куда ведёт
-    // (и если не так) → почему это сработает → путь → барьеры/опора. Каждый
-    // блок — из своего источника (станция 2 + три разговора), всё вокруг ОДНОЙ
-    // выбранной позиции. Пустые блоки не показываем.
-    function buildRecapHtml() {
+    // ФИНАЛ = окно fp ▸ stratos: ответы раунда собираются в НАСТОЯЩИЙ
+    // StratOS-документ стратегии (артефакты StratOS по карте мастер-плана §7),
+    // участник РЕДАКТИРУЕТ их на месте и финализирует. Правки живут в
+    // state.stratos (переживают перезагрузку). Дельта правки — будущий процессный
+    // сигнал/целостность (пока не считается — ждём билды §3 и ответы Егора).
+    function strVal(x) { return (x == null ? '' : String(x)).trim(); }
+
+    function stratosSources() {
       var s2 = readJson(station2Key(session.bib));
-      var rf = readJson('imp_room_future_' + session.bib);
-      var ra = readJson('imp_room_alternatives_' + session.bib);
-      var rp = readJson('imp_room_path_' + session.bib);
-      var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
-      var cards = [];
-      function meta(label, val) { return '<div class="fac-card-meta"><span>' + label + ': ' + esc(val) + '</span></div>'; }
+      var cardById = {};
+      (((s2 && s2.cardsSnapshot) || [])).forEach(function (x) { cardById[x.id] = x; });
+      return {
+        s1: readJson('imp_station1_' + session.bib),
+        s2: s2,
+        rf: readJson('imp_room_future_' + session.bib),
+        ra: readJson('imp_room_alternatives_' + session.bib),
+        rp: readJson('imp_room_path_' + session.bib),
+        stance: (window.imp.stanceOf && window.imp.stanceOf(s2)) || null,
+        cardById: cardById
+      };
+    }
 
-      // 1. Позиция по развилке + критерии
-      if (stance) {
-        var c = '<p><b>Ваша позиция:</b> ' + esc(stance.label) + '</p>';
-        if (s2 && s2.stanceCriteria && s2.stanceCriteria.trim()) c += meta('критерии', s2.stanceCriteria);
-        cards.push(c);
+    // Артефакты StratOS + откуда предзаполняем (карта §7 спека). Порядок — как в
+    // «Обзоре стратегии» StratOS: горизонт → БАЦ → декомпозиция → текущее
+    // состояние → фокус через отказ → ценностное предложение → проекты → риски.
+    var STRATOS_FIELDS = [
+      { key: 'horizon', label: 'Горизонт планирования', kind: 'input',
+        seed: function (s) { return strVal(s.rf && s.rf.horizon).split('\n')[0]; } },
+      { key: 'bhag', label: 'БАЦ — большая амбициозная цель', rows: 3,
+        hint: 'формула: «К [горизонту] мы станем …, чтобы …»',
+        seed: function (s) { var st = s.stance ? s.stance.label : ''; var v = strVal(s.rf && s.rf.vision); return (st ? st + ' — ' : '') + v; } },
+      { key: 'decomp', label: 'Декомпозиция на метрики', rows: 4,
+        hint: 'по направлениям ССП: финансы · клиенты/рынок · продукт/процессы · люди/технологии',
+        seed: function (s) { var p = []; if (s.rp && strVal(s.rp.targetState)) p.push('Цель: ' + strVal(s.rp.targetState)); var t = (((s.s2 && s.s2.priorities) || []).map(function (x) { return strVal(x.target); }).filter(Boolean)); if (t.length) p.push('Метрики приоритетов: ' + t.join('; ')); return p.join('\n'); } },
+      { key: 'currentWeak', label: 'Текущее состояние — слабые места', rows: 3,
+        seed: function (s) { return (((s.s1 && s.s1.cards) || []).map(function (c) { return strVal(c.problem || c.text); }).filter(Boolean).slice(0, 8).map(function (x) { return '• ' + x; }).join('\n')); } },
+      { key: 'currentStrong', label: 'Текущее состояние — сильные стороны и ресурсы', rows: 3,
+        seed: function (s) { return (((s.rp && s.rp.enablers) || []).map(function (e) { return strVal(typeof e === 'string' ? e : (e && e.text)); }).filter(Boolean).map(function (x) { return '• ' + x; }).join('\n')); } },
+      { key: 'currentActions', label: 'Первые действия', rows: 3,
+        seed: function (s) { var p = []; if (s.s2 && strVal(s.s2.firstAction)) p.push('Первый ход: ' + strVal(s.s2.firstAction)); var st = (((s.rp && s.rp.stages) || []).map(function (x) { return strVal(x.description); }).filter(Boolean)); if (st.length) p.push('Этапы: ' + st.join('; ')); return p.join('\n'); } },
+      { key: 'focusRefusal', label: 'Фокус через отказ', rows: 3,
+        hint: 'от чего сознательно отказываемся и по какому правилу',
+        seed: function (s) { var s2 = s.s2; if (!s2) return ''; var rej = ((s2.rejected || []).map(function (r) { var c = s.cardById[r.cardId]; return c ? strVal(c.text) : ''; }).filter(Boolean)); var out = []; if (rej.length) out.push('Отказываемся от: ' + rej.join('; ')); if (strVal(s2.rejectionRule)) out.push('Правило отсечения: ' + strVal(s2.rejectionRule)); return out.join('\n'); } },
+      { key: 'valueProp', label: 'Ценностное предложение', rows: 3,
+        seed: function (s) { var st = s.stance ? s.stance.label : ''; var cr = strVal(s.s2 && s.s2.stanceCriteria); return st + (cr ? '\nКритерии: ' + cr : ''); } },
+      { key: 'projects', label: 'Проекты / дорожная карта', rows: 3,
+        seed: function (s) { return (((s.rp && s.rp.stages) || []).filter(function (x) { return strVal(x.description); }).map(function (x, i) { return (i + 1) + ') ' + strVal(x.description) + (strVal(x.doneWhen) ? ' — готово когда: ' + strVal(x.doneWhen) : ''); }).join('\n')); } },
+      { key: 'risks', label: 'Развороты и риски', rows: 3,
+        seed: function (s) { var out = []; if (strVal(s.rf && s.rf.answer2)) out.push('Развороты: ' + strVal(s.rf.answer2)); var b = (((s.rp && s.rp.barriers) || []).map(function (x) { return strVal(typeof x === 'string' ? x : (x && x.text)); }).filter(Boolean)); if (b.length) out.push('Барьеры: ' + b.join('; ')); return out.join('\n'); } }
+    ];
+
+    function seedStratos() {
+      var s = stratosSources();
+      var out = {};
+      STRATOS_FIELDS.forEach(function (f) { out[f.key] = f.seed(s) || ''; });
+      return out;
+    }
+
+    // Рендер редактируемого StratOS-документа. readOnly — режим просмотра после
+    // финализации. Предзаполняет из state.stratos (собирает при первом открытии).
+    function renderStratosDoc(readOnly) {
+      if (!state.stratos) { state.stratos = seedStratos(); saveState(); }
+      var doc = state.stratos;
+      strategyRecapEl.innerHTML = STRATOS_FIELDS.map(function (f) {
+        var val = doc[f.key] || '';
+        var head = '<div class="stratos-art-h">' + f.label +
+          (f.hint ? ' <span class="stratos-hint">' + f.hint + '</span>' : '') + '</div>';
+        var field = f.kind === 'input'
+          ? '<input class="stratos-in" data-sk="' + f.key + '"' + (readOnly ? ' disabled' : '') + ' value="' + esc(val) + '" />'
+          : '<textarea class="stratos-ta" data-sk="' + f.key + '" rows="' + (f.rows || 3) + '"' + (readOnly ? ' disabled' : '') + '>' + esc(val) + '</textarea>';
+        return '<div class="stratos-art">' + head + field + '</div>';
+      }).join('');
+      if (!readOnly) {
+        strategyRecapEl.querySelectorAll('[data-sk]').forEach(function (el) {
+          el.addEventListener('input', function () {
+            state.stratos[el.getAttribute('data-sk')] = el.value;
+            saveState();
+          });
+        });
       }
-
-      // 2. Первый ход — приоритет №1 со станции 2
-      if (s2 && (s2.priorities || []).length) {
-        var cardById = {};
-        (s2.cardsSnapshot || []).forEach(function (x) { cardById[x.id] = x; });
-        var top = s2.priorities[0];
-        var topText = top && cardById[top.cardId] ? cardById[top.cardId].text : null;
-        if (topText) {
-          // приоритет №1 — это ПРОБЛЕМА; «первый ход» — действие, которым её открывают
-          var c2 = '<p><b>Приоритет №1:</b> ' + esc(topText) + '</p>';
-          if (s2.firstAction && s2.firstAction.trim()) c2 += meta('первый ход', s2.firstAction);
-          if (s2.rationale && s2.rationale.trim()) c2 += meta('почему первым', s2.rationale);
-          cards.push(c2);
-        }
-      }
-
-      // 3. Куда это ведёт + запасной вариант (Коридор Лемеха, МК)
-      if (rf && (rf.answer1 || rf.answer2)) {
-        var c3 = '';
-        if (rf.answer1) c3 += '<p><b>Куда это ведёт:</b> ' + esc(rf.answer1) + '</p>';
-        if (rf.answer2) c3 += meta('если пойдёт не так', rf.answer2);
-        if (c3) cards.push(c3);
-      }
-
-      // 4. Позиция под сомнением: почему сработает (Очередь в «Прожектор», ГА)
-      if (ra && ra.answer1) {
-        cards.push('<p><b>Почему это сработает:</b> ' + esc(ra.answer1) + '</p>');
-      }
-
-      // 5. Путь: текущее → целевое + этапы (Черновик к комитету, ПП)
-      if (rp && (rp.currentState || rp.targetState || (rp.stages || []).length)) {
-        var c5 = '<p><b>Путь:</b> ' + esc((rp.currentState || '—') + ' → ' + (rp.targetState || '—')) + '</p>';
-        var stages = (rp.stages || []).filter(function (s) { return s.description; });
-        if (stages.length) c5 += meta('этапы', stages.map(function (s, i) { return (i + 1) + ') ' + s.description; }).join('; '));
-        cards.push(c5);
-      }
-
-      // 6. Барьеры и опора (Черновик к комитету, ПП)
-      if (rp) {
-        var barriers = (rp.barriers || []).filter(function (b) { return b.text; });
-        var enablers = (rp.enablers || []).filter(function (e) { return e.text; });
-        if (barriers.length || enablers.length) {
-          var c6 = '';
-          if (barriers.length) c6 += '<p><b>Барьеры:</b> ' + esc(barriers.map(function (b) { return b.text; }).join('; ')) + '</p>';
-          if (enablers.length) c6 += '<p style="margin-top:6px;"><b>Опора:</b> ' + esc(enablers.map(function (e) { return e.text; }).join('; ')) + '</p>';
-          cards.push(c6);
-        }
-      }
-
-      if (!cards.length) return '<p class="fac-detail-text" style="color:var(--muted-soft);">Пока пусто — вернитесь в холл, чтобы собрать материал.</p>';
-      return cards.map(function (c) { return '<div class="fac-card">' + c + '</div>'; }).join('');
     }
 
     var defenseEl = document.getElementById('finalDefense');
@@ -303,7 +312,7 @@
     var reviewMode = false; // «посмотреть стратегию ещё раз» после финализации
 
     openFinalizeBtn.addEventListener('click', function () {
-      strategyRecapEl.innerHTML = buildRecapHtml();
+      renderStratosDoc(false);
       document.getElementById('closeFinalizeBtn').textContent = '← Назад в холл';
       document.getElementById('finalizeBtn').style.display = '';
       reviewMode = false;
@@ -363,7 +372,7 @@
 
     // повторный просмотр собранной стратегии после финала — read-only (п.13)
     document.getElementById('reviewStrategyBtn').addEventListener('click', function () {
-      strategyRecapEl.innerHTML = buildRecapHtml();
+      renderStratosDoc(true);
       document.getElementById('finishOverlay').style.display = 'none';
       document.getElementById('finalizeBtn').style.display = 'none';
       if (defenseEl) defenseEl.disabled = true;
