@@ -1352,6 +1352,18 @@ button.hub-room-card {
   transform: none;
 }
 
+/* Плавающая кнопка продвижения раунда (снизу-справа): текст и панели скроллятся
+   под ней, действие всегда под рукой на длинной странице. position:fixed внутри
+   root'а фазы — прячется вместе с ним (display:none). */
+.round-fab { position: fixed; right: 24px; bottom: 24px; z-index: 60; }
+.round-fab .btn { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
+
+/* Язычки «Полный текст кейса» / «Мои ответы» в раунде 1 — только на фазе связок:
+   в фазе чтения кейс и так на экране, дублировать незачем. Гейт scoped к .round1-page,
+   чтобы в раундах 2–5 рельс оставался всегда видимым. */
+.round1-page .dock-rail { display: none; }
+.round1-page.phase-links .dock-rail { display: flex; }
+
 .gate-card.case-ref-card { max-width: 820px; }
 #caseRefPanel .case-content { margin-top: 8px; }
 
