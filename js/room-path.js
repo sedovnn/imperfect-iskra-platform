@@ -133,6 +133,17 @@
     // первый ход со станции 2 — подставляем как опору, чтобы путь не начинался с чистого листа
     var firstMove = (s2 && s2.firstAction ? String(s2.firstAction).trim() : '');
 
+    // ПРЕДЗАПОЛНЕНИЕ (relocate декомпозиции в дом): первый ход = первый этап пути.
+    // Данные 7 живых: этапы «Пути» пусты у 5/7, т.к. комната последняя и с чистого
+    // листа на усталости. Сеем первый этап из «первого хода» Станции 2, чтобы
+    // участник ДОРАБАТЫВАЛ, а не начинал с нуля. Один раз (флаг pathPrefilled);
+    // если удалит — не пересеваем.
+    if (!state.pathPrefilled && !state.finished && !(state.stages || []).length && firstMove) {
+      state.stages.push({ id: uid(), description: firstMove, rationale: '', doneWhen: '' });
+      state.pathPrefilled = true;
+      saveState();
+    }
+
     var introKey = 'imp_room_path_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
