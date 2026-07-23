@@ -2073,8 +2073,14 @@ button.hub-room-card {
 .station-body {
   flex: 1;
   display: grid;
-  grid-template-columns: 260px 1fr 1fr;
+  /* навигация у́же, колонка чтения кейса получает больше веса, чем рабочая область
+     (та полупустая, пока нет карточек) — иначе на ноутах чтение жалось при делении 1:1. */
+  grid-template-columns: 240px minmax(0, 1.5fr) minmax(0, 1fr);
   min-height: 0;
+}
+/* меньшие ноуты (до слома в 1 колонку на 980): ещё у́же навигация, ещё больше чтению */
+@media (max-width: 1180px) {
+  .station-body { grid-template-columns: 210px minmax(0, 1.6fr) minmax(0, 1fr); }
 }
 
 .case-pane {
