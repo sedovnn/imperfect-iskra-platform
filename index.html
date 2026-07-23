@@ -145,9 +145,11 @@
           sessionStorage.setItem('imp_current_session', JSON.stringify(session));
           localStorage.setItem('imp_current_session', JSON.stringify(session));
         } catch (err) {}
+        // установка на мышление — по участнику (не по браузеру), чтобы новый номер
+        // на общем/том же устройстве её увидел. Дом после входа — карта, не раунд 1.
         var seenIntro = false;
-        try { seenIntro = !!localStorage.getItem('imp_intro_seen'); } catch (err2) {}
-        window.location.href = seenIntro ? 'round1.html' : 'intro.html';
+        try { seenIntro = !!localStorage.getItem('imp_intro_seen_' + code); } catch (err2) {}
+        window.location.href = seenIntro ? 'map.html' : 'intro.html';
         return;
       }
       submitBtn.disabled = false;

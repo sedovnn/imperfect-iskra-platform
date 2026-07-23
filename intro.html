@@ -93,7 +93,10 @@
 <script>
   // запомнить, что установку показали — при следующем входе сразу станция 1
   document.getElementById('startBtn').addEventListener('click', function () {
-    try { localStorage.setItem('imp_intro_seen', '1'); } catch (e) {}
+    try {
+      var s = JSON.parse(localStorage.getItem('imp_current_session') || 'null');
+      if (s && s.bib) localStorage.setItem('imp_intro_seen_' + s.bib, '1');
+    } catch (e) {}
   });
 </script>
 </body>
