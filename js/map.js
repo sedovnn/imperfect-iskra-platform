@@ -263,10 +263,14 @@
 
     // Рендер редактируемого StratOS-документа. readOnly — режим просмотра после
     // финализации. Предзаполняет из state.stratos (собирает при первом открытии).
+    // Раскладка StratOS-дашборда: три колонки-смысла (артефакты §7 распределены по ним).
+    var STRATOS_COLS = { bhag: 1, horizon: 1, valueProp: 1, currentWeak: 2, currentStrong: 2, focusRefusal: 2, decomp: 3, currentActions: 3, projects: 3, risks: 3 };
+    var STRATOS_COL_TITLES = { 1: 'Куда идём', 2: 'Где мы сейчас', 3: 'Как движемся' };
+
     function renderStratosDoc(readOnly) {
       if (!state.stratos) { state.stratos = seedStratos(); saveState(); }
       var doc = state.stratos;
-      strategyRecapEl.innerHTML = STRATOS_FIELDS.map(function (f) {
+      function card(f) {
         var val = doc[f.key] || '';
         var head = '<div class="stratos-art-h">' + f.label +
           (f.hint ? ' <span class="stratos-hint">' + f.hint + '</span>' : '') + '</div>';
@@ -274,7 +278,11 @@
           ? '<input class="stratos-in" data-sk="' + f.key + '"' + (readOnly ? ' disabled' : '') + ' value="' + esc(val) + '" />'
           : '<textarea class="stratos-ta" data-sk="' + f.key + '" rows="' + (f.rows || 3) + '"' + (readOnly ? ' disabled' : '') + '>' + esc(val) + '</textarea>';
         return '<div class="stratos-art">' + head + field + '</div>';
-      }).join('');
+      }
+      strategyRecapEl.innerHTML = '<div class="stratos-grid">' + [1, 2, 3].map(function (col) {
+        return '<div class="stratos-col"><div class="stratos-col-h">' + STRATOS_COL_TITLES[col] + '</div>' +
+          STRATOS_FIELDS.filter(function (f) { return STRATOS_COLS[f.key] === col; }).map(card).join('') + '</div>';
+      }).join('') + '</div>';
       if (!readOnly) {
         strategyRecapEl.querySelectorAll('[data-sk]').forEach(function (el) {
           el.addEventListener('input', function () {
@@ -303,7 +311,7 @@
 
     openFinalizeBtn.addEventListener('click', function () {
       renderStratosDoc(false);
-      document.getElementById('closeFinalizeBtn').textContent = '← Назад в холл';
+      document.getElementById('closeFinalizeBtn').textContent = '← Назад к карте';
       document.getElementById('finalizeBtn').style.display = '';
       reviewMode = false;
       document.getElementById('stationRoot').style.display = 'none';

@@ -1301,7 +1301,7 @@ button.hub-room-card {
    молча схлопывались обратно в узкую 420px карточку независимо от заявленного
    здесь max-width. Составной селектор специфичнее одиночного класса — теперь
    порядок правил в файле не важен. */
-.gate-card.finalize-card { max-width: 680px; }
+.gate-card.finalize-card { max-width: 1080px; }
 
 /* «Ваша линия» — полоса решений под шапкой (spine.js), одинаковая на ст.2/3 и в
    комнатах. Приглушённая: серая подложка + волосяная линия, без лаймового сигнала
@@ -1442,8 +1442,12 @@ button.hub-room-card {
 
 /* StratOS-документ финала: редактируемые артефакты (fp ▸ stratos). */
 .stratos-doc { margin: 0 0 4px; }
-.stratos-art { padding: 14px 0; border-top: 1px solid var(--hairline); }
-.stratos-art:first-child { border-top: none; padding-top: 4px; }
+/* StratOS-дашборд: три колонки-смысла с карточками-артефактами (адаптация окна StratOS) */
+.stratos-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+.stratos-col { display: flex; flex-direction: column; gap: 12px; }
+.stratos-col-h { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 2px 0 0; }
+.stratos-art { padding: 14px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--paper); }
+@media (max-width: 860px) { .stratos-grid { grid-template-columns: 1fr; } }
 .stratos-art-h { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); margin-bottom: 8px; }
 .stratos-hint { font-weight: 400; letter-spacing: 0; color: var(--muted-soft); font-size: 12px; }
 .stratos-in, .stratos-ta {
