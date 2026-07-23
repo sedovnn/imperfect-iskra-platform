@@ -54,7 +54,22 @@
 </style>
 </head>
 <body>
-<div class="frame">
+
+<div class="gate" id="vitGate">
+  <div class="gate-card">
+    <p class="kicker">Витрина · служебное</p>
+    <h2>Введите пароль</h2>
+    <p class="section-lead" style="margin:0 0 20px;">Тот же пароль, что у кабинета фасилитатора.</p>
+    <div class="field">
+      <label for="vitPass">Пароль</label>
+      <input type="password" id="vitPass" autocomplete="off" />
+    </div>
+    <div class="form-error" id="vitPassErr">Неверный пароль.</div>
+    <button class="btn btn-primary btn-block" id="vitPassBtn">Войти →</button>
+  </div>
+</div>
+
+<div class="frame" id="vitContent" style="display:none;">
   <div class="vit">
 
     <header class="vit-head">
@@ -108,14 +123,43 @@
 </div>
 
 <script src="js/main.js?v=1"></script>
+<script src="js/api.js?v=1"></script>
 <script>
-/* Витрина: запуск демо-прохода. Ставит флаг imp_demo — demo.js на станции 1
-   подхватит его, сеет выбранный профиль и снимает гейты (проход без блокировок). */
+/* Витрина под паролем (как кабинет): пароль проверяется на бэкенде
+   (action 'verifyPassword') — в клиенте его нет. Контент виден только после входа.
+   Демо-запуск: флаг imp_demo → demo.js на станции 1 сеет профиль и снимает гейты. */
 (function () {
-  document.querySelectorAll('.vit-prof').forEach(function (btn) {
-    btn.addEventListener('click', function () {
+  var AUTH_KEY = 'imp_vitrina_auth';
+  var gate = document.getElementById('vitGate');
+  var content = document.getElementById('vitContent');
+  var input = document.getElementById('vitPass');
+  var btn = document.getElementById('vitPassBtn');
+  var err = document.getElementById('vitPassErr');
+
+  function reveal() { gate.style.display = 'none'; content.style.display = ''; }
+
+  if (sessionStorage.getItem(AUTH_KEY) === '1') reveal();
+
+  function submit() {
+    var pw = (input.value || '').trim();
+    if (!pw) { err.classList.add('show'); return; }
+    err.classList.remove('show');
+    // локально без бэкенда проверять негде — пропускаем (витрина/демо клиентские)
+    if (!window.imp.isApiConfigured()) { sessionStorage.setItem(AUTH_KEY, '1'); reveal(); return; }
+    btn.disabled = true; btn.textContent = 'Проверяю…';
+    window.imp.callApi('verifyPassword', { password: pw }).then(function (res) {
+      btn.disabled = false; btn.textContent = 'Войти →';
+      if (res && res.ok) { sessionStorage.setItem(AUTH_KEY, '1'); reveal(); }
+      else { err.classList.add('show'); input.focus(); }
+    });
+  }
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+
+  document.querySelectorAll('.vit-prof').forEach(function (b) {
+    b.addEventListener('click', function () {
       try {
-        sessionStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: btn.getAttribute('data-profile'), seededFor: null }));
+        sessionStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: b.getAttribute('data-profile'), seededFor: null }));
         localStorage.removeItem('imp_demo');
       } catch (e) {}
       window.location.href = 'station1.html';
