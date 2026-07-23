@@ -262,7 +262,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Агеев:</b> «Разложите: с чем идём к правлению в первую очередь, что — потом, а что честно откладываем. Не обязательно раскладывать всё — но порядок в приоритетах для меня важен».</p>' +
+        '<p class="s2-ageev"><b>Агеев:</b> «Разложите: с чем идём к совету в первую очередь, что — потом, а что честно откладываем. Не обязательно раскладывать всё — но порядок в приоритетах для меня важен».</p>' +
         '<div class="s2-columns">' +
           '<div class="s2-col" data-zone="pool"><h4>Карта</h4><p class="links-hint">неразобранное</p><div class="s2-list" data-list="pool"></div></div>' +
           '<div class="s2-col is-priorities" data-zone="priorities"><h4>Приоритеты</h4><p class="links-hint">порядок = ранг, максимум ' + MAX_PRIORITIES + '</p><div class="s2-list" data-list="priorities"></div></div>' +
@@ -352,7 +352,7 @@
         });
         block.querySelector('#commitSortBtn').addEventListener('click', function () {
           if (!state.priorities.length) {
-            window.alert('Агеев ждёт хотя бы один приоритет — с чем-то идти к правлению нужно.');
+            window.alert('Агеев ждёт хотя бы один приоритет — с чем-то идти к совету нужно.');
             return;
           }
           if (!window.confirm('Приоритеты зафиксируются, и разговор пойдёт дальше — вернуться и пересобрать список будет нельзя. Продолжаем?')) return;
@@ -412,7 +412,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Агеев</b> откидывается в кресле: «Теперь то, что вы услышите на правлении. Штерн скажет: „' + escapeHtml(topPriorityText()) + '“ — не горит. Подождём полгода, будет больше данных, вернёмся к вопросу. И часть правления его поддержит. Настаиваете, что это идёт первым, — или пересобираем список?»</p>' +
+        '<p class="s2-ageev"><b>Агеев</b> откидывается в кресле: «Теперь то, что вы услышите на совете. Штерн скажет: „' + escapeHtml(topPriorityText()) + '“ — не горит. Подождём полгода, будет больше данных, вернёмся к вопросу. И часть совета его поддержит. Настаиваете, что это идёт первым, — или пересобираем список?»</p>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Настаиваю: это идёт первым</label>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Пересоберу частично — вот что меняю, а что удерживаю</label>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Соглашусь пересобрать список</label>' +
@@ -466,7 +466,7 @@
       block.className = 's2-block';
       block.innerHTML =
         (stressReact ? '<p class="s2-ageev">' + stressReact + '</p>' : '') +
-        '<p class="s2-ageev"><b>Агеев</b> кладёт распечатку письма на стол: «И то, ради чего я, собственно, и звал. В правлении две позиции — вы их видели. „Крепость“: защищать рекламное ядро, „Миру“ на партнёрскую модель, железо свернуть. „Вторая кривая“: вынести устройства в отдельную компанию и строить новую выручку к 2030-му. Мне нужна ваша рекомендация — и два критерия, на которых она стоит. Считаете, что обе мимо, — так и скажите, но тогда предложите свою.»</p>' +
+        '<p class="s2-ageev"><b>Агеев</b> кладёт распечатку письма на стол: «И то, ради чего я, собственно, и звал. В совете директоров две позиции — вы их видели. „Крепость“: защищать рекламное ядро, „Миру“ на партнёрскую модель, железо свернуть. „Вторая кривая“: вынести устройства в отдельную компанию и строить новую выручку к 2030-му. Мне нужна ваша рекомендация — и два критерия, на которых она стоит. Считаете, что обе мимо, — так и скажите, но тогда предложите свою.»</p>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Крепость» — защищать рекламное ядро</label>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Вторая кривая» — ставка на новое направление</label>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="other"' + (state.stance === 'other' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Обе позиции неверны — предложу свою</label>' +
