@@ -86,7 +86,9 @@
           <span class="fac-waves-label">Потоки</span>
           <div class="fac-waves-list" id="facWavesList"></div>
           <form class="fac-wave-add" id="facWaveAddForm">
-            <input type="text" id="facWaveLabelInput" placeholder="напр. 25 июля, 11:00" />
+            <input type="text" id="facWaveNumInput" maxlength="3" inputmode="numeric" placeholder="001" title="Номер волны — 3 цифры" style="width:56px; text-align:center; font-weight:700;" />
+            <input type="text" id="facWaveNameInput" placeholder="название (напр. Поток 25 июля)" />
+            <label style="display:flex; gap:5px; align-items:center; font-size:12px; white-space:nowrap;"><input type="checkbox" id="facWaveAiInput" /> ИИ-прогоны</label>
             <button type="submit" class="btn btn-ghost">+ поток</button>
           </form>
         </div>
@@ -100,16 +102,6 @@
             <button class="btn btn-ghost btn-sm" id="facCreateBtn" type="button">Создать</button>
           </div>
           <div id="facCreateOut" style="margin-top:10px; font-size:12.5px;"></div>
-        </div>
-
-        <div class="fac-migrate" id="facMigrate" style="border:1px solid var(--band-line); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; background:var(--band);">
-          <span class="fac-waves-label">Код участника: волна + номер</span>
-          <p class="fac-toolbar-hint" style="margin:6px 0 10px;">Проставьте волнам 3-значный номер выше, затем «Сухой прогон» — увидите, как старые номера станут 6-значными (001347 и т.п.). «Применить» перепишет номера во всех листах после бэкапа.</p>
-          <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <button class="btn btn-ghost btn-sm" id="facMigrateDry" type="button">Сухой прогон</button>
-            <button class="btn btn-ghost btn-sm" id="facMigrateApply" type="button">Применить миграцию</button>
-          </div>
-          <div id="facMigrateOut" style="margin-top:10px; font-size:12.5px;"></div>
         </div>
 
         <div class="fac-toolbar">
@@ -158,6 +150,6 @@
 <script src="js/api.js?v=1"></script>
 <script src="js/report-texts.js?v=1"></script>
 <script src="js/report.js?v=5"></script>
-<script src="js/facilitator.js?v=12"></script>
+<script src="js/facilitator.js?v=13"></script>
 </body>
 </html>
