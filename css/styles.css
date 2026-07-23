@@ -3546,3 +3546,16 @@ tr.fac-row-ai td { background: var(--band); }
   .route-split { display: none; }
   .bib-demo { flex-direction: column; align-items: flex-start; }
 }
+
+/* Низкие экраны (ноуты ~768px по высоте): ужимаем вертикальные отступы шапки,
+   вступлений, гейтов и верх контента, чтобы плотные экраны меньше требовали скролла.
+   В конце файла — чтобы перебить базовые правила (напр. .case-content ниже по исходнику). */
+@media (max-height: 760px) {
+  .station-header { padding: 8px 24px; }
+  .gate-card { padding: 26px 34px; }
+  .station-intro { padding: 16px; }
+  .station-intro-inner { padding: 24px 32px; }
+  .hub-body { padding: 16px 32px 60px; }
+  .s2-body { padding: 16px 32px 60px; }
+  .case-content { padding: 18px 40px 16px; }
+}
