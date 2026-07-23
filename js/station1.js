@@ -74,7 +74,8 @@
 
   function syncStateToBackend() {
     if (!window.imp.isApiConfigured()) return;
-    window.imp.callApi('saveStation1', { bib: session.bib, state: state });
+    // name — имя из окна Агеева; бэкенд кладёт его в псевдоним (если пусто)
+    window.imp.callApi('saveStation1', { bib: session.bib, state: state, name: session.name || '' });
   }
 
   function saveCaseHtml() {
