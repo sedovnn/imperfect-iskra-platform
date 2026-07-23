@@ -230,6 +230,23 @@
     return !!(p.station1.akFlag || p.station2.prFlag);
   }
 
+  // Все причины «требует внимания судьи» для отметки в списке (не только внутри
+  // карточки): зависимости §9, расхождение контроля §7-8/кросс-комната, ИИ-маркер.
+  // Вермилион на строке = сюда листать; голубой ✓ = завершено, вопросов нет.
+  function attentionReasons(p) {
+    var r = [];
+    if (p.station1 && p.station1.akFlag) r.push('зависимость: АК-2 > АК-1');
+    if (p.station2 && p.station2.prFlag) r.push('зависимость: ПР-2 > ПР-1 + 1');
+    if (p.station3 && p.station3.controlFlag) r.push('расхождение контроля §7-8 / кросс-комната');
+    var ai = p.aiMarker && p.aiMarker.level;
+    if (ai === 'strong') r.push('признаки ИИ-помощи (сильные)');
+    else if (ai === 'soft') r.push('возможна ИИ-помощь');
+    return r;
+  }
+  function isFinishedAll(p) {
+    return !!(p.station3 && p.station3.finished);
+  }
+
   // «Итого» = сумма посчитанных навыков (§9). Навык = сумма двух его способностей
   // (2–10); итог = сумма пяти навыков = сумма 10 способностей, максимум 50.
   function skillScores(p) {
@@ -429,14 +446,21 @@
 
     view.forEach(function (p) {
       var tr = document.createElement('tr');
+      var reasons = attentionReasons(p);
+      var aiLv = p.aiMarker && p.aiMarker.level;
+      if (reasons.length) tr.className = 'fac-row--attn';
+      var mark = reasons.length
+        ? ' <span class="fac-row-flag" title="Требует внимания судьи: ' + escapeHtml(reasons.join('; ')) + '">⚑</span>'
+          + (aiLv ? ' <span class="fac-pill fac-ai-chip ' + (aiLv === 'strong' ? 'is-ai-strong' : 'is-ai-soft') +
+              '" title="Признаки ИИ-помощи — откуда вывод, см. карточку">⚡ ' + (aiLv === 'strong' ? 'ИИ' : 'ИИ?') + '</span>' : '')
+        : (isFinishedAll(p) ? ' <span class="fac-row-ok" title="Пройдено, вопросов нет">✓</span>' : '');
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
         '<td>' + escapeHtml(p.firstName + ' ' + p.lastName) + '</td>' +
         '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + '</td>' +
         '<td>' + progressPillsHtml(p) + '</td>' +
         '<td>' + skillMiniHtml(p) + '</td>' +
-        '<td>' + escapeHtml(formatTotalCompact(p)) +
-          (hasFlags(p) ? ' <span class="fac-card-warn" title="Нарушено ограничение зависимостей способностей — см. карточку участника">⚑</span>' : '') + '</td>';
+        '<td>' + escapeHtml(formatTotalCompact(p)) + mark + '</td>';
       tr.tabIndex = 0;
       tr.setAttribute('role', 'button');
       tr.setAttribute('aria-label', 'Открыть карточку участника ' + formatBib(p.bib) + ', ' + p.firstName + ' ' + p.lastName);
@@ -1145,13 +1169,58 @@
       : '<span class="fac-pill">' + escapeHtml(label) + ' —</span>';
   }
 
+  // Разбор note маркера: текст «человеческой» части + сигналы (JSON в хвосте
+  // «… [ {pasteRatio,typingCpm,editDensity,maxPasteChars,finalChars} ]»).
+  function parseAiNote(note) {
+    var raw = note || '', sig = null, text = raw;
+    var m = raw.match(/\[(\{[\s\S]*\})\]\s*$/);
+    if (m) {
+      try { sig = JSON.parse(m[1]); } catch (e) { sig = null; }
+      text = raw.replace(/\s*\[[\s\S]*\]\s*$/, '').trim();
+    }
+    return { text: text, sig: sig };
+  }
+
   // Чип маркера ИИ-помощи (процессный сигнал: вставка/скорость ввода). НЕ влияет на
   // балл — только подсказывает, как трактовать. Данные приходят в state.aiMarkerLevel/Note.
   function aiMarkerChipHtml(state) {
     if (!state || (state.aiMarkerLevel !== 'soft' && state.aiMarkerLevel !== 'strong')) return '';
     var strong = state.aiMarkerLevel === 'strong';
-    var note = state.aiMarkerNote || (strong ? 'Похоже, ответ вставлен извне.' : 'Возможны признаки ИИ-помощи.');
+    var parsed = parseAiNote(state.aiMarkerNote);
+    var note = parsed.text || (strong ? 'Похоже, ответ вставлен извне.' : 'Возможны признаки ИИ-помощи.');
     return '<span class="fac-pill fac-ai-chip ' + (strong ? 'is-ai-strong' : 'is-ai-soft') + '" title="' + escapeHtml(note) + '">⚡ ' + (strong ? 'ИИ-помощь' : 'ИИ?') + '</span>';
+  }
+
+  // Панель «откуда вывод об ИИ-помощи»: по-человечески раскладывает сигналы,
+  // на которых судья-телеметрия построила флаг (вставка/скорость/правки/объём).
+  // Пороги-дефолты приведены как ориентир — по ним видно, что именно сработало.
+  function aiMarkerBasisHtml(state) {
+    if (!state || (state.aiMarkerLevel !== 'soft' && state.aiMarkerLevel !== 'strong')) return '';
+    var strong = state.aiMarkerLevel === 'strong';
+    var parsed = parseAiNote(state.aiMarkerNote);
+    var s = parsed.sig;
+    var pct = function (x) { return Math.round((x || 0) * 100); };
+    function metric(k, v, hint) {
+      return '<div class="ai-sig-row"><span class="ai-sig-k">' + escapeHtml(k) + '</span>' +
+        '<span class="ai-sig-v">' + escapeHtml(v) + '</span>' +
+        (hint ? '<span class="ai-sig-h">' + escapeHtml(hint) + '</span>' : '') + '</div>';
+    }
+    var body = '';
+    if (s) {
+      body =
+        metric('Вставка текста', pct(s.pasteRatio) + '% ответа вставлено' + (s.maxPasteChars ? ', макс. кусок ' + s.maxPasteChars + ' симв.' : ''), 'мягкий сигнал от 30%, сильный от 50% + кусок ≥400') +
+        metric('Скорость ввода', (s.typingCpm || 0) + ' зн./мин', 'мягкий от 900, сильный от 1200') +
+        metric('Плотность правок', (s.editDensity != null ? s.editDensity : '—') + ' нажатий на символ', 'мягкий сигнал ниже 0,3 (текст почти не набирался)') +
+        metric('Объём ответа', (s.finalChars || 0) + ' симв.', 'сигналы считаются от 300–400 симв.');
+    } else {
+      body = '<p class="fac-detail-text">Числовые сигналы недоступны (сессия до включения телеметрии или ввод не записан) — вывод сделан по общей оценке.</p>';
+    }
+    return '<div class="fac-card fac-ai-basis ' + (strong ? 'is-ai-strong' : 'is-ai-soft') + '">' +
+      '<p class="ai-basis-h">⚡ Откуда вывод об ИИ-помощи · ' + (strong ? 'сильный сигнал' : 'мягкий сигнал') + '</p>' +
+      (parsed.text ? '<p class="fac-detail-text">' + escapeHtml(parsed.text) + '</p>' : '') +
+      '<div class="ai-sig">' + body + '</div>' +
+      '<p class="fac-detail-text ai-caveat">Это <b>процессный</b> сигнал (как вводился текст), а не анализ стиля. На балл не влияет. Возможны ложные срабатывания на сильных, быстро печатающих или копирующих свой черновик людях — трактуйте как повод присмотреться, не как приговор.</p>' +
+      '</div>';
   }
 
   function taskSectionHtml(title, statusKey, participant, badgesHtml, bodyHtml, warn) {
@@ -1256,7 +1325,7 @@
     // ---- Станция 1 · Вычитка и карта проблем (АК-1 + АК-2) ----
     // Порядок тела: способности (уровень + вердикт) → «Материалы участника»
     // (свёрнуто) → пересчёт. Балл навыка берём из participant (сырые записи его не несут).
-    var s1Body = renderScoreHtml(s1) + renderAK2Html(s1) +
+    var s1Body = renderScoreHtml(s1) + renderAK2Html(s1) + aiMarkerBasisHtml(s1) +
       crossRoomBlockHtml(crossRoom, 'ga1', overrides && overrides.ga1) +
       materialsBlock(renderS1Materials(s1)) + recalcFooter(1, 'Пересчитать навык АК');
     html += taskSectionHtml(
@@ -1272,7 +1341,7 @@
     html += taskSectionHtml(
       'Станция 2 · Встреча с Агеевым', 'station2', participant,
       abilityBadgeHtml('ПР-1', s2 && s2.pr1Level) + abilityBadgeHtml('ПР-2', s2 && s2.pr2Level) + skillBadgeHtml('навык ПР', participant.station2 && participant.station2.prSkill) + aiMarkerChipHtml(s2),
-      pr.abilities + materialsBlock(pr.materials) + (s2 ? recalcFooter(2, 'Пересчитать навык ПР') : ''),
+      pr.abilities + aiMarkerBasisHtml(s2) + materialsBlock(pr.materials) + (s2 ? recalcFooter(2, 'Пересчитать навык ПР') : ''),
       participant.station2 && participant.station2.prFlag ? 'Нарушено ограничение зависимостей способностей' : null
     );
 
@@ -1290,7 +1359,7 @@
         abilityBadgeHtml(config.ability1.code, state && state[config.ability1.levelKey]) +
           abilityBadgeHtml(config.ability2.code, state && state[config.ability2.levelKey]) +
           skillBadgeHtml('навык', participant[key] && participant[key].skill) + crBadge + aiMarkerChipHtml(state),
-        room.abilities + crBlock + materialsBlock(room.materials) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : ''),
+        room.abilities + aiMarkerBasisHtml(state) + crBlock + materialsBlock(room.materials) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : ''),
         crWarn
       );
     });

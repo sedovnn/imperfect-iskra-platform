@@ -2772,6 +2772,24 @@ table mark.hl {
 .fac-detail .fac-task--attn > .fac-task-summary, .fac-body .fac-task--attn > .fac-task-summary { background: var(--accent-tint); }
 .fac-detail .fac-task--attn .fac-card-warn, .fac-body .fac-task--attn .fac-card-warn { color: var(--accent-dim); font-weight: 600; }
 
+/* ---- отметки на ОСНОВНОМ списке (не только в карточке) ---- */
+/* строка, требующая внимания судьи: вермилионовая полоса слева — сразу видно, куда листать */
+tr.fac-row--attn td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+.fac-row-flag { color: var(--accent); font-weight: 700; margin-left: 4px; }
+.fac-row-ok { color: var(--jb-ink); font-weight: 700; margin-left: 4px; }
+
+/* панель «откуда вывод об ИИ-помощи» в карточке */
+.fac-ai-basis { border-color: #e0a23c; }
+.fac-ai-basis.is-ai-strong { border-color: #d1553f; }
+.fac-ai-basis .ai-basis-h { font-weight: 600; color: #8f2f1e; margin: 0 0 8px; }
+.fac-ai-basis.is-ai-soft .ai-basis-h { color: #9a6a12; }
+.fac-ai-basis .ai-caveat { margin-top: 10px; color: var(--muted); font-size: 12.5px; }
+.ai-sig { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+.ai-sig-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 12px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--hairline); }
+.ai-sig-k { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ai-sig-v { font-size: 13px; font-weight: 600; color: var(--ink); }
+.ai-sig-h { grid-column: 2; font-size: 11.5px; color: var(--muted-soft); }
+
 .fac-detail {
   display: none;
   position: fixed;
@@ -3382,8 +3400,8 @@ table mark.hl {
   font-weight: 700;
 }
 
-.fac-progress-dot.is-progress { border-color: #f0dca0; background: #fff6e0; color: #6b5900; }
-.fac-progress-dot.is-done { border-color: var(--hairline); background: var(--soft); color: var(--ink); }
+.fac-progress-dot.is-progress { border-color: var(--accent-line); background: var(--accent-tint); color: var(--accent-dim); }
+.fac-progress-dot.is-done { border-color: var(--band-line); background: var(--band); color: var(--jb-ink); }
 
 /* Не-цветовой признак статуса (WCAG 1.4.1): форма-глиф в дополнение к цвету. */
 .fac-progress-dot::before { font-weight: 400; margin-right: 3px; }
