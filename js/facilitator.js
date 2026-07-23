@@ -446,14 +446,25 @@
 
     view.forEach(function (p) {
       var tr = document.createElement('tr');
+      var stStates = ['station1', 'station2', 'roomFuture', 'roomAlternatives', 'roomPath', 'station3']
+        .map(function (k) { return stageState(p, k); });
+      var anyOpen = stStates.indexOf('open') !== -1;
+      var anyReviewed = stStates.indexOf('reviewed') !== -1;
       var reasons = attentionReasons(p);
       var aiLv = p.aiMarker && p.aiMarker.level;
-      if (reasons.length) tr.className = 'fac-row--attn';
-      var mark = reasons.length
-        ? ' <span class="fac-row-flag" title="Требует внимания судьи: ' + escapeHtml(reasons.join('; ')) + '">⚑</span>'
-          + (aiLv ? ' <span class="fac-pill fac-ai-chip ' + (aiLv === 'strong' ? 'is-ai-strong' : 'is-ai-soft') +
-              '" title="Признаки ИИ-помощи — откуда вывод, см. карточку">⚡ ' + (aiLv === 'strong' ? 'ИИ' : 'ИИ?') + '</span>' : '')
-        : (isFinishedAll(p) ? ' <span class="fac-row-ok" title="Пройдено, вопросов нет">✓</span>' : '');
+      var aiChip = aiLv ? ' <span class="fac-pill fac-ai-chip ' + (aiLv === 'strong' ? 'is-ai-strong' : 'is-ai-soft') +
+        '" title="Признаки ИИ-помощи — откуда вывод, см. карточку">⚡ ' + (aiLv === 'strong' ? 'ИИ' : 'ИИ?') + '</span>' : '';
+      var mark;
+      if (anyOpen) {
+        tr.className = 'fac-row--attn';
+        mark = ' <span class="fac-row-flag" title="Требует внимания судьи: ' + escapeHtml(reasons.join('; ')) + '">⚑</span>' + aiChip;
+      } else if (anyReviewed) {
+        // флаги были, но фасилитатор их разобрал — маркер ⚑ остаётся, цвет голубой
+        tr.className = 'fac-row--reviewed';
+        mark = ' <span class="fac-row-reviewed" title="Флаги разобраны фасилитатором (оценка скорректирована)">⚑</span>';
+      } else {
+        mark = isFinishedAll(p) ? ' <span class="fac-row-ok" title="Пройдено, вопросов нет">✓</span>' : '';
+      }
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
         '<td>' + escapeHtml(p.firstName + ' ' + p.lastName) + '</td>' +
@@ -476,6 +487,37 @@
   // подпись — в title. Полная расшифровка по способностям — в карточке участника.
   // Комнаты финального отрезка — свободный порядок, поэтому подписаны буквами
   // названия комнаты, а не номером станции (как С1/С2).
+  // Состояние отметки внимания на КОНКРЕТНОЙ станции/комнате (для точек «Ход»
+  // и подсветки карточки): 'open' — есть флаг, судья ещё не разбирал (вермилион);
+  // 'reviewed' — флаг был, но фасилитатор скорректировал (override) → флаг
+  // ОСТАЁТСЯ маркером «здесь была проверка», но цвет уходит в голубой; null — чисто.
+  // Привязка флага к месту, где он ПОКАЗАН в карточке (ga1-контроль — на ст.1,
+  // pp1-контроль — в «Коридоре», защита §7-8 — в финале).
+  function stageState(p, key) {
+    var ai = (p.aiMarker && p.aiMarker.byStation) || [];
+    var aiHit = ai.some(function (x) { return x.station === key; });
+    var cr = (p.station3 && p.station3.controlCrossRoom) || {};
+    var cc = (p.station3 && p.station3.controlComparisons) || {};
+    var flag = false, reviewed = false;
+    if (key === 'station1') {
+      if (p.station1 && p.station1.akFlag) flag = true;
+      if (cr.ga1 && cr.ga1.flag) { flag = true; if (p.roomAlternatives && p.roomAlternatives.ga1Override) reviewed = true; }
+    } else if (key === 'station2') {
+      if (p.station2 && p.station2.prFlag) flag = true;
+      if (p.station2 && p.station2.pr2Override) reviewed = true;
+    } else if (key === 'roomFuture') {
+      if (cr.pp1 && cr.pp1.flag) { flag = true; if (p.roomPath && p.roomPath.pp1Override) reviewed = true; }
+      if (p.roomFuture && p.roomFuture.mk2Override) reviewed = true;
+    } else if (key === 'station3') {
+      Object.keys(cc).forEach(function (k) { if (cc[k] && cc[k].flag) flag = true; });
+      if ((p.station2 && p.station2.pr2Override) || (p.roomFuture && p.roomFuture.mk2Override) || (p.roomAlternatives && p.roomAlternatives.ga1Override)) reviewed = true;
+    }
+    if (aiHit) flag = true;   // ИИ-сигнал тоже требует внимания (снять его «проверкой» нельзя)
+    if (flag && reviewed) return 'reviewed';
+    if (flag) return 'open';
+    return null;
+  }
+
   function progressPillsHtml(p) {
     var stages = [
       { key: 'station1', label: 'С1', title: 'Станция 1 · Вычитка и карта проблем' },
@@ -487,7 +529,11 @@
     ];
     return '<span class="fac-progress-pills">' + stages.map(function (st) {
       var s = stationStatusLabel(p, st.key);
-      return '<span class="fac-progress-dot ' + s.cls + '" title="' + escapeHtml(st.title + ' — ' + s.text) + '">' + st.label + '</span>';
+      var att = stageState(p, st.key);
+      var attCls = att === 'open' ? ' attn-open' : (att === 'reviewed' ? ' attn-reviewed' : '');
+      var attTip = att === 'open' ? ' · ⚑ требует проверки судьи' : (att === 'reviewed' ? ' · ⚑ проверено фасилитатором' : '');
+      var flagGlyph = att ? ' ⚑' : '';
+      return '<span class="fac-progress-dot ' + s.cls + attCls + '" title="' + escapeHtml(st.title + ' — ' + s.text + attTip) + '">' + st.label + flagGlyph + '</span>';
     }).join('') + '</span>';
   }
 
@@ -1223,13 +1269,18 @@
       '</div>';
   }
 
-  function taskSectionHtml(title, statusKey, participant, badgesHtml, bodyHtml, warn) {
+  // attn: 'open' (флаг не разобран → вермилион) | 'reviewed' (фасилитатор
+  // скорректировал → флаг ОСТАЁТСЯ, но голубой) | null. Если не передан —
+  // выводим из наличия warn (обратная совместимость).
+  function taskSectionHtml(title, statusKey, participant, badgesHtml, bodyHtml, warn, attn) {
     var status = statusKey ? stationStatusLabel(participant, statusKey) : null;
     var statusPill = status ? '<span class="fac-pill ' + status.cls + '">' + escapeHtml(status.text) + '</span>' : '';
-    return '<details class="fac-task' + (warn ? ' fac-task--attn' : '') + '">' +
+    var cls = attn === 'reviewed' ? ' fac-task--reviewed' : ((attn === 'open' || (warn && !attn)) ? ' fac-task--attn' : '');
+    var warnTip = attn === 'reviewed' ? (warn ? warn + ' · разобрано фасилитатором' : 'Разобрано фасилитатором') : warn;
+    return '<details class="fac-task' + cls + '">' +
       '<summary class="fac-task-summary">' +
         '<div class="fac-task-head">' +
-          '<span class="fac-task-title">' + escapeHtml(title) + (warn ? ' <span class="fac-card-warn" title="' + escapeHtml(warn) + '">⚑</span>' : '') + '</span>' +
+          '<span class="fac-task-title">' + escapeHtml(title) + ((warn || attn === 'reviewed') ? ' <span class="fac-card-warn" title="' + escapeHtml(warnTip || '') + '">⚑</span>' : '') + '</span>' +
           statusPill +
         '</div>' +
         (badgesHtml ? '<div class="fac-task-badges">' + badgesHtml + '</div>' : '') +
@@ -1333,7 +1384,8 @@
       abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill) + crossRoomBadgeHtml(crossRoom, 'ga1') + aiMarkerChipHtml(s1),
       s1Body,
       (participant.station1 && participant.station1.akFlag) ? 'Нарушено ограничение зависимостей способностей'
-        : ((crossRoom.ga1 && crossRoom.ga1.flag) ? 'ГА-1 проявлен здесь выше, чем в своей комнате — контроль' : null)
+        : ((crossRoom.ga1 && crossRoom.ga1.flag) ? 'ГА-1 проявлен здесь выше, чем в своей комнате — контроль' : null),
+      stageState(participant, 'station1')
     );
 
     // ---- Станция 2 · Встреча с Агеевым (ПР-1 + ПР-2) ----
@@ -1342,7 +1394,8 @@
       'Станция 2 · Встреча с Агеевым', 'station2', participant,
       abilityBadgeHtml('ПР-1', s2 && s2.pr1Level) + abilityBadgeHtml('ПР-2', s2 && s2.pr2Level) + skillBadgeHtml('навык ПР', participant.station2 && participant.station2.prSkill) + aiMarkerChipHtml(s2),
       pr.abilities + aiMarkerBasisHtml(s2) + materialsBlock(pr.materials) + (s2 ? recalcFooter(2, 'Пересчитать навык ПР') : ''),
-      participant.station2 && participant.station2.prFlag ? 'Нарушено ограничение зависимостей способностей' : null
+      participant.station2 && participant.station2.prFlag ? 'Нарушено ограничение зависимостей способностей' : null,
+      stageState(participant, 'station2')
     );
 
     // ---- Три комнаты финального отрезка ----
@@ -1360,7 +1413,8 @@
           abilityBadgeHtml(config.ability2.code, state && state[config.ability2.levelKey]) +
           skillBadgeHtml('навык', participant[key] && participant[key].skill) + crBadge + aiMarkerChipHtml(state),
         room.abilities + aiMarkerBasisHtml(state) + crBlock + materialsBlock(room.materials) + (state ? recalcFooter(config.recalcStation, config.recalcLabel) : ''),
-        crWarn
+        crWarn,
+        stageState(participant, key)
       );
     });
 
@@ -1402,6 +1456,11 @@
         if (isStale(k, control.comparisons[k])) anyStale = true;
       });
     }
+    // разобрано фасилитатором = по любой контрольной способности выставлен ручной уровень
+    var anyReviewed = ['pr2', 'mk2', 'ga1'].some(function (k) {
+      return overrides[k] && overrides[k].overrideLevel !== null && overrides[k].overrideLevel !== undefined;
+    });
+    var ctlAttn = anyReviewed ? 'reviewed' : (anyFlag ? 'open' : null);
     var badges = '';
     if (control && control.comparisons) {
       ['pr2', 'mk2', 'ga1'].forEach(function (k) {
@@ -1418,7 +1477,7 @@
     body += recalcButtonHtml('3c', 'Пересчитать контроль');
     if (!hasDefense) {
       body += '<p class="fac-detail-text">Финальная защита не заполнена — контроль не считался.</p>';
-      return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null);
+      return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null, ctlAttn);
     }
     body += '<p class="fac-detail-text" style="margin-top:10px;"><b>Защита стратегии:</b> ' + escapeHtml(station3.finalDefense) + '</p>';
     if (control && control.comparisons) {
@@ -1447,7 +1506,7 @@
     } else {
       body += '<p class="fac-detail-text">Контроль ещё не считался — нажмите «пересчитать контроль».</p>';
     }
-    return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null);
+    return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null, ctlAttn);
   }
 
   function closeDetail() {

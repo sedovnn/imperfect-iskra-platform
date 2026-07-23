@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=6" />
+<link rel="stylesheet" href="css/styles.css?v=7" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -61,7 +61,7 @@
 
         <form class="entry-form" id="entryForm" novalidate autocomplete="off">
           <div class="field">
-            <label for="entryCode">Код участника — 6 цифр</label>
+            <label for="entryCode">Номер участника — 6 цифр</label>
             <input class="code-input" id="entryCode" inputmode="numeric" autocomplete="off" maxlength="6" placeholder="000000" />
           </div>
           <div class="field">
@@ -69,8 +69,8 @@
             <input class="pass-input" id="entryPass" type="password" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" placeholder="••••••" />
           </div>
           <button type="submit" class="btn btn-primary btn-block">Войти →</button>
-          <p class="entry-err" id="entryErr">Проверьте код (6 цифр) и пароль.</p>
-          <p class="entry-hint">Не нашли код? Обратитесь к организатору сессии.</p>
+          <p class="entry-err" id="entryErr">Проверьте номер (6 цифр) и пароль.</p>
+          <p class="entry-hint">Не нашли номер? Обратитесь к организатору сессии.</p>
         </form>
       </div>
     </main>

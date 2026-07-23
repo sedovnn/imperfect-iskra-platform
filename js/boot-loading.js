@@ -48,7 +48,7 @@
     var style = document.createElement('style');
     style.textContent =
       '#bootLoading{position:fixed;inset:0;z-index:40;display:flex;align-items:center;' +
-        'justify-content:center;background:var(--lime,#a6ff00);}' +
+        'justify-content:center;background:var(--accent,#ff4800);}' +
       '#bootLoading .boot-inner{text-align:center;color:#0a0a0a;' +
         'font-family:Inter,system-ui,sans-serif;}' +
       '#bootLoading .boot-spin{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;' +

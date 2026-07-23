@@ -2775,8 +2775,21 @@ table mark.hl {
 /* ---- отметки на ОСНОВНОМ списке (не только в карточке) ---- */
 /* строка, требующая внимания судьи: вермилионовая полоса слева — сразу видно, куда листать */
 tr.fac-row--attn td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+/* разобрано фасилитатором: флаг остаётся маркером «здесь была проверка», но голубой */
+tr.fac-row--reviewed td:first-child { box-shadow: inset 3px 0 0 var(--jb); }
 .fac-row-flag { color: var(--accent); font-weight: 700; margin-left: 4px; }
+.fac-row-reviewed { color: var(--jb-ink); font-weight: 700; margin-left: 4px; }
 .fac-row-ok { color: var(--jb-ink); font-weight: 700; margin-left: 4px; }
+
+/* карточка задания, разобранная фасилитатором — голубая рамка, флаг оставлен */
+.fac-detail .fac-task--reviewed, .fac-body .fac-task--reviewed { border-left: 3px solid var(--jb); }
+.fac-detail .fac-task--reviewed > .fac-task-summary, .fac-body .fac-task--reviewed > .fac-task-summary { background: var(--band); }
+.fac-detail .fac-task--reviewed .fac-card-warn, .fac-body .fac-task--reviewed .fac-card-warn { color: var(--jb-ink); font-weight: 600; }
+
+/* точки «Ход»: конкретная станция/комната с флагом — вермилион; разобранная — голубой */
+/* .fac-progress-pills-префикс нужен, чтобы перебить более позднее .fac-progress-dot.is-done */
+.fac-progress-pills .fac-progress-dot.attn-open { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-dim); font-weight: 700; }
+.fac-progress-pills .fac-progress-dot.attn-reviewed { border-color: var(--band-line); background: var(--band); color: var(--jb-ink); font-weight: 700; }
 
 /* панель «откуда вывод об ИИ-помощи» в карточке */
 .fac-ai-basis { border-color: #e0a23c; }

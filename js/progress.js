@@ -33,7 +33,7 @@
     '.round-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#8a8f98;}' +
     '.rp-step{white-space:nowrap;}' +
     '.rp-step.is-done{color:#1a1e26;}' +
-    '.rp-step.is-current{color:#1a1e26;font-weight:700;background:var(--lime,#c8f560);border-radius:6px;padding:2px 8px;}' +
+    '.rp-step.is-current{color:#1a1e26;font-weight:700;background:var(--accent,#ff4800);border-radius:6px;padding:2px 8px;}' +
     '.rp-sep{color:#c8cdd4;}' +
     '.round-time{color:#5c6675;white-space:nowrap;font-variant-numeric:tabular-nums;}' +
     '.round-time-label{color:#8a8f98;text-transform:uppercase;letter-spacing:.04em;font-size:11px;margin-right:6px;}';

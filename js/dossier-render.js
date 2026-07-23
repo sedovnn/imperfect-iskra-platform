@@ -79,7 +79,7 @@
       }
 
       if (s1.appxReviewed && Object.keys(s1.appxReviewed).length) {
-        text('Приложения изучено: ' + Object.keys(s1.appxReviewed).length + '/8');
+        text('Приложений изучено: ' + Object.keys(s1.appxReviewed).length + ' из 8');
       }
     }
 

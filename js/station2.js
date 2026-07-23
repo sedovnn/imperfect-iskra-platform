@@ -382,7 +382,7 @@
         // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
         '<div class="rationale-block" style="margin-top:12px;">' +
           '<label>С какого конкретного действия вы откроете работу по приоритету №1? <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
-          '<textarea class="s2-first-action" rows="2" placeholder="например: за две недели вынести на комитет решение по юр.контуру «Миры»"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.firstAction || '') + '</textarea>' +
+          '<textarea class="s2-first-action" rows="2" placeholder="например: за две недели вынести на комитет решение по юр. контуру «Миры»"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.firstAction || '') + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitRationaleBtn" style="margin-top:12px;">Ответить →</button>');
 
