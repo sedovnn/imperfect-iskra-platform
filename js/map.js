@@ -170,13 +170,19 @@
             '<h3>' + room.title + '</h3>' + pill +
           '</div>' +
           '<p>' + room.teaser + '</p>';
-        list.appendChild(card);
-        // мост после встречи с Агеевым: слух о выбранной позиции разошёлся → впереди три разговора
-        if (room.key === 'station2' && done && stance) {
-          var note = document.createElement('div');
-          note.className = 'hub-stance-callback';
-          note.innerHTML = '<p>Слух о том, что вы склоняетесь к позиции <b>' + esc(stance.label) + '</b>, уже разошёлся по этажам. В коридорах вас ловят на разговор — каждый про свою грань вашего выбора.</p>';
-          list.appendChild(note);
+        // слух о позиции — «облако мысли» справа от 3-го раунда (первого коридорного
+        // разговора), а не вклейкой в вертикальный поток плиток (ломала визуальную логику).
+        if (room.key === 'future' && stance) {
+          var slot = document.createElement('div');
+          slot.className = 'hub-room-slot';
+          slot.appendChild(card);
+          var cloud = document.createElement('div');
+          cloud.className = 'hub-stance-cloud';
+          cloud.innerHTML = '<p>О вашей позиции — <b>' + esc(stance.label) + '</b> — уже все в курсе: Агеев, похоже, ещё со встречи разослал её по чатам.</p>';
+          slot.appendChild(cloud);
+          list.appendChild(slot);
+        } else {
+          list.appendChild(card);
         }
         prevDone = done;
       });
