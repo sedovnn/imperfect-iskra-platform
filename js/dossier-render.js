@@ -121,7 +121,7 @@
 
     // ---------- Комнаты ----------
     if (rf && (rf.answer1 || rf.answer2)) {
-      section('Коридор Лемеха');
+      section('Встреча с Лемехом у лифта');
       if (rf.answer1) textB('Куда всё идёт:', rf.answer1);
       if (rf.answer2) textB('Если пойдёт не так:', rf.answer2);
     }

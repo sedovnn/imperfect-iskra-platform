@@ -7,6 +7,8 @@
 (function () {
   var MAX_PRIORITIES = 5;
   var session = null;
+  // имя из окна Агеева (может быть пустым) — для обращения в репликах; экранируем при вставке
+  function pname() { return session && session.name ? String(session.name).trim() : ''; }
   var state = null;
 
   function storageKey(bib) { return 'imp_station2_' + bib; }
@@ -262,7 +264,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Агеев:</b> «Разложите: с чем идём к совету в первую очередь, что — потом, а что честно откладываем. Не обязательно раскладывать всё — но порядок в приоритетах для меня важен».</p>' +
+        '<p class="s2-ageev"><b>Агеев</b>: «' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что честно откладываем. Не обязательно раскладывать всё — но порядок в приоритетах для меня важен».</p>' +
         '<div class="s2-columns">' +
           '<div class="s2-col" data-zone="pool"><h4>Карта</h4><p class="links-hint">неразобранное</p><div class="s2-list" data-list="pool"></div></div>' +
           '<div class="s2-col is-priorities" data-zone="priorities"><h4>Приоритеты</h4><p class="links-hint">порядок = ранг, максимум ' + MAX_PRIORITIES + '</p><div class="s2-list" data-list="priorities"></div></div>' +
@@ -372,7 +374,7 @@
       // реакция Агеева на разбор (п.11): заметил ли отказы
       var sortReact = state.rejected.length
         ? '<b>Агеев</b> ведёт пальцем по списку: «Вижу, кое-что вы честно отложили. Хорошо — значит, не пытаетесь спасти всё сразу».'
-        : '<b>Агеев</b>: «Ничего не отложили — ну-ну. Смелость оценю, если выдержит следующий вопрос».';
+        : '<b>Агеев</b>: «Ничего не отложили, всё оставили в приоритетах — смело. Сейчас проверю этот выбор на прочность».';
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
@@ -526,7 +528,7 @@
       block.className = 's2-block';
       block.innerHTML =
         (stanceReact ? '<p class="s2-ageev">' + stanceReact + '</p>' : '') +
-        '<p class="s2-ageev"><b>Агеев</b> встаёт: «Последний вопрос. При каких условиях вы сами скажете, что этот выбор устарел — что пора пересматривать?»</p>' +
+        '<p class="s2-ageev"><b>Агеев</b> встаёт: «' + (pname() ? escapeHtml(pname()) + ', последний вопрос' : 'Последний вопрос') + '. При каких условиях вы сами скажете, что этот выбор устарел — что пора пересматривать?»</p>' +
         '<textarea class="s2-proactive" rows="2" placeholder="необязательно — можно пожать плечами и попрощаться"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить встречу →</button>');
 

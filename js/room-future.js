@@ -1,4 +1,4 @@
-// i(m)perfect — «Коридор Лемеха» (кейс «Искра»). Навык МК целиком: горизонт
+// i(m)perfect — «Встреча с Лемехом у лифта» (кейс «Искра»). Навык МК целиком: горизонт
 // рассуждения (МК-1) + тип мышления о будущем — экстраполяция / образ / сценарии /
 // «другая реальность» (МК-2).
 //
@@ -25,6 +25,8 @@
 
 (function () {
   var session = null;
+  // имя из окна Агеева (может быть пустым) — для обращения в репликах; экранируем при вставке
+  function pname() { return session && session.name ? String(session.name).trim() : ''; }
   var state = null;
 
   function storageKey(bib) { return 'imp_room_future_' + bib; }
@@ -172,7 +174,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b> придерживает двери лифта: «Погодите-ка. Мне ' + escapeHtml(stancePhrase) + ' через полгода нести на совет Меридиана, а я пока сам не понимаю, куда оно нас в итоге приводит. Своими словами, без презентаций — если пойдём по-вашему, где „Искра“ окажется?»</p>' +
+        '<p class="s2-ageev"><b>Лемех</b> придерживает двери лифта: «' + (pname() ? escapeHtml(pname()) + ', погодите-ка' : 'Погодите-ка') + '. Мне ' + escapeHtml(stancePhrase) + ' через полгода нести на совет Меридиана, а я пока сам не понимаю, куда оно нас в итоге приводит. Своими словами, без презентаций — если пойдём по-вашему, где „Искра“ окажется?»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.vision) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
@@ -198,8 +200,8 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на сколько лет вперёд вы смотрите — и на какой результат готовы работать, даже если застанете его не вы? И почему именно туда, а не куда попроще?»</p>' +
-        '<textarea class="ga-horizon" rows="4" placeholder="горизонт в годах + на какой результат работаете (даже если застанете не вы) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
+        '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на сколько лет вперёд вы смотрите — и на какой результат готовы работать, даже если он созреет уже без вас? И почему именно туда, а не куда попроще?»</p>' +
+        '<textarea class="ga-horizon" rows="4" placeholder="горизонт в годах + на какой результат работаете (даже если созреет уже без вас) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
         '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:8px 0 0; line-height:1.45;">Пошаговый план и этапы — в разговоре со Штерном («Путь»). Здесь — куда и зачем, не как.</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
       if (!locked) {
