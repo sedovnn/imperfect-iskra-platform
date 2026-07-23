@@ -202,7 +202,7 @@
       block.innerHTML =
         '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на сколько лет вперёд вы смотрите — и на какой результат готовы работать, даже если он созреет уже без вас? И почему именно туда, а не куда попроще?»</p>' +
         '<textarea class="ga-horizon" rows="4" placeholder="горизонт в годах + на какой результат работаете (даже если созреет уже без вас) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
-        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:8px 0 0; line-height:1.45;">Пошаговый план и этапы — в разговоре со Штерном («Путь»). Здесь — куда и зачем, не как.</div>' +
+        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:8px 0 0; line-height:1.45;">Здесь — про куда и зачем, а не про как: направление и результат, без пошагового плана.</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
       if (!locked) {
         block.querySelector('.ga-horizon').addEventListener('input', function (e) {
