@@ -13,8 +13,9 @@
 //
 // Три бита (все — Лемех, на «вы»):
 //   q1  «где „Искра" окажется?»  → образ будущего (vision, МК-2).
-//   q2  «на сколько лет вперёд вы смотрите и что за это время меняется?»
-//       → горизонт (horizon, МК-1). Нейтрально, свой срок в годах + что к нему.
+//   q2  «на сколько лет + на какой результат готовы работать, даже если
+//       застанете не вы, и почему туда?» → горизонт+амбиция (horizon, МК-1 v9).
+//       «что меняется по дороге» убрано — тянуло роадмап/декомпозицию (ПП).
 //   q3  «какие развороты возможны и по каким признакам поймёте, какой из них
 //       начинается?» → развороты (answer2, МК-2 сценарии/сигналы).
 //
@@ -51,11 +52,14 @@
     return { vision: '', horizon: '', answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
   }
 
-  // answer1 (то, что видит судья) — склейка картинки и горизонта.
+  // answer1 (то, что видит судья) — склейка картинки и горизонта+амбиции.
+  // «что меняется по дороге» убрано сознательно: это тянуло декомпозицию пути (ПП)
+  // не в ту комнату. Спрашиваем горизонт + амбицию (на какой результат готов
+  // работать, даже если застанет не он) — под МК-1 v9 (амбициозность+обоснование).
   function syncAnswer1() {
     var v = (state.vision || '').trim();
     var h = (state.horizon || '').trim();
-    state.answer1 = h ? (v + '\n\n[на сколько лет вперёд и что меняется по дороге] ' + h) : v;
+    state.answer1 = h ? (v + '\n\n[горизонт и амбиция цели] ' + h) : v;
   }
 
   function escapeHtml(s) {
@@ -194,8 +198,9 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на сколько лет вперёд вы смотрите — и что за это время меняется? Не „когда-нибудь“, а по шагам: что и к какому году.»</p>' +
-        '<textarea class="ga-horizon" rows="4" placeholder="ваш горизонт в годах и что к нему меняется"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
+        '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на сколько лет вперёд вы смотрите — и на какой результат готовы работать, даже если застанете его не вы? И почему именно туда, а не куда попроще?»</p>' +
+        '<textarea class="ga-horizon" rows="4" placeholder="горизонт в годах + на какой результат работаете (даже если застанете не вы) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
+        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:8px 0 0; line-height:1.45;">Пошаговый план и этапы — в разговоре со Штерном («Путь»). Здесь — куда и зачем, не как.</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
       if (!locked) {
         block.querySelector('.ga-horizon').addEventListener('input', function (e) {
@@ -221,8 +226,8 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev">' + react + '</p>' +
-        '<p class="s2-ageev"><b>Лемех</b> щурится: «Но будущее ведь может пойти по-разному. Какие развороты тут возможны — и по каким признакам вы заранее поймёте, какой из них начинается?»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
+        '<p class="s2-ageev"><b>Лемех</b> щурится: «Но будущее ведь может пойти по-разному. Набросайте 2–3 принципиально разных сценария — от чего зависит, куда качнёт (спрос на ИИ, регуляторика, интерфейс), и свой ход стратегии под каждый. По каким признакам поймёте заранее, какой начинается?»</p>' +
+        '<textarea class="s2-rationale" rows="4" placeholder="2–3 разных сценария: от чего зависит + ваш ход под каждый (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {

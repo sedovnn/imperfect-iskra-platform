@@ -673,8 +673,9 @@
         '<div class="conn-chips">' + chipsHtml + '</div>' +
         '<label>В чём механизм: почему одно порождает другое</label>' +
         '<textarea class="conn-mechanism" rows="2">' + escapeHtml(conn.mechanism || '') + '</textarea>' +
-        '<label>Что из этого следует для Агеева</label>' +
-        '<textarea class="conn-conclusion" rows="2">' + escapeHtml(conn.conclusion || '') + '</textarea>' +
+        '<label>В чём корневая проблема, к которой сходится эта связка</label>' +
+        '<textarea class="conn-conclusion" rows="2" placeholder="только диагноз — какую корневую проблему обнажает эта цепочка (что с ней делать, спросим дальше)">' + escapeHtml(conn.conclusion || '') + '</textarea>' +
+        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:-2px 0 2px; line-height:1.45;">Решения, альтернативы и горизонт — в следующих комнатах. Здесь только картина проблем.</div>' +
         '<div class="conn-loop"><input type="checkbox" id="loop_' + conn.id + '"' + (conn.isLoop ? ' checked' : '') + ' />' +
           '<label for="loop_' + conn.id + '" style="text-transform:none; letter-spacing:0; font-weight:400;">Цепочка замыкается обратно — конец усиливает (или гасит) начало</label></div>';
 

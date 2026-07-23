@@ -18,20 +18,23 @@
       storageKey: function (bib) { return 'imp_room_future_' + bib; }
     },
     {
-      key: 'alternatives',
-      title: 'Очередь в «Прожектор»',
-      teaser: 'В очереди за кофе кто-то роняет реплику, которая не идёт из головы.',
-      href: 'room-alternatives.html',
-      storageKey: function (bib) { return 'imp_room_alternatives_' + bib; }
-    },
-    {
       key: 'path',
       title: 'Черновик к мартовскому комитету',
       teaser: 'Через месяц — заседание, которое ждали с декабря. Пора собрать то, с чем туда идти.',
       href: 'room-path.html',
       storageKey: function (bib) { return 'imp_room_path_' + bib; }
+    },
+    {
+      key: 'alternatives',
+      title: 'Очередь в «Прожектор»',
+      teaser: 'В очереди за кофе кто-то роняет реплику, которая не идёт из головы.',
+      href: 'room-alternatives.html',
+      storageKey: function (bib) { return 'imp_room_alternatives_' + bib; }
     }
   ];
+  // Порядок фиксирован (мастер-план §2.1): Будущее → Путь → Альтернативы. «Путь»
+  // сразу за «Будущим» (пока силы есть, не в хвост усталости); каждая следующая
+  // комната открывается, когда завершена предыдущая (см. renderRooms).
 
   var session = null;
   var state = null;
@@ -171,19 +174,27 @@
     function renderRooms() {
       var list = document.getElementById('hubRooms');
       list.innerHTML = '';
+      // фиксированный порядок: комната открыта, если она уже завершена ИЛИ
+      // предыдущая по порядку завершена (первая — всегда). prevDone ведёт цепочку.
+      var prevDone = true;
       ROOMS.forEach(function (room) {
         var status = roomStatus(room);
+        var done = status.text === 'завершена';
+        var openable = !state.finished && (done || prevDone);
         var card = document.createElement('a');
-        card.className = 'hub-room-card' + (state.finished ? ' is-locked' : '');
-        card.href = state.finished ? '#' : room.href;
-        if (state.finished) card.addEventListener('click', function (e) { e.preventDefault(); });
+        card.className = 'hub-room-card' + (openable ? '' : ' is-locked');
+        card.href = openable ? room.href : '#';
+        if (!openable) card.addEventListener('click', function (e) { e.preventDefault(); });
+        var pill = (!state.finished && !done && !prevDone)
+          ? '<span class="fac-pill is-none">откроется после предыдущего</span>'
+          : '<span class="fac-pill ' + status.cls + '">' + status.text + '</span>';
         card.innerHTML =
           '<div class="hub-room-top">' +
-            '<h3>' + room.title + '</h3>' +
-            '<span class="fac-pill ' + status.cls + '">' + status.text + '</span>' +
+            '<h3>' + room.title + '</h3>' + pill +
           '</div>' +
           '<p>' + room.teaser + '</p>';
         list.appendChild(card);
+        prevDone = done;
       });
     }
 

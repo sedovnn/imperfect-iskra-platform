@@ -1077,11 +1077,11 @@ footer {
 /* ---------- ПП: конструктор этапов + барьеры/ресурсы (room-path.js) ---------- */
 
 .pp-firstmove {
-  border: 1px solid var(--lime-line);
-  background: var(--lime-tint);
+  border: 1px solid var(--accent-line);
+  background: var(--accent-tint);
   padding: 8px 12px;
   margin: 0 0 14px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   font-size: 14px;
   line-height: 1.5;
 }
