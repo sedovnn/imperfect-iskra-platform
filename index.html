@@ -118,25 +118,46 @@
     errEl.classList.remove('show');
   });
 
+  var submitBtn = form.querySelector('button[type="submit"]');
+
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.classList.add('show');
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var code = (codeEl.value || '').trim();
     var pass = (passEl.value || '').trim();
+    errEl.classList.remove('show');
     if (!/^\d{6}$/.test(code) || !pass) {
-      errEl.classList.add('show');
+      showErr('Проверьте номер (6 цифр) и пароль.');
       return;
     }
-    // МОСТИК (до access-бэкенда): код → сессия. Пароль сохраняем, не валидируем.
-    var bib = parseInt(code, 10);
-    var session = { bib: bib, pass: pass };
-    try {
-      sessionStorage.setItem('imp_current_session', JSON.stringify(session));
-      localStorage.setItem('imp_current_session', JSON.stringify(session));
-    } catch (err) {}
-    // вводная установка показывается один раз (флаг imp_intro_seen), потом сразу станция 1
-    var seenIntro = false;
-    try { seenIntro = !!localStorage.getItem('imp_intro_seen'); } catch (err2) {}
-    window.location.href = seenIntro ? 'station1.html' : 'intro.html';
+    // Код — СТРОКА (ведущие нули важны: «001347»), не parseInt. Пароль проверяет бэкенд.
+    var t = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Вхожу…';
+    window.imp.callApi('participantLogin', { bib: code, password: pass }).then(function (res) {
+      if (res && res.ok) {
+        var session = { bib: code, pass: pass };  // bib как строка — нули сохраняются
+        try {
+          sessionStorage.setItem('imp_current_session', JSON.stringify(session));
+          localStorage.setItem('imp_current_session', JSON.stringify(session));
+        } catch (err) {}
+        var seenIntro = false;
+        try { seenIntro = !!localStorage.getItem('imp_intro_seen'); } catch (err2) {}
+        window.location.href = seenIntro ? 'station1.html' : 'intro.html';
+        return;
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = t;
+      var err = res && res.error;
+      showErr(err === 'bad_password' ? 'Неверный пароль.'
+        : err === 'not_found' ? 'Такого номера участника нет.'
+        : err === 'no_password' ? 'Для этого номера ещё не выдан пароль — обратитесь к организатору.'
+        : 'Не удалось войти. Проверьте номер и пароль.');
+    });
   });
 })();
 </script>

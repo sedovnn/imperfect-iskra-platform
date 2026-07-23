@@ -422,6 +422,25 @@
     });
   });
 
+  // ---- генерация паролей участникам ----
+  var genPwdBtn = document.getElementById('facGenPwd');
+  if (genPwdBtn) genPwdBtn.addEventListener('click', function () {
+    impConfirm('Сгенерировать 6-значные пароли (буквы+цифры) всем участникам без пароля? Уже выданные пароли не меняются.', { confirmLabel: 'Сгенерировать' }).then(function (ok) {
+      if (!ok) return;
+      var t = genPwdBtn.textContent;
+      genPwdBtn.disabled = true; genPwdBtn.textContent = 'Генерирую…';
+      window.imp.callApi('generatePasswords', { password: currentPassword() }).then(function (res) {
+        genPwdBtn.disabled = false; genPwdBtn.textContent = t;
+        if (res && res.ok) {
+          impToast('Сгенерировано паролей: ' + res.generated + ' (всего участников ' + res.participants.length + '). Пароли видны в колонке «Пароль».', 'success');
+          refresh();
+        } else {
+          impToast('Не удалось: ' + (res && (res.message || res.error) || 'нет ответа'), 'error');
+        }
+      });
+    });
+  });
+
   function renderWaveFilterOptions() {
     if (!waveFilterSelect) return;
     var current = waveFilterSelect.value;
@@ -607,6 +626,7 @@
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
         '<td>' + escapeHtml((p.firstName + ' ' + p.lastName).trim() || '—') + '</td>' +
+        '<td style="font-family:ui-monospace,Menlo,monospace; letter-spacing:.06em;">' + escapeHtml(p.password || '—') + '</td>' +
         '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + '</td>' +
         '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
         '<td><button class="fac-delete-btn" title="Удалить участника">✕</button></td>';
