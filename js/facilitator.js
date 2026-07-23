@@ -1157,7 +1157,7 @@
   function taskSectionHtml(title, statusKey, participant, badgesHtml, bodyHtml, warn) {
     var status = statusKey ? stationStatusLabel(participant, statusKey) : null;
     var statusPill = status ? '<span class="fac-pill ' + status.cls + '">' + escapeHtml(status.text) + '</span>' : '';
-    return '<details class="fac-task">' +
+    return '<details class="fac-task' + (warn ? ' fac-task--attn' : '') + '">' +
       '<summary class="fac-task-summary">' +
         '<div class="fac-task-head">' +
           '<span class="fac-task-title">' + escapeHtml(title) + (warn ? ' <span class="fac-card-warn" title="' + escapeHtml(warn) + '">⚑</span>' : '') + '</span>' +
@@ -1175,7 +1175,7 @@
   function crossRoomBadgeHtml(cr, key) {
     if (!cr || !cr[key]) return '';
     var c = cr[key];
-    return '<span class="fac-pill ' + (c.flag ? '' : 'is-done') + '">' + escapeHtml(c.code) +
+    return '<span class="fac-pill ' + (c.flag ? 'is-attn' : 'is-done') + '">' + escapeHtml(c.code) +
       ' контроль L' + c.cross + (c.home === null || c.home === undefined ? '' : ' / дома L' + c.home) +
       (c.flag ? ' ⚑' : '') + '</span>';
   }
@@ -1338,7 +1338,7 @@
       ['pr2', 'mk2', 'ga1'].forEach(function (k) {
         var c = control.comparisons[k];
         if (!c) return;
-        var cls = c.flag ? '' : 'is-done';
+        var cls = c.flag ? 'is-attn' : 'is-done';
         var prim = primOf(k, c);
         badges += '<span class="fac-pill ' + cls + '">' + escapeHtml(c.code) + ' контр.L' + c.control +
           (prim === null || prim === undefined ? '' : ' / осн.L' + prim) + (c.flag ? ' ⚑' : '') + '</span>';

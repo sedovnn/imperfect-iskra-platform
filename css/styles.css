@@ -17,6 +17,7 @@
   --jb: #89bbf1;
   --band: #eaf3fb;
   --band-line: #bcd9f2;
+  --jb-ink: #2f6bb0;   /* читаемый синий текст на светлом фоне (служебные страницы) */
   --ink: #181818;
   --paper: #ffffff;
   --muted: #6b6e73;
@@ -2752,6 +2753,24 @@ table mark.hl {
    чтобы участник не читал её как оценку (см. решение по станции 3). */
 .fac-pill.is-progress { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-dim); }
 .fac-pill.is-done { border-color: var(--hairline); background: var(--soft); color: var(--ink); }
+
+/* Служебные страницы (кабинет фасилитатора): голубой = пройдено/ок/вопросов нет,
+   вермилион = требует внимания судьи. Скоуп ТОЛЬКО на кабинет (.fac-body/.fac-detail),
+   чтобы нейтральный «завершена» участника на хабе станции 3 не позеленел/посинел. */
+.fac-body .fac-pill.is-done,
+.fac-detail .fac-pill.is-done {
+  border-color: var(--band-line); background: var(--band); color: var(--jb-ink);
+}
+/* пилюля-предупреждение (кросс-контроль выше своей комнаты и т.п.) — вермилион */
+.fac-detail .fac-pill.is-attn {
+  border-color: var(--accent); background: var(--accent-tint); color: var(--accent-dim);
+}
+/* карточка задания/комнаты, требующая внимания судьи: вермилионовая полоса слева
+   + тёплая шапка — видно СРАЗУ, куда листать (не только флаг в конце) */
+/* скоуп-селектор нужен, чтобы перебить более позднее в файле правило .fac-task (рамка) */
+.fac-detail .fac-task--attn, .fac-body .fac-task--attn { border-left: 3px solid var(--accent); }
+.fac-detail .fac-task--attn > .fac-task-summary, .fac-body .fac-task--attn > .fac-task-summary { background: var(--accent-tint); }
+.fac-detail .fac-task--attn .fac-card-warn, .fac-body .fac-task--attn .fac-card-warn { color: var(--accent-dim); font-weight: 600; }
 
 .fac-detail {
   display: none;
