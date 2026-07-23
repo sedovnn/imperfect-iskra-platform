@@ -2824,6 +2824,9 @@ tr.fac-row--attn td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 tr.fac-row--reviewed td:first-child { box-shadow: inset 3px 0 0 var(--jb); }
 .fac-row-flag { color: var(--accent); font-weight: 700; margin-left: 4px; }
 .fac-row-reviewed { color: var(--jb-ink); font-weight: 700; margin-left: 4px; }
+/* строки ИИ-прогонов — мягкий голубой фон-референс (ИИ = справочная линия по DESIGN.md) + чип «ИИ» */
+tr.fac-row-ai td { background: var(--band); }
+.fac-ai-wave-chip { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 6px; background: var(--band); color: var(--jb-ink); border: 1px solid var(--band-line); vertical-align: middle; margin-left: 2px; }
 .fac-row-ok { color: var(--jb-ink); font-weight: 700; margin-left: 4px; }
 
 /* карточка задания, разобранная фасилитатором — голубая рамка, флаг оставлен */
