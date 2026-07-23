@@ -1,5 +1,5 @@
 // i(m)perfect — кабинет фасилитатора. Смотрит на тот же бэкенд (js/api.js),
-// что и register.js/station1.js. Пароль хранится только в sessionStorage
+// что и register.js/round1.js. Пароль хранится только в sessionStorage
 // вкладки — не в localStorage и никуда не логируется.
 
 (function () {
@@ -231,13 +231,13 @@
   }
 
   // Все причины «требует внимания судьи» для отметки в списке (не только внутри
-  // карточки): зависимости §9, расхождение контроля §7-8/кросс-комната, ИИ-маркер.
+  // карточки): зависимости §9, расхождение контроля §7-8/кросс-раунд, ИИ-маркер.
   // Вермилион на строке = сюда листать; голубой ✓ = завершено, вопросов нет.
   function attentionReasons(p) {
     var r = [];
     if (p.station1 && p.station1.akFlag) r.push('зависимость: АК-2 > АК-1');
     if (p.station2 && p.station2.prFlag) r.push('зависимость: ПР-2 > ПР-1 + 1');
-    if (p.station3 && p.station3.controlFlag) r.push('расхождение контроля §7-8 / кросс-комната');
+    if (p.station3 && p.station3.controlFlag) r.push('расхождение контроля §7-8 / кросс-раунд');
     var ai = p.aiMarker && p.aiMarker.level;
     if (ai === 'strong') r.push('признаки ИИ-помощи (сильные)');
     else if (ai === 'soft') r.push('возможна ИИ-помощь');
@@ -633,12 +633,12 @@
 
   function progressPillsHtml(p) {
     var stages = [
-      { key: 'station1', label: 'С1', title: 'Станция 1 · Вычитка и карта проблем' },
-      { key: 'station2', label: 'С2', title: 'Станция 2 · Встреча с Агеевым' },
-      { key: 'roomFuture', label: 'ВЛ', title: '«Встреча с Лемехом у лифта»' },
-      { key: 'roomAlternatives', label: 'ОП', title: '«Очередь в „Прожектор"»' },
-      { key: 'roomPath', label: 'ЧК', title: '«Черновик к мартовскому комитету»' },
-      { key: 'station3', label: 'Ф', title: 'Финализация стратегии (холл)' }
+      { key: 'station1', label: 'Р1', title: 'Раунд 1 · Знакомство с «Искрой»' },
+      { key: 'station2', label: 'Р2', title: 'Раунд 2 · Встреча с Агеевым' },
+      { key: 'roomFuture', label: 'Р3', title: 'Раунд 3 · Встреча с Лемехом у лифта' },
+      { key: 'roomPath', label: 'Р4', title: 'Раунд 4 · Черновик к мартовскому комитету' },
+      { key: 'roomAlternatives', label: 'Р5', title: 'Раунд 5 · Очередь в «Прожектор»' },
+      { key: 'station3', label: 'Р6', title: 'Раунд 6 · Сборка стратегии' }
     ];
     return '<span class="fac-progress-pills">' + stages.map(function (st) {
       var s = stationStatusLabel(p, st.key);
@@ -676,7 +676,7 @@
   function deleteParticipant(p, btn) {
     impConfirm(
       'Удалить участника ' + formatBib(p.bib) + ' (' + p.firstName + ' ' + p.lastName + ')?\n' +
-      'Это удалит регистрацию и весь прогресс по станциям 1, 2 и 3. Действие необратимо.',
+      'Это удалит регистрацию и весь прогресс по всем раундам. Действие необратимо.',
       { confirmLabel: 'Удалить', danger: true }
     ).then(function (confirmed) {
       if (!confirmed) return;
@@ -1264,7 +1264,7 @@
 
   var ROOM_CONFIGS = {
     roomFuture: {
-      title: '«Встреча с Лемехом у лифта»',
+      title: 'Раунд 3 · Встреча с Лемехом у лифта',
       recalcStation: 3,
       recalcLabel: 'Пересчитать навык МК',
       answersHtml: roomAnswersFuture,
@@ -1272,7 +1272,7 @@
       ability2: { label: 'Работа с развилками будущего', code: 'МК-2', levelKey: 'mk2Level', sourceKey: 'mk2LevelSource', reasoningKey: 'mk2JudgeReasoning' }
     },
     roomAlternatives: {
-      title: '«Очередь в „Прожектор"»',
+      title: 'Раунд 5 · Очередь в «Прожектор»',
       recalcStation: 4,
       recalcLabel: 'Пересчитать навык ГА',
       answersHtml: roomAnswersAlternatives,
@@ -1280,7 +1280,7 @@
       ability2: { label: 'Идеи из разных областей', code: 'ГА-2', levelKey: 'ga2Level', sourceKey: 'ga2LevelSource', reasoningKey: 'ga2JudgeReasoning' }
     },
     roomPath: {
-      title: '«Черновик к мартовскому комитету»',
+      title: 'Раунд 4 · Черновик к мартовскому комитету',
       recalcStation: 5,
       recalcLabel: 'Пересчитать навык ПП',
       answersHtml: roomAnswersPath,
@@ -1404,7 +1404,7 @@
 
   // ---- кросс-комнатный контроль: показываем в карточке комнаты, где навык проявился ----
   // (ГА-1 — в Станции 1 по выводам связок; ПП-1 — в «Будущем»). Данные в
-  // station3.control.crossRoom; флаг = здесь выше, чем в своей комнате.
+  // station3.control.crossRoom; флаг = здесь выше, чем в своём раунде.
   function crossRoomBadgeHtml(cr, key) {
     if (!cr || !cr[key]) return '';
     var c = cr[key];
@@ -1432,10 +1432,10 @@
     var ov = '';
     if (c.flag) ov = (key === 'ga1') ? crossAcceptHtml('ga1', c.cross, c.code, ovInfo) : overrideControlsHtml('pp1', c.cross, ovInfo);
     return '<div class="fac-card" style="margin-top:12px;"><p>' + escapeHtml(c.code + ' · контроль (навык проявился здесь)') +
-      (c.flag ? ' <span class="fac-card-warn">⚑ выше, чем в своей комнате</span>' : '') + '</p>' +
+      (c.flag ? ' <span class="fac-card-warn">⚑ выше, чем в своём раунде</span>' : '') + '</p>' +
       '<p class="fac-detail-text">Оценка по чужому тексту (не оптимизирован под способность), по карте утечек. Балл автоматически не меняется — сверьте и решите вручную.</p>' +
       '<div class="fac-card-meta"><span>здесь: L' + c.cross + '</span>' +
-      '<span>в своей комнате: ' + (c.home === null || c.home === undefined ? '—' : 'L' + c.home) + '</span></div>' +
+      '<span>в своём раунде: ' + (c.home === null || c.home === undefined ? '—' : 'L' + c.home) + '</span></div>' +
       ov +
       (c.reasoning ? '<details class="fac-judge-reasoning"><summary>Обоснование судьи</summary><p class="fac-card-warn">' + escapeHtml(c.reasoning) + '</p></details>' : '') +
       '</div>';
@@ -1443,7 +1443,7 @@
 
   function renderDetailHtml(registration, s1, s2, roomFuture, roomAlternatives, roomPath, station3, participant, overrides) {
     if (!s1) {
-      return '<p class="fac-detail-loading">Станция 1 ещё не начата.</p>';
+      return '<p class="fac-detail-loading">Раунд 1 ещё не начат.</p>';
     }
     var crossRoom = station3 && station3.control && station3.control.crossRoom ? station3.control.crossRoom : {};
     var html = '';
@@ -1493,18 +1493,18 @@
       crossRoomBlockHtml(crossRoom, 'ga1', overrides && overrides.ga1) +
       materialsBlock(renderS1Materials(s1)) + recalcFooter(1, 'Пересчитать навык АК');
     html += taskSectionHtml(
-      'Станция 1 · Вычитка и карта проблем', 'station1', participant,
+      'Раунд 1 · Знакомство с «Искрой»', 'station1', participant,
       abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill) + crossRoomBadgeHtml(crossRoom, 'ga1') + aiMarkerChipHtml(s1),
       s1Body,
       (participant.station1 && participant.station1.akFlag) ? 'Нарушено ограничение зависимостей способностей'
-        : ((crossRoom.ga1 && crossRoom.ga1.flag) ? 'ГА-1 проявлен здесь выше, чем в своей комнате — контроль' : null),
+        : ((crossRoom.ga1 && crossRoom.ga1.flag) ? 'ГА-1 проявлен здесь выше, чем в своём раунде — контроль' : null),
       stageState(participant, 'station1')
     );
 
     // ---- Станция 2 · Встреча с Агеевым (ПР-1 + ПР-2) ----
     var pr = renderPRHtml(s2);
     html += taskSectionHtml(
-      'Станция 2 · Встреча с Агеевым', 'station2', participant,
+      'Раунд 2 · Встреча с Агеевым', 'station2', participant,
       abilityBadgeHtml('ПР-1', s2 && s2.pr1Level) + abilityBadgeHtml('ПР-2', s2 && s2.pr2Level) + skillBadgeHtml('навык ПР', participant.station2 && participant.station2.prSkill) + aiMarkerChipHtml(s2),
       pr.abilities + aiMarkerBasisHtml(s2) + materialsBlock(pr.materials) + (s2 ? recalcFooter(2, 'Пересчитать навык ПР') : ''),
       participant.station2 && participant.station2.prFlag ? 'Нарушено ограничение зависимостей способностей' : null,
@@ -1519,7 +1519,7 @@
       // ПП-1 всплывает в «Будущем» — кросс-контроль показываем в этой карточке
       var crBadge = key === 'roomFuture' ? crossRoomBadgeHtml(crossRoom, 'pp1') : '';
       var crBlock = key === 'roomFuture' ? crossRoomBlockHtml(crossRoom, 'pp1', overrides && overrides.pp1) : '';
-      var crWarn = (key === 'roomFuture' && crossRoom.pp1 && crossRoom.pp1.flag) ? 'ПП-1 проявлен здесь выше, чем в своей комнате — контроль' : null;
+      var crWarn = (key === 'roomFuture' && crossRoom.pp1 && crossRoom.pp1.flag) ? 'ПП-1 проявлен здесь выше, чем в своём раунде — контроль' : null;
       html += taskSectionHtml(
         config.title, key, participant,
         abilityBadgeHtml(config.ability1.code, state && state[config.ability1.levelKey]) +

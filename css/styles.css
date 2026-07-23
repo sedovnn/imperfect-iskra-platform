@@ -1223,6 +1223,9 @@ footer {
 }
 .hub-room-card:hover { border-color: var(--ink); }
 .hub-room-card.is-locked { cursor: default; opacity: 0.6; }
+/* текущий (следующий к прохождению) этап — вермилионовый фокус «вам сюда» */
+.hub-room-card.is-current { border-color: var(--accent); background: var(--accent-tint); box-shadow: inset 3px 0 0 var(--accent); }
+.hub-room-card.is-current:hover { border-color: var(--accent); }
 /* Кнопка-карточка выглядит как ссылка-карточка (вместо повторяющегося инлайн-ресета). */
 button.hub-room-card {
   width: 100%;

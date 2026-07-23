@@ -29,8 +29,8 @@
   function pname() { return session && session.name ? String(session.name).trim() : ''; }
   var state = null;
 
-  function storageKey(bib) { return 'imp_room_future_' + bib; }
-  function station2Key(bib) { return 'imp_station2_' + bib; }
+  function storageKey(bib) { return 'imp_round3_' + bib; }
+  function station2Key(bib) { return 'imp_round2_' + bib; }
 
   function loadSession() {
     try { return window.imp.loadSession(); } catch (e) { return null; }
@@ -152,7 +152,7 @@
     var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
     var stancePhrase = stance ? ('позицию ' + stance.label) : 'вашу рекомендацию';
 
-    var introKey = 'imp_room_future_intro_seen_' + session.bib;
+    var introKey = 'imp_round3_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
     document.getElementById('dismissIntro').addEventListener('click', function () {

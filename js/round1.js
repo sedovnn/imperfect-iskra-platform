@@ -13,8 +13,8 @@
   var session = null;
   var state = null;
 
-  function storageKey(bib) { return 'imp_station1_' + bib; }
-  function htmlKey(bib) { return 'imp_station1_html_' + bib; }
+  function storageKey(bib) { return 'imp_round1_' + bib; }
+  function htmlKey(bib) { return 'imp_round1_html_' + bib; }
 
   function loadSession() {
     try {
@@ -138,7 +138,7 @@
 
   // ---------- intro dismiss ----------
 
-  var introKey = 'imp_station1_intro_seen_' + session.bib;
+  var introKey = 'imp_round1_intro_seen_' + session.bib;
   var introEl = document.getElementById('stationIntro');
   var introNameEl = document.getElementById('introName');
   // диегетический ввод имени (Агеев спрашивает): префилл, если имя уже есть,
@@ -676,7 +676,7 @@
         '<textarea class="conn-mechanism" rows="2">' + escapeHtml(conn.mechanism || '') + '</textarea>' +
         '<label>В чём корневая проблема, к которой сходится эта связка</label>' +
         '<textarea class="conn-conclusion" rows="2" placeholder="только диагноз — какую корневую проблему обнажает эта цепочка (что с ней делать, спросим дальше)">' + escapeHtml(conn.conclusion || '') + '</textarea>' +
-        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:-2px 0 2px; line-height:1.45;">Решения, альтернативы и горизонт — в следующих комнатах. Здесь только картина проблем.</div>' +
+        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:-2px 0 2px; line-height:1.45;">Решения, альтернативы и горизонт — в следующих раундах. Здесь только картина проблем.</div>' +
         '<div class="conn-loop"><input type="checkbox" id="loop_' + conn.id + '"' + (conn.isLoop ? ' checked' : '') + ' />' +
           '<label for="loop_' + conn.id + '" style="text-transform:none; letter-spacing:0; font-weight:400;">Цепочка замыкается обратно — конец усиливает (или гасит) начало</label></div>';
 
@@ -761,9 +761,9 @@
 
   function lockEverything() {
     document.getElementById('finishBtn').setAttribute('disabled', 'disabled');
-    document.getElementById('finishBtn').textContent = 'Станция завершена';
+    document.getElementById('finishBtn').textContent = 'Раунд завершён';
     document.getElementById('finishBtn2').setAttribute('disabled', 'disabled');
-    document.getElementById('finishBtn2').textContent = 'Станция завершена';
+    document.getElementById('finishBtn2').textContent = 'Раунд завершён';
     document.querySelectorAll('#workScroll textarea, #workScroll select, #workScroll input').forEach(function (el) {
       el.setAttribute('disabled', 'disabled');
     });

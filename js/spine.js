@@ -24,9 +24,9 @@
 
   function chipsFor(bib) {
     var chips = [];
-    var s1 = read('imp_station1_' + bib);
-    var s2 = read('imp_station2_' + bib);
-    var s3 = read('imp_station3_' + bib);
+    var s1 = read('imp_round1_' + bib);
+    var s2 = read('imp_round2_' + bib);
+    var s3 = read('imp_map_' + bib);
 
     if (s1) {
       var cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });

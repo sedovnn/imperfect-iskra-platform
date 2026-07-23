@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Черновик к мартовскому комитету — i(m)perfect</title>
-<meta name="description" content="Раунд 1, финальный отрезок. Штерн сверяет черновик перед мартовским комитетом." />
+<title>Раунд 3 · Встреча с Лемехом у лифта — i(m)perfect</title>
+<meta name="description" content="Раунд 3 · Встреча с Лемехом у лифта. Пять минут у лифта, вопрос не по повестке." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=8" />
+<link rel="stylesheet" href="css/styles.css?v=9" />
 </head>
 <body>
 
@@ -25,17 +25,17 @@
   <div class="gate-card">
     <p class="kicker">Закрыто</p>
     <h2>Сначала — встреча с Агеевым</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Этот разговор открывается после того, как вы закончите станцию 2.</p>
-    <a class="btn btn-primary btn-block" href="station2.html">Вернуться на станцию 2 →</a>
+    <p class="section-lead" style="margin:0 0 24px;">Этот разговор открывается после того, как вы закончите раунд 2.</p>
+    <a class="btn btn-primary btn-block" href="round2.html">Вернуться в раунд 2 →</a>
   </div>
 </div>
 
 <div id="finishOverlay" class="gate gate-finish" style="display:none;">
   <div class="gate-card">
     <p class="kicker">✓ Разговор закончен</p>
-    <h2>Штерн забирает черновик</h2>
+    <h2>Лемех кивает и уходит</h2>
     <p class="section-lead" style="margin:0 0 24px;">Ваш разговор сохранён.</p>
-    <a class="btn btn-primary btn-block" href="station3.html">Вернуться в холл →</a>
+    <a class="btn btn-primary btn-block" href="map.html">Вернуться к карте →</a>
   </div>
 </div>
 
@@ -60,27 +60,27 @@
       <div class="station-header-left">
         <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
-        <h1 class="station-name">Черновик к мартовскому комитету</h1>
+        <h1 class="station-name">Раунд 3 · Встреча с Лемехом у лифта</h1>
       </div>
       <div class="station-header-right">
         <button type="button" class="btn btn-ghost btn-xs" id="reopenIntroBtn" title="Показать правила этого экрана">?</button>
         <span class="bib" id="hdrBib">№ 000</span>
-        <a class="btn btn-ghost" href="station3.html" style="padding:11px 18px; font-size:14px;">← В холл</a>
+        <a class="btn btn-ghost" href="map.html" style="padding:11px 18px; font-size:14px;">← К карте</a>
       </div>
     </header>
 
-    <div class="imp-spine" id="impSpine" aria-label="Ваша линия" style="display:none;"></div>
 
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
         <p class="kicker">Легенда</p>
-        <p>Через месяц — мартовский бюджетный комитет, тот самый, что в декабре отложил решение по «Мире». Григорий Штерн заглядывает к вам без предупреждения, с чашкой в руке: «Слышал, вы уже освоились. Комитет опять спросит не только про „Миру“ — спросит, куда вообще двигаться. Раз уж вы смотрите на всё это со стороны — покажите черновик».</p>
+        <p>Вы выходите из переговорной. У лифта — Виктор Лемех, вице-президент «Меридиана» по спецпроектам. «Есть минута? Не по повестке сегодняшней встречи».</p>
+        <p>Лемех в отрасли давно и любит подумать вслух о том, куда всё это в принципе движется. За этим он вас и поймал у лифта.</p>
         <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговору ↓</button>
       </div>
     </div>
 
     <div class="s2-body" id="roomBody">
-      <!-- реплики добавляются по мере прохождения (room-path.js) -->
+      <!-- реплики добавляются по мере прохождения (round3.js) -->
     </div>
 
   </div>
@@ -89,14 +89,13 @@
 <button type="button" class="dossier-dock js-open-dossier" aria-label="Открыть мои ответы">Мои ответы</button>
 
 <script src="js/boot-loading.js?v=2"></script>
-<script src="js/main.js?v=1"></script>
-<script src="js/spine.js?v=1"></script>
+<script src="js/main.js?v=2"></script>
 <script src="js/api.js?v=1"></script>
-<script src="js/demo.js?v=4"></script>
-<script src="js/dossier-render.js?v=2"></script>
+<script src="js/demo.js?v=5"></script>
+<script src="js/dossier-render.js?v=3"></script>
 <script src="js/dossier-panel.js?v=1"></script>
-<script src="js/case-ref.js?v=1"></script>
-<script src="js/room-path.js?v=3"></script>
-<script src="js/progress.js?v=3"></script>
+<script src="js/case-ref.js?v=2"></script>
+<script src="js/round3.js?v=4"></script>
+<script src="js/progress.js?v=5"></script>
 </body>
 </html>

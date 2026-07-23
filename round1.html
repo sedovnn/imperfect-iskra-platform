@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Станция 1 · Вычитка и карта проблем — i(m)perfect</title>
-<meta name="description" content="Раунд 1, станция 1. Прочитайте материалы «Искры» и соберите карту проблем." />
+<title>Раунд 1 · Знакомство с «Искрой» — i(m)perfect</title>
+<meta name="description" content="Раунд 1 · Знакомство с «Искрой». Прочитайте материалы «Искры» и соберите карту проблем." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=8" />
+<link rel="stylesheet" href="css/styles.css?v=9" />
 <style>
   /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
   .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -26,18 +26,18 @@
   <div class="gate-card">
     <p class="kicker">Нужен вход</p>
     <h2>Сначала вход по номеру</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Станция 1 привязана к вашему номеру участника — без него прогресс негде сохранить.</p>
+    <p class="section-lead" style="margin:0 0 24px;">Раунд 1 привязан к вашему номеру участника — без него прогресс негде сохранить.</p>
     <a class="btn btn-primary btn-block" href="index.html">Войти по номеру →</a>
   </div>
 </div>
 
 <div id="finishOverlay" class="gate" style="display:none;">
   <div class="gate-card">
-    <p class="kicker">✓ Станция 1 завершена</p>
+    <p class="kicker">✓ Раунд 1 завершён</p>
     <h2>Карта и связки сохранены</h2>
-    <p class="section-lead" style="margin:0 0 14px;">Дальше — встреча с Агеевым: приоритеты и защита позиции.</p>
+    <p class="section-lead" style="margin:0 0 14px;">Возвращаемся на карту ассессмента — дальше следующий раунд.</p>
     <p class="section-lead" style="margin:0 0 24px;">С этого шага справа всегда под рукой два язычка: «Мои ответы» — ваши прошлые шаги, и «Полный текст кейса» — пакет материалов «Искры» для сверки.</p>
-    <a class="btn btn-primary btn-block" href="station2.html">Перейти к станции 2 →</a>
+    <a class="btn btn-primary btn-block" href="map.html">Вернуться к карте →</a>
     <button class="btn btn-ghost btn-block" id="finishOverlayReview" style="margin-top:12px;">Ещё раз посмотреть</button>
   </div>
 </div>
@@ -49,7 +49,7 @@
       <div class="station-header-left">
         <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
-        <h1 class="station-name">Станция 1 · Вычитка и карта проблем</h1>
+        <h1 class="station-name">Раунд 1 · Знакомство с «Искрой»</h1>
       </div>
       <div class="station-header-right">
         <button type="button" class="btn btn-ghost btn-xs" id="reopenIntroBtn" title="Показать правила этого экрана">?</button>
@@ -125,7 +125,7 @@
                 <li>Две-три корневые проблемы и связи между ними.</li>
                 <li>Рекомендация по стратегической развилке — её вы найдёте в письме Агеева в конце пакета.</li>
               </ol>
-              <p class="case-brief-note">Пункты 1–2 вы делаете здесь, на станции 1; рекомендацию по развилке — дальше, на встрече с Агеевым. Проблемы рекомендуем выделять сразу, по ходу чтения.</p>
+              <p class="case-brief-note">Пункты 1–2 вы делаете здесь, в раунде 1; рекомендацию по развилке — дальше, на встрече с Агеевым. Проблемы рекомендуем выделять сразу, по ходу чтения.</p>
             </div>
           </article>
 
@@ -470,12 +470,12 @@
       <div class="station-header-left">
         <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
-        <h1 class="station-name">Станция 1 · Связки: что порождает что</h1>
+        <h1 class="station-name">Раунд 1 · Связки: что порождает что</h1>
       </div>
       <div class="station-header-right">
         <span class="bib" id="hdrBib2">№ 000</span>
         <button class="btn btn-ghost btn-sm" id="backToMapBtn">← Вернуться к карте</button>
-        <button class="btn btn-primary btn-sm" id="finishBtn2">Завершить станцию →</button>
+        <button class="btn btn-primary btn-sm" id="finishBtn2">Завершить раунд →</button>
       </div>
     </header>
 
@@ -511,10 +511,10 @@
 <button type="button" id="appxReturnBtn" class="appx-return" style="display:none;">↑ Вернуться к месту в тексте</button>
 
 <script src="js/boot-loading.js?v=2"></script>
-<script src="js/main.js?v=1"></script>
+<script src="js/main.js?v=2"></script>
 <script src="js/api.js?v=1"></script>
-<script src="js/demo.js?v=4"></script>
-<script src="js/station1.js?v=6"></script>
-<script src="js/progress.js?v=3"></script>
+<script src="js/demo.js?v=5"></script>
+<script src="js/round1.js?v=6"></script>
+<script src="js/progress.js?v=5"></script>
 </body>
 </html>

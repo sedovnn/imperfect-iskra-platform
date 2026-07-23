@@ -3,7 +3,7 @@
 // нужен для сверки с данными («играем по данным кейса»), а карту проблем
 // участник уже собрал на станции 1 — менять её здесь нельзя.
 //
-// Единственный источник текста — #caseContent из station1.html: тянется fetch'ем
+// Единственный источник текста — #caseContent из round1.html: тянется fetch'ем
 // один раз и кэшируется. Копии кейса в других файлах нет (правка кейса — в одном
 // месте). Оверлей и второй язычок создаются здесь же, без разметки в 5 страницах.
 
@@ -36,7 +36,7 @@
         '<div><p class="kicker">Пакет материалов</p><h2 style="margin:0;">Кейс «Искра»</h2></div>' +
         '<button type="button" class="btn btn-ghost btn-xs" id="caseRefClose">Закрыть ✕</button>' +
       '</div>' +
-      '<p class="section-lead" style="margin:14px 0 4px;">Только для чтения — карту проблем вы уже собрали на станции 1.</p>' +
+      '<p class="section-lead" style="margin:14px 0 4px;">Только для чтения — карту проблем вы уже собрали в раунде 1.</p>' +
       '<div class="case-content" id="caseRefContent"><p class="fac-detail-loading">Загружаю материалы…</p></div>' +
     '</div>';
   document.body.appendChild(panel);
@@ -66,7 +66,7 @@
     show(); // показываем сразу с «Загружаю…», чтобы не было пустой паузы
     // без force-cache: не хотим показать устаревший кейс после деплоя; в рамках
     // сессии повторных запросов нет — результат кэшируется в переменной cache.
-    fetch('station1.html')
+    fetch('round1.html')
       .then(function (r) { return r.text(); })
       .then(function (html) {
         var doc = new DOMParser().parseFromString(html, 'text/html');

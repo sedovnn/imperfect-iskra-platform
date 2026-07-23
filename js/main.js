@@ -13,6 +13,41 @@
 
   window.imp = window.imp || {};
 
+  // ---- Разовая миграция ключей localStorage station*/room-* → round*/map (рефактор
+  // «раунды внутри ассессмента»). Прогресс на машине участника, начатый ДО переименования,
+  // лежит под старыми ключами; копируем его на новые, чтобы ничего не потерять. Копируем
+  // (не переносим) — старые ключи остаются как страховка на случай отката. Идемпотентно:
+  // новый ключ не перезаписываем, если он уже есть. Флаг не даёт гонять на каждый рендер.
+  (function migrateStorageKeys() {
+    try {
+      if (localStorage.getItem('imp_keymigr_round_v1')) return;
+      var MAP = [
+        ['imp_station1_', 'imp_round1_'],
+        ['imp_station2_', 'imp_round2_'],
+        ['imp_room_future_', 'imp_round3_'],
+        ['imp_room_path_', 'imp_round4_'],
+        ['imp_room_alternatives_', 'imp_round5_'],
+        ['imp_station3_', 'imp_map_'] // покрывает и imp_station3_intro_seen_
+      ];
+      var keys = [];
+      for (var i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+      keys.forEach(function (k) {
+        if (!k) return;
+        for (var j = 0; j < MAP.length; j++) {
+          var oldP = MAP[j][0], newP = MAP[j][1];
+          if (k.indexOf(oldP) === 0) {
+            var nk = newP + k.slice(oldP.length);
+            if (localStorage.getItem(nk) === null) {
+              try { localStorage.setItem(nk, localStorage.getItem(k)); } catch (e) {}
+            }
+            break;
+          }
+        }
+      });
+      localStorage.setItem('imp_keymigr_round_v1', '1');
+    } catch (e) {}
+  })();
+
   // ---- Телеметрия ввода: маркер ИИ-помощи. Копим ТОЛЬКО агрегаты (как вводили:
   // вставки, темп набора, правки), НЕ содержание нажатий. Делегированные слушатели
   // на document — устойчивы к динамически добавляемым полям (карточки, шаги комнат).

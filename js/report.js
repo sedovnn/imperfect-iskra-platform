@@ -278,7 +278,7 @@
 
 // ОБЛОЖКА
 '<section class="page cover">' +
-  '<div class="phead"><span class="brand">' + LOGO + '</span><span class="meta">Ассессмент «Искра» · Раунд 1</span></div>' +
+  '<div class="phead"><span class="brand">' + LOGO + '</span><span class="meta">Ассессмент «Искра»</span></div>' +
   '<p class="eyebrow">Диагностический отчёт · превью · сравнение с ИИ</p>' +
   '<h1 class="cover-h1">Стратегическое<br>мышление</h1>' +
   '<p class="lede">Ваш профиль по пяти навыкам стратегического мышления — и его положение относительно окна ИИ: диапазона уровней, который на этом же кейсе показывают эталонные нейросети.</p>' +

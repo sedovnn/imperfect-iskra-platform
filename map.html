@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Финальный отрезок — i(m)perfect</title>
-<meta name="description" content="Раунд 1, финальный отрезок. Три разговора по порядку перед тем, как финализировать стратегию." />
+<title>Карта ассессмента — i(m)perfect</title>
+<meta name="description" content="Карта ассессмента: шесть раундов вокруг одного кейса, по порядку — от знакомства до сборки стратегии." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=8" />
+<link rel="stylesheet" href="css/styles.css?v=9" />
 </head>
 <body>
 
@@ -25,14 +25,14 @@
   <div class="gate-card">
     <p class="kicker">Закрыто</p>
     <h2>Сначала — встреча с Агеевым</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Финальный отрезок открывается после того, как вы закончите станцию 2.</p>
-    <a class="btn btn-primary btn-block" href="station2.html">Вернуться на станцию 2 →</a>
+    <p class="section-lead" style="margin:0 0 24px;">Раунд 6 (сборка) открывается после того, как вы пройдёте предыдущие раунды.</p>
+    <a class="btn btn-primary btn-block" href="round2.html">Вернуться в раунд 2 →</a>
   </div>
 </div>
 
 <div id="finishOverlay" class="gate gate-finish" style="display:none;">
   <div class="gate-card">
-    <p class="kicker">✓ Раунд 1 завершён</p>
+    <p class="kicker">✓ Ассессмент завершён</p>
     <h2>Стратегия финализирована</h2>
     <p id="ageevLetter" style="text-align:left; font-style:italic; line-height:1.6; margin:0 0 20px; color:rgba(255,255,255,0.92);"></p>
     <button type="button" class="btn btn-primary btn-block" id="reviewStrategyBtn">Посмотреть мою стратегию ещё раз</button>
@@ -43,16 +43,16 @@
 <div id="finalizeScreen" class="gate" style="display:none;">
   <div class="gate-card finalize-card">
     <div class="logo" style="margin-bottom:14px;">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">stratos</span></div>
-    <p class="kicker">Обзор стратегии</p>
+    <p class="kicker">Раунд 6 · Сборка стратегии</p>
     <h2>Ваша стратегия, собранная в StratOS</h2>
-    <p class="section-lead" style="margin:0 0 20px;">Мы собрали вашу работу за раунд в документ стратегии StratOS. Прочтите её как единое целое, сведите нестыковки и отредактируйте прямо здесь — это ваш финальный ход.</p>
-    <div class="stratos-doc" id="strategyRecap"><!-- рендерится station3.js --></div>
+    <p class="section-lead" style="margin:0 0 20px;">Пока вы были в «Прожекторе», ваш ассистент перенёс всё, что вы наработали в предыдущих раундах, в платформу StratOS и собрал черновик стратегии. Прочтите его как единое целое, сведите нестыковки и отредактируйте прямо здесь — это ваш финальный ход.</p>
+    <div class="stratos-doc" id="strategyRecap"><!-- рендерится map.js --></div>
 
     <p class="s2-ageev" style="margin-top:26px;"><b>Совет директоров</b>: «Прежде чем зафиксировать — коротко защитите свою финальную стратегию перед нами.»</p>
     <textarea id="finalDefense" class="finalize-textarea" rows="10" placeholder="Коротко объясните и защитите свой выбор перед советом. Можно пропустить, но это ваш последний ход."></textarea>
 
     <div class="finalize-actions">
-      <button type="button" class="btn btn-ghost" id="closeFinalizeBtn">← Назад в холл</button>
+      <button type="button" class="btn btn-ghost" id="closeFinalizeBtn">← Назад к карте</button>
       <button type="button" class="btn btn-primary" id="finalizeBtn">Финализировать стратегию →</button>
     </div>
   </div>
@@ -79,7 +79,7 @@
       <div class="station-header-left">
         <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
-        <h1 class="station-name">Финальный отрезок</h1>
+        <h1 class="station-name">Карта ассессмента</h1>
       </div>
       <div class="station-header-right">
         <button type="button" class="btn btn-ghost btn-xs" id="reopenIntroBtn" title="Показать правила этого экрана">?</button>
@@ -87,34 +87,34 @@
       </div>
     </header>
 
-    <div class="imp-spine" id="impSpine" aria-label="Ваша линия" style="display:none;"></div>
-
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
-        <p class="kicker">Легенда</p>
-        <p>Вы на финальном отрезке раунда 1: впереди три коротких разговора и финализация стратегии.</p>
+        <p class="kicker">Карта ассессмента</p>
+        <p>Весь ассессмент — шесть раундов вокруг одного кейса «Искры»: пять из них на карте ниже, шестой — сборка стратегии. Это ваш штаб: отсюда вы заходите в каждый раунд и сюда же возвращаетесь. Всегда видно, что пройдено, где вы сейчас и сколько осталось.</p>
         <div class="case-rule">
           <span>→</span>
-          <span><b>Три разговора по порядку.</b> Следующий открывается, когда закончите предыдущий — так мысль не рвётся. Внутрь завершённого можно вернуться.</span>
+          <span><b>По порядку.</b> Следующий раунд открывается, когда закончите предыдущий: это одна история, а не набор отдельных задач.</span>
         </div>
         <div class="case-rule" style="margin-top:12px;">
           <span>✓</span>
-          <span><b>Все три разговора — часть раунда.</b> Пройти нужно каждый: они раскрывают разные грани вашей позиции. Финализировать стратегию можно только после всех трёх.</span>
+          <span><b>Раунд 6 — сборка.</b> Пройдёте первые пять — соберёте из них единую стратегию и защитите её.</span>
         </div>
-        <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговорам ↓</button>
+        <div class="case-rule" style="margin-top:12px;">
+          <span>⏱</span>
+          <span><b>Около двух часов.</b> Прогресс сохраняется по вашему номеру — можно закрыть вкладку и вернуться позже.</span>
+        </div>
+        <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к карте ↓</button>
       </div>
     </div>
 
     <div class="hub-body" id="hubBody">
 
-      <div class="hub-stance-callback" id="hubStanceCallback" style="display:none;"></div>
-
       <div class="hub-rooms" id="hubRooms">
-        <!-- карточки комнат рендерятся station3.js -->
+        <!-- карточки комнат рендерятся map.js -->
       </div>
 
       <div class="hub-finalize">
-        <button class="btn btn-primary" id="openFinalizeBtn">Собрать и финализировать стратегию →</button>
+        <button class="btn btn-ghost" id="openFinalizeBtn">Финализировать стратегию →</button>
       </div>
 
     </div>
@@ -125,14 +125,13 @@
 <button type="button" class="dossier-dock js-open-dossier" aria-label="Открыть мои ответы">Мои ответы</button>
 
 <script src="js/boot-loading.js?v=2"></script>
-<script src="js/main.js?v=1"></script>
-<script src="js/spine.js?v=1"></script>
+<script src="js/main.js?v=2"></script>
 <script src="js/api.js?v=1"></script>
-<script src="js/demo.js?v=4"></script>
-<script src="js/dossier-render.js?v=2"></script>
+<script src="js/demo.js?v=5"></script>
+<script src="js/dossier-render.js?v=3"></script>
 <script src="js/dossier-panel.js?v=1"></script>
-<script src="js/case-ref.js?v=1"></script>
-<script src="js/station3.js?v=3"></script>
-<script src="js/progress.js?v=3"></script>
+<script src="js/case-ref.js?v=2"></script>
+<script src="js/map.js?v=5"></script>
+<script src="js/progress.js?v=5"></script>
 </body>
 </html>

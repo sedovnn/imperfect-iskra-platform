@@ -26,12 +26,12 @@
   var TAG = { threat: 'угроза', opportunity: 'возможность' };
 
   window.imp.buildDossierHtml = function (bib) {
-    var s1 = read('imp_station1_' + bib);
-    var s2 = read('imp_station2_' + bib);
-    var rf = read('imp_room_future_' + bib);
-    var ra = read('imp_room_alternatives_' + bib);
-    var rp = read('imp_room_path_' + bib);
-    var s3 = read('imp_station3_' + bib);
+    var s1 = read('imp_round1_' + bib);
+    var s2 = read('imp_round2_' + bib);
+    var rf = read('imp_round3_' + bib);
+    var ra = read('imp_round5_' + bib);
+    var rp = read('imp_round4_' + bib);
+    var s3 = read('imp_map_' + bib);
 
     var html = '';
     function section(title) { html += '<h4>' + esc(title) + '</h4>'; }
@@ -42,7 +42,7 @@
 
     // ---------- Станция 1 ----------
     if (s1) {
-      section('Станция 1 · Вычитка и карта проблем');
+      section('Раунд 1 · Знакомство с «Искрой»');
 
       // проблема = отметка: описание своими словами + цитата, откуда она
       var cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });
@@ -85,7 +85,7 @@
 
     // ---------- Станция 2 ----------
     if (s2) {
-      section('Станция 2 · Встреча с Агеевым');
+      section('Раунд 2 · Встреча с Агеевым');
       var cardById2 = {}; (s2.cardsSnapshot || []).forEach(function (c) { cardById2[c.id] = c; });
       function t2(id) { var c = cardById2[id]; return c ? c.text : '(карточка)'; }
 
@@ -119,25 +119,15 @@
       if (s2.proactiveText) textB('При каких условиях пересмотрю выбор:', s2.proactiveText);
     }
 
-    // ---------- Комнаты ----------
+    // ---------- Комнаты (по порядку раундов: 3 → 4 → 5) ----------
     if (rf && (rf.answer1 || rf.answer2)) {
-      section('Встреча с Лемехом у лифта');
+      section('Раунд 3 · Встреча с Лемехом у лифта');
       if (rf.answer1) textB('Куда всё идёт:', rf.answer1);
       if (rf.answer2) textB('Если пойдёт не так:', rf.answer2);
     }
 
-    var raSources = (ra && (ra.sources || (ra.source ? String(ra.source).split(',') : []))) || [];
-    raSources = raSources.map(function (s) { return String(s).trim(); }).filter(function (s) { return s; });
-    if (ra && (ra.answer1 || ra.subdecisions || raSources.length || ra.sourceElaboration)) {
-      section('Очередь в «Прожектор»');
-      if (ra.answer1) textB('Почему это сработает:', ra.answer1);
-      if (ra.subdecisions) textB('Что ещё рассматривал / отбросил:', ra.subdecisions);
-      if (raSources.length) textB('Источники идей:', raSources.map(function (s) { return GA_SOURCE[s] || s; }).join('; '));
-      if (ra.sourceElaboration) text(ra.sourceElaboration);
-    }
-
     if (rp && (rp.currentState || rp.targetState || (rp.stages || []).length)) {
-      section('Черновик к мартовскому комитету');
+      section('Раунд 4 · Черновик к мартовскому комитету');
       if (rp.currentState || rp.targetState) textB('Текущее → целевое:', (rp.currentState || '—') + ' → ' + (rp.targetState || '—'));
       var stages = (rp.stages || []).filter(function (s) { return s.description; });
       if (stages.length) {
@@ -158,9 +148,19 @@
       if (enablers.length) { html += '<p class="fac-detail-text"><b>Опора / ресурсы:</b></p>'; cardsOpen(); enablers.forEach(function (e) { html += '<div class="fac-card"><p>' + esc(e.text) + '</p></div>'; }); cardsClose(); }
     }
 
+    var raSources = (ra && (ra.sources || (ra.source ? String(ra.source).split(',') : []))) || [];
+    raSources = raSources.map(function (s) { return String(s).trim(); }).filter(function (s) { return s; });
+    if (ra && (ra.answer1 || ra.subdecisions || raSources.length || ra.sourceElaboration)) {
+      section('Раунд 5 · Очередь в «Прожектор»');
+      if (ra.answer1) textB('Почему это сработает:', ra.answer1);
+      if (ra.subdecisions) textB('Что ещё рассматривал / отбросил:', ra.subdecisions);
+      if (raSources.length) textB('Источники идей:', raSources.map(function (s) { return GA_SOURCE[s] || s; }).join('; '));
+      if (ra.sourceElaboration) text(ra.sourceElaboration);
+    }
+
     // ---------- Финализация ----------
     if (s3 && s3.finalDefense && String(s3.finalDefense).trim()) {
-      section('Финальная защита стратегии');
+      section('Раунд 6 · Защита стратегии');
       text(s3.finalDefense);
     }
 

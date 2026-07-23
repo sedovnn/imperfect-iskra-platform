@@ -14,7 +14,7 @@
 //  2. Бэкенд глушим (isApiConfigured → false, callApi → null, hydrateOnce → no-op),
 //     чтобы ни один экскурсионный прогон не попал в живые Sheets и не ждал сети.
 //  3. Профиль ответов раскладывается в те же самые ключи localStorage
-//     (imp_station1_<bib> и т.д.), что пишет настоящий участник, — экраны не
+//     (imp_round1_<bib> и т.д.), что пишет настоящий участник, — экраны не
 //     знают, что это демо, и рендерят реальный UI.
 //  4. Поверх — тонкая панель пояснений (что меряется) + нижняя навигация по
 //     экскурсии (пред./след. экран, смена профиля, выход).
@@ -229,7 +229,7 @@
     var bib = DEMO_BIB;
 
     // размеченный HTML кейса пере-создаётся под новый профиль (см. injectDemoMarks)
-    localStorage.removeItem('imp_station1_html_' + bib);
+    localStorage.removeItem('imp_round1_html_' + bib);
 
     // сессия демо — в sessionStorage (per-tab), чтобы не перезаписать общую
     // реальную сессию в других вкладках. Читатели берут её через window.imp.loadSession.
@@ -255,8 +255,8 @@
       return { id: uid(), cardIds: cn.cards.map(function (n) { return 'c' + n; }),
                mechanism: cn.mechanism || '', conclusion: cn.conclusion || '', isLoop: !!cn.loop };
     });
-    put('imp_station1_' + bib, {
-      // как это делает station1.js deriveCards — чтобы дальше (доссье/связки/кабинет)
+    put('imp_round1_' + bib, {
+      // как это делает round1.js deriveCards — чтобы дальше (доссье/связки/кабинет)
       // проблемы были видны, даже если экскурсия прыгнула на станцию 2 мимо станции 1
       cards: highlights.map(function (h) { return { id: h.id, text: h.problem, anchor: h.snippet, tag: h.tag || '', influence: h.influence || '' }; }),
       highlights: highlights, connections: connections,
@@ -268,7 +268,7 @@
 
     // станция 2 — приоритизация + развилка
     var s2 = profile.station2;
-    put('imp_station2_' + bib, {
+    put('imp_round2_' + bib, {
       cardsSnapshot: cards.map(function (c) { return { id: c.id, text: c.text }; }),
       priorities: (s2.priorities || []).map(function (p) { return { cardId: 'c' + p.card, target: p.target || '' }; }),
       rejected: (s2.rejected || []).map(function (r) { return { cardId: 'c' + r.card, freed: r.freed || '' }; }),
@@ -280,19 +280,19 @@
     });
 
     var rf = profile.roomFuture;
-    put('imp_room_future_' + bib, {
+    put('imp_round3_' + bib, {
       answer1: rf.answer1 || '', answer2: rf.answer2 || '',
       step: 'q2', finished: false, startedAt: nowISO()
     });
 
     var ra = profile.roomAlternatives;
-    put('imp_room_alternatives_' + bib, {
+    put('imp_round5_' + bib, {
       answer1: ra.answer1 || '', source: ra.source || '', sourceElaboration: ra.sourceElaboration || '',
       step: 'q2', finished: false, startedAt: nowISO()
     });
 
     var rp = profile.roomPath;
-    put('imp_room_path_' + bib, {
+    put('imp_round4_' + bib, {
       currentState: rp.currentState || '', targetState: rp.targetState || '',
       stages: (rp.stages || []).map(function (s) { return { id: uid(), description: s.description || '', rationale: s.rationale || '' }; }),
       barriers: (rp.barriers || []).map(function (t) { return { id: uid(), text: t }; }),
@@ -300,7 +300,7 @@
       step: 'q2', finished: false, startedAt: nowISO()
     });
 
-    put('imp_station3_' + bib, {
+    put('imp_map_' + bib, {
       finalDefense: (profile.station3 && profile.station3.finalDefense) || '',
       finished: false, startedAt: nowISO()
     });
@@ -338,17 +338,17 @@
 
   // собственный ключ .finished для каждого экрана
   var OWN_KEY = {
-    'station1.html': 'imp_station1_' + bib,
-    'station2.html': 'imp_station2_' + bib,
-    'station3.html': 'imp_station3_' + bib,
-    'room-future.html': 'imp_room_future_' + bib,
-    'room-alternatives.html': 'imp_room_alternatives_' + bib,
-    'room-path.html': 'imp_room_path_' + bib
+    'round1.html': 'imp_round1_' + bib,
+    'round2.html': 'imp_round2_' + bib,
+    'map.html': 'imp_map_' + bib,
+    'round3.html': 'imp_round3_' + bib,
+    'round5.html': 'imp_round5_' + bib,
+    'round4.html': 'imp_round4_' + bib
   };
 
   // 1) гейты предыдущих этапов должны быть пройдены
-  if (page === 'station2.html') setFinished('imp_station1_' + bib, true);
-  if (page === 'station3.html' || page.indexOf('room-') === 0) setFinished('imp_station2_' + bib, true);
+  if (page === 'round2.html') setFinished('imp_round1_' + bib, true);
+  if (page === 'map.html' || page.indexOf('room-') === 0) setFinished('imp_round2_' + bib, true);
 
   // 2) ТЕКУЩИЙ экран экскурсии всегда играбелен/просматриваем: даже если на нём
   // нажали «Завершить» и ушли дальше, при возврате он не должен быть заперт
@@ -358,31 +358,31 @@
   // ---------- тур: порядок экранов + пояснения механики ----------
 
   var TOUR = [
-    { file: 'station1.html', label: '1 · Карта проблем', tag: 'Навык АК',
+    { file: 'round1.html', label: 'Раунд 1 · Знакомство с «Искрой»', tag: 'Навык АК',
       abilities: ['ak1', 'ak2'],
       how: 'Навык «Анализ контекста». <b>АК-1</b> — широта: сколько из 5 доменов среды затронуто (конкуренты, тех-сдвиг, структура рынка, смена собственника, рынок труда). <b>АК-2</b> — глубина: связи между факторами и петли обратной связи (вторая фаза, «К связкам →»). Оба судит ИИ по <b>тексту</b> карточек и связок. Единственный жёсткий пол: нет карточек → L1.',
       tip: 'Группы и якоря на балл <b>не влияют</b>. Якорь — доказательство опоры на текст (его видит фасилитатор), группировка — необязательный органайзер. Раньше домен засчитывался только за перетащенную отметку — от этого отказались, т.к. сильная карта без перетаскивания падала в L1.' },
-    { file: 'station2.html', label: '2 · Встреча с Агеевым', tag: 'Навык ПР + развилка',
+    { file: 'round2.html', label: 'Раунд 2 · Встреча с Агеевым', tag: 'Навык ПР + развилка',
       abilities: ['pr1', 'pr2'],
       how: 'Навык «Приоритизация». <b>ПР-1</b> — что выбрано: ранжирование своих же карточек + явные отказы. <b>ПР-2</b> — почему и держится ли под давлением (стресс-тест Агеева). <b>Развилка</b> («Крепость»/«Вторая кривая»/своя) — это <b>не отдельный балл</b>, а ось всего финала: на неё ссылается холл и три разговора, из неё собирается документ стратегии.',
       tip: 'Разговор идёт только вперёд — зафиксированные шаги залочены. Это by design, а не баг.' },
-    { file: 'station3.html', label: '3 · Холл трёх разговоров', tag: 'Фиксированный порядок',
+    { file: 'map.html', label: 'Карта ассессмента', tag: 'Фиксированный порядок',
       abilities: [],
       how: 'Хаб: три разговора в <b>фиксированном</b> порядке (Будущее → Путь → Альтернативы) — следующий открывается только после завершения предыдущего, чтобы не рвать ход мысли. Все три обязательны (п.10): финализировать стратегию можно только пройдя каждый. Плашка вверху ссылается на выбранную позицию — «слух разошёлся по этажам».',
       tip: 'Названия комнат — про сюжет, не про способность: чтобы не подсказывать, что здесь меряется. «Путь» не последним — чтобы не попадал в хвост усталости.' },
-    { file: 'room-future.html', label: 'Встреча с Лемехом у лифта', tag: 'Навык МК',
+    { file: 'round3.html', label: 'Раунд 3 · Встреча с Лемехом у лифта', tag: 'Навык МК',
       abilities: ['mk1', 'mk2'],
       how: 'Навык «Моделирование будущего». <b>МК-1</b> — горизонт рассуждения + <b>амбициозность</b> цели (на какой результат готов работать, даже если результат созреет уже без него, и обоснование направления). <b>МК-2</b> — тип мышления о будущем (экстраполяция / образ / 2–3 разных сценария). Реплика Лемеха подставляет <b>вашу</b> позицию с развилки. Горизонт и амбиция не подсказываются — участник сам задаёт планку.',
       tip: 'Обратите внимание: текст реплики меняется в зависимости от позиции — переключите профиль и сравните.' },
-    { file: 'room-alternatives.html', label: 'Очередь в «Прожектор»', tag: 'Навык ГА',
-      abilities: ['ga1', 'ga2'],
-      how: 'Навык «Генерация альтернатив». <b>ГА-1</b> — сам ли участник сгенерировал альтернативы (а не потому, что попросили). <b>ГА-2</b> — широта источников идей (свой опыт / практика / пример / общий паттерн). Первый вопрос намеренно без структуры — иначе сигнал ГА-1 испортится. Второй — самотег источника + необязательная элаборация.',
-      tip: 'Тег источника не решает уровень сам — ИИ всё равно читает содержание элаборации на L3+.' },
-    { file: 'room-path.html', label: 'Черновик к комитету', tag: 'Навык ПП',
+    { file: 'round4.html', label: 'Раунд 4 · Черновик к мартовскому комитету', tag: 'Навык ПП',
       abilities: ['pp1', 'pp2'],
       how: 'Навык «Путь к цели». <b>ПП-1</b> — декомпозиция: текущее → целевое состояние + этапы. <b>ПП-2</b> — барьеры и ресурсы, связка «барьер → чем перекрыть». Здесь есть реальный структурный каркас (в отличие от МК/ГА), потому что граничные тесты ПП — про структуру и содержание, а не про спонтанность.',
       tip: 'Каркас организует текст участника, но связность этапов и качество барьер→ресурс по-прежнему решает ИИ.' },
-    { file: 'station3.html#finalize', label: 'Финал · StratOS-документ', tag: 'Сборка + контроль',
+    { file: 'round5.html', label: 'Раунд 5 · Очередь в «Прожектор»', tag: 'Навык ГА',
+      abilities: ['ga1', 'ga2'],
+      how: 'Навык «Генерация альтернатив». <b>ГА-1</b> — сам ли участник сгенерировал альтернативы (а не потому, что попросили). <b>ГА-2</b> — широта источников идей (свой опыт / практика / пример / общий паттерн). Первый вопрос намеренно без структуры — иначе сигнал ГА-1 испортится. Второй — самотег источника + необязательная элаборация.',
+      tip: 'Тег источника не решает уровень сам — ИИ всё равно читает содержание элаборации на L3+.' },
+    { file: 'map.html#finalize', label: 'Раунд 6 · Сборка стратегии', tag: 'Сборка + контроль',
       abilities: [],
       how: 'Финал — <b>редактируемый StratOS-документ</b> (fp ▸ stratos): ответы всего раунда автоматически собираются в артефакты StratOS (горизонт, БАЦ, декомпозиция по ССП, текущее состояние, фокус через отказ, ценностное предложение, проекты, риски), участник может свести нестыковки и отредактировать прямо здесь. Поле «защиты» — <b>контрольный вопрос</b> (§7–8): пере-оценивает ПР-2/МК-2/ГА-1 на глубине; при расхождении ≥2 включается арбитр-ИИ.',
       tip: 'Оценка целостности правки и PDF-выгрузка — отдельный трек (пока не считается). Отсылка к продукту StratOS.' }
@@ -396,13 +396,13 @@
 
   function currentTourIndex() {
     var hash = location.hash || '';
-    // финал = station3.html#finalize; холл = station3.html без хэша
+    // финал = map.html#finalize; холл = map.html без хэша
     for (var i = 0; i < TOUR.length; i++) {
       var t = TOUR[i];
       var tf = t.file.split('#')[0];
       var th = t.file.indexOf('#') !== -1 ? '#' + t.file.split('#')[1] : '';
-      if (tf === page && (th ? hash === th : true) && (th || !hash || page !== 'station3.html' || i === 2)) {
-        if (page === 'station3.html') {
+      if (tf === page && (th ? hash === th : true) && (th || !hash || page !== 'map.html' || i === 2)) {
+        if (page === 'map.html') {
           // различаем холл (без #finalize) и финал (#finalize)
           if (hash === '#finalize' && th === '#finalize') return i;
           if (hash !== '#finalize' && th !== '#finalize') return i;
@@ -476,9 +476,9 @@
     ['imp_current_session', DEMO_KEY].forEach(function (k) { sessionStorage.removeItem(k); });
     // засеянные данные экскурсии и служебные флаги — в localStorage (+ DEMO_KEY на случай legacy)
     ['imp_current_session', DEMO_KEY, 'imp_demo_note_collapsed',
-     'imp_station1_' + bib, 'imp_station1_html_' + bib, 'imp_station2_' + bib,
-     'imp_station3_' + bib, 'imp_room_future_' + bib, 'imp_room_alternatives_' + bib,
-     'imp_room_path_' + bib].forEach(function (k) { localStorage.removeItem(k); });
+     'imp_round1_' + bib, 'imp_round1_html_' + bib, 'imp_round2_' + bib,
+     'imp_map_' + bib, 'imp_round3_' + bib, 'imp_round5_' + bib,
+     'imp_round4_' + bib].forEach(function (k) { localStorage.removeItem(k); });
     ['station1', 'station2', 'station3', 'room_future', 'room_alternatives', 'room_path'].forEach(function (k) {
       localStorage.removeItem('imp_' + k + '_intro_seen_' + bib);
     });
@@ -556,8 +556,8 @@
     bar.querySelector('.demo-profile').addEventListener('change', function (e) { setProfile(e.target.value); });
     bar.querySelector('.demo-exit').addEventListener('click', exitDemo);
 
-    // финал: автоматически открыть документ стратегии на station3.html#finalize
-    if (page === 'station3.html' && location.hash === '#finalize') {
+    // финал: автоматически открыть документ стратегии на map.html#finalize
+    if (page === 'map.html' && location.hash === '#finalize') {
       var tries = 0;
       var t = setInterval(function () {
         var btn = document.getElementById('openFinalizeBtn');
@@ -570,18 +570,18 @@
     // станция 1: реально размечаем в тексте цитаты засеянных проблем, чтобы в
     // экскурсии была видна связка «отметка в тексте ↔ карточка проблемы» — как у
     // настоящего участника (демо не проходит выделение руками).
-    if (page === 'station1.html') injectDemoMarks();
+    if (page === 'round1.html') injectDemoMarks();
   }
 
   // Оборачивает в <mark class="hl"> первую встреченную в тексте кейса цитату каждой
-  // засеянной проблемы (по её snippet). Клик по отметке station1.js уводит к
+  // засеянной проблемы (по её snippet). Клик по отметке round1.js уводит к
   // карточке, клик по цитате карточки — к отметке. Размеченный HTML сохраняем в
   // htmlKey, чтобы отметки пережили перезагрузку экскурсии.
   function injectDemoMarks() {
     var cc = document.getElementById('caseContent');
     if (!cc) return;
     var s1 = null;
-    try { s1 = JSON.parse(localStorage.getItem('imp_station1_' + DEMO_BIB) || 'null'); } catch (e) {}
+    try { s1 = JSON.parse(localStorage.getItem('imp_round1_' + DEMO_BIB) || 'null'); } catch (e) {}
     if (!s1 || !s1.highlights || !s1.highlights.length) return;
     var changed = false;
     s1.highlights.forEach(function (h) {
@@ -607,7 +607,7 @@
       }
     });
     if (changed) {
-      try { localStorage.setItem('imp_station1_html_' + DEMO_BIB, cc.innerHTML); } catch (e) {}
+      try { localStorage.setItem('imp_round1_html_' + DEMO_BIB, cc.innerHTML); } catch (e) {}
     }
   }
 

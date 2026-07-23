@@ -31,6 +31,8 @@
 
 (function () {
   var session = null;
+  // имя из окна Агеева (может быть пустым) — для обращения в репликах; экранируем при вставке
+  function pname() { return session && session.name ? String(session.name).trim() : ''; }
   var state = null;
 
   var SOURCE_OPTIONS = [
@@ -40,8 +42,8 @@
     { value: 'pattern', label: 'Что-то более общее, что я вижу за разными примерами' }
   ];
 
-  function storageKey(bib) { return 'imp_room_alternatives_' + bib; }
-  function station2Key(bib) { return 'imp_station2_' + bib; }
+  function storageKey(bib) { return 'imp_round5_' + bib; }
+  function station2Key(bib) { return 'imp_round2_' + bib; }
 
   function loadSession() {
     try { return window.imp.loadSession(); } catch (e) { return null; }
@@ -148,7 +150,7 @@
   function initWorkspace() {
     state = loadState(session.bib);
 
-    var introKey = 'imp_room_alternatives_intro_seen_' + session.bib;
+    var introKey = 'imp_round5_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
     document.getElementById('dismissIntro').addEventListener('click', function () {
@@ -172,7 +174,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Олег Брагин</b> скользит взглядом по вашему бейджу: «Консультант, значит. Двадцать лет я тут — и скажу прямо: выбора обычно нет. „Развилки“, „альтернативы“ — это вы любите, а на деле любой на вашем месте пришёл бы ровно к тому же ходу. Так что докажите, что я неправ: что у вас правда было из чего выбирать — и почему вы отмели остальное, а не приняли единственное очевидное.»</p>' +
+        '<p class="s2-ageev"><b>Олег Брагин</b> скользит взглядом по вашему бейджу: «' + (pname() ? escapeHtml(pname()) + '? Консультант, значит' : 'Консультант, значит') + '. Двадцать лет я тут — и скажу прямо: выбора обычно нет. „Развилки“, „альтернативы“ — это вы любите, а на деле любой на вашем месте пришёл бы ровно к тому же ходу. Так что докажите, что я неправ: что у вас правда было из чего выбирать — и почему вы отмели остальное, а не приняли единственное очевидное.»</p>' +
         '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ Брагину"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {

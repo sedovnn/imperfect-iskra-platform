@@ -11,8 +11,8 @@
   function pname() { return session && session.name ? String(session.name).trim() : ''; }
   var state = null;
 
-  function storageKey(bib) { return 'imp_station2_' + bib; }
-  function station1Key(bib) { return 'imp_station1_' + bib; }
+  function storageKey(bib) { return 'imp_round2_' + bib; }
+  function station1Key(bib) { return 'imp_round1_' + bib; }
 
   function loadSession() {
     try { return window.imp.loadSession(); } catch (e) { return null; }
@@ -156,7 +156,7 @@
       saveState();
     }
 
-    var introKey = 'imp_station2_intro_seen_' + session.bib;
+    var introKey = 'imp_round2_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
     document.getElementById('dismissIntro').addEventListener('click', function () {

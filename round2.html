@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Станция 2 · Встреча с Агеевым — i(m)perfect</title>
-<meta name="description" content="Раунд 1, станция 2. Понедельник, 10:00 — разговор с Агеевым: приоритеты и защита выбора." />
+<title>Раунд 2 · Встреча с Агеевым — i(m)perfect</title>
+<meta name="description" content="Раунд 2 · Встреча с Агеевым. Понедельник, 10:00 — разговор с Агеевым: приоритеты и защита выбора." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=8" />
+<link rel="stylesheet" href="css/styles.css?v=9" />
 </head>
 <body>
 
@@ -16,26 +16,26 @@
   <div class="gate-card">
     <p class="kicker">Нужен вход</p>
     <h2>Сначала вход по номеру</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Станция 2 привязана к вашему номеру участника — без него прогресс негде сохранить.</p>
+    <p class="section-lead" style="margin:0 0 24px;">Раунд 2 привязан к вашему номеру участника — без него прогресс негде сохранить.</p>
     <a class="btn btn-primary btn-block" href="index.html">Войти по номеру →</a>
   </div>
 </div>
 
 <div id="gateStation1" class="gate" style="display:none;">
   <div class="gate-card">
-    <p class="kicker">Станция 2 закрыта</p>
+    <p class="kicker">Раунд 2 закрыт</p>
     <h2>Сначала — карта и связки</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Агеев не начнёт разговор без вашей карты: станция 2 работает с карточками, которые вы собрали на станции 1.</p>
-    <a class="btn btn-primary btn-block" href="station1.html">Вернуться на станцию 1 →</a>
+    <p class="section-lead" style="margin:0 0 24px;">Агеев не начнёт разговор без вашей карты: раунд 2 работает с карточками, которые вы собрали в раунде 1.</p>
+    <a class="btn btn-primary btn-block" href="round1.html">Вернуться в раунд 1 →</a>
   </div>
 </div>
 
 <div id="finishOverlay" class="gate gate-finish" style="display:none;">
   <div class="gate-card">
-    <p class="kicker">✓ Станция 2 завершена</p>
+    <p class="kicker">✓ Раунд 2 завершён</p>
     <h2>Встреча закончена</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Агеев проводил вас до лифта. Дальше — финальный отрезок раунда 1.</p>
-    <a class="btn btn-primary btn-block" href="station3.html">Перейти дальше →</a>
+    <p class="section-lead" style="margin:0 0 24px;">Агеев проводил вас до лифта. Возвращаемся на карту ассессмента.</p>
+    <a class="btn btn-primary btn-block" href="map.html">Вернуться к карте →</a>
     <button class="btn btn-ghost btn-block" id="finishOverlayReview" style="margin-top:12px; border-color: rgba(255,255,255,0.3); color: #fff;">Ещё раз посмотреть разговор</button>
   </div>
 </div>
@@ -61,7 +61,7 @@
       <div class="station-header-left">
         <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
-        <h1 class="station-name">Станция 2 · Встреча с Агеевым</h1>
+        <h1 class="station-name">Раунд 2 · Встреча с Агеевым</h1>
       </div>
       <div class="station-header-right">
         <button type="button" class="btn btn-ghost btn-xs" id="reopenIntroBtn" title="Показать правила этого экрана">?</button>
@@ -69,7 +69,6 @@
       </div>
     </header>
 
-    <div class="imp-spine" id="impSpine" aria-label="Ваша линия" style="display:none;"></div>
 
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
@@ -77,7 +76,7 @@
         <p>Понедельник, 9 февраля, 10:00. Кабинет Агеева. Он закрывает ноутбук: «Карту вашу я прочитал вчера вечером, спасибо. Теперь разговор по существу. Всё разом мы делать не будем — люди, деньги и моё время у совета директоров ограничены. Разложите прямо здесь: с чем идём к совету в первую очередь, а что честно откладываем».</p>
         <div class="case-rule">
           <span>→</span>
-          <span><b>Работаете со своей картой.</b> Здесь только проблемы, которые вы сами собрали на станции 1. Что оставить неразобранным, что отложить, что двигать первым — решать вам. Необязательные поля можно пропускать.</span>
+          <span><b>Работаете со своей картой.</b> Здесь только проблемы, которые вы сами собрали в раунде 1. Что оставить неразобранным, что отложить, что двигать первым — решать вам. Необязательные поля можно пропускать.</span>
         </div>
         <div class="case-rule" style="margin-top:12px;">
           <span>⚠</span>
@@ -85,14 +84,14 @@
         </div>
         <div class="case-rule" style="margin-top:12px;">
           <span>📂</span>
-          <span><b>Всё под рукой.</b> Сверху — «Ваша линия» с ключевыми решениями; справа — два язычка: «Мои ответы» (ваши шаги) и «Полный текст кейса» (пакет материалов «Искры» для сверки). С этого экрана и дальше — чтобы не держать всё в голове.</span>
+          <span><b>Всё под рукой.</b> Справа — два язычка: «Мои ответы» (ваши шаги) и «Полный текст кейса» (пакет материалов «Искры» для сверки) — чтобы не держать всё в голове.</span>
         </div>
         <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговору ↓</button>
       </div>
     </div>
 
     <div class="s2-body" id="s2Body">
-      <!-- блоки разговора добавляются по мере прохождения (station2.js) -->
+      <!-- блоки разговора добавляются по мере прохождения (round2.js) -->
     </div>
 
   </div>
@@ -101,14 +100,13 @@
 <button type="button" class="dossier-dock js-open-dossier" aria-label="Открыть мои ответы">Мои ответы</button>
 
 <script src="js/boot-loading.js?v=2"></script>
-<script src="js/main.js?v=1"></script>
-<script src="js/spine.js?v=1"></script>
+<script src="js/main.js?v=2"></script>
 <script src="js/api.js?v=1"></script>
-<script src="js/demo.js?v=4"></script>
-<script src="js/dossier-render.js?v=2"></script>
+<script src="js/demo.js?v=5"></script>
+<script src="js/dossier-render.js?v=3"></script>
 <script src="js/dossier-panel.js?v=1"></script>
-<script src="js/case-ref.js?v=1"></script>
-<script src="js/station2.js?v=8"></script>
-<script src="js/progress.js?v=3"></script>
+<script src="js/case-ref.js?v=2"></script>
+<script src="js/round2.js?v=8"></script>
+<script src="js/progress.js?v=5"></script>
 </body>
 </html>

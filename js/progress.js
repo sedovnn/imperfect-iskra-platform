@@ -9,9 +9,9 @@
 
 (function () {
   var STEPS = [
-    { label: '1 · Карта проблем', match: ['station1.html'] },
-    { label: '2 · Встреча с Агеевым', match: ['station2.html'] },
-    { label: '3 · Холл и финал', match: ['station3.html', 'room-future.html', 'room-alternatives.html', 'room-path.html'] }
+    { label: '1 · Карта проблем', match: ['round1.html'] },
+    { label: '2 · Встреча с Агеевым', match: ['round2.html'] },
+    { label: '3 · Холл и финал', match: ['map.html', 'round3.html', 'round5.html', 'round4.html'] }
   ];
   var page = (location.pathname.split('/').pop() || '').toLowerCase();
   var curIdx = -1;
@@ -27,7 +27,7 @@
 
   var st = document.createElement('style');
   st.textContent =
-    '.round-progress{display:flex;align-items:center;justify-content:space-between;gap:16px;' +
+    '.round-progress{display:flex;align-items:center;justify-content:flex-end;gap:16px;' +
       'padding:8px 24px;border-bottom:1px solid #ececec;background:#fafafa;' +
       'font-family:system-ui,sans-serif;font-size:12.5px;flex-wrap:wrap;}' +
     '.round-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#8a8f98;}' +
@@ -46,8 +46,8 @@
 
   var bar = document.createElement('div');
   bar.className = 'round-progress';
-  bar.innerHTML = '<div class="round-steps">' + stepsHtml + '</div>' +
-    '<div class="round-time" title="активное время работы — на паузе, когда вы уходите со страницы">' +
+  // только таймер — прогресс-этапы теперь на «Карте раунда» (station3), крошки убраны
+  bar.innerHTML = '<div class="round-time" title="активное время работы — на паузе, когда вы уходите со страницы">' +
     '<span class="round-time-label">Прошло времени</span> <span id="roundTime">—</span></div>';
   host.parentNode.insertBefore(bar, host.nextSibling);
 

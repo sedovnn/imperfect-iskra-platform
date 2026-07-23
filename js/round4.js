@@ -11,10 +11,12 @@
 
 (function () {
   var session = null;
+  // имя из окна Агеева (может быть пустым) — для обращения Штерна; textContent сам экранирует
+  function pname() { return session && session.name ? String(session.name).trim() : ''; }
   var state = null;
 
-  function storageKey(bib) { return 'imp_room_path_' + bib; }
-  function station2Key(bib) { return 'imp_station2_' + bib; }
+  function storageKey(bib) { return 'imp_round4_' + bib; }
+  function station2Key(bib) { return 'imp_round2_' + bib; }
   function uid() { return 'id_' + Math.random().toString(36).slice(2, 10); }
 
   function loadSession() {
@@ -95,6 +97,8 @@
     document.getElementById('gateStation2').style.display = 'none';
     document.getElementById('stationRoot').style.display = '';
     document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(3, '0');
+    var sg = document.getElementById('sternGreet');
+    if (sg) sg.textContent = pname() ? (pname() + ', слышал') : 'Слышал';
     initWorkspace();
   }
 
@@ -144,7 +148,7 @@
       saveState();
     }
 
-    var introKey = 'imp_room_path_intro_seen_' + session.bib;
+    var introKey = 'imp_round4_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
     document.getElementById('dismissIntro').addEventListener('click', function () {
@@ -168,7 +172,7 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «Ну, ' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не лозунг. Покажите по-честному: отсюда, где мы сейчас, — до туда. Какими этапами?»</p>' +
-        (firstMove ? '<div class="pp-firstmove">Ваш первый ход со станции 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
+        (firstMove ? '<div class="pp-firstmove">Ваш первый ход из раунда 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
           '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
           '<div class="field"><label>Целевое состояние</label><input type="text" class="pp-target" placeholder="куда должны прийти"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.targetState) + '" /></div>' +

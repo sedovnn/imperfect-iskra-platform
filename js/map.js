@@ -14,33 +14,44 @@
       key: 'future',
       title: 'Встреча с Лемехом у лифта',
       teaser: 'Лемех перехватывает вас у лифта: у него пять минут и вопрос не по повестке встречи.',
-      href: 'room-future.html',
-      storageKey: function (bib) { return 'imp_room_future_' + bib; }
+      href: 'round3.html',
+      storageKey: function (bib) { return 'imp_round3_' + bib; }
     },
     {
       key: 'path',
       title: 'Черновик к мартовскому комитету',
       teaser: 'Через месяц — заседание, которое ждали с декабря. Пора собрать то, с чем туда идти.',
-      href: 'room-path.html',
-      storageKey: function (bib) { return 'imp_room_path_' + bib; }
+      href: 'round4.html',
+      storageKey: function (bib) { return 'imp_round4_' + bib; }
     },
     {
       key: 'alternatives',
       title: 'Очередь в «Прожектор»',
       teaser: 'В очереди за кофе кто-то роняет реплику, которая не идёт из головы.',
-      href: 'room-alternatives.html',
-      storageKey: function (bib) { return 'imp_room_alternatives_' + bib; }
+      href: 'round5.html',
+      storageKey: function (bib) { return 'imp_round5_' + bib; }
     }
   ];
   // Порядок фиксирован (мастер-план §2.1): Будущее → Путь → Альтернативы. «Путь»
   // сразу за «Будущим» (пока силы есть, не в хвост усталости); каждая следующая
   // комната открывается, когда завершена предыдущая (см. renderRooms).
+  // ROOMS (3) держит логику финала/синка/рекапа. STAGES (5) — плитки КАРТЫ раунда:
+  // весь путь на одном экране, по очереди. Т.к. комнаты открываются только после
+  // станций 1–2, «все 3 комнаты пройдены» = «все 5 этапов пройдены» → гейт финала
+  // (roomsDone >= ROOMS.length) остаётся корректным.
+  var STAGES = [
+    { key: 'station1', title: 'Раунд 1 · Знакомство с «Искрой»', teaser: 'Читаете материалы «Искры» и собираете карту: что происходит и как связано.', href: 'round1.html', storageKey: function (bib) { return 'imp_round1_' + bib; } },
+    { key: 'station2', title: 'Раунд 2 · Встреча с Агеевым', teaser: 'Понедельник, 10:00 — приоритеты, защита выбора под давлением и рекомендация по развилке.', href: 'round2.html', storageKey: function (bib) { return 'imp_round2_' + bib; } },
+    { key: 'future', title: 'Раунд 3 · Встреча с Лемехом у лифта', teaser: 'Лемех перехватывает вас у лифта: пять минут и вопрос не по повестке.', href: 'round3.html', storageKey: function (bib) { return 'imp_round3_' + bib; } },
+    { key: 'path', title: 'Раунд 4 · Черновик к мартовскому комитету', teaser: 'Собираете черновик со Штерном к заседанию, которое ждали с декабря.', href: 'round4.html', storageKey: function (bib) { return 'imp_round4_' + bib; } },
+    { key: 'alternatives', title: 'Раунд 5 · Очередь в «Прожектор»', teaser: 'В очереди за кофе Брагин роняет реплику, которая не идёт из головы.', href: 'round5.html', storageKey: function (bib) { return 'imp_round5_' + bib; } }
+  ];
 
   var session = null;
   var state = null;
 
-  function storageKey(bib) { return 'imp_station3_' + bib; }
-  function station2Key(bib) { return 'imp_station2_' + bib; }
+  function storageKey(bib) { return 'imp_map_' + bib; }
+  function station2Key(bib) { return 'imp_round2_' + bib; }
 
   function loadSession() {
     try { return window.imp.loadSession(); } catch (e) { return null; }
@@ -88,50 +99,24 @@
   // не блокирует рендер; если найдётся реальный прогресс, страница перезагрузится сама
   window.imp.hydrateOnce('loadStation3', session.bib, storageKey(session.bib));
 
-  function localStation2Finished() {
-    try {
-      var raw = localStorage.getItem(station2Key(session.bib));
-      if (!raw) return false;
-      return !!JSON.parse(raw).finished;
-    } catch (e) { return false; }
-  }
-
+  // Станция 3 теперь — КАРТА раунда (дом после входа), не финальный отрезок:
+  // на неё попадают сразу после установки, гейт «сначала станция 2» снят.
+  // Прохождение по очереди обеспечивают сами плитки (renderRooms: prevDone).
   function proceedToStation() {
     document.getElementById('gate').style.display = 'none';
-    document.getElementById('gateStation2').style.display = 'none';
     document.getElementById('stationRoot').style.display = '';
     document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(3, '0');
     initWorkspace();
   }
 
-  function showStation2Gate() {
-    document.getElementById('gateStation2').style.display = 'flex';
-  }
-
-  if (window.imp.isApiConfigured()) {
-    window.imp.callApi('loadStation2', { bib: session.bib }).then(function (res) {
-      if (res && res.ok && res.state && res.state.finished) {
-        proceedToStation();
-      } else if (res && res.ok) {
-        showStation2Gate();
-      } else if (localStation2Finished()) {
-        proceedToStation();
-      } else {
-        showStation2Gate();
-      }
-    });
-  } else if (localStation2Finished()) {
-    proceedToStation();
-  } else {
-    showStation2Gate();
-  }
+  proceedToStation();
 
   // ---------- workspace ----------
 
   function initWorkspace() {
     state = loadState(session.bib);
 
-    var introKey = 'imp_station3_intro_seen_' + session.bib;
+    var introKey = 'imp_map_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
     document.getElementById('dismissIntro').addEventListener('click', function () {
@@ -142,22 +127,8 @@
       introEl.style.display = 'flex';
     });
 
-    // Текстовое закрепление выбранной на станции 2 позиции: «слух разошёлся по
-    // офису» — теперь три разговора не абстрактны, а про ВАШ выбор. Опора всего
-    // финала (см. window.imp.stanceOf). Если позиция почему-то не выбрана
-    // (старый прогон до этой механики) — блок просто не показываем.
-    (function renderStanceCallback() {
-      var el = document.getElementById('hubStanceCallback');
-      if (!el) return;
-      var s2 = null;
-      try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
-      var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
-      if (!stance) { el.style.display = 'none'; return; }
-      el.innerHTML =
-        '<p>Слух о том, что вы склоняетесь к позиции <b>' + esc(stance.label) + '</b>, уже разошёлся по этажам. ' +
-        'В коридорах вас ловят на разговор — каждый про свою грань вашего выбора.</p>';
-      el.style.display = '';
-    })();
+    // Плашка «слух о позиции разошёлся» теперь рендерится ВНУТРИ renderRooms —
+    // между плиткой «Встреча с Агеевым» и разговорами (мост после развилки).
 
     function roomStatus(room) {
       try {
@@ -174,15 +145,21 @@
     function renderRooms() {
       var list = document.getElementById('hubRooms');
       list.innerHTML = '';
-      // фиксированный порядок: комната открыта, если она уже завершена ИЛИ
-      // предыдущая по порядку завершена (первая — всегда). prevDone ведёт цепочку.
+      // позиция с развилки (станция 2) — для плашки-моста «слух разошёлся», которая
+      // появляется МЕЖДУ встречей с Агеевым и разговорами (после того, как ст.2 пройдена)
+      var s2state = null;
+      try { s2state = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
+      var stance = (window.imp.stanceOf && window.imp.stanceOf(s2state)) || null;
+      // фиксированный порядок: этап открыт, если уже завершён ИЛИ предыдущий завершён
+      // (первый — всегда). prevDone ведёт цепочку; текущий = первый незавершённый (фокус).
       var prevDone = true;
-      ROOMS.forEach(function (room) {
+      STAGES.forEach(function (room) {
         var status = roomStatus(room);
         var done = status.text === 'завершена';
         var openable = !state.finished && (done || prevDone);
+        var isCurrent = openable && !done;
         var card = document.createElement('a');
-        card.className = 'hub-room-card' + (openable ? '' : ' is-locked');
+        card.className = 'hub-room-card' + (openable ? '' : ' is-locked') + (isCurrent ? ' is-current' : '');
         card.href = openable ? room.href : '#';
         if (!openable) card.addEventListener('click', function (e) { e.preventDefault(); });
         var pill = (!state.finished && !done && !prevDone)
@@ -194,6 +171,13 @@
           '</div>' +
           '<p>' + room.teaser + '</p>';
         list.appendChild(card);
+        // мост после встречи с Агеевым: слух о выбранной позиции разошёлся → впереди три разговора
+        if (room.key === 'station2' && done && stance) {
+          var note = document.createElement('div');
+          note.className = 'hub-stance-callback';
+          note.innerHTML = '<p>Слух о том, что вы склоняетесь к позиции <b>' + esc(stance.label) + '</b>, уже разошёлся по этажам. В коридорах вас ловят на разговор — каждый про свою грань вашего выбора.</p>';
+          list.appendChild(note);
+        }
         prevDone = done;
       });
     }
@@ -225,11 +209,11 @@
       var cardById = {};
       (((s2 && s2.cardsSnapshot) || [])).forEach(function (x) { cardById[x.id] = x; });
       return {
-        s1: readJson('imp_station1_' + session.bib),
+        s1: readJson('imp_round1_' + session.bib),
         s2: s2,
-        rf: readJson('imp_room_future_' + session.bib),
-        ra: readJson('imp_room_alternatives_' + session.bib),
-        rp: readJson('imp_room_path_' + session.bib),
+        rf: readJson('imp_round3_' + session.bib),
+        ra: readJson('imp_round5_' + session.bib),
+        rp: readJson('imp_round4_' + session.bib),
         stance: (window.imp.stanceOf && window.imp.stanceOf(s2)) || null,
         cardById: cardById
       };
@@ -335,13 +319,13 @@
       if (state.finished) return;
       if (roomsDone() >= ROOMS.length || finalizeBypass()) {
         openFinalizeBtn.removeAttribute('disabled');
-        openFinalizeBtn.textContent = 'Собрать и финализировать стратегию →';
+        openFinalizeBtn.textContent = 'Раунд 6 · Собрать стратегию →';
         openFinalizeBtn.removeAttribute('title');
       } else {
-        var missing = ROOMS.filter(function (r) { return roomStatus(r).text !== 'завершена'; })
+        var missing = STAGES.filter(function (r) { return roomStatus(r).text !== 'завершена'; })
           .map(function (r) { return r.title; });
         openFinalizeBtn.setAttribute('disabled', 'disabled');
-        openFinalizeBtn.textContent = 'Пройдите все три разговора (осталось ' + missing.length + ')';
+        openFinalizeBtn.textContent = 'Пройдите все раунды (осталось ' + missing.length + ')';
         openFinalizeBtn.setAttribute('title', 'Не хватает: ' + missing.join(', '));
       }
     }
@@ -353,9 +337,11 @@
     // сохраняется, хотя на бэкенде все три комнаты завершены. Подтягиваем их статус
     // с бэкенда (сидируем localStorage непройденных локально), затем перерисовываем.
     if (window.imp.isApiConfigured()) {
-      var roomLoadActions = { future: 'loadRoomFuture', alternatives: 'loadRoomAlternatives', path: 'loadRoomPath' };
+      // синкаем статус ВСЕХ этапов карты (не только комнат), чтобы плитки станций 1–2
+      // тоже были верны после восстановления доступа на другом устройстве
+      var roomLoadActions = { station1: 'loadStation1', station2: 'loadStation2', future: 'loadRoomFuture', alternatives: 'loadRoomAlternatives', path: 'loadRoomPath' };
       var pendingRooms = 0;
-      ROOMS.forEach(function (room) {
+      STAGES.forEach(function (room) {
         var localFin = false;
         try { var lr = localStorage.getItem(room.storageKey(session.bib)); localFin = !!(lr && JSON.parse(lr).finished); } catch (e) {}
         if (localFin) return; // локально уже завершена — не трогаем
