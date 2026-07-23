@@ -298,6 +298,16 @@
     var strategyRecapEl = document.getElementById('strategyRecap');
     var openFinalizeBtn = document.getElementById('openFinalizeBtn');
 
+    // кнопки лёгкой оболочки StratOS: «Скачать в PDF» → печать страницы (браузерный
+    // print-to-PDF), «Конструктор» → фокус на первую карточку (правки и так инлайн).
+    var stratosPdfBtn = document.getElementById('stratosPdfBtn');
+    if (stratosPdfBtn) stratosPdfBtn.addEventListener('click', function () { window.print(); });
+    var stratosConstructorBtn = document.getElementById('stratosConstructorBtn');
+    if (stratosConstructorBtn) stratosConstructorBtn.addEventListener('click', function () {
+      var el = strategyRecapEl && strategyRecapEl.querySelector('textarea, input');
+      if (el) { el.focus(); el.scrollIntoView({ block: 'center' }); }
+    });
+
     if (defenseEl) {
       defenseEl.value = state.finalDefense || '';
       defenseEl.disabled = !!state.finished;

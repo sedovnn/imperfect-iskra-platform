@@ -1448,6 +1448,20 @@ button.hub-room-card {
 .stratos-col-h { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 2px 0 0; }
 .stratos-art { padding: 14px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--paper); }
 @media (max-width: 860px) { .stratos-grid { grid-template-columns: 1fr; } }
+/* лёгкая «оболочка» StratOS: вкладки + слоты + заголовок «…/обзор» + кнопки — в нашем бренде */
+.stratos-shell-tabs { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--hairline); margin: 4px 0 16px; }
+.sst-tabs { display: flex; gap: 18px; flex-wrap: wrap; }
+.sst-tab { font-size: 13px; font-weight: 600; color: var(--muted-soft); white-space: nowrap; padding-bottom: 8px; border-bottom: 2px solid transparent; }
+.sst-tab.is-active { color: var(--ink); border-bottom-color: var(--accent); }
+.sst-tab.is-locked { color: var(--gray-3, #c9ccd0); }
+.sst-slots { display: flex; gap: 4px; padding-bottom: 4px; }
+.sst-slot { font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 999px; color: var(--muted-soft); }
+.sst-slot.is-active { background: var(--ink); color: var(--paper); }
+.stratos-shell-title { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin: 0 0 16px; }
+.sst-title { margin: 0; }
+.sst-obzor { color: var(--accent); }
+.sst-sub { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+.sst-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .stratos-art-h { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); margin-bottom: 8px; }
 .stratos-hint { font-weight: 400; letter-spacing: 0; color: var(--muted-soft); font-size: 12px; }
 .stratos-in, .stratos-ta {
