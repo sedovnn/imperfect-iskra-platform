@@ -91,8 +91,18 @@
           </form>
         </div>
 
+        <div class="fac-migrate" id="facMigrate" style="border:1px solid var(--band-line); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px; background:var(--band);">
+          <span class="fac-waves-label">Код участника: волна + номер</span>
+          <p class="fac-toolbar-hint" style="margin:6px 0 10px;">Проставьте волнам 3-значный номер выше, затем «Сухой прогон» — увидите, как старые номера станут 6-значными (001347 и т.п.). «Применить» перепишет номера во всех листах после бэкапа.</p>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="btn btn-ghost btn-sm" id="facMigrateDry" type="button">Сухой прогон</button>
+            <button class="btn btn-ghost btn-sm" id="facMigrateApply" type="button">Применить миграцию</button>
+          </div>
+          <div id="facMigrateOut" style="margin-top:10px; font-size:12.5px;"></div>
+        </div>
+
         <div class="fac-toolbar">
-          <span class="fac-toolbar-hint">Регистрация, контакты, удаление участников</span>
+          <span class="fac-toolbar-hint">Контакты, удаление участников</span>
           <button class="btn btn-ghost" id="facExportBtn">Скачать CSV</button>
         </div>
 
@@ -101,8 +111,7 @@
             <thead>
               <tr>
                 <th>№</th>
-                <th>ФИО</th>
-                <th>Email</th>
+                <th>Псевдоним</th>
                 <th>Волна</th>
                 <th>Регистрация</th>
                 <th></th>
@@ -136,6 +145,6 @@
 <script src="js/api.js?v=1"></script>
 <script src="js/report-texts.js?v=1"></script>
 <script src="js/report.js?v=3"></script>
-<script src="js/facilitator.js?v=8"></script>
+<script src="js/facilitator.js?v=10"></script>
 </body>
 </html>

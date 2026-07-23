@@ -345,24 +345,82 @@
     if (!wavesListEl) return;
     wavesListEl.innerHTML = '';
     waves.forEach(function (w) {
-      var chip = document.createElement('span');
-      chip.className = 'fac-wave-chip';
-      chip.innerHTML = escapeHtml(w.label) + ' <button class="fac-wave-remove" title="Убрать поток">✕</button>';
-      chip.querySelector('.fac-wave-remove').addEventListener('click', function () {
-        impConfirm('Убрать поток «' + w.label + '»? Уже зарегистрированные на него участники сохранят запись — поток просто исчезнет из выбора для новых регистраций.', { confirmLabel: 'Убрать поток', danger: true }).then(function (ok) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex; gap:8px; align-items:center; margin-bottom:6px; flex-wrap:wrap; width:100%;';
+      row.innerHTML =
+        '<input class="fac-wave-num" maxlength="3" inputmode="numeric" placeholder="000" value="' + escapeHtml(w.num || '') + '" title="Номер волны — 3 цифры" style="width:56px; text-align:center; font-weight:700; padding:6px; border:1px solid var(--hairline); border-radius:6px;" />' +
+        '<span style="font-weight:600; min-width:120px;">' + escapeHtml(w.label) + '</span>' +
+        '<input class="fac-wave-name" placeholder="внутреннее название (напр. ИИ · v4 Opus/Haiku)" value="' + escapeHtml(w.name || '') + '" style="flex:1; min-width:180px; padding:6px; border:1px solid var(--hairline); border-radius:6px;" />' +
+        '<button class="btn btn-ghost btn-xs fac-wave-save" type="button">Сохранить</button>' +
+        '<button class="fac-wave-remove" title="Убрать поток">✕</button>';
+      var numEl = row.querySelector('.fac-wave-num');
+      var nameEl = row.querySelector('.fac-wave-name');
+      numEl.addEventListener('input', function () { numEl.value = numEl.value.replace(/\D/g, '').slice(0, 3); });
+      row.querySelector('.fac-wave-save').addEventListener('click', function () {
+        var btn = this; btn.disabled = true;
+        window.imp.callApi('setWaveMeta', { password: currentPassword(), id: w.id, num: numEl.value, name: nameEl.value }).then(function (res) {
+          btn.disabled = false;
+          if (res && res.ok) { impToast('Волна сохранена', 'success'); loadWaves(); }
+          else impToast('Не удалось: ' + (res && (res.message || res.error) || 'нет ответа'), 'error');
+        });
+      });
+      row.querySelector('.fac-wave-remove').addEventListener('click', function () {
+        impConfirm('Убрать поток «' + w.label + '»? Уже зарегистрированные на него участники сохранят запись — поток просто исчезнет из выбора.', { confirmLabel: 'Убрать поток', danger: true }).then(function (ok) {
           if (!ok) return;
           window.imp.callApi('removeWave', { password: currentPassword(), id: w.id }).then(function (res) {
-            if (res && res.ok) {
-              loadWaves();
-            } else {
-              impToast('Не удалось убрать поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'), 'error');
-            }
+            if (res && res.ok) loadWaves();
+            else impToast('Не удалось убрать поток: ' + (res && res.error ? res.error : 'нет ответа от бэкенда'), 'error');
           });
         });
       });
-      wavesListEl.appendChild(chip);
+      wavesListEl.appendChild(row);
     });
   }
+
+  // ---- миграция кода участника (волна+номер) ----
+  function renderMigReport(res) {
+    var out = document.getElementById('facMigrateOut');
+    if (!out) return;
+    if (!res || res.ok === false) {
+      out.innerHTML = '<span style="color:var(--accent-dim)">Ошибка: ' + escapeHtml(res && (res.message || res.error) || 'нет ответа') + '</span>';
+      return;
+    }
+    var s = res.summary || {};
+    var html = '<b>Итог:</b> к миграции ' + s.toMigrate + ', уже 6-значных ' + s.already + ', блокеров ' + s.blocked + '.';
+    if (res.collisions && res.collisions.length) {
+      html += '<div style="color:var(--accent-dim); margin-top:4px;">⚑ Коллизии: ' + res.collisions.map(function (c) { return c.newBib + ' (' + c.bibs.join(', ') + ')'; }).join('; ') + '</div>';
+    }
+    var rows = (res.rows || []).map(function (r) {
+      var a = r.status === 'ok' ? (r.bib + ' → <b>' + r.newBib + '</b>')
+        : (r.status === 'already-6' ? (r.bib + ' <span style="color:var(--muted-soft)">(уже 6-значный)</span>')
+          : (r.bib + ' <span style="color:var(--accent-dim)">— волна без номера</span>'));
+      return '<div>' + escapeHtml(r.nickname) + ' · ' + a + '</div>';
+    }).join('');
+    out.innerHTML = html + '<div style="margin-top:8px; max-height:220px; overflow:auto; border-top:1px solid var(--band-line); padding-top:6px;">' + rows + '</div>';
+  }
+  var migDry = document.getElementById('facMigrateDry');
+  var migApply = document.getElementById('facMigrateApply');
+  if (migDry) migDry.addEventListener('click', function () {
+    var out = document.getElementById('facMigrateOut');
+    migDry.disabled = true; if (out) out.textContent = 'Считаю сухой прогон…';
+    window.imp.callApi('migrateDryRun', { password: currentPassword() }).then(function (res) {
+      migDry.disabled = false; renderMigReport(res);
+    });
+  });
+  if (migApply) migApply.addEventListener('click', function () {
+    impConfirm('Применить миграцию номеров? Перед записью создаётся бэкап всех листов. Действие переписывает номер (bib) во всех данных.', { confirmLabel: 'Применить', danger: true }).then(function (ok) {
+      if (!ok) return;
+      var out = document.getElementById('facMigrateOut');
+      migApply.disabled = true; if (out) out.textContent = 'Применяю…';
+      window.imp.callApi('migrateApply', { password: currentPassword(), confirm: 'APPLY' }).then(function (res) {
+        migApply.disabled = false;
+        if (res && res.ok) {
+          if (out) out.innerHTML = '<b>Готово.</b> Изменено ячеек: ' + res.changed + ', участников: ' + res.migrated + '.<br>Бэкап-листы: ' + escapeHtml((res.backups || []).join(', '));
+          loadWaves(); refresh();
+        } else renderMigReport(res);
+      });
+    });
+  });
 
   function renderWaveFilterOptions() {
     if (!waveFilterSelect) return;
@@ -548,8 +606,7 @@
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
-        '<td>' + escapeHtml(p.firstName + ' ' + p.lastName) + '</td>' +
-        '<td>' + escapeHtml(p.email) + '</td>' +
+        '<td>' + escapeHtml((p.firstName + ' ' + p.lastName).trim() || '—') + '</td>' +
         '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + '</td>' +
         '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
         '<td><button class="fac-delete-btn" title="Удалить участника">✕</button></td>';
