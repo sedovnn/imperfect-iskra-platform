@@ -375,7 +375,43 @@
       });
       wavesListEl.appendChild(row);
     });
+    // селект волн для массового заведения участников
+    var csel = document.getElementById('facCreateWave');
+    if (csel) {
+      var prev = csel.value;
+      csel.innerHTML = '';
+      waves.forEach(function (w) {
+        var o = document.createElement('option');
+        o.value = w.id;
+        o.textContent = (w.num ? '[' + w.num + '] ' : '[—] ') + (w.name || w.label);
+        csel.appendChild(o);
+      });
+      if (prev) csel.value = prev;
+    }
   }
+
+  // ---- массовое заведение участников ----
+  var createBtn = document.getElementById('facCreateBtn');
+  if (createBtn) createBtn.addEventListener('click', function () {
+    var out = document.getElementById('facCreateOut');
+    var count = parseInt(document.getElementById('facCreateCount').value, 10);
+    var wave = document.getElementById('facCreateWave').value;
+    if (!(count > 0)) { if (out) out.innerHTML = '<span style="color:var(--accent-dim)">Укажите количество.</span>'; return; }
+    if (!wave) { if (out) out.innerHTML = '<span style="color:var(--accent-dim)">Выберите волну.</span>'; return; }
+    var t = createBtn.textContent;
+    createBtn.disabled = true; createBtn.textContent = 'Создаю…';
+    window.imp.callApi('createParticipants', { password: currentPassword(), wave: wave, count: count }).then(function (res) {
+      createBtn.disabled = false; createBtn.textContent = t;
+      if (out && res && res.ok) {
+        var list = (res.created || []).map(function (c) { return c.bib + ' · ' + c.password; }).join('\n');
+        out.innerHTML = '<b>Создано: ' + (res.created || []).length + '</b> (волна ' + escapeHtml(res.waveNum) + '). Пары номер + пароль (скопируйте для раздачи):' +
+          '<pre style="margin:6px 0 0; font-family:ui-monospace,Menlo,monospace; white-space:pre-wrap; background:var(--soft); border-radius:6px; padding:8px 10px; max-height:220px; overflow:auto;">' + escapeHtml(list) + '</pre>';
+        refresh();
+      } else if (out) {
+        out.innerHTML = '<span style="color:var(--accent-dim)">Не удалось: ' + escapeHtml(res && (res.message || res.error) || 'нет ответа') + '</span>';
+      }
+    });
+  });
 
   // ---- миграция кода участника (волна+номер) ----
   function renderMigReport(res) {
