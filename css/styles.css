@@ -1058,6 +1058,7 @@ footer {
 .s2-radio input { margin-top: 3px; }
 
 .s2-body textarea {
+  display: block; /* иначе кнопка «Завершить …» (inline-flex) встаёт справа от текстареа */
   width: 100%;
   max-width: 720px; /* проза остаётся читаемой ширины, даже когда s2-body широкий */
   border: 1px solid #e3e3e0;
