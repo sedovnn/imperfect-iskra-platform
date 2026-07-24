@@ -366,16 +366,31 @@
       STAGES.forEach(function (room) {
         var localFin = false;
         try { var lr = localStorage.getItem(room.storageKey(session.bib)); localFin = !!(lr && JSON.parse(lr).finished); } catch (e) {}
-        if (localFin) return; // локально уже завершена — не трогаем
         pendingRooms++;
         window.imp.callApi(roomLoadActions[room.key], { bib: session.bib }).then(function (res) {
-          if (res && res.ok && res.state && res.state.finished) {
-            localStorage.setItem(room.storageKey(session.bib), JSON.stringify(res.state));
+          if (!res) return; // сетевая ошибка — локаль не трогаем
+          if (res.ok && res.state && res.state.finished) {
+            if (!localFin) localStorage.setItem(room.storageKey(session.bib), JSON.stringify(res.state)); // сид с другого устройства
+          } else if ((res.error === 'not_found' || (res.ok && !res.state)) && localFin) {
+            // локально «завершена», а на бэкенде записи нет → прогресс сброшен фасилитатором: чистим локаль
+            localStorage.removeItem(room.storageKey(session.bib));
           }
         }).catch(function () {}).then(function () {
           if (--pendingRooms === 0) { renderRooms(); updateFinalizeGate(); }
         });
       });
+      // сверка собственного финала карты: на бэкенде карта не финализирована, а
+      // локально «завершено» → сброшено, снимаем локальный финиш и показываем карту.
+      window.imp.callApi('loadStation3', { bib: session.bib }).then(function (res) {
+        var backendFinished = !!(res && res.ok && res.state && res.state.finished);
+        var backendKnown = !!(res && (res.ok || res.error === 'not_found')); // внятный ответ, а не сетевой сбой
+        if (backendKnown && state.finished && !backendFinished) {
+          state.finished = false; state.finalDefense = ''; state.stratos = null; saveState();
+          document.getElementById('finishOverlay').style.display = 'none';
+          document.getElementById('stationRoot').style.display = '';
+          renderRooms(); updateFinalizeGate();
+        }
+      }).catch(function () {});
     }
 
     // повторный просмотр собранной стратегии после финала — read-only (п.13)

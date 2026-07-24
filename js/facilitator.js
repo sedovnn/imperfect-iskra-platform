@@ -147,6 +147,23 @@
     return '№ ' + String(n).padStart(3, '0');
   }
 
+  // Сброс/удаление чистит серверные данные, но у участника мог остаться
+  // локальный прогресс в ЭТОМ браузере (localStorage) — если фасилитатор
+  // сбрасывает на том же устройстве. Чистим все imp_*-ключи этого bib, чтобы
+  // повторный вход был с чистого листа. На другом устройстве это подхватит
+  // сверка с бэкендом на загрузке (map.js/раунды).
+  function clearLocalForBib(bib) {
+    try {
+      var b = String(bib);
+      var kill = [];
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('imp_') === 0 && k.indexOf('_' + b) !== -1) kill.push(k);
+      }
+      kill.forEach(function (k) { localStorage.removeItem(k); });
+    } catch (e) {}
+  }
+
   function formatDate(iso) {
     if (!iso) return '—';
     var d = new Date(iso);
@@ -988,7 +1005,7 @@
         impConfirm('Сбросить весь прогресс участника ' + formatBib(participant.bib) + '? Ответы по всем раундам удалятся, регистрация и пароль останутся — можно перепройти. Действие необратимо.', { confirmLabel: 'Сбросить прогресс', danger: true }).then(function (ok) {
           if (!ok) return;
           window.imp.callApi('resetProgress', { password: currentPassword(), bib: participant.bib, confirm: 'RESET' }).then(function (r) {
-            if (r && r.ok) { impToast('Прогресс сброшен'); var cb = document.getElementById('facDetailClose'); if (cb) cb.click(); refresh(); }
+            if (r && r.ok) { impToast('Прогресс сброшен'); clearLocalForBib(participant.bib); var cb = document.getElementById('facDetailClose'); if (cb) cb.click(); refresh(); }
             else impToast('Не удалось: ' + (r && (r.message || r.error) || 'нет ответа'), 'error');
           });
         });
@@ -999,7 +1016,7 @@
           impConfirm('Сбросить «' + lbl + '» у ' + formatBib(participant.bib) + '? Ответы этого раунда удалятся; регистрация и остальные раунды не тронутся.', { confirmLabel: 'Сбросить ' + lbl, danger: true }).then(function (ok) {
             if (!ok) return;
             window.imp.callApi('resetRound', { password: currentPassword(), bib: participant.bib, round: rnd }).then(function (r) {
-              if (r && r.ok) { impToast('Раунд сброшен'); openDetail(participant); refresh(); }
+              if (r && r.ok) { impToast('Раунд сброшен'); clearLocalForBib(participant.bib); openDetail(participant); refresh(); }
               else impToast('Не удалось: ' + (r && (r.message || r.error) || 'нет ответа'), 'error');
             });
           });
@@ -1009,7 +1026,7 @@
         impConfirm('Удалить участника ' + formatBib(participant.bib) + ' целиком? Регистрация и все ответы удалятся безвозвратно.', { confirmLabel: 'Удалить', danger: true }).then(function (ok) {
           if (!ok) return;
           window.imp.callApi('deleteParticipant', { password: currentPassword(), bib: participant.bib }).then(function (r) {
-            if (r && r.ok) { impToast('Участник удалён'); var cb = document.getElementById('facDetailClose'); if (cb) cb.click(); refresh(); }
+            if (r && r.ok) { impToast('Участник удалён'); clearLocalForBib(participant.bib); var cb = document.getElementById('facDetailClose'); if (cb) cb.click(); refresh(); }
             else impToast('Не удалось: ' + (r && (r.message || r.error) || 'нет ответа'), 'error');
           });
         });
