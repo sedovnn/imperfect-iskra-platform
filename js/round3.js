@@ -175,7 +175,7 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev"><b>Лемех</b> придерживает двери лифта: «' + (pname() ? escapeHtml(pname()) + ', погодите-ка' : 'Погодите-ка') + '. Мне ' + escapeHtml(stancePhrase) + ' через полгода нести на совет Меридиана, а я пока сам не понимаю, куда оно нас в итоге приводит. Своими словами, без презентаций — если пойдём по-вашему, где „Искра“ окажется?»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.vision) + '</textarea>' +
+        '<textarea class="s2-rationale" aria-label="Куда придёт «Искра», если пойти по-вашему" rows="4" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.vision) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
@@ -201,7 +201,7 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на сколько лет вперёд вы смотрите — и на какой результат готовы работать, даже если он созреет уже без вас? И почему именно туда, а не куда попроще?»</p>' +
-        '<textarea class="ga-horizon" rows="4" placeholder="горизонт в годах + на какой результат работаете (даже если созреет уже без вас) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
+        '<textarea class="ga-horizon" aria-label="Горизонт в годах и на какой результат работаете" rows="4" placeholder="горизонт в годах + на какой результат работаете (даже если созреет уже без вас) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
         '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:8px 0 0; line-height:1.45;">Здесь — про куда и зачем, а не про как: направление и результат, без пошагового плана.</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
       if (!locked) {
@@ -229,7 +229,7 @@
       block.innerHTML =
         '<p class="s2-ageev">' + react + '</p>' +
         '<p class="s2-ageev"><b>Лемех</b> щурится: «Но будущее ведь может пойти по-разному. Набросайте 2–3 принципиально разных сценария — от чего зависит, куда качнёт (спрос на ИИ, регуляторика, интерфейс), и свой ход стратегии под каждый. По каким признакам поймёте заранее, какой начинается?»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="2–3 разных сценария: от чего зависит + ваш ход под каждый (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
+        '<textarea class="s2-rationale" aria-label="Два-три разных сценария и ваш ход под каждый" rows="4" placeholder="2–3 разных сценария: от чего зависит + ваш ход под каждый (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {

@@ -175,7 +175,7 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev"><b>Олег Брагин</b> скользит взглядом по вашему бейджу: «' + (pname() ? escapeHtml(pname()) + '? Консультант, значит' : 'Консультант, значит') + '. Двадцать лет я тут — и скажу прямо: выбора обычно нет. „Развилки“, „альтернативы“ — это вы любите, а на деле любой на вашем месте пришёл бы ровно к тому же ходу. Так что докажите, что я неправ: что у вас правда было из чего выбирать — и почему вы отмели остальное, а не приняли единственное очевидное.»</p>' +
-        '<textarea class="s2-rationale" rows="4" placeholder="ваш ответ Брагину"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
+        '<textarea class="s2-rationale" aria-label="Что у вас было из чего выбирать и почему отмели остальное" rows="4" placeholder="ваш ответ Брагину"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
@@ -204,7 +204,7 @@
           ? '<b>Брагин</b> хмыкает: «Ладно. Не пустой звук — уже кое-что».'
           : '<b>Брагин</b> пожимает плечами: «Ну, допустим».') + '</p>' +
         '<p class="s2-ageev"><b>Брагин</b> делает глоток кофе: «Ну а внутри-то? Какие ещё ходы вы взвешивали по дороге — и почему в итоге отмели каждый? Вот это мне и интересно.»</p>' +
-        '<textarea class="ga-subdec" rows="3" placeholder="ходы, что рассматривали и отвергли — по одному-двум словам на каждый и почему"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.subdecisions) + '</textarea>' +
+        '<textarea class="ga-subdec" aria-label="Ходы, что рассматривали и отвергли, и почему" rows="3" placeholder="ходы, что рассматривали и отвергли — по одному-двум словам на каждый и почему"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.subdecisions) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
       if (!locked) {
         block.querySelector('.ga-subdec').addEventListener('input', function (e) {
@@ -254,7 +254,7 @@
 
       var elabWrap = document.createElement('div');
       elabWrap.innerHTML =
-        '<textarea class="ga-elab" rows="3" placeholder="' + escapeHtml(elabPlaceholder()) + '"' +
+        '<textarea class="ga-elab" aria-label="Откуда ваш подход — опыт или где-то видели" rows="3" placeholder="' + escapeHtml(elabPlaceholder()) + '"' +
         (locked ? ' disabled' : '') + '>' + escapeHtml(state.sourceElaboration) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
       block.appendChild(elabWrap);

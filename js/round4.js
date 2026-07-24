@@ -174,13 +174,13 @@
         '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «Ну, ' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не лозунг. Покажите по-честному: отсюда, где мы сейчас, — до туда. Какими этапами?»</p>' +
         (firstMove ? '<div class="pp-firstmove">Ваш первый ход из раунда 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
-          '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
-          '<div class="field"><label>Целевое состояние</label><input type="text" class="pp-target" placeholder="куда должны прийти"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.targetState) + '" /></div>' +
+          '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" aria-label="Текущее состояние — где мы сейчас" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
+          '<div class="field"><label>Целевое состояние</label><input type="text" class="pp-target" aria-label="Целевое состояние — куда должны прийти" placeholder="куда должны прийти"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.targetState) + '" /></div>' +
         '</div>' +
         '<div class="pp-stages" data-list="stages"></div>' +
         (locked ? '' : '<button class="btn btn-ghost" id="addStageBtn" style="margin-top:10px;">+ добавить этап</button>') +
         '<div class="field pp-contingency-field" style="margin-top:16px;"><label>Что меняет маршрут <span class="field-hint" style="font-weight:400;">(необязательно)</span></label>' +
-          '<textarea class="pp-contingency" rows="2" placeholder="если на каком-то этапе окажется…, пересматриваем…"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.contingency) + '</textarea></div>' +
+          '<textarea class="pp-contingency" aria-label="План на случай, если этап пойдёт не так" rows="2" placeholder="если на каком-то этапе окажется…, пересматриваем…"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.contingency) + '</textarea></div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
 
       var stagesList = block.querySelector('[data-list="stages"]');
@@ -194,10 +194,10 @@
             '<div class="pp-stage-head"><span>Этап ' + (i + 1) + '</span>' +
               (locked ? '' : '<button class="pp-stage-remove" title="Убрать этап">✕</button>') +
             '</div>' +
-            '<textarea class="pp-stage-desc" rows="2" placeholder="что происходит на этом этапе"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.description) + '</textarea>' +
+            '<textarea class="pp-stage-desc" aria-label="Что происходит на этом этапе" rows="2" placeholder="что происходит на этом этапе"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.description) + '</textarea>' +
             '<details class="pp-stage-more"' + ((st.rationale || st.doneWhen) ? ' open' : '') + '><summary>детали этапа: почему здесь · завершён когда (необязательно)</summary>' +
-              '<textarea class="pp-stage-rationale" rows="2" placeholder="почему на этом месте"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.rationale) + '</textarea>' +
-              '<textarea class="pp-stage-donewhen" rows="2" placeholder="этап завершён, когда… — индикатор перехода"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.doneWhen) + '</textarea>' +
+              '<textarea class="pp-stage-rationale" aria-label="Почему этап на этом месте" rows="2" placeholder="почему на этом месте"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.rationale) + '</textarea>' +
+              '<textarea class="pp-stage-donewhen" aria-label="Этап завершён, когда" rows="2" placeholder="этап завершён, когда… — индикатор перехода"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.doneWhen) + '</textarea>' +
             '</details>';
           if (!locked) {
             item.querySelector('.pp-stage-desc').addEventListener('input', function (e) { st.description = e.target.value; saveState(); });
@@ -267,14 +267,14 @@
           item.className = 'pp-barrier-card';
           item.innerHTML =
             '<div class="pp-barrier-top">' +
-              '<textarea rows="2" class="pp-barrier-text" placeholder="что мешает на пути к цели"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.text) + '</textarea>' +
+              '<textarea rows="2" class="pp-barrier-text" aria-label="Что мешает на пути к цели" placeholder="что мешает на пути к цели"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.text) + '</textarea>' +
               (locked ? '' : '<button class="pp-item-remove" title="Убрать">✕</button>') +
             '</div>' +
             '<div class="pp-type">' +
               '<button type="button" class="pp-type-btn' + (it.type === 'fixed' ? ' is-on' : '') + '" data-type="fixed"' + (locked ? ' disabled' : '') + '>стена</button>' +
               '<button type="button" class="pp-type-btn' + (it.type === 'surmountable' ? ' is-on' : '') + '" data-type="surmountable"' + (locked ? ' disabled' : '') + '>можно обойти</button>' +
             '</div>' +
-            '<textarea rows="2" class="pp-barrier-counter" placeholder="чем закрываем — какой ресурс или ход снимает этот барьер (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.counter) + '</textarea>';
+            '<textarea rows="2" class="pp-barrier-counter" aria-label="Чем закрываем этот барьер" placeholder="чем закрываем — какой ресурс или ход снимает этот барьер (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.counter) + '</textarea>';
           if (!locked) {
             item.querySelector('.pp-barrier-text').addEventListener('input', function (e) { it.text = e.target.value; saveState(); });
             item.querySelector('.pp-barrier-counter').addEventListener('input', function (e) { it.counter = e.target.value; saveState(); });
@@ -303,7 +303,7 @@
           var item = document.createElement('div');
           item.className = 'pp-list-item';
           item.innerHTML =
-            '<textarea rows="2" placeholder="на что можно опереться"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.text) + '</textarea>' +
+            '<textarea rows="2" aria-label="Опора или ресурс" placeholder="на что можно опереться"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.text) + '</textarea>' +
             (locked ? '' : '<button class="pp-item-remove" title="Убрать">✕</button>');
           if (!locked) {
             item.querySelector('textarea').addEventListener('input', function (e) { it.text = e.target.value; saveState(); });
