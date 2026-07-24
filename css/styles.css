@@ -21,7 +21,7 @@
   --ink: #181818;
   --paper: #ffffff;
   --muted: #6b6e73;
-  --muted-soft: #9a9da2;
+  --muted-soft: #71747a; /* затемнён с #9a9da2 до ≈4.8:1 на белом (WCAG 1.4.3): читаемый текст/плейсхолдеры/хинты */
   --hairline: #e7e7e7;
   --soft: #f5f5f6;
   --frame: 0px;
@@ -31,6 +31,8 @@
   --ff-body: 'Inter Tight', sans-serif;
 
   /* legacy aliases → вермилион (временные, убрать по мере миграции секций) */
+  /* ЛЕГАСИ: --lime* остались с до-редизайна, но держат ВЕРМИЛИОН (не лайм). Алиас
+     намеренный — чтобы не переписывать 30+ мест; значения = вермилион-палитра. */
   --lime: #ff4800;
   --lime-dim: #e63f00;
   --lime-tint: #fff2ec;
@@ -1246,7 +1248,7 @@ footer {
 .hub-room-card:hover { border-color: var(--ink); }
 .hub-room-card.is-locked { cursor: default; opacity: 0.6; }
 /* текущий (следующий к прохождению) этап — вермилионовый фокус «вам сюда» */
-.hub-room-card.is-current { border-color: var(--accent); background: var(--accent-tint); box-shadow: inset 3px 0 0 var(--accent); }
+.hub-room-card.is-current { border-color: var(--accent); background: var(--accent-tint); }
 .hub-room-card.is-current:hover { border-color: var(--accent); }
 /* Кнопка-карточка выглядит как ссылка-карточка (вместо повторяющегося инлайн-ресета). */
 button.hub-room-card {
@@ -1462,6 +1464,9 @@ button.hub-room-card {
 .sst-obzor { color: var(--accent); }
 .sst-sub { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
 .sst-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.sst-tab, .sst-slot { cursor: default; } /* визуальная рамка StratOS, не кликабельные контролы */
+/* единое видимое фокус-кольцо для клавиатурной навигации (WCAG 2.4.7) — доборка к точечным :focus-visible */
+.btn:focus-visible, a.hub-room-card:focus-visible, .fac-tab-btn:focus-visible, .fac-table tbody tr:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .stratos-art-h { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); margin-bottom: 8px; }
 .stratos-hint { font-weight: 400; letter-spacing: 0; color: var(--muted-soft); font-size: 12px; }
 .stratos-in, .stratos-ta {
@@ -2843,9 +2848,10 @@ table mark.hl {
 
 /* ---- отметки на ОСНОВНОМ списке (не только в карточке) ---- */
 /* строка, требующая внимания судьи: вермилионовая полоса слева — сразу видно, куда листать */
-tr.fac-row--attn td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+/* полосок-акцентов (inset 3px) больше нет — вместо side-stripe полная подсветка строки */
+tr.fac-row--attn td { background: var(--accent-tint); }
 /* разобрано фасилитатором: флаг остаётся маркером «здесь была проверка», но голубой */
-tr.fac-row--reviewed td:first-child { box-shadow: inset 3px 0 0 var(--jb); }
+tr.fac-row--reviewed td { background: var(--band); }
 .fac-row-flag { color: var(--accent); font-weight: 700; margin-left: 4px; }
 .fac-row-reviewed { color: var(--jb-ink); font-weight: 700; margin-left: 4px; }
 /* строки ИИ-прогонов — мягкий голубой фон-референс (ИИ = справочная линия по DESIGN.md) + чип «ИИ» */

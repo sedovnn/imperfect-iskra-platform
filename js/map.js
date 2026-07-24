@@ -275,8 +275,8 @@
         var head = '<div class="stratos-art-h">' + f.label +
           (f.hint ? ' <span class="stratos-hint">' + f.hint + '</span>' : '') + '</div>';
         var field = f.kind === 'input'
-          ? '<input class="stratos-in" data-sk="' + f.key + '"' + (readOnly ? ' disabled' : '') + ' value="' + esc(val) + '" />'
-          : '<textarea class="stratos-ta" data-sk="' + f.key + '" rows="' + (f.rows || 3) + '"' + (readOnly ? ' disabled' : '') + '>' + esc(val) + '</textarea>';
+          ? '<input class="stratos-in" data-sk="' + f.key + '" aria-label="' + esc(f.label) + '"' + (readOnly ? ' disabled' : '') + ' value="' + esc(val) + '" />'
+          : '<textarea class="stratos-ta" data-sk="' + f.key + '" aria-label="' + esc(f.label) + '" rows="' + (f.rows || 3) + '"' + (readOnly ? ' disabled' : '') + '>' + esc(val) + '</textarea>';
         return '<div class="stratos-art">' + head + field + '</div>';
       }
       strategyRecapEl.innerHTML = '<div class="stratos-grid">' + [1, 2, 3].map(function (col) {
