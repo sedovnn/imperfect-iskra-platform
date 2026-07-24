@@ -154,6 +154,8 @@
 
     var introKey = 'imp_round3_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
+    var lg = document.getElementById('lemekhGreet');
+    if (lg) lg.textContent = pname() ? (pname() + ', найдёте') : 'Найдёте';
     if (localStorage.getItem(introKey)) introEl.style.display = 'none';
     document.getElementById('dismissIntro').addEventListener('click', function () {
       introEl.style.display = 'none';
@@ -174,7 +176,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b> придерживает двери лифта: «' + (pname() ? escapeHtml(pname()) + ', погодите-ка' : 'Погодите-ка') + '. Мне ' + escapeHtml(stancePhrase) + ' через полгода нести на совет Меридиана, а я пока сам не понимаю, куда оно нас в итоге приводит. Своими словами, без презентаций — если пойдём по-вашему, где „Искра“ окажется?»</p>' +
+        '<p class="s2-ageev"><b>Лемех</b>: «' + (pname() ? escapeHtml(pname()) + ', мне' : 'Мне') + ' это через полгода нести на совет Меридиана — а я пока не вижу, к чему оно в итоге ведёт. Своими словами: если пойдём по-вашему, где „Искра“ окажется?»</p>' +
         '<textarea class="s2-rationale" aria-label="Куда придёт «Искра», если пойти по-вашему" rows="4" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.vision) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
@@ -200,7 +202,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на сколько лет вперёд вы смотрите — и на какой результат готовы работать, даже если он созреет уже без вас? И почему именно туда, а не куда попроще?»</p>' +
+        '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А насколько далеко вы смотрите? На какой результат готовы работать — даже если этот результат достанется уже не вам? И почему туда, а не куда попроще?»</p>' +
         '<textarea class="ga-horizon" aria-label="Горизонт в годах и на какой результат работаете" rows="4" placeholder="горизонт в годах + на какой результат работаете (даже если созреет уже без вас) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
         '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:8px 0 0; line-height:1.45;">Здесь — про куда и зачем, а не про как: направление и результат, без пошагового плана.</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');

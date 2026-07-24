@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=22" />
+<link rel="stylesheet" href="css/styles.css?v=23" />
 </head>
 <body>
 
@@ -33,8 +33,8 @@
 <div id="finishOverlay" class="gate gate-finish" style="display:none;">
   <div class="gate-card">
     <p class="kicker">✓ Разговор закончен</p>
-    <h2>Лемех кивает и уходит</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Ваш разговор сохранён.</p>
+    <h2>Лемех провожает вас</h2>
+    <p style="text-align:left; font-style:italic; line-height:1.6; margin:0 0 24px; color:var(--ink);">«Вот и ваша переговорная. Спасибо за разговор — а вам пора за черновик к комитету».</p>
     <a class="btn btn-primary btn-block" href="map.html">Вернуться к карте →</a>
   </div>
 </div>
@@ -73,8 +73,8 @@
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
         <p class="kicker">Легенда</p>
-        <p>Вы выходите из переговорной. У лифта — Виктор Лемех, вице-президент «Меридиана» по спецпроектам. «Есть минута? Не по повестке сегодняшней встречи».</p>
-        <p>Лемех в отрасли давно и любит подумать вслух о том, куда всё это в принципе движется. За этим он вас и поймал у лифта.</p>
+        <p>Вы выходите из лифта на шестом этаже. У лифта — Виктор Лемех, вице-президент «Меридиана» по спецпроектам.</p>
+        <p><b>Лемех</b>: «<span id="lemekhGreet">Найдёте</span> для меня пару минут?»</p>
         <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговору ↓</button>
       </div>
     </div>
@@ -95,7 +95,7 @@
 <script src="js/dossier-render.js?v=3"></script>
 <script src="js/dossier-panel.js?v=1"></script>
 <script src="js/case-ref.js?v=2"></script>
-<script src="js/round3.js?v=6"></script>
+<script src="js/round3.js?v=7"></script>
 <script src="js/progress.js?v=5"></script>
 </body>
 </html>

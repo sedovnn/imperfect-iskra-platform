@@ -40,10 +40,10 @@
   // станций 1–2, «все 3 комнаты пройдены» = «все 5 этапов пройдены» → гейт финала
   // (roomsDone >= ROOMS.length) остаётся корректным.
   var STAGES = [
-    { key: 'station1', title: 'Раунд 1 · Знакомство с «Искрой»', teaser: 'Читаете материалы «Искры» и собираете карту: что происходит и как связано.', href: 'round1.html', storageKey: function (bib) { return 'imp_round1_' + bib; } },
-    { key: 'station2', title: 'Раунд 2 · Встреча с Агеевым', teaser: 'Понедельник, 10:00 — приоритеты, защита выбора под давлением и рекомендация по развилке.', href: 'round2.html', storageKey: function (bib) { return 'imp_round2_' + bib; } },
+    { key: 'station1', title: 'Раунд 1 · Знакомство с «Искрой»', teaser: 'Читаете материалы про компанию и собираете карту проблем: что происходит и как связано.', href: 'round1.html', storageKey: function (bib) { return 'imp_round1_' + bib; } },
+    { key: 'station2', title: 'Раунд 2 · Встреча с Агеевым', teaser: 'Понедельник, 10:00. Агеев ждёт разговора по существу: с чего начинать, а что подождёт.', href: 'round2.html', storageKey: function (bib) { return 'imp_round2_' + bib; } },
     { key: 'future', title: 'Раунд 3 · Встреча с Лемехом у лифта', teaser: 'Лемех перехватывает вас у лифта: пять минут и вопрос не по повестке.', href: 'round3.html', storageKey: function (bib) { return 'imp_round3_' + bib; } },
-    { key: 'path', title: 'Раунд 4 · Черновик к мартовскому комитету', teaser: 'Собираете черновик со Штерном к заседанию, которое ждали с декабря.', href: 'round4.html', storageKey: function (bib) { return 'imp_round4_' + bib; } },
+    { key: 'path', title: 'Раунд 4 · Черновик к мартовскому комитету', teaser: 'Собираете черновик к заседанию, которое ждали с декабря, но к вам заходит неожиданный гость.', href: 'round4.html', storageKey: function (bib) { return 'imp_round4_' + bib; } },
     { key: 'alternatives', title: 'Раунд 5 · Очередь в «Прожектор»', teaser: 'В очереди за кофе Брагин роняет реплику, которая не идёт из головы.', href: 'round5.html', storageKey: function (bib) { return 'imp_round5_' + bib; } }
   ];
 
@@ -312,7 +312,11 @@
     openFinalizeBtn.addEventListener('click', function () {
       renderStratosDoc(false);
       document.getElementById('closeFinalizeBtn').textContent = '← Назад к карте';
-      document.getElementById('finalizeBtn').style.display = '';
+      var fb = document.getElementById('finalizeBtn');
+      fb.style.display = '';
+      fb.textContent = 'Финализировать стратегию →';
+      var db = document.getElementById('defenseBlock');
+      if (db) db.style.display = 'none'; // записка к совету появится после «Финализировать»
       reviewMode = false;
       document.getElementById('stationRoot').style.display = 'none';
       finalizeScreenEl.style.display = 'flex';
@@ -373,6 +377,8 @@
     // повторный просмотр собранной стратегии после финала — read-only (п.13)
     document.getElementById('reviewStrategyBtn').addEventListener('click', function () {
       renderStratosDoc(true);
+      var db = document.getElementById('defenseBlock');
+      if (db) db.style.display = ''; // показать записку к совету read-only
       document.getElementById('finishOverlay').style.display = 'none';
       document.getElementById('finalizeBtn').style.display = 'none';
       if (defenseEl) defenseEl.disabled = true;
@@ -406,12 +412,24 @@
       document.getElementById('finishOverlay').style.display = 'flex';
     }
 
+    // двухшаговая финализация: 1-й клик открывает записку к совету и меняет
+    // кнопку на «Отправить К. Агееву», 2-й — собственно финализирует.
+    function handleFinalizeClick() {
+      var db = document.getElementById('defenseBlock');
+      if (db && db.style.display === 'none' && !state.finished) {
+        db.style.display = '';
+        document.getElementById('finalizeBtn').textContent = 'Отправить К. Агееву →';
+        if (defenseEl) { try { defenseEl.focus(); } catch (e) {} }
+        return;
+      }
+      finalizeRound();
+    }
+
     function finalizeRound() {
-      // жёсткий гейт (п.10): без всех трёх разговоров финализация невозможна
+      // жёсткий гейт (п.10): без всех пяти раундов финализация невозможна
       // (кроме режима экскурсии). Кнопка «собрать» и так заблокирована — это
       // страховка на случай прямого вызова.
       if (!finalizeBypass() && roomsDone() < ROOMS.length) {
-        window.alert('Финализировать стратегию можно только после всех трёх разговоров.');
         return;
       }
       if (defenseEl) state.finalDefense = defenseEl.value;
@@ -427,7 +445,7 @@
       showFinishOverlay();
     }
 
-    document.getElementById('finalizeBtn').addEventListener('click', finalizeRound);
+    document.getElementById('finalizeBtn').addEventListener('click', handleFinalizeClick);
 
     if (state.finished) {
       openFinalizeBtn.setAttribute('disabled', 'disabled');

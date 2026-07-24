@@ -264,7 +264,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Агеев</b>: «' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что честно откладываем. Не обязательно раскладывать всё — но порядок в приоритетах для меня важен».</p>' +
+        '<p class="s2-ageev"><b>Агеев</b>: «' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что откладываем. Не обязательно раскладывать всё что собрали — но порядок в приоритетах для меня важен».</p>' +
         '<div class="s2-columns">' +
           '<div class="s2-col" data-zone="pool"><h4>Карта</h4><p class="links-hint">неразобранное</p><div class="s2-list" data-list="pool"></div></div>' +
           '<div class="s2-col is-priorities" data-zone="priorities"><h4>Приоритеты</h4><p class="links-hint">порядок = ранг, максимум ' + MAX_PRIORITIES + '</p><div class="s2-list" data-list="priorities"></div></div>' +
@@ -374,7 +374,7 @@
       // реакция Агеева на разбор (п.11): заметил ли отказы
       var sortReact = state.rejected.length
         ? '<b>Агеев</b> ведёт пальцем по списку: «Вижу, кое-что вы честно отложили. Хорошо — значит, не пытаетесь спасти всё сразу».'
-        : '<b>Агеев</b>: «Ничего не отложили, всё оставили в приоритетах — смело. Сейчас проверю этот выбор на прочность».';
+        : '<b>Агеев</b>: «Ничего не отложили, всё оставили в приоритетах — смело. Тогда задам пару неудобных вопросов — как на совете».';
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
@@ -383,8 +383,8 @@
         '<textarea class="s2-rationale" aria-label="Почему этот приоритет идёт первым и к чему ведёт" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
         // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
         '<div class="rationale-block" style="margin-top:12px;">' +
-          '<label>С какого конкретного действия вы откроете работу по приоритету №1? <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
-          '<textarea class="s2-first-action" aria-label="Первый конкретный ход" rows="2" placeholder="например: за две недели вынести на комитет решение по юр. контуру «Миры»"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.firstAction || '') + '</textarea>' +
+          '<label>С чего начнёте — первый шаг <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
+          '<textarea class="s2-first-action" aria-label="Первый конкретный ход" rows="2" placeholder="первый конкретный шаг по приоритету №1"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.firstAction || '') + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitRationaleBtn" style="margin-top:12px;">Ответить →</button>');
 
@@ -418,7 +418,7 @@
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Настаиваю: это идёт первым</label>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Пересоберу частично — вот что меняю, а что удерживаю</label>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Соглашусь пересобрать список</label>' +
-        '<textarea class="s2-stress-comment" aria-label="Что делаете с приоритетами под этой вводной и почему" rows="3" placeholder="Что делаете с приоритетами под этой вводной и почему? Если меняете — что именно, а что удерживаете"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
+        '<textarea class="s2-stress-comment" aria-label="Что меняете, что оставляете и почему" rows="3" placeholder="что меняете, что оставляете — и почему"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitStressBtn" style="margin-top:12px;">Ответить →</button>');
 
       if (!locked) {
@@ -460,7 +460,7 @@
       var stressReact = state.stressChoice === 'hold'
         ? '<b>Агеев</b> кивает: «Настояли. Услышал вашу позицию — на совете передам как есть».'
         : (state.stressChoice === 'calibrate'
-          ? '<b>Агеев</b> хмыкает: «Пересобрали частично. Понял, что меняете, а что держите».'
+          ? '<b>Агеев</b> хмыкает: «Пересобрали частично. Понял».'
           : (state.stressChoice === 'change'
             ? '<b>Агеев</b>: «Пересобрали. Ок, посмотрим, куда это выведет».'
             : ''));
@@ -472,7 +472,7 @@
         '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Крепость» — защищать рекламное ядро</label>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Вторая кривая» — ставка на новое направление</label>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="other"' + (state.stance === 'other' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Обе позиции неверны — предложу свою</label>' +
-        '<textarea class="s2-stance-other" aria-label="Ваша позиция одной фразой" rows="2" placeholder="ваша позиция одной фразой" style="display:' + (state.stance === 'other' ? '' : 'none') + ';"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceOther) + '</textarea>' +
+        '<textarea class="s2-stance-other" aria-label="Опишите вашу позицию" rows="2" placeholder="опишите вашу позицию" style="display:' + (state.stance === 'other' ? '' : 'none') + ';"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceOther) + '</textarea>' +
         '<div class="rationale-block" style="margin-top:12px;">' +
           '<label>Два критерия, на которых стоит рекомендация</label>' +
           '<textarea class="s2-stance-criteria" aria-label="Два критерия, на которых держится рекомендация" rows="3" placeholder="два критерия, на которых держится ваша рекомендация"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceCriteria) + '</textarea>' +
@@ -528,7 +528,7 @@
       block.className = 's2-block';
       block.innerHTML =
         (stanceReact ? '<p class="s2-ageev">' + stanceReact + '</p>' : '') +
-        '<p class="s2-ageev"><b>Агеев</b> встаёт: «' + (pname() ? escapeHtml(pname()) + ', последний вопрос' : 'Последний вопрос') + '. При каких условиях вы сами скажете, что этот выбор устарел — что пора пересматривать?»</p>' +
+        '<p class="s2-ageev"><b>Агеев</b> встаёт: «' + (pname() ? escapeHtml(pname()) + ', последний вопрос' : 'Последний вопрос') + '. Что должно случиться, чтобы вы сами сказали: пора пересматривать?»</p>' +
         '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="2" placeholder="необязательно — можно пожать плечами и попрощаться"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить встречу →</button>');
 

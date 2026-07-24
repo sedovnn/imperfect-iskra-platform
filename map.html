@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=22" />
+<link rel="stylesheet" href="css/styles.css?v=23" />
 </head>
 <body>
 
@@ -63,8 +63,10 @@
     <p class="section-lead" style="margin:0 0 20px; max-width:none;">Пока вы были в «Прожекторе», ваш ассистент перенёс всё, что вы наработали в предыдущих раундах, в платформу StratOS и собрал черновик стратегии. Прочтите его как единое целое, сведите нестыковки и отредактируйте прямо здесь — это ваш финальный ход.</p>
     <div class="stratos-doc" id="strategyRecap"><!-- рендерится map.js --></div>
 
-    <p class="s2-ageev" style="margin-top:26px;"><b>Агеев</b> заглядывает: «Не забудьте написать краткую заметку к совету директоров — такую, что защитила бы вашу стратегию перед ними».</p>
-    <textarea id="finalDefense" class="finalize-textarea" rows="10" placeholder="Краткая заметка к совету директоров в защиту вашей стратегии. Можно пропустить, но это ваш последний ход."></textarea>
+    <div id="defenseBlock" style="display:none;">
+      <p class="s2-ageev" style="margin-top:26px;"><b>Агеев</b> заглядывает: «Вы не забыли записку к совету — в защиту вашей позиции?»</p>
+      <textarea id="finalDefense" class="finalize-textarea" rows="10" placeholder="Краткая записка к совету директоров в защиту вашей стратегии. Можно пропустить — но это ваш шанс сказать то, что пришло в голову в последний момент."></textarea>
+    </div>
 
     <div class="finalize-actions">
       <button type="button" class="btn btn-ghost" id="closeFinalizeBtn">← Назад к карте</button>
@@ -105,18 +107,14 @@
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
         <p class="kicker">Карта ассессмента</p>
-        <p>Весь ассессмент — шесть раундов вокруг одного кейса «Искры»: пять из них — на карте на следующем экране, шестой — сборка стратегии. Это ваш штаб: отсюда вы заходите в каждый раунд и сюда же возвращаетесь. Всегда видно, что пройдено, где вы сейчас и сколько осталось.</p>
+        <p>Это ваш офис. Отсюда вы заходите в каждый раунд и сюда же возвращаетесь — всегда видно, что пройдено, где вы сейчас и сколько осталось. Справа под рукой: ваши решения и полный текст кейса «Искры».</p>
         <div class="case-rule">
           <span>→</span>
           <span><b>По порядку.</b> Следующий раунд открывается, когда закончите предыдущий: это одна история, а не набор отдельных задач.</span>
         </div>
         <div class="case-rule" style="margin-top:12px;">
           <span>✓</span>
-          <span><b>Раунд 6 — сборка.</b> Пройдёте первые пять — соберёте из них единую стратегию и защитите её.</span>
-        </div>
-        <div class="case-rule" style="margin-top:12px;">
-          <span>⏱</span>
-          <span><b>Около двух часов.</b> Прогресс сохраняется по вашему номеру — можно закрыть вкладку и вернуться позже.</span>
+          <span><b>Раунд 6 — сборка.</b> После первых пяти платформа соберёт из ваших ответов единую стратегию — останется её защитить.</span>
         </div>
         <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к карте ↓</button>
       </div>
@@ -146,7 +144,7 @@
 <script src="js/dossier-render.js?v=3"></script>
 <script src="js/dossier-panel.js?v=1"></script>
 <script src="js/case-ref.js?v=2"></script>
-<script src="js/map.js?v=10"></script>
+<script src="js/map.js?v=11"></script>
 <script src="js/progress.js?v=5"></script>
 </body>
 </html>

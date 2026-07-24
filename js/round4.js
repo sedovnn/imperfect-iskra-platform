@@ -171,7 +171,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «Ну, ' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не лозунг. Покажите по-честному: отсюда, где мы сейчас, — до туда. Какими этапами?»</p>' +
+        '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «Ну, ' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не лозунг. Покажите путь по-честному: где мы сейчас — и какими шагами дойдём до цели?»</p>' +
         (firstMove ? '<div class="pp-firstmove">Ваш первый ход из раунда 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
           '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" aria-label="Текущее состояние — где мы сейчас" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
@@ -244,10 +244,10 @@
       var pathLaidOut = (state.targetState || '').trim() || (state.stages || []).some(function (s) { return (s.description || '').trim(); });
       var react = pathLaidOut
         ? '<b>Штерн</b> кивает на этапы: «Уже похоже на план, а не на лозунг. Хорошо».'
-        : '<b>Штерн</b> поднимает бровь: «Пока это набросок. Ну, посмотрим на второй вопрос».';
+        : '<b>Штерн</b> поднимает бровь: «Для меня это пока набросок — и тогда у меня к вам ещё один вопрос».';
       block.innerHTML =
         '<p class="s2-ageev">' + react + '</p>' +
-        '<p class="s2-ageev"><b>Штерн</b> проходится по вашим этапам глазами: «Допустим. Теперь трезво: что реально этому помешает — и есть ли на что опереться? По опыту, мешает всегда что-то вполне конкретное, а не „рынок вообще“. И сразу помечайте: что из этого — стена, а что можно обойти.»</p>' +
+        '<p class="s2-ageev"><b>Штерн</b> проходится по вашим этапам глазами: «Что реально этому помешает — и есть ли на что опереться? Мешает всегда что-то конкретное, а не „рынок вообще“. Ну и где совсем стена, а где можно обойти — тоже не маловажный фактор в бизнесе.»</p>' +
         '<div class="pp-columns">' +
           '<div class="pp-column"><h4>Барьеры</h4><div class="pp-list" data-list="barriers"></div>' +
             (locked ? '' : '<button class="btn btn-ghost" data-add="barriers" style="margin-top:8px;">+ добавить барьер</button>') +

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=22" />
+<link rel="stylesheet" href="css/styles.css?v=23" />
 </head>
 <body>
 
@@ -34,7 +34,7 @@
   <div class="gate-card">
     <p class="kicker">✓ Раунд 2 завершён</p>
     <h2>Встреча закончена</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Агеев проводил вас до лифта. Возвращаемся на карту ассессмента.</p>
+    <p class="section-lead" style="margin:0 0 24px;">Агеев проводил вас до лифта и предложил продолжить работу в переговорной на 6-м этаже.</p>
     <a class="btn btn-primary btn-block" href="map.html">Вернуться к карте →</a>
   </div>
 </div>
@@ -72,18 +72,14 @@
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
         <p class="kicker">Легенда</p>
-        <p>Понедельник, 9 февраля, 10:00. Кабинет Агеева. Он закрывает ноутбук: «Карту вашу я прочитал вчера вечером, спасибо. Теперь разговор по существу. Всё разом мы делать не будем — люди, деньги и моё время у совета директоров ограничены. Разложите прямо здесь: с чем идём к совету в первую очередь, а что честно откладываем».</p>
+        <p>Понедельник, 9 февраля, 10:00. Кабинет Агеева. Он закрывает ноутбук: «Карту вашу я прочитал вчера вечером, спасибо. Теперь разговор по существу. Всё разом мы делать не будем — люди, деньги и моё время у совета директоров ограничены. Разложите прямо здесь: с чем идём к совету в первую очередь, а что откладываем».</p>
         <div class="case-rule">
           <span>→</span>
-          <span><b>Работаете со своей картой.</b> Здесь только проблемы, которые вы сами собрали в раунде 1. Что оставить неразобранным, что отложить, что двигать первым — решать вам. Необязательные поля можно пропускать.</span>
+          <span><b>Работаете со своей картой.</b> Здесь только проблемы, которые вы сами собрали ранее. Что оставить неразобранным, что отложить, что двигать первым — решать вам. Необязательные поля можно пропускать.</span>
         </div>
         <div class="case-rule" style="margin-top:12px;">
           <span>⚠</span>
           <span><b>Разговор идёт вперёд.</b> Когда вы фиксируете приоритеты и отвечаете Агееву, вернуться и переиграть ответ нельзя — как в настоящей встрече.</span>
-        </div>
-        <div class="case-rule" style="margin-top:12px;">
-          <span>📂</span>
-          <span><b>Всё под рукой.</b> Справа — два язычка: «Мои ответы» (ваши шаги) и «Полный текст кейса» (пакет материалов «Искры» для сверки) — чтобы не держать всё в голове.</span>
         </div>
         <button class="btn btn-ghost" id="dismissIntro" style="margin-top:20px;">Понятно, к разговору ↓</button>
       </div>
@@ -105,7 +101,7 @@
 <script src="js/dossier-render.js?v=3"></script>
 <script src="js/dossier-panel.js?v=1"></script>
 <script src="js/case-ref.js?v=2"></script>
-<script src="js/round2.js?v=10"></script>
+<script src="js/round2.js?v=11"></script>
 <script src="js/progress.js?v=5"></script>
 </body>
 </html>
