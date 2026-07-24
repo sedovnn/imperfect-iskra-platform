@@ -31,6 +31,11 @@
   .prin .t .sub { display: block; color: var(--muted); font-size: 14px; margin-top: 3px; }
   /* «про ИИ» — единственный акцент-блок (это важно проговорить прямо) */
   .prin.accent .n { border-color: var(--accent); color: var(--accent); }
+  /* логистика/мета — тихая полоса без нумерации: читается легче прайминга */
+  .intro-notes { margin-top: 34px; }
+  .intro-note { padding: 11px 0; border-top: 1px solid var(--hairline); font-size: 14px; line-height: 1.5; color: var(--muted); }
+  .intro-note:first-of-type { border-top: none; }
+  .intro-note b { color: var(--ink); font-weight: 700; }
   .intro-cta { margin: 40px 0; }
   .intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: 12px; color: var(--muted-soft); }
 </style>
@@ -51,36 +56,23 @@
     </div>
 
     <div class="pgroup">
-      <p class="pgroup-h">Как мы смотрим</p>
-      <div class="prin"><span class="n">1</span><span class="t"><b>Нет единственного правильного ответа.</b> Мы смотрим, как вы рассуждаете, а не «решили» ли вы кейс.</span></div>
-    </div>
-
-    <div class="pgroup">
       <p class="pgroup-h">Как отвечать</p>
-      <div class="prin"><span class="n">2</span><span class="t"><b>Думайте «вслух».</b> Показывайте письменно варианты, которые взвесили: что рассмотрели, что отвергли и почему.</span></div>
-      <div class="prin"><span class="n">3</span><span class="t"><b>Не спешите фиксировать один ход.</b> Сначала посмотрите на всю картину целиком.</span></div>
-      <div class="prin"><span class="n">4</span><span class="t"><b>Пишите своими словами.</b></span></div>
+      <div class="prin"><span class="n">1</span><span class="t"><b>Правильного ответа нет — важно, как вы рассуждаете.</b> Не спешите с одним ходом: сначала охватите картину целиком.</span></div>
+      <div class="prin"><span class="n">2</span><span class="t"><b>Думайте «вслух», своими словами:</b> показывайте, что рассмотрели, что отвергли и почему.</span></div>
     </div>
 
     <div class="pgroup">
       <p class="pgroup-h">ИИ и источники</p>
-      <div class="prin accent"><span class="n">5</span><span class="t"><b>ИИ использовать можно, но мы это заметим.</b> И тогда итоговая оценка не отразит ваш настоящий потенциал.</span></div>
-      <div class="prin"><span class="n">6</span><span class="t"><b>Опирайтесь на данные кейса и свой опыт.</b> Знаете актуальные сигналы, которых в кейсе нет напрямую, или у вас есть релевантный опыт — приносите, объясняя логику. Только не переносите в ответы факты о конкретных реальных компаниях, которые кейс может напоминать.</span></div>
+      <div class="prin accent"><span class="n">3</span><span class="t"><b>ИИ использовать можно, но мы это заметим.</b> И тогда итоговая оценка не отразит ваш настоящий потенциал.</span></div>
+      <div class="prin"><span class="n">4</span><span class="t"><b>Опирайтесь на данные кейса и свой опыт:</b> знаете релевантные сигналы, которых в кейсе нет напрямую, — приносите, объясняя логику.</span></div>
     </div>
 
-    <div class="pgroup">
-      <p class="pgroup-h">Технически</p>
-      <div class="prin"><span class="n">7</span><span class="t"><b>Пишите всё на платформе</b>, не в сторонних заметках. Всё, включая ваши заметки, доступно на протяжении всей игры.</span></div>
-      <div class="prin"><span class="n">8</span><span class="t"><b>Как устроен день:</b> 5 заданий, около 2 часов.<span class="sub">Кейс объёмный — лучше проходить с компьютера или планшета: под мобильные устройства интерфейс не адаптирован.</span></span></div>
+    <div class="intro-notes">
+      <div class="intro-note"><b>Формат.</b> Пишите всё на платформе — заметки доступны всю игру. 5 заданий, около 2 часов; лучше проходить с компьютера или планшета (под мобильные устройства интерфейс не адаптирован).</div>
+      <div class="intro-note"><b>Что в итоге.</b> Профиль по пяти навыкам и сравнение с ИИ, с рекомендациями по развитию. Персональные данные платформа не хранит — так оценка честнее; отчёт формируется по вашему fp(id).</div>
     </div>
 
-    <div class="pgroup">
-      <p class="pgroup-h">Что в итоге</p>
-      <div class="prin"><span class="n">9</span><span class="t"><b>Результат</b> — профиль по пяти навыкам и сравнение с ИИ, с рекомендациями по развитию.</span></div>
-      <div class="prin"><span class="n">10</span><span class="t"><b>Персональные данные платформа не хранит</b> — так оценка честнее. Данные синхронизируются для формирования вашего отчёта с вашим fp(id).</span></div>
-    </div>
-
-    <p style="margin-top:28px; font-size:13px; color:var(--muted); line-height:1.5;"><i>Кейс вымышленный — любые совпадения с реальными компаниями случайны.</i></p>
+    <p style="margin-top:28px; font-size:13px; color:var(--muted); line-height:1.5;"><i>Кейс вымышленный — любые совпадения случайны; не переносите в ответы факты о конкретных реальных компаниях, которые он может напоминать.</i></p>
 
     <div class="intro-cta">
       <a class="btn btn-primary btn-block" id="startBtn" href="map.html">К карте ассессмента →</a>
