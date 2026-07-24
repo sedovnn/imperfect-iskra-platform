@@ -949,7 +949,7 @@ footer {
 /* ---------- станция 2 «Встреча с Агеевым» (ПР-1 + ПР-2) ---------- */
 
 .s2-body {
-  max-width: 1180px;
+  max-width: var(--maxw);
   margin: 0 auto;
   padding: 28px 32px 90px;
   overflow-y: auto;
@@ -1193,7 +1193,7 @@ footer {
 /* ---------- хаб «Финальный отрезок» (комнаты в свободном порядке) ---------- */
 
 .hub-body {
-  max-width: 900px;
+  max-width: var(--maxw);
   margin: 0 auto;
   padding: 28px 32px 90px;
   overflow-y: auto;
@@ -2025,6 +2025,11 @@ button.hub-room-card {
   padding: 14px 24px;
   border-bottom: 1px solid #ececec;
   flex: none;
+  /* единая рамка: шапка той же ширины, что и контент (var(--maxw)), по центру —
+     чтобы на всех экранах шапка и рабочая область совпадали по ширине */
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
 }
 
 .station-header-left {
@@ -2103,6 +2108,10 @@ button.hub-room-card {
      (та полупустая, пока нет карточек) — иначе на ноутах чтение жалось при делении 1:1. */
   grid-template-columns: 240px minmax(0, 1.5fr) minmax(0, 1fr);
   min-height: 0;
+  /* та же рамка, что у шапки и прочих экранов */
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
 }
 /* меньшие ноуты (до слома в 1 колонку на 980): ещё у́же навигация, ещё больше чтению */
 @media (max-width: 1180px) {
