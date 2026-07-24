@@ -924,20 +924,25 @@
       var actions = document.createElement('div');
       actions.style.cssText = 'margin:0 0 14px; padding-bottom:12px; border-bottom:1px solid var(--hairline);';
       actions.innerHTML =
+        // рутинные действия
         '<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">' +
           '<label style="display:flex; gap:6px; align-items:center; font-size:13px; cursor:pointer;"><input type="checkbox" id="facNoScore"' + (participant.noScore ? ' checked' : '') + ' /> Не оценивать (тест-прогон)</label>' +
           '<span style="flex:1;"></span>' +
           '<span style="font-size:12.5px; color:var(--muted);">Пароль: <b id="facPwdVal" style="font-family:ui-monospace,Menlo,monospace;">' + escapeHtml(reg.password || '—') + '</b> <button class="btn btn-ghost btn-xs" id="facRegenPwd" title="Перегенерировать пароль">↻</button></span>' +
-          '<button class="btn btn-ghost btn-xs" id="facResetProgress" style="color:var(--accent); border-color:var(--accent);">Сбросить прогресс</button>' +
         '</div>' +
-        '<div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-top:10px; font-size:12px; color:var(--muted-soft);">' +
-          '<span>Сбросить раунд:</span>' +
-          '<button class="btn btn-ghost btn-xs" data-resetround="round1">Р1</button>' +
-          '<button class="btn btn-ghost btn-xs" data-resetround="round2">Р2</button>' +
-          '<button class="btn btn-ghost btn-xs" data-resetround="round3">Р3</button>' +
-          '<button class="btn btn-ghost btn-xs" data-resetround="round4">Р4</button>' +
-          '<button class="btn btn-ghost btn-xs" data-resetround="round5">Р5</button>' +
-          '<button class="btn btn-ghost btn-xs" data-resetround="map">Сборка</button>' +
+        // отдельная зона деструктивных действий — визуально отделена
+        '<div style="margin-top:12px; padding:10px 12px; border:1px solid var(--accent-line, var(--hairline)); border-radius:var(--radius); background:var(--soft);">' +
+          '<div style="font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin-bottom:8px;">Сброс · необратимо</div>' +
+          '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
+            '<button class="btn btn-ghost btn-xs" id="facResetProgress" style="color:var(--accent); border-color:var(--accent);">Сбросить весь прогресс</button>' +
+            '<span style="font-size:12px; color:var(--muted-soft);">или отдельный раунд:</span>' +
+            '<button class="btn btn-ghost btn-xs" data-resetround="round1">Р1</button>' +
+            '<button class="btn btn-ghost btn-xs" data-resetround="round2">Р2</button>' +
+            '<button class="btn btn-ghost btn-xs" data-resetround="round3">Р3</button>' +
+            '<button class="btn btn-ghost btn-xs" data-resetround="round4">Р4</button>' +
+            '<button class="btn btn-ghost btn-xs" data-resetround="round5">Р5</button>' +
+            '<button class="btn btn-ghost btn-xs" data-resetround="map">Сборка</button>' +
+          '</div>' +
         '</div>';
       detailBody.insertBefore(actions, detailBody.firstChild);
       var noScoreEl = actions.querySelector('#facNoScore');

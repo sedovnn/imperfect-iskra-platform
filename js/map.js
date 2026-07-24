@@ -339,10 +339,14 @@
         openFinalizeBtn.removeAttribute('disabled');
         openFinalizeBtn.textContent = 'Раунд 6 · Собрать стратегию →';
         openFinalizeBtn.removeAttribute('title');
+        openFinalizeBtn.classList.add('btn-primary');   // доступна — вермилион, это кульминация
+        openFinalizeBtn.classList.remove('btn-ghost');
       } else {
         var missing = STAGES.filter(function (r) { return roomStatus(r).text !== 'завершена'; })
           .map(function (r) { return r.title; });
         openFinalizeBtn.setAttribute('disabled', 'disabled');
+        openFinalizeBtn.classList.add('btn-ghost');     // ещё заперта — тихая
+        openFinalizeBtn.classList.remove('btn-primary');
         openFinalizeBtn.textContent = 'Пройдите все раунды (осталось ' + missing.length + ')';
         openFinalizeBtn.setAttribute('title', 'Не хватает: ' + missing.join(', '));
       }
@@ -418,6 +422,18 @@
       var db = document.getElementById('defenseBlock');
       if (db && db.style.display === 'none' && !state.finished) {
         db.style.display = '';
+        // мягкое появление записки (с уважением к prefers-reduced-motion)
+        var reduce = false;
+        try { reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+        if (!reduce) {
+          db.style.opacity = '0';
+          db.style.transform = 'translateY(6px)';
+          requestAnimationFrame(function () {
+            db.style.transition = 'opacity .28s ease, transform .28s ease';
+            db.style.opacity = '1';
+            db.style.transform = 'none';
+          });
+        }
         document.getElementById('finalizeBtn').textContent = 'Отправить К. Агееву →';
         if (defenseEl) { try { defenseEl.focus(); } catch (e) {} }
         return;

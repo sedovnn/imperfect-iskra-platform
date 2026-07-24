@@ -177,7 +177,7 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev"><b>Лемех</b>: «' + (pname() ? escapeHtml(pname()) + ', мне' : 'Мне') + ' это через полгода нести на совет Меридиана — а я пока не вижу, к чему оно в итоге ведёт. Своими словами: если пойдём по-вашему, где „Искра“ окажется?»</p>' +
-        '<textarea class="s2-rationale" aria-label="Куда придёт «Искра», если пойти по-вашему" rows="4" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.vision) + '</textarea>' +
+        '<textarea class="s2-rationale" aria-label="Куда придёт «Искра», если пойти по-вашему" rows="5" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.vision) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
@@ -203,7 +203,7 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А насколько далеко вы смотрите? На какой результат готовы работать — даже если этот результат достанется уже не вам? И почему туда, а не куда попроще?»</p>' +
-        '<textarea class="ga-horizon" aria-label="Горизонт в годах и на какой результат работаете" rows="4" placeholder="горизонт в годах + на какой результат работаете (даже если созреет уже без вас) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
+        '<textarea class="ga-horizon" aria-label="Горизонт в годах и на какой результат работаете" rows="3" placeholder="горизонт в годах + на какой результат работаете (даже если созреет уже без вас) и почему именно туда"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
         '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:8px 0 0; line-height:1.45;">Здесь — про куда и зачем, а не про как: направление и результат, без пошагового плана.</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
       if (!locked) {
