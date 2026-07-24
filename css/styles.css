@@ -2897,6 +2897,22 @@ tr.fac-row-ai td { background: var(--band); }
 
 .fac-detail.show { display: flex; }
 
+/* Разбор участника — боковой drawer: панель справа, список слева остаётся виден. */
+.fac-detail.fac-drawer { justify-content: flex-end; padding: 0; background: rgba(10, 10, 10, 0.18); }
+.fac-drawer .fac-detail-panel { max-width: 760px; width: 62%; max-height: none; height: 100vh; border-radius: 0; box-shadow: -12px 0 40px rgba(0, 0, 0, 0.12); }
+@media (max-width: 900px) { .fac-drawer .fac-detail-panel { width: 100%; max-width: none; } }
+.fac-drawer-subtabs { display: flex; gap: 18px; padding: 12px 28px 0; border-bottom: 1px solid var(--hairline); flex: none; }
+.fac-sub-btn { font-family: var(--ff-body); font-size: 14px; font-weight: 700; color: var(--muted-soft); background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 2px 10px; margin-bottom: -1px; cursor: pointer; }
+.fac-sub-btn:hover { color: var(--ink); }
+.fac-sub-btn.is-active { color: var(--ink); border-bottom-color: var(--accent); }
+/* зоны в «Управлении»: Доступ (обычная) + Сброс/Удаление (боксы-деструктив) */
+.fac-manage-sec { padding: 16px 0; border-top: 1px solid var(--hairline); }
+.fac-manage-sec:first-child { border-top: none; padding-top: 4px; }
+.fac-manage-h { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-soft); margin-bottom: 10px; }
+.fac-manage-sec.fac-danger { border: 1px solid var(--accent); border-radius: var(--radius); background: var(--soft); padding: 12px 14px; margin-top: 14px; }
+.fac-manage-sec.fac-danger.fac-danger { border-top: 1px solid var(--accent); }
+.fac-danger-h { color: var(--accent); }
+
 .fac-detail-panel {
   background: var(--paper);
   border-radius: var(--radius);

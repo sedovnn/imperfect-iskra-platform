@@ -32,12 +32,17 @@
   var rosterTable = document.getElementById('facRosterTable');
   var rosterEmpty = document.getElementById('facRosterEmpty');
   var tabButtons = document.querySelectorAll('.fac-tab-btn');
-  var tabPanels = { progress: document.getElementById('facTabProgress'), roster: document.getElementById('facTabRoster') };
+  var tabPanels = {
+    progress: document.getElementById('facTabProgress'),
+    prep: document.getElementById('facTabPrep'),
+    roster: document.getElementById('facTabRoster')
+  };
 
   var detail = document.getElementById('facDetail');
   var detailBib = document.getElementById('facDetailBib');
   var detailName = document.getElementById('facDetailName');
-  var detailBody = document.getElementById('facDetailBody');
+  var detailBody = document.getElementById('facDetailBody');   // зона «Оценка»
+  var manageBody = document.getElementById('facManageBody');   // зона «Управление»
   var detailClose = document.getElementById('facDetailClose');
   var sortTotalHeader = document.getElementById('facSortTotal');
   var wavesListEl = document.getElementById('facWavesList');
@@ -65,9 +70,22 @@
       var tab = btn.getAttribute('data-tab');
       tabButtons.forEach(function (b) { b.classList.toggle('is-active', b === btn); });
       Object.keys(tabPanels).forEach(function (key) {
-        tabPanels[key].style.display = key === tab ? '' : 'none';
+        if (tabPanels[key]) tabPanels[key].style.display = key === tab ? '' : 'none';
       });
     });
+  });
+
+  // под-вкладки разбора участника: Оценка (чтение+баллы) / Управление (деструктив)
+  var subTabs = document.getElementById('facSubTabs');
+  function setSubTab(sub) {
+    if (subTabs) subTabs.querySelectorAll('.fac-sub-btn').forEach(function (b) {
+      b.classList.toggle('is-active', b.getAttribute('data-sub') === sub);
+    });
+    if (detailBody) detailBody.style.display = sub === 'manage' ? 'none' : '';
+    if (manageBody) manageBody.style.display = sub === 'manage' ? '' : 'none';
+  }
+  if (subTabs) subTabs.querySelectorAll('.fac-sub-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () { setSubTab(btn.getAttribute('data-sub')); });
   });
 
   function escapeHtml(s) {
@@ -651,13 +669,9 @@
         '<td>' + escapeHtml((p.firstName + ' ' + p.lastName).trim() || '—') + '</td>' +
         '<td style="font-family:ui-monospace,Menlo,monospace; letter-spacing:.06em;">' + escapeHtml(p.password || '—') + '</td>' +
         '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + (waveAiMap[p.wave] ? ' <span class="fac-ai-wave-chip">ИИ</span>' : '') + '</td>' +
-        '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
-        '<td><button class="fac-delete-btn" title="Удалить участника">✕</button></td>';
+        '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>';
       if (p.noScore) { tr.style.opacity = '0.5'; tr.title = 'Не оценивается (тест-прогон)'; }
       if (waveAiMap[p.wave]) tr.classList.add('fac-row-ai');
-      tr.querySelector('.fac-delete-btn').addEventListener('click', function () {
-        deleteParticipant(p, tr.querySelector('.fac-delete-btn'));
-      });
       rosterTableBody.appendChild(tr);
     });
   }
@@ -902,10 +916,12 @@
     detailBib.textContent = formatBib(participant.bib);
     detailName.textContent = participant.firstName + ' ' + participant.lastName;
     detailBody.innerHTML = '<p class="fac-detail-loading">Загружаю карту участника…</p>';
+    if (manageBody) manageBody.innerHTML = '';
     detail.classList.add('show');
     // Фокус-менеджмент только при первом открытии (openDetail зовётся повторно
-    // для перерисовки после пересчёта — тогда фокус и обработчик не трогаем).
+    // для перерисовки после пересчёта — тогда фокус, обработчик и под-вкладку не трогаем).
     if (!wasOpen) {
+      setSubTab('score'); // всегда открываемся на «Оценке»
       detailLastFocus = document.activeElement;
       detail.setAttribute('aria-hidden', 'false');
       document.addEventListener('keydown', onDetailKeydown);
@@ -918,21 +934,21 @@
         detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить — попробуйте «Обновить» и открыть снова.</p>';
         return;
       }
-      detailBody.innerHTML = renderDetailHtml(res.registration, res.station1, res.station2, res.roomFuture, res.roomAlternatives, res.roomPath, res.station3, participant, res.overrides || {});
-      // ---- действия ревизии: не оценивать / пароль / сброс прогресса ----
+      // ── ЗОНА «ОЦЕНКА»: статус ранга + разбор по раундам ──
       var reg = res.registration || {};
-      var actions = document.createElement('div');
-      actions.style.cssText = 'margin:0 0 14px; padding-bottom:12px; border-bottom:1px solid var(--hairline);';
-      actions.innerHTML =
-        // рутинные действия
-        '<div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">' +
-          '<label style="display:flex; gap:6px; align-items:center; font-size:13px; cursor:pointer;"><input type="checkbox" id="facNoScore"' + (participant.noScore ? ' checked' : '') + ' /> Не оценивать (тест-прогон)</label>' +
-          '<span style="flex:1;"></span>' +
-          '<span style="font-size:12.5px; color:var(--muted);">Пароль: <b id="facPwdVal" style="font-family:ui-monospace,Menlo,monospace;">' + escapeHtml(reg.password || '—') + '</b> <button class="btn btn-ghost btn-xs" id="facRegenPwd" title="Перегенерировать пароль">↻</button></span>' +
+      var noScoreBar = '<div style="margin:0 0 14px; padding-bottom:12px; border-bottom:1px solid var(--hairline);">' +
+        '<label style="display:flex; gap:8px; align-items:flex-start; font-size:13px; cursor:pointer;"><input type="checkbox" id="facNoScore" style="margin-top:2px;"' + (participant.noScore ? ' checked' : '') + ' /> <span><b>Не оценивать</b> (тест-прогон) — судьи по участнику не гоняются, в статистику не идёт.</span></label>' +
+        '</div>';
+      detailBody.innerHTML = noScoreBar + renderDetailHtml(res.registration, res.station1, res.station2, res.roomFuture, res.roomAlternatives, res.roomPath, res.station3, participant, res.overrides || {});
+
+      // ── ЗОНА «УПРАВЛЕНИЕ»: доступ + деструктив (сброс, удаление) ──
+      manageBody.innerHTML =
+        '<div class="fac-manage-sec">' +
+          '<div class="fac-manage-h">Доступ</div>' +
+          '<span style="font-size:13px; color:var(--muted);">Пароль: <b id="facPwdVal" style="font-family:ui-monospace,Menlo,monospace;">' + escapeHtml(reg.password || '—') + '</b> <button class="btn btn-ghost btn-xs" id="facRegenPwd" title="Перегенерировать пароль">↻ перегенерировать</button></span>' +
         '</div>' +
-        // отдельная зона деструктивных действий — визуально отделена
-        '<div style="margin-top:12px; padding:10px 12px; border:1px solid var(--accent-line, var(--hairline)); border-radius:var(--radius); background:var(--soft);">' +
-          '<div style="font-size:11px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); margin-bottom:8px;">Сброс · необратимо</div>' +
+        '<div class="fac-manage-sec fac-danger">' +
+          '<div class="fac-manage-h fac-danger-h">Сброс · необратимо</div>' +
           '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">' +
             '<button class="btn btn-ghost btn-xs" id="facResetProgress" style="color:var(--accent); border-color:var(--accent);">Сбросить весь прогресс</button>' +
             '<span style="font-size:12px; color:var(--muted-soft);">или отдельный раунд:</span>' +
@@ -943,25 +959,32 @@
             '<button class="btn btn-ghost btn-xs" data-resetround="round5">Р5</button>' +
             '<button class="btn btn-ghost btn-xs" data-resetround="map">Сборка</button>' +
           '</div>' +
+        '</div>' +
+        '<div class="fac-manage-sec fac-danger">' +
+          '<div class="fac-manage-h fac-danger-h">Удаление</div>' +
+          '<button class="btn btn-ghost btn-xs" id="facDeleteParticipant" style="color:var(--accent); border-color:var(--accent);">Удалить участника целиком</button>' +
+          '<p style="font-size:12px; color:var(--muted-soft); margin:8px 0 0;">Удалит и регистрацию, и все ответы по раундам. Восстановить нельзя.</p>' +
         '</div>';
-      detailBody.insertBefore(actions, detailBody.firstChild);
-      var noScoreEl = actions.querySelector('#facNoScore');
-      noScoreEl.addEventListener('change', function () {
+
+      // «не оценивать» (в зоне Оценка)
+      var noScoreEl = detailBody.querySelector('#facNoScore');
+      if (noScoreEl) noScoreEl.addEventListener('change', function () {
         window.imp.callApi('setNoScore', { password: currentPassword(), bib: participant.bib, value: noScoreEl.checked }).then(function (r) {
           if (r && r.ok) { impToast(noScoreEl.checked ? 'Не оцениваем — судьи по нему не гоняются' : 'Снова оцениваем'); refresh(); }
           else { noScoreEl.checked = !noScoreEl.checked; impToast('Не удалось: ' + (r && (r.message || r.error) || 'нет ответа'), 'error'); }
         });
       });
-      actions.querySelector('#facRegenPwd').addEventListener('click', function () {
+      // пароль / сброс / удаление (в зоне Управление)
+      manageBody.querySelector('#facRegenPwd').addEventListener('click', function () {
         impConfirm('Перегенерировать пароль участнику ' + formatBib(participant.bib) + '? Старый перестанет работать.', { confirmLabel: 'Перегенерировать' }).then(function (ok) {
           if (!ok) return;
           window.imp.callApi('regeneratePassword', { password: currentPassword(), bib: participant.bib }).then(function (r) {
-            if (r && r.ok) { var v = actions.querySelector('#facPwdVal'); if (v) v.textContent = r.password; impToast('Новый пароль: ' + r.password, 'success'); }
+            if (r && r.ok) { var v = manageBody.querySelector('#facPwdVal'); if (v) v.textContent = r.password; impToast('Новый пароль: ' + r.password, 'success'); }
             else impToast('Не удалось: ' + (r && (r.message || r.error) || 'нет ответа'), 'error');
           });
         });
       });
-      actions.querySelector('#facResetProgress').addEventListener('click', function () {
+      manageBody.querySelector('#facResetProgress').addEventListener('click', function () {
         impConfirm('Сбросить весь прогресс участника ' + formatBib(participant.bib) + '? Ответы по всем раундам удалятся, регистрация и пароль останутся — можно перепройти. Действие необратимо.', { confirmLabel: 'Сбросить прогресс', danger: true }).then(function (ok) {
           if (!ok) return;
           window.imp.callApi('resetProgress', { password: currentPassword(), bib: participant.bib, confirm: 'RESET' }).then(function (r) {
@@ -970,7 +993,7 @@
           });
         });
       });
-      actions.querySelectorAll('[data-resetround]').forEach(function (b) {
+      manageBody.querySelectorAll('[data-resetround]').forEach(function (b) {
         b.addEventListener('click', function () {
           var rnd = b.getAttribute('data-resetround'), lbl = b.textContent;
           impConfirm('Сбросить «' + lbl + '» у ' + formatBib(participant.bib) + '? Ответы этого раунда удалятся; регистрация и остальные раунды не тронутся.', { confirmLabel: 'Сбросить ' + lbl, danger: true }).then(function (ok) {
@@ -979,6 +1002,15 @@
               if (r && r.ok) { impToast('Раунд сброшен'); openDetail(participant); refresh(); }
               else impToast('Не удалось: ' + (r && (r.message || r.error) || 'нет ответа'), 'error');
             });
+          });
+        });
+      });
+      manageBody.querySelector('#facDeleteParticipant').addEventListener('click', function () {
+        impConfirm('Удалить участника ' + formatBib(participant.bib) + ' целиком? Регистрация и все ответы удалятся безвозвратно.', { confirmLabel: 'Удалить', danger: true }).then(function (ok) {
+          if (!ok) return;
+          window.imp.callApi('deleteParticipant', { password: currentPassword(), bib: participant.bib }).then(function (r) {
+            if (r && r.ok) { impToast('Участник удалён'); var cb = document.getElementById('facDetailClose'); if (cb) cb.click(); refresh(); }
+            else impToast('Не удалось: ' + (r && (r.message || r.error) || 'нет ответа'), 'error');
           });
         });
       });

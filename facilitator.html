@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=23" />
+<link rel="stylesheet" href="css/styles.css?v=24" />
 </head>
 <body>
 
@@ -45,10 +45,12 @@
     <div class="fac-body">
 
       <div class="fac-tabs" id="facTabs">
-        <button class="fac-tab-btn is-active" data-tab="progress" type="button">Ход раунда</button>
-        <button class="fac-tab-btn" data-tab="roster" type="button">Регистрации и потоки</button>
+        <button class="fac-tab-btn is-active" data-tab="progress" type="button">Ход</button>
+        <button class="fac-tab-btn" data-tab="prep" type="button">Подготовка</button>
+        <button class="fac-tab-btn" data-tab="roster" type="button">Ростер</button>
       </div>
 
+      <!-- ХОД — мониторинг, только чтение. Клик по строке → разбор участника. -->
       <div class="fac-tab-panel" id="facTabProgress">
         <div class="fac-toolbar">
           <input type="search" id="facSearch" class="fac-search" placeholder="Поиск по ФИО или №…" aria-label="Поиск участника по имени или номеру" />
@@ -81,7 +83,8 @@
         <div class="fac-empty" id="facEmpty" style="display:none;">Пока никто не зарегистрировался.</div>
       </div>
 
-      <div class="fac-tab-panel" id="facTabRoster" style="display:none;">
+      <!-- ПОДГОТОВКА — до сессии: потоки → создать участников → пароли. -->
+      <div class="fac-tab-panel" id="facTabPrep" style="display:none;">
         <div class="fac-waves" id="facWaves">
           <span class="fac-waves-label">Потоки</span>
           <div class="fac-waves-list" id="facWavesList"></div>
@@ -95,7 +98,7 @@
 
         <div class="fac-create" id="facCreate" style="border:1px solid var(--hairline); border-radius:var(--radius); padding:14px 16px; margin-bottom:16px;">
           <span class="fac-waves-label">Создать участников</span>
-          <p class="fac-toolbar-hint" style="margin:6px 0 10px;">Выберите волну (с проставленным номером) и количество — сгенерируются пары «номер + пароль». Псевдоним подтянется из имени участника в игре.</p>
+          <p class="fac-toolbar-hint" style="margin:6px 0 10px;">Выберите волну (с проставленным номером) и количество — сгенерируются пары «номер + пароль». Псевдоним подтянётся из имени участника в игре.</p>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
             <input id="facCreateCount" type="number" min="1" max="300" placeholder="кол-во" style="width:90px; padding:7px; border:1px solid var(--hairline); border-radius:6px;" />
             <select id="facCreateWave" class="fac-select"></select>
@@ -105,8 +108,15 @@
         </div>
 
         <div class="fac-toolbar">
-          <span class="fac-toolbar-hint">Контакты, удаление участников</span>
+          <span class="fac-toolbar-hint">Пароли для тех, у кого ещё нет</span>
           <button class="btn btn-ghost" id="facGenPwd" title="Сгенерировать 6-значные пароли (буквы+цифры) всем без пароля">Сгенерировать пароли</button>
+        </div>
+      </div>
+
+      <!-- РОСТЕР — все заведённые участники и доступы (креды, CSV). -->
+      <div class="fac-tab-panel" id="facTabRoster" style="display:none;">
+        <div class="fac-toolbar">
+          <span class="fac-toolbar-hint">Все заведённые участники и их доступы. Удаление — в карточке участника (вкладка «Управление»).</span>
           <button class="btn btn-ghost" id="facExportBtn">Скачать CSV</button>
         </div>
 
@@ -119,7 +129,6 @@
                 <th>Пароль</th>
                 <th>Волна</th>
                 <th>Регистрация</th>
-                <th></th>
               </tr>
             </thead>
             <tbody id="facRosterTableBody"></tbody>
@@ -133,8 +142,8 @@
   </div>
 </div>
 
-<div class="fac-detail" id="facDetail" aria-hidden="true">
-  <div class="fac-detail-panel" role="dialog" aria-modal="true" aria-labelledby="facDetailName">
+<div class="fac-detail fac-drawer" id="facDetail" aria-hidden="true">
+  <div class="fac-detail-panel fac-drawer-panel" role="dialog" aria-modal="true" aria-labelledby="facDetailName">
     <div class="fac-detail-head">
       <div>
         <div class="bib" id="facDetailBib" style="margin-bottom:8px;">№ 000</div>
@@ -142,7 +151,14 @@
       </div>
       <button class="fac-detail-close" id="facDetailClose" title="Закрыть">✕</button>
     </div>
-    <div class="fac-detail-body" id="facDetailBody"></div>
+    <div class="fac-drawer-subtabs" id="facSubTabs">
+      <button class="fac-sub-btn is-active" data-sub="score" type="button">Оценка</button>
+      <button class="fac-sub-btn" data-sub="manage" type="button">Управление</button>
+    </div>
+    <div class="fac-detail-body">
+      <div id="facDetailBody"></div>
+      <div id="facManageBody" style="display:none;"></div>
+    </div>
   </div>
 </div>
 
@@ -150,6 +166,6 @@
 <script src="js/api.js?v=1"></script>
 <script src="js/report-texts.js?v=1"></script>
 <script src="js/report.js?v=5"></script>
-<script src="js/facilitator.js?v=15"></script>
+<script src="js/facilitator.js?v=16"></script>
 </body>
 </html>
