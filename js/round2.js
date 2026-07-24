@@ -5,7 +5,6 @@
 // настоящей встрече. Оценку считает бэкенд при завершении; участнику не показывается.
 
 (function () {
-  var MAX_PRIORITIES = 5;
   var session = null;
   // имя из окна Агеева (может быть пустым) — для обращения в репликах; экранируем при вставке
   function pname() { return session && session.name ? String(session.name).trim() : ''; }
@@ -195,7 +194,8 @@
     // ---------- блок 1: сортировка (ПР-1) ----------
 
     function moveToPriorities(cardId) {
-      if (state.priorities.length >= MAX_PRIORITIES) return;
+      // мягкий предел: лимит не жёсткий (методология мерит сам факт отсева, не число);
+      // «обычно 3–5» — подсказка в хинте колонки, но добавить можно больше.
       state.rejected = state.rejected.filter(function (r) { return r.cardId !== cardId; });
       if (!state.priorities.some(function (p) { return p.cardId === cardId; })) {
         state.priorities.push({ cardId: cardId, target: '' });
@@ -267,12 +267,12 @@
         '<p class="s2-ageev"><b>Агеев</b>: «' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что откладываем. Не обязательно раскладывать всё что собрали — но порядок в приоритетах для меня важен».</p>' +
         '<div class="s2-columns">' +
           '<div class="s2-col" data-zone="pool"><h4>Карта</h4><p class="links-hint">неразобранное</p><div class="s2-list" data-list="pool"></div></div>' +
-          '<div class="s2-col is-priorities" data-zone="priorities"><h4>Приоритеты</h4><p class="links-hint">порядок = ранг, максимум ' + MAX_PRIORITIES + '</p><div class="s2-list" data-list="priorities"></div></div>' +
+          '<div class="s2-col is-priorities" data-zone="priorities"><h4>Приоритеты</h4><p class="links-hint">порядок = ранг; обычно хватает 3–5</p><div class="s2-list" data-list="priorities"></div></div>' +
           '<div class="s2-col" data-zone="rejected"><h4>Не сейчас</h4><p class="links-hint">явные отказы</p><div class="s2-list" data-list="rejected"></div></div>' +
         '</div>' +
         '<div class="rationale-block" style="margin-top:18px;">' +
-          '<label>Правило отказа <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно — какие инициативы вы отсекаете в принципе, а не перечнем)</span></label>' +
-          '<textarea class="s2-rejection-rule" aria-label="Правило отсечения инициатив" rows="2" placeholder="по какому принципу вы отсекаете инициативы — правилом, а не перечнем"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
+          '<label>Ваш принцип отбора <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
+          '<textarea class="s2-rejection-rule" aria-label="Ваш принцип отбора" rows="2" placeholder="по какому правилу вы отсекаете лишнее?"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitSortBtn" style="margin-top:14px;">Зафиксировать приоритеты →</button>');
 
@@ -286,7 +286,7 @@
         item.innerHTML = '<p>' + escapeHtml(c.text) + '</p>' +
           (showActions ?
             '<div class="s2-item-actions">' +
-              (state.priorities.length < MAX_PRIORITIES ? '<button class="s2-act" data-act="prio"' + (locked ? ' disabled' : '') + '>в приоритеты</button>' : '') +
+              '<button class="s2-act" data-act="prio"' + (locked ? ' disabled' : '') + '>в приоритеты</button>' +
               '<button class="s2-act" data-act="rej"' + (locked ? ' disabled' : '') + '>не сейчас</button>' +
             '</div>' : '');
         if (!locked) {
@@ -332,7 +332,7 @@
         var item = document.createElement('div');
         item.className = 's2-item is-rejected';
         item.innerHTML = '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
-          '<input type="text" class="s2-freed" aria-label="Что освобождает этот отказ" placeholder="что освобождает: люди / деньги / время" value="' + escapeHtml(r.freed || '') + '"' + (locked ? ' disabled' : '') + ' />' +
+          '<input type="text" class="s2-freed" aria-label="Что освободится, если это отложить" placeholder="что освободится, если это отложить" value="' + escapeHtml(r.freed || '') + '"' + (locked ? ' disabled' : '') + ' />' +
           '</div>' +
           (showActions ? '<div class="s2-item-actions"><button class="s2-act" data-act="back" title="вернуть в карту"' + (locked ? ' disabled' : '') + '>✕</button></div>' : '');
         if (!locked) {
