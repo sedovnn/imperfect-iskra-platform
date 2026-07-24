@@ -447,8 +447,7 @@
     '.demo-levels{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;}' +
     '.demo-levels span{font-size:11.5px;background:#f5f5f6;border-radius:4px;padding:3px 7px;}' +
     '.demo-levels span b{color:#181818;}' +
-    '.demo-note.collapsed .demo-note-body{display:none;}' +
-    'body{padding-bottom:56px!important;}';
+    '.demo-note.collapsed .demo-note-body{display:none;}';
 
   var styleEl = document.createElement('style');
   styleEl.textContent = css;
@@ -492,7 +491,7 @@
     // верхняя плашка
     var badge = document.createElement('div');
     badge.className = 'demo-badge';
-    badge.textContent = 'РЕЖИМ ЭКСКУРСИИ · ' + profile.label + ' · позиция ' + profile.stanceLabel + ' · данные не сохраняются';
+    badge.textContent = 'РЕЖИМ ДЕМО · ' + profile.label + ' · позиция ' + profile.stanceLabel + ' · данные не сохраняются';
     document.body.appendChild(badge);
 
     // панель пояснений
@@ -522,7 +521,8 @@
         note.querySelector('.demo-note-toggle').textContent =
           collapsed ? '▸ что здесь меряется' : '▾ что здесь меряется';
       }
-      applyCollapsed(localStorage.getItem('imp_demo_note_collapsed') === '1');
+      // по умолчанию свёрнуто (чтобы панель не перекрывала страницу); разворачивается кликом
+      applyCollapsed(localStorage.getItem('imp_demo_note_collapsed') !== '0');
       note.querySelector('.demo-note-head').addEventListener('click', function () {
         var next = !note.classList.contains('collapsed');
         applyCollapsed(next);
@@ -541,7 +541,7 @@
       return '<option value="' + p + '"' + (p === profileId ? ' selected' : '') + '>' + esc(PROFILES[p].label) + '</option>';
     }).join('');
     bar.innerHTML =
-      '<b>Экскурсия ' + pos + '</b>' +
+      '<b>Демо ' + pos + '</b>' +
       '<button class="demo-prev"' + (idx <= 0 ? ' disabled' : '') + '>← назад</button>' +
       '<select class="demo-jump">' + options + '</select>' +
       '<button class="demo-next demo-primary"' + (idx >= TOUR.length - 1 ? ' disabled' : '') + '>след. экран →</button>' +
@@ -549,6 +549,16 @@
       '<span>Профиль:</span><select class="demo-profile">' + profOptions + '</select>' +
       '<button class="demo-exit">Выйти</button>';
     document.body.appendChild(bar);
+
+    // резервируем место под фиксированные бейдж (сверху) и бар (снизу), чтобы
+    // хром демо был отдельной полосой, а не перекрывал контент страницы;
+    // пере-меряем на ресайзе (полосы могут переноситься на узких экранах).
+    function syncDemoPadding() {
+      document.body.style.paddingTop = badge.offsetHeight + 'px';
+      document.body.style.paddingBottom = bar.offsetHeight + 'px';
+    }
+    syncDemoPadding();
+    window.addEventListener('resize', syncDemoPadding);
 
     bar.querySelector('.demo-prev').addEventListener('click', function () { if (idx > 0) go(TOUR[idx - 1]); });
     bar.querySelector('.demo-next').addEventListener('click', function () { if (idx < TOUR.length - 1) go(TOUR[idx + 1]); });
