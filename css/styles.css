@@ -1406,7 +1406,27 @@ button.hub-room-card {
 /* Плавающая кнопка продвижения раунда (снизу-справа): текст и панели скроллятся
    под ней, действие всегда под рукой на длинной странице. position:fixed внутри
    root'а фазы — прячется вместе с ним (display:none). */
-.round-fab { position: fixed; right: 24px; bottom: 24px; z-index: 60; }
+/* Кнопка прижата не к углу ОКНА, а к правому краю РАМКИ приложения: та же
+   центрирующая математика (max-width + margin auto + var(--frame-pad)), что у шапки,
+   поэтому по вертикали она встаёт под «← К карте» и не отлетает в пустое поле
+   на широком мониторе. Сама полоса-обёртка прозрачна и не перехватывает клики —
+   кликабельна только кнопка внутри.
+   --demo-bottom задаёт demo.js: снизу в демо-режиме стоят полоса и записка,
+   раньше кнопка уезжала прямо под них. Вне демо переменная не задана → 0. */
+.round-fab {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(24px + var(--demo-bottom, 0px));
+  z-index: 60;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 var(--frame-pad);
+  display: flex;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+.round-fab > * { pointer-events: auto; }
 .round-fab .btn { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
 
 /* Язычки «Полный текст кейса» / «Мои ответы» в раунде 1 — только на фазе связок:
@@ -2535,8 +2555,10 @@ table mark.hl {
 .work-scroll {
   flex: 1;
   overflow-y: auto;
-  /* правый край — по рамке, как у .work-header выше */
-  padding: 20px var(--frame-pad) 40px 24px;
+  /* правый край — по рамке, как у .work-header выше.
+     Снизу 90px (как в .links-body): плавающая кнопка раунда висит над этой колонкой,
+     и без запаса последняя карточка оставалась бы навсегда под ней. */
+  padding: 20px var(--frame-pad) 90px 24px;
 }
 
 .rationale-block { margin-bottom: 22px; }
@@ -2636,6 +2658,29 @@ table mark.hl {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+/* Цитата-источник в карточке проблемы. Своего правила не было, поэтому blockquote
+   брал браузерный дефолт margin:1em 40px — отсюда лишний воздух и сдвиг вправо
+   относительно метки и поля под ним (ср. blockquote.letter/.dialogue, где UA-отступ
+   тоже занулён явно). Цитата — это опора, а не главное в карточке: формулировка
+   участника важнее, поэтому она компактнее и тише. */
+.card blockquote.problem-quote {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  cursor: pointer;
+}
+.card blockquote.problem-quote:hover { color: var(--ink); }
+
+/* Поля в карточках растут под текст: при rows="2" третья строка уходила во
+   внутренний скролл, и участник не видел целиком то, что сам написал.
+   Высоту выставляет JS (growTextarea), здесь — нижняя граница и отсутствие
+   собственной полосы прокрутки. */
+.card textarea {
+  overflow-y: hidden;
+  min-height: 68px;
 }
 
 .card label {

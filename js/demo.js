@@ -527,6 +527,8 @@
         var next = !note.classList.contains('collapsed');
         applyCollapsed(next);
         localStorage.setItem('imp_demo_note_collapsed', next ? '1' : '0');
+        // записка изменила высоту — пересчитать, насколько поднимать кнопку раунда
+        syncDemoPadding();
       });
     }
 
@@ -556,6 +558,16 @@
     function syncDemoPadding() {
       document.body.style.paddingTop = badge.offsetHeight + 'px';
       document.body.style.paddingBottom = bar.offsetHeight + 'px';
+      // Плавающая кнопка раунда (.round-fab) — position:fixed, поэтому padding
+      // на body её не поднимает: она уезжала под полосу и под записку (обе стоят
+      // справа снизу, там же, где кнопка). Отдаём ей фактическую высоту нижнего
+      // хрома демо: берём максимум из полосы и верхнего края записки.
+      var noteEl = document.querySelector('.demo-note');
+      var noteClear = noteEl
+        ? window.innerHeight - noteEl.getBoundingClientRect().top
+        : 0;
+      var clear = Math.max(bar.offsetHeight, noteClear);
+      document.documentElement.style.setProperty('--demo-bottom', (clear + 12) + 'px');
     }
     syncDemoPadding();
     window.addEventListener('resize', syncDemoPadding);

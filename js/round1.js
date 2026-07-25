@@ -527,6 +527,28 @@
     document.getElementById('cardCount').textContent = n + ' проблем' + pluralProblems(n);
   }
 
+  // Поля в карточках растут под содержимое. При rows="2" третья строка уходила во
+  // внутренний скролл — участник не видел целиком то, что сам написал, а короткая
+  // цитата над полем при этом занимала больше места, чем его собственный ответ.
+  function growTextarea(ta) {
+    if (!ta) return;
+    ta.style.height = 'auto';
+    // box-sizing: border-box, а scrollHeight рамки НЕ включает — без этой поправки
+    // поле остаётся ниже содержимого на толщину рамок (2×1.5px) и всё равно скроллится.
+    var borders = ta.offsetHeight - ta.clientHeight;
+    ta.style.height = (ta.scrollHeight + borders) + 'px';
+  }
+
+  function growCardTextareas(scope) {
+    (scope || document).querySelectorAll('.card textarea').forEach(growTextarea);
+  }
+
+  // делегированно: покрывает и уже отрисованные карточки, и все будущие
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'TEXTAREA' && t.closest && t.closest('.card')) growTextarea(t);
+  });
+
   function renderProblems() {
     var list = document.getElementById('cardsList');
     list.innerHTML = '';
@@ -561,6 +583,7 @@
     });
     var addBtn = document.getElementById('addNoQuoteBtn');
     if (addBtn) addBtn.style.display = state.finished ? 'none' : '';
+    growCardTextareas(list);
     updateProblemCount();
     renderMainProblem();
     updateGate();
@@ -670,6 +693,7 @@
     if (!ps.length) {
       list.innerHTML = '<p class="links-hint">Описанных проблем нет — вернитесь к разбору.</p>';
     }
+    growCardTextareas(list);
   }
 
   // Связки: проблемы выбираются кликом по чипам (не печатаются).
@@ -736,6 +760,7 @@
       list.appendChild(el);
     });
     addBtn.style.display = state.finished ? 'none' : '';
+    growCardTextareas(list);
   }
 
   document.getElementById('addConnectionBtn').addEventListener('click', function () {
