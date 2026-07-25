@@ -26,7 +26,26 @@
   --soft: #f5f5f6;
   --frame: 0px;
   --radius: 4px;
-  --maxw: 1180px;
+
+  /* ---- масштаб раскладки (DESIGN.md → spacing / Layout) ----
+     Одна шкала на всю платформу: ширины больше НЕ задаются литералами по месту.
+     Правило «какая ширина какому типу контента»:
+       --maxw     рамка приложения: шапка + рабочее тело раунда. Текучая:
+                  снизу упирается в maxWidth 1120 из DESIGN.md, дальше тянется
+                  до 1560 — чтобы на 1920/2560 не оставалось полполосы пустоты.
+                  Это max-width, поэтому на узких экранах просто отдаёт всю ширину.
+       --w-read   ЧТЕНИЕ (легенда, реплики, вопросы) — readWidth 68ch из DESIGN.md.
+                  Шире читать вредно, поэтому проза не растёт вместе с рамкой.
+       --w-form   ПИСЬМО (текстареа, поля) — шире прозы: человек пишет стратегию,
+                  а не читает её. Но не во всю рамку, иначе строка расползается.
+       --frame-pad боковой отступ рамки (spacing.frame) — текучий, ОДИН для шапки
+                  и для тела, иначе лого разъезжается с колонкой контента. */
+  --maxw: clamp(1120px, 92vw, 1560px);
+  --w-read: 68ch;
+  --w-form: 880px;
+  --frame-pad: clamp(20px, 4vw, 56px);
+  /* высота шапки раунда — нужна, чтобы экран легенды ложился ПОД шапку, а не поверх неё */
+  --hdr-h: 70px;
   --ff-display: 'Inter Tight', sans-serif;
   --ff-body: 'Inter Tight', sans-serif;
 
@@ -871,7 +890,7 @@ footer {
 .links-body {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 28px 32px 90px;
+  padding: 28px var(--frame-pad) 90px;
   overflow-y: auto;
   flex: 1;
 }
@@ -954,7 +973,7 @@ footer {
 .s2-body {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 28px 32px 90px;
+  padding: 28px var(--frame-pad) 90px;
   overflow-y: auto;
   flex: 1;
   width: 100%;
@@ -967,7 +986,7 @@ footer {
 .s2-ageev {
   font-size: 15px;
   line-height: 1.65;
-  max-width: 720px;
+  max-width: var(--w-read);
   margin: 0 0 18px;
 }
 /* Реплики Агеева опознаёт жирная метка-имя (по DESIGN.md), а не боковая полоса. */
@@ -1074,7 +1093,7 @@ footer {
 .s2-body textarea {
   display: block; /* иначе кнопка «Завершить …» (inline-flex) встаёт справа от текстареа */
   width: 100%;
-  max-width: 720px; /* проза остаётся читаемой ширины, даже когда s2-body широкий */
+  max-width: var(--w-form); /* писать шире, чем читать: --w-form > --w-read (см. :root) */
   border: 1px solid #e3e3e0;
   border-radius: 10px;
   padding: 10px 12px;
@@ -1198,7 +1217,7 @@ footer {
 .hub-body {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 28px 32px 90px;
+  padding: 28px var(--frame-pad) 90px;
   overflow-y: auto;
   flex: 1;
   width: 100%;
@@ -2018,6 +2037,8 @@ button.hub-room-card {
   flex-direction: column;
   height: 100vh;
   background: var(--paper);
+  /* система координат для экрана легенды (.station-intro) — см. комментарий там */
+  position: relative;
 }
 
 .station-header {
@@ -2025,7 +2046,9 @@ button.hub-room-card {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  padding: 14px 24px;
+  /* боковой отступ — тот же var(--frame-pad), что у тела раунда: иначе лого в
+     шапке не встаёт по левому краю колонки контента (было 24 против 32 = разъезд 8px) */
+  padding: 14px var(--frame-pad);
   border-bottom: 1px solid #ececec;
   flex: none;
   /* единая рамка: шапка той же ширины, что и контент (var(--maxw)), по центру —
@@ -2073,15 +2096,25 @@ button.hub-room-card {
 /* На узком экране правый блок шапки не помещается рядом с несжимаемым
    логотипом и наезжал на него — разрешаем перенос на вторую строку. */
 @media (max-width: 600px) {
-  .station-header { flex-wrap: wrap; row-gap: 8px; padding: 12px 20px; }
+  /* шапка переносится на две строки, поэтому она выше — легенда должна лечь под неё */
+  :root { --hdr-h: 96px; }
+  .station-header { flex-wrap: wrap; row-gap: 8px; padding: 12px var(--frame-pad); }
   /* Счётчик участников на мобиле избыточен (то же видно в списке) —
      убираем, чтобы логотип и «Обновить» уместились в одну строку. */
   #facCount { display: none; }
 }
 
 .station-intro {
-  position: fixed;
-  inset: 0;
+  /* absolute внутри .station-shell (а не fixed по вьюпорту) и с отступом на высоту
+     шапки: раньше оверлей легенды накрывал шапку целиком, и на первом экране раунда
+     не было видно ни номера, ни ⓘ, ни «К карте» — экран читался как чужая страница.
+     absolute вместо fixed ещё и потому, что в режиме демо у body есть padding-top под
+     верхнюю полосу: fixed отсчитывался бы от вьюпорта и всё равно залезал на шапку. */
+  position: absolute;
+  top: var(--hdr-h);
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 80;
   background: var(--soft);
   display: flex;
@@ -2780,7 +2813,13 @@ table mark.hl {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 28px 32px;
+  /* та же рамка, что у шапки: раньше тело кабинета было во всю ширину окна, и на
+     широком мониторе таблица уезжала за края шапки (тот же разъезд, что ловили в раундах).
+     Таблицы шире рамки прокручиваются внутри .fac-table-scroll — см. ниже. */
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
+  padding: 28px var(--frame-pad);
 }
 
 /* Таблица шире экрана прокручивается в собственном контейнере — так вкладки,
@@ -3602,11 +3641,14 @@ tr.fac-row-ai td { background: var(--band); }
    вступлений, гейтов и верх контента, чтобы плотные экраны меньше требовали скролла.
    В конце файла — чтобы перебить базовые правила (напр. .case-content ниже по исходнику). */
 @media (max-height: 760px) {
-  .station-header { padding: 8px 24px; }
+  /* ужимается только ВЕРТИКАЛЬ; боковой отступ остаётся var(--frame-pad) — иначе
+     шапка и тело снова разъезжаются по левому краю (было 24 против 32). */
+  :root { --hdr-h: 58px; } /* шапка ниже из-за padding 8px — легенда должна лечь ровно под неё */
+  .station-header { padding: 8px var(--frame-pad); }
   .gate-card { padding: 26px 34px; }
   .station-intro { padding: 16px; }
   .station-intro-inner { padding: 24px 32px; }
-  .hub-body { padding: 16px 32px 60px; }
-  .s2-body { padding: 16px 32px 60px; }
+  .hub-body { padding: 16px var(--frame-pad) 60px; }
+  .s2-body { padding: 16px var(--frame-pad) 60px; }
   .case-content { padding: 18px 40px 16px; }
 }
