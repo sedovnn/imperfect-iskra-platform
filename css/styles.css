@@ -901,7 +901,7 @@ footer {
 .links-intro p:not(.kicker) {
   font-size: 15px;
   line-height: 1.65;
-  max-width: 640px;
+  max-width: var(--w-read);
 }
 
 .links-section { margin-bottom: 40px; }
@@ -2142,7 +2142,10 @@ button.hub-room-card {
   display: grid;
   /* навигация у́же, колонка чтения кейса получает больше веса, чем рабочая область
      (та полупустая, пока нет карточек) — иначе на ноутах чтение жалось при делении 1:1. */
-  grid-template-columns: 240px minmax(0, 1.5fr) minmax(0, 1fr);
+  /* 226px + отступ рамки: колонка навигации шире ровно на тот отступ, который
+     .case-nav отдаёт слева под выравнивание с лого — полезная ширина ссылок
+     остаётся прежней (212px), а текст встаёт по колонке контента. */
+  grid-template-columns: calc(226px + var(--frame-pad)) minmax(0, 1.5fr) minmax(0, 1fr);
   min-height: 0;
   /* та же рамка, что у шапки и прочих экранов */
   max-width: var(--maxw);
@@ -2151,7 +2154,7 @@ button.hub-room-card {
 }
 /* меньшие ноуты (до слома в 1 колонку на 980): ещё у́же навигация, ещё больше чтению */
 @media (max-width: 1180px) {
-  .station-body { grid-template-columns: 210px minmax(0, 1.6fr) minmax(0, 1fr); }
+  .station-body { grid-template-columns: calc(196px + var(--frame-pad)) minmax(0, 1.6fr) minmax(0, 1fr); }
 }
 
 .case-pane {
@@ -2160,7 +2163,10 @@ button.hub-room-card {
 
 .case-nav {
   border-right: 1px solid #ececec;
-  padding: 20px 14px;
+  /* левый отступ = var(--frame-pad), тот же, что у шапки: иначе «Материалы» стоят
+     левее лого над ними. Ширина самой колонки увеличена на ту же величину
+     (см. .station-body), поэтому полезная ширина ссылок не теряется. */
+  padding: 20px 14px 20px var(--frame-pad);
   overflow-y: auto;
   font-size: 13px;
 }
@@ -2224,6 +2230,8 @@ button.hub-room-card {
   border-right: 1px solid #ececec;
 }
 
+/* НЕ ИСПОЛЬЗУЕТСЯ: класса .case-tabs нет ни в одном html/js — правило осталось
+   с прежней версии станции 1 (вкладки «Весь текст / Мои заметки»). Кандидат на удаление. */
 .case-tabs {
   display: flex;
   gap: 4px;
@@ -2283,7 +2291,9 @@ button.hub-room-card {
 
 /* Потолок читаемой ширины кейса: на очень широких экранах строки не растягиваются
    в нечитаемо длинные; на ноутах колонка уже потолка — правило не мешает. */
-.case-content article { margin-bottom: 40px; max-width: 760px; }
+/* та же ширина чтения, что в раундах 2–5: на широком мониторе колонка кейса
+   вырастает, но строка не расползается за 68ch */
+.case-content article { margin-bottom: 40px; max-width: var(--w-read); }
 
 .case-content h2 {
   font-family: var(--ff-display);
@@ -2510,7 +2520,9 @@ table mark.hl {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 24px 16px;
+  /* правый отступ = var(--frame-pad): правый край рабочей области сходится
+     с контролами шапки (№, ⓘ, «К карте») над ним */
+  padding: 20px var(--frame-pad) 16px 24px;
   border-bottom: 1px solid #ececec;
 }
 
@@ -2523,7 +2535,8 @@ table mark.hl {
 .work-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px 40px;
+  /* правый край — по рамке, как у .work-header выше */
+  padding: 20px var(--frame-pad) 40px 24px;
 }
 
 .rationale-block { margin-bottom: 22px; }
@@ -3615,7 +3628,10 @@ tr.fac-row-ai td { background: var(--band); }
   .score-grid { grid-template-columns: 1fr; }
   .privacy-grid { grid-template-columns: 1fr; }
   .axis { grid-template-columns: 1fr; gap: 4px; }
-  .station-body { grid-template-columns: 1fr; grid-template-rows: auto 1fr 1fr; overflow-y: auto; }
+  /* minmax(0, 1fr), а не 1fr: у «1fr» минимум = auto, поэтому дорожка растягивалась
+     до min-content навигации (391px в окне 375) и колонка вылезала за экран —
+     station-body прятал это во внутренний горизонтальный скролл. */
+  .station-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr 1fr; overflow-y: auto; }
   .case-nav { border-right: none; border-bottom: 1px solid #ececec; }
   .case-content { border-right: none; border-bottom: 1px solid #ececec; }
 }
