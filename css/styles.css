@@ -869,7 +869,7 @@ footer {
 /* ---------- станция 1, фаза 2 (связки / АК-2) — режим фокусировки ---------- */
 
 .links-body {
-  max-width: 860px;
+  max-width: var(--maxw);
   margin: 0 auto;
   padding: 28px 32px 90px;
   overflow-y: auto;

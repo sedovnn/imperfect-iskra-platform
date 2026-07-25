@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=26" />
+<link rel="stylesheet" href="css/styles.css?v=27" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -145,11 +145,14 @@
           sessionStorage.setItem('imp_current_session', JSON.stringify(session));
           localStorage.setItem('imp_current_session', JSON.stringify(session));
         } catch (err) {}
-        // установка на мышление — по участнику (не по браузеру), чтобы новый номер
-        // на общем/том же устройстве её увидел. Дом после входа — карта, не раунд 1.
-        var seenIntro = false;
-        try { seenIntro = !!localStorage.getItem('imp_intro_seen_' + code); } catch (err2) {}
-        window.location.href = seenIntro ? 'map.html' : 'intro.html';
+        // При каждом входе (в т.ч. повторном) участник заново проходит настройку на
+        // ассессмент и легенду карты — чистим одноразовые флаги, чтобы оба окна
+        // показались снова, затем ведём на установку. Дальше: установка → карта → раунд.
+        try {
+          localStorage.removeItem('imp_intro_seen_' + code);
+          localStorage.removeItem('imp_map_intro_seen_' + code);
+        } catch (err2) {}
+        window.location.href = 'intro.html';
         return;
       }
       submitBtn.disabled = false;
