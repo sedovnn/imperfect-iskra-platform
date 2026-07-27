@@ -772,7 +772,6 @@
   function showMapPhase() {
     linksRoot.style.display = 'none';
     document.getElementById('stationRoot').style.display = '';
-    document.body.classList.remove('phase-links'); // язычки кейса/ответов — только на связках
     if (!state.finished) { state.phase = 'map'; saveState(); }
   }
 
@@ -781,7 +780,6 @@
     renderConnections();
     document.getElementById('stationRoot').style.display = 'none';
     linksRoot.style.display = '';
-    document.body.classList.add('phase-links'); // включаем язычки «Полный текст кейса» / «Мои ответы»
     if (!state.finished) { state.phase = 'links'; saveState(); }
   }
 
@@ -792,7 +790,6 @@
   function showFinishOverlay() {
     document.getElementById('stationRoot').style.display = 'none';
     linksRoot.style.display = 'none';
-    document.body.classList.remove('phase-links'); // язычки прячем за финиш-оверлеем
     document.getElementById('finishOverlay').style.display = 'flex';
   }
 

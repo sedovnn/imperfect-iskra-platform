@@ -570,7 +570,7 @@
     function syncDemoPadding() {
       document.body.style.paddingTop = badge.offsetHeight + 'px';
       document.body.style.paddingBottom = bar.offsetHeight + 'px';
-      // Язычки «Мои ответы»/«Полный текст кейса» — position:fixed, поэтому padding
+      // Фолбэк-рельс справочных кнопок — position:fixed, поэтому padding
       // на body её не поднимает: она уезжала под полосу и под записку (обе стоят
       // справа снизу, там же, где кнопка). Отдаём ей фактическую высоту нижнего
       // хрома демо: берём максимум из полосы и верхнего края записки.
