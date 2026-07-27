@@ -1381,10 +1381,13 @@ button.hub-room-card {
   /* к правому краю РАМКИ, а не окна: на широком мониторе язычки у края экрана
      выпадали из поля зрения. Гуттер = (100vw − рамка)/2; на узких экранах
      max() прижимает обратно к краю окна. Язычок занимает внешние ~27px
-     бокового отступа рамки (frame-pad) — на текст не наезжает. */
+     бокового отступа рамки (frame-pad) — на текст не наезжает.
+     По вертикали — нижний угол, не центр: по центру язычки висели «посреди
+     страницы» рядом с текстом диалога. --demo-bottom поднимает над хромом демо. */
   right: max(0px, calc((100vw - var(--maxw)) / 2));
-  top: 50%;
-  transform: translateY(-50%);
+  top: auto;
+  bottom: calc(28px + var(--demo-bottom, 0px));
+  transform: none;
   z-index: 70;
   writing-mode: vertical-rl;
   padding: 16px 7px;
@@ -1404,13 +1407,20 @@ button.hub-room-card {
 .dock-rail {
   position: fixed;
   right: max(0px, calc((100vw - var(--maxw)) / 2)); /* край рамки, см. .dossier-dock */
-  top: 50%;
-  transform: translateY(-50%);
+  /* нижний угол рамки, единым блоком (не по центру высоты) */
+  top: auto;
+  bottom: calc(28px + var(--demo-bottom, 0px));
+  transform: none;
   z-index: 70;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
+}
+/* На фазе «связок» раунда 1 в том же углу живёт плавающая кнопка «Завершить
+   раунд →» — рельс поднимается над ней, чтобы не слипались. */
+.round1-page .dock-rail {
+  bottom: calc(96px + var(--demo-bottom, 0px));
 }
 .dock-rail .dossier-dock, .dock-rail .case-ref-dock {
   position: static;             /* внутри рельса позицией управляет рельс */
@@ -1461,23 +1471,38 @@ button.hub-room-card {
    уже показанного .gate-экрана — например, поверх finishOverlay, где кнопка
    «Мои ответы» тоже есть. Обычный normal-flow .gate для этого не годится:
    оба блока были бы просто показаны один под другим на одной странице. */
+/* Панель — выезжающий ящик СПРАВА (как карточка участника в кабинете
+   фасилитатора), а не карточка по центру поверх всего экрана: страница остаётся
+   видимой слева, участник не теряет контекст разговора. Тот же приём, что
+   .fac-drawer (подложка 0.18, панель во всю высоту без радиуса). */
 .dossier-overlay {
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(10, 10, 10, 0.6);
+  background: rgba(10, 10, 10, 0.18);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-  overflow-y: auto;
+  align-items: stretch;
+  justify-content: flex-end;
+  padding: 0;
+  overflow: hidden;
 }
 
 .gate-card.dossier-card {
-  max-width: 680px;
-  max-height: 84vh;
+  width: 62%;
+  max-width: 720px;
+  max-height: none;
+  height: 100vh;
+  margin: 0;
+  border-radius: 0;
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
+  overflow-y: auto; /* фолбэк: если внутренняя область не скроллится сама */
+}
+/* тексту кейса — шире: это чтение колонок таблиц, 720 ему мало */
+.gate-card.dossier-card.case-ref-card { max-width: 860px; width: 68%; }
+@media (max-width: 900px) {
+  .gate-card.dossier-card, .gate-card.dossier-card.case-ref-card { width: 100%; max-width: none; }
 }
 .dossier-card-header {
   display: flex;
