@@ -183,7 +183,7 @@
         '</div>' +
         '<div class="pp-stages" data-list="stages"></div>' +
         (locked ? '' : '<button class="btn btn-ghost" id="addStageBtn" style="margin-top:10px;">+ добавить этап</button>') +
-        '<div class="field pp-contingency-field" style="margin-top:16px;"><label>Что меняет маршрут <span class="field-hint" style="font-weight:400;">(необязательно)</span></label>' +
+        '<div class="field pp-contingency-field" style="margin-top:16px;"><label>Что меняет маршрут</label>' +
           '<textarea class="pp-contingency" aria-label="Что может заставить перестроить маршрут" rows="2" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.contingency) + '</textarea></div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
 
@@ -204,7 +204,7 @@
             // результату») обязательной графой — его проходили все. Кто мыслит критериями,
             // напишет их в описании этапа сам. st.doneWhen в стейте/бэкенде остаётся
             // (легаси-данные читаются судьёй как раньше).
-            '<details class="pp-stage-more"' + (st.rationale ? ' open' : '') + '><summary>детали этапа: почему здесь (необязательно)</summary>' +
+            '<details class="pp-stage-more"' + (st.rationale ? ' open' : '') + '><summary>детали этапа: почему здесь</summary>' +
               '<textarea class="pp-stage-rationale" aria-label="Почему этап на этом месте" rows="2" placeholder="почему на этом месте"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.rationale) + '</textarea>' +
             '</details>';
           if (!locked) {
@@ -281,7 +281,7 @@
               '<button type="button" class="pp-type-btn' + (it.type === 'fixed' ? ' is-on' : '') + '" data-type="fixed"' + (locked ? ' disabled' : '') + '>стена</button>' +
               '<button type="button" class="pp-type-btn' + (it.type === 'surmountable' ? ' is-on' : '') + '" data-type="surmountable"' + (locked ? ' disabled' : '') + '>можно обойти</button>' +
             '</div>' +
-            '<textarea rows="2" class="pp-barrier-counter" aria-label="Что с этим делать" placeholder="что с этим делать — если есть ответ (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.counter) + '</textarea>';
+            '<textarea rows="2" class="pp-barrier-counter" aria-label="Что с этим делать" placeholder="что с этим делать — если есть ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.counter) + '</textarea>';
           if (!locked) {
             item.querySelector('.pp-barrier-text').addEventListener('input', function (e) { it.text = e.target.value; saveState(); });
             item.querySelector('.pp-barrier-counter').addEventListener('input', function (e) { it.counter = e.target.value; saveState(); });

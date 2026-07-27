@@ -2200,6 +2200,22 @@ button.hub-room-card {
   padding: 6px 10px 4px;
 }
 
+/* «Справка по терминам» — отдельный блок в самом низу навигации: это служебный
+   справочник, не приложение кейса. Текст — в стиле заголовков групп
+   (МАТЕРИАЛЫ / ПРИЛОЖЕНИЯ), но остаётся ссылкой: hover и отметка «прочитано» (✓)
+   наследуются от .case-nav-link. */
+.case-nav-link.case-nav-ref {
+  margin-top: 14px;
+  border-top: 1px solid var(--hairline);
+  padding-top: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-soft);
+  border-radius: 0;
+}
+
 .case-nav-link {
   display: block;
   padding: 8px 10px;

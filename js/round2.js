@@ -271,7 +271,7 @@
           '<div class="s2-col" data-zone="rejected"><h4>Не сейчас</h4><p class="links-hint">явные отказы</p><div class="s2-list" data-list="rejected"></div></div>' +
         '</div>' +
         '<div class="rationale-block" style="margin-top:18px;">' +
-          '<label>Как вы выбирали <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
+          '<label>Как вы выбирали</label>' +
           '<textarea class="s2-rejection-rule" aria-label="Как вы выбирали" rows="2" placeholder="чем руководствовались, когда решали: это берём, это откладываем"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitSortBtn" style="margin-top:14px;">Зафиксировать приоритеты →</button>');
@@ -383,7 +383,7 @@
         '<textarea class="s2-rationale" aria-label="Почему этот приоритет идёт первым" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
         // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
         '<div class="rationale-block" style="margin-top:12px;">' +
-          '<label>С чего начнёте — первый шаг <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
+          '<label>С чего начнёте — первый шаг</label>' +
           '<textarea class="s2-first-action" aria-label="Первый конкретный ход" rows="2" placeholder="первый конкретный шаг по приоритету №1"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.firstAction || '') + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitRationaleBtn" style="margin-top:12px;">Ответить →</button>');
@@ -529,7 +529,7 @@
       block.innerHTML =
         (stanceReact ? '<p class="s2-ageev">' + stanceReact + '</p>' : '') +
         '<p class="s2-ageev"><b>Агеев</b> встаёт: «' + (pname() ? escapeHtml(pname()) + ', последний вопрос' : 'Последний вопрос') + '. Что должно случиться, чтобы вы сами сказали: пора пересматривать?»</p>' +
-        '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="2" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
+        '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="2" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить встречу →</button>');
 
       if (!locked) {

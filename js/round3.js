@@ -235,7 +235,7 @@
       block.innerHTML =
         '<p class="s2-ageev">' + react + '</p>' +
         '<p class="s2-ageev"><b>Лемех</b> щурится: «Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт не сойдётся. Что тогда — и как вы поймёте, что пора менять курс?»</p>' +
-        '<textarea class="s2-rationale" aria-label="Что если будущее пойдёт иначе и как поймёте, что пора менять курс" rows="4" placeholder="ваш ответ (необязательно)"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
+        '<textarea class="s2-rationale" aria-label="Что если будущее пойдёт иначе и как поймёте, что пора менять курс" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {

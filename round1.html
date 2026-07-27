@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=33" />
+<link rel="stylesheet" href="css/styles.css?v=34" />
 <style>
   /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
   .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -100,7 +100,6 @@
           <a href="#sec-6" class="case-nav-link">6. Пятница, 23 января</a>
           <a href="#sec-7" class="case-nav-link">7. Письмо Агеева</a>
           <div class="case-nav-title" style="margin-top:14px;">Приложения</div>
-          <a href="#appx-terms" class="case-nav-link" data-appx="terms">Справка по терминам</a>
           <a href="#appx-1" class="case-nav-link" data-appx="1">П1 · Финансы по сегментам</a>
           <a href="#appx-2" class="case-nav-link" data-appx="2">П2 · Поиск: сессии и монетизация</a>
           <a href="#appx-3" class="case-nav-link" data-appx="3">П3 · Интервью Брагина</a>
@@ -109,6 +108,10 @@
           <a href="#appx-6" class="case-nav-link" data-appx="6">П6 · Модельный индекс (OMI)</a>
           <a href="#appx-7" class="case-nav-link" data-appx="7">П7 · Пост-мортем «Периметра»</a>
           <a href="#appx-8" class="case-nav-link" data-appx="8">П8 · Мемо «Приоритеты 2024–2026»</a>
+          <!-- справка — служебный справочник, не приложение кейса: отдельным блоком
+               внизу, в стиле заголовков групп; класс и data-appx сохранены, чтобы
+               работали переход и отметка «прочитано» (✓) -->
+          <a href="#appx-terms" class="case-nav-link case-nav-ref" data-appx="terms">Справка по терминам</a>
         </nav>
 
         <div class="case-main">
@@ -455,7 +458,7 @@
           <div class="rationale-block" id="mainProblemBlock" style="display:none; margin-top:22px; padding-top:18px; border-top:1px solid #ececec;">
             <label for="mainProblemSelect">Какая из этих проблем, по-вашему, основная — корень остальных?</label>
             <select id="mainProblemSelect" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #cfd6dd; border-radius:8px; font:inherit; background:#fff;"></select>
-            <textarea id="mainProblemWhy" rows="2" placeholder="почему именно она (необязательно)"></textarea>
+            <textarea id="mainProblemWhy" rows="2" placeholder="почему именно она"></textarea>
           </div>
 
         </div>
