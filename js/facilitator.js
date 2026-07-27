@@ -241,7 +241,7 @@
   // способностям — в карточке участника (renderAK2Html/renderPRHtml); здесь
   // только флаг, чтобы не открывать карточку каждого просто ради проверки.
   function hasFlags(p) {
-    return !!(p.station1.akFlag || p.station2.prFlag);
+    return !!p.station2.prFlag;   // акФлаг снят: см. backend/code.js (шум у 70% прогонов)
   }
 
   // Все причины «требует внимания судьи» для отметки в списке (не только внутри
@@ -249,7 +249,6 @@
   // Вермилион на строке = сюда листать; голубой ✓ = завершено, вопросов нет.
   function attentionReasons(p) {
     var r = [];
-    if (p.station1 && p.station1.akFlag) r.push('зависимость: АК-2 > АК-1');
     if (p.station2 && p.station2.prFlag) r.push('зависимость: ПР-2 > ПР-1 + 1');
     if (p.station3 && p.station3.controlFlag) r.push('расхождение контроля §7-8 / кросс-раунд');
     var ai = p.aiMarker && p.aiMarker.level;
@@ -611,7 +610,6 @@
     var cc = (p.station3 && p.station3.controlComparisons) || {};
     var flag = false, reviewed = false;
     if (key === 'station1') {
-      if (p.station1 && p.station1.akFlag) flag = true;
       if (cr.ga1 && cr.ga1.flag) { flag = true; if (p.roomAlternatives && p.roomAlternatives.ga1Override) reviewed = true; }
     } else if (key === 'station2') {
       if (p.station2 && p.station2.prFlag) flag = true;
@@ -708,7 +706,7 @@
   if (exportBtn) exportBtn.addEventListener('click', function () {
     var rows = [
       ['№', 'Имя', 'Фамилия', 'Email', 'Волна', 'Дата регистрации',
-        'Статус станции 1', 'Карточек', 'Приложений изучено', 'Широта (АК-1)', 'Источник широты', 'Глубина (АК-2)', 'Источник глубины', 'Флаг: глубина>широты', 'Контекст, балл',
+        'Статус станции 1', 'Карточек', 'Приложений изучено', 'Широта (АК-1)', 'Источник широты', 'Глубина (АК-2)', 'Источник глубины', 'Контекст, балл',
         'Статус станции 2', 'Выбор (ПР-1)', 'Источник выбора', 'Защита (ПР-2)', 'Источник защиты', 'Флаг: защита>выбор+1', 'Приоритизация, балл',
         'Статус «Встреча с Лемехом у лифта»', 'Горизонт (МК-1)', 'Источник горизонта', 'Развилки будущего (МК-2)', 'Источник развилок', 'Образ будущего, балл',
         'Статус «Очередь в Прожектор»', 'Альтернативы (ГА-1)', 'Источник альтернатив', 'Идеи из областей (ГА-2)', 'Источник идей', 'Альтернативы, балл',
@@ -730,7 +728,6 @@
         p.station1.levelSource || '',
         typeof p.station1.ak2Level === 'number' ? p.station1.ak2Level : '',
         p.station1.ak2LevelSource || '',
-        p.station1.akFlag ? 'да' : '',
         typeof p.station1.akSkill === 'number' ? p.station1.akSkill : '',
         stationStatusLabel(p, 'station2').text,
         typeof p.station2.pr1Level === 'number' ? p.station2.pr1Level : '',
@@ -1116,9 +1113,10 @@
     if (typeof s1.ak2Level !== 'number') {
       inner = '<p class="fac-detail-text">Не оценено.</p>';
     } else {
-      if (typeof s1.level === 'number' && s1.ak2Level > s1.level) {
-        inner += warnLine('Глубина выше широты — нельзя глубоко анализировать незамеченное, нужна ручная проверка.');
-      }
+      // Предупреждения «глубина выше широты» здесь больше нет: АК-1 меряет охват
+      // ДОМЕНОВ, а не «замечено ли вообще», поэтому глубокий разбор внутри одного
+      // домена законен. По 23 прогонам правило «нарушали» 16 — подробности и
+      // контрпример 001418 в backend/code.js.
       inner += judgeBlock(s1.ak2JudgeReasoning) + srcLine(s1.ak2LevelSource);
     }
     return abilityBlock('Глубина взаимосвязей', 'АК-2', s1.ak2Level, inner);
@@ -1574,8 +1572,7 @@
       'Раунд 1 · Знакомство с «Искрой»', 'station1', participant,
       abilityBadgeHtml('АК-1', s1.level) + abilityBadgeHtml('АК-2', s1.ak2Level) + skillBadgeHtml('навык АК', participant.station1 && participant.station1.akSkill) + crossRoomBadgeHtml(crossRoom, 'ga1') + aiMarkerChipHtml(s1),
       s1Body,
-      (participant.station1 && participant.station1.akFlag) ? 'Нарушено ограничение зависимостей способностей'
-        : ((crossRoom.ga1 && crossRoom.ga1.flag) ? 'ГА-1 проявлен здесь выше, чем в своём раунде — контроль' : null),
+      (crossRoom.ga1 && crossRoom.ga1.flag) ? 'ГА-1 проявлен здесь выше, чем в своём раунде — контроль' : null,
       stageState(participant, 'station1')
     );
 
