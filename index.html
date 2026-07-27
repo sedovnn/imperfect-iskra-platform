@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=42" />
+<link rel="stylesheet" href="css/styles.css?v=43" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -31,6 +31,10 @@
   .entry-hint { font-size: 13px; color: var(--muted-soft); margin-top: 14px; }
   .entry-err { display: none; margin-top: 14px; font-size: 13px; color: #c4362b; }
   .entry-err.show { display: block; }
+  /* продолжение живой сессии — над формой, тихим блоком с отбивкой */
+  .entry-resume { margin-top: 30px; padding: 18px 0 20px; border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); }
+  .entry-resume-msg { font-size: 15px; line-height: 1.5; color: var(--ink); margin: 0 0 14px; }
+  .entry-resume-alt { font-size: 13px; color: var(--muted-soft); margin: 14px 0 0; }
   /* футер + скрытое тех-меню */
   .entry-foot { border-top: 1px solid var(--hairline); padding: 16px 0 26px; display: flex; align-items: center; justify-content: space-between; }
   .entry-fnote { font-size: 12px; color: var(--muted-soft); }
@@ -58,6 +62,17 @@
         <p class="kicker">Стратегическое мышление · ассессмент</p>
         <h1>Вход</h1>
         <p class="entry-lead">Введите номер участника и пароль — их выдал организатор.</p>
+
+        <!-- Участник, попавший сюда посреди ассессмента (история браузера, закладка,
+             вручную набранный адрес), раньше видел только форму и должен был снова
+             вводить пароль, которого может не быть под рукой, — при живой сессии и
+             сохранённых ответах. Теперь предлагаем продолжить. Не редирект: кто-то
+             приходит сюда именно чтобы войти под другим номером. -->
+        <div class="entry-resume" id="entryResume" style="display:none;">
+          <p class="entry-resume-msg">Вы уже вошли как <b id="entryResumeBib">№ 000000</b>.</p>
+          <a class="btn btn-primary btn-block" href="map.html" id="entryResumeBtn">Продолжить ассессмент →</a>
+          <p class="entry-resume-alt">Нужно войти под другим номером — заполните форму ниже.</p>
+        </div>
 
         <form class="entry-form" id="entryForm" novalidate autocomplete="off">
           <div class="field">
@@ -113,10 +128,23 @@
   var passEl = document.getElementById('entryPass');
   var errEl = document.getElementById('entryErr');
 
+  // Живая сессия — предлагаем продолжить, а не требовать пароль заново.
+  // Демо-сессию (тур) не показываем: у неё свой выход из витрины.
+  var liveSession = null;
+  try {
+    var demoOn = !!JSON.parse(sessionStorage.getItem('imp_demo') || 'null');
+    if (!demoOn && window.imp && window.imp.loadSession) liveSession = window.imp.loadSession();
+  } catch (e) {}
+  if (liveSession && liveSession.bib) {
+    document.getElementById('entryResumeBib').textContent = '№ ' + String(liveSession.bib).padStart(6, '0');
+    document.getElementById('entryResume').style.display = '';
+  }
+
   // единственная задача экрана — ввести номер: ставим курсор сразу в поле.
   // Не через атрибут autofocus: на мобильных он поднимает клавиатуру и прячет
   // заголовок, поэтому фокусируем только на устройствах с мышью/клавиатурой.
-  if (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches) {
+  // При живой сессии курсор не ставим — главное действие там «Продолжить».
+  if (!liveSession && (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches)) {
     try { codeEl.focus(); } catch (e) {}
   }
 
