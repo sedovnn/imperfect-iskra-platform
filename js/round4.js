@@ -247,7 +247,7 @@
       block.className = 's2-block';
       var pathLaidOut = (state.targetState || '').trim() || (state.stages || []).some(function (s) { return (s.description || '').trim(); });
       var react = pathLaidOut
-        ? '<b>Штерн</b> кивает на этапы: «Уже похоже на план, а не на лозунг. Хорошо».'
+        ? '<b>Штерн</b> кивает на этапы: «Уже похоже на план. Хорошо».'
         : '<b>Штерн</b> поднимает бровь: «Для меня это пока набросок — и тогда у меня к вам ещё один вопрос».';
       block.innerHTML =
         '<p class="s2-ageev">' + react + '</p>' +
