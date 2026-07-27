@@ -118,36 +118,57 @@
   });
 
   // action: строка ('register' | 'recover' | 'saveStation1' | ...), payload: обычный объект.
-  // Возвращает Promise<object|null> — null при любой сетевой/конфигурационной проблеме.
   // Возвращает Promise<object|null> — null при любой сетевой/конфигурационной
   // проблеме (вызывающий код не ломается). Сохранения при сбое уходят в очередь.
-  window.imp.callApi = function (action, payload) {
-    if (!API_URL) return Promise.resolve(null);
+  //
+  // ⚠ Сохранения одного раунда одного участника выстроены в цепочку, а не летят
+  // параллельно. Гонка, которая это потребовала (поймана на прогоне 005001,
+  // раунд 5): debounce-автосейв уже в полёте, участник жмёт «Завершить раунд» —
+  // clearTimeout запрос не отзывает, и два POST-а пишут одну строку листа. Apps
+  // Script порядок не гарантирует, поэтому записанным последним оказался
+  // автосейв со СТАРЫМ снимком (finished: false) и затёр флаг: участник видел
+  // «✓ раунд завершён», а кабинет — незавершённый раунд. payload держим по
+  // ссылке специально: отложенный автосейв уйдёт с уже актуальным состоянием.
+  var saveChains = {};
 
-    var isSave = /^save/.test(action);
-    if (isSave) { state.pending++; notify(); }
-
+  function sendSave(action, payload) {
+    state.pending++;
+    notify();
     return post(action, payload)
       .then(function (json) {
-        if (isSave) {
-          state.pending--;
-          state.lastOkAt = Date.now();
-          state.offline = false;
-          notify();
-          flushQueue(); // связь есть — доотправим то, что залежалось
-        }
+        state.pending--;
+        state.lastOkAt = Date.now();
+        state.offline = false;
+        notify();
+        flushQueue(); // связь есть — доотправим то, что залежалось
         return json;
       })
       .catch(function (err) {
         console.warn('[imp.callApi] ' + action + ' failed:', err);
-        if (isSave) {
-          state.pending--;
-          state.offline = true;
-          enqueue(action, payload); // не теряем: повторим сами
-          notify();
-        }
+        state.pending--;
+        state.offline = true;
+        enqueue(action, payload); // не теряем: повторим сами
+        notify();
         return null;
       });
+  }
+
+  window.imp.callApi = function (action, payload) {
+    if (!API_URL) return Promise.resolve(null);
+
+    if (!/^save/.test(action)) {
+      return post(action, payload).catch(function (err) {
+        console.warn('[imp.callApi] ' + action + ' failed:', err);
+        return null;
+      });
+    }
+
+    var key = action + '|' + (payload && payload.bib);
+    var run = function () { return sendSave(action, payload); };
+    // и на успехе, и на ошибке предыдущего — следующий всё равно отправляем
+    var chained = (saveChains[key] || Promise.resolve()).then(run, run);
+    saveChains[key] = chained.catch(function () {});
+    return chained;
   };
 
   // Сохранить и ДОЖДАТЬСЯ подтверждения: используется на завершении раунда,
