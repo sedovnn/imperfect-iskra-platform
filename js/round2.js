@@ -264,15 +264,15 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Агеев</b>: «' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что откладываем. Не обязательно раскладывать всё что собрали — но порядок в приоритетах для меня важен».</p>' +
+        '<p class="s2-ageev"><b>Агеев</b>: «' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что откладываем. Не обязательно раскладывать всё, что собрали, — но порядок в приоритетах для меня важен».</p>' +
         '<div class="s2-columns">' +
           '<div class="s2-col" data-zone="pool"><h4>Карта</h4><p class="links-hint">неразобранное</p><div class="s2-list" data-list="pool"></div></div>' +
           '<div class="s2-col is-priorities" data-zone="priorities"><h4>Приоритеты</h4><p class="links-hint">порядок = ранг; обычно хватает 3–5</p><div class="s2-list" data-list="priorities"></div></div>' +
           '<div class="s2-col" data-zone="rejected"><h4>Не сейчас</h4><p class="links-hint">явные отказы</p><div class="s2-list" data-list="rejected"></div></div>' +
         '</div>' +
         '<div class="rationale-block" style="margin-top:18px;">' +
-          '<label>Ваш принцип отбора <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
-          '<textarea class="s2-rejection-rule" aria-label="Ваш принцип отбора" rows="2" placeholder="по какому правилу вы отсекаете лишнее?"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
+          '<label>Как вы выбирали <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
+          '<textarea class="s2-rejection-rule" aria-label="Как вы выбирали" rows="2" placeholder="чем руководствовались, когда решали: это берём, это откладываем"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitSortBtn" style="margin-top:14px;">Зафиксировать приоритеты →</button>');
 
@@ -307,7 +307,7 @@
         item.innerHTML =
           '<div class="s2-item-rank">' + (i + 1) + '</div>' +
           '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
-          '<input type="text" class="s2-target" aria-label="Измеримая цель приоритета — число и срок" placeholder="измеримая цель: число и срок (напр. «рост 15% за год»)" value="' + escapeHtml(p.target || '') + '"' + (locked ? ' disabled' : '') + ' />' +
+          '<input type="text" class="s2-target" aria-label="Чего хотите добиться по этому приоритету" placeholder="чего хотите этим добиться" value="' + escapeHtml(p.target || '') + '"' + (locked ? ' disabled' : '') + ' />' +
           '</div>' +
           (showActions ?
             '<div class="s2-item-actions">' +
@@ -332,7 +332,7 @@
         var item = document.createElement('div');
         item.className = 's2-item is-rejected';
         item.innerHTML = '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
-          '<input type="text" class="s2-freed" aria-label="Что освободится, если это отложить" placeholder="что освободится, если это отложить" value="' + escapeHtml(r.freed || '') + '"' + (locked ? ' disabled' : '') + ' />' +
+          '<input type="text" class="s2-freed" aria-label="Почему откладываете именно это" placeholder="почему откладываете именно это" value="' + escapeHtml(r.freed || '') + '"' + (locked ? ' disabled' : '') + ' />' +
           '</div>' +
           (showActions ? '<div class="s2-item-actions"><button class="s2-act" data-act="back" title="вернуть в карту"' + (locked ? ' disabled' : '') + '>✕</button></div>' : '');
         if (!locked) {
@@ -379,8 +379,8 @@
       block.className = 's2-block';
       block.innerHTML =
         '<p class="s2-ageev">' + sortReact + '</p>' +
-        '<p class="s2-ageev"><b>Агеев</b> смотрит на верхнюю карточку: «Хорошо. Почему „' + escapeHtml(topPriorityText()) + '“ — первым? К чему это ведёт — и что при этом приходится подвинуть?»</p>' +
-        '<textarea class="s2-rationale" aria-label="Почему этот приоритет идёт первым и к чему ведёт" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
+        '<p class="s2-ageev"><b>Агеев</b> смотрит на верхнюю карточку: «Хорошо. Почему „' + escapeHtml(topPriorityText()) + '“ — первым? На совете это придётся защищать — убедите сначала меня.»</p>' +
+        '<textarea class="s2-rationale" aria-label="Почему этот приоритет идёт первым" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
         // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
         '<div class="rationale-block" style="margin-top:12px;">' +
           '<label>С чего начнёте — первый шаг <span style="color:var(--muted-soft); font-weight:400; text-transform:none; letter-spacing:0;">(необязательно)</span></label>' +
@@ -529,7 +529,7 @@
       block.innerHTML =
         (stanceReact ? '<p class="s2-ageev">' + stanceReact + '</p>' : '') +
         '<p class="s2-ageev"><b>Агеев</b> встаёт: «' + (pname() ? escapeHtml(pname()) + ', последний вопрос' : 'Последний вопрос') + '. Что должно случиться, чтобы вы сами сказали: пора пересматривать?»</p>' +
-        '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="2" placeholder="необязательно — можно пожать плечами и попрощаться"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
+        '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="2" placeholder="необязательно"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить встречу →</button>');
 
       if (!locked) {

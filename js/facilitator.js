@@ -1307,18 +1307,19 @@
 
   function roomAnswersAlternatives(state) {
     var html = '';
-    if (state.answer1) html += '<p class="fac-detail-text"><span class="fac-k">Почему это сработает:</span> ' + escapeHtml(state.answer1) + '</p>';
+    // подписи нейтральны к версии раунда (v2 2026-07-27: задача Даши; раньше — своя рекомендация)
+    if (state.answer1) html += '<p class="fac-detail-text"><span class="fac-k">Ответ Брагину (открытый вопрос):</span> ' + escapeHtml(state.answer1) + '</p>';
     if (state.subdecisions) {
-      html += '<p class="fac-detail-text"><span class="fac-k">Под-решения / что отбросил:</span> ' + escapeHtml(state.subdecisions) + '</p>';
+      html += '<p class="fac-detail-text"><span class="fac-k">Где колебался, что отбросил:</span> ' + escapeHtml(state.subdecisions) + '</p>';
     }
     var srcs = state.sources || (state.source ? String(state.source).split(',') : []);
     srcs = srcs.map(function (s) { return String(s).trim(); }).filter(function (s) { return s; });
     if (srcs.length) {
-      html += '<p class="fac-detail-text"><span class="fac-k">Источники идей (самооценка):</span> ' +
+      html += '<p class="fac-detail-text"><span class="fac-k">Источники идей (самооценка, прежний формат):</span> ' +
         escapeHtml(srcs.map(function (s) { return GA2_SOURCE_LABELS[s] || s; }).join('; ')) + '</p>';
     }
     if (state.sourceElaboration) {
-      html += '<p class="fac-detail-text"><span class="fac-k">Элаборация:</span> ' + escapeHtml(state.sourceElaboration) + '</p>';
+      html += '<p class="fac-detail-text"><span class="fac-k">Откуда ход:</span> ' + escapeHtml(state.sourceElaboration) + '</p>';
     }
     return html;
   }

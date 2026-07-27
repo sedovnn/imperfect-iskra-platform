@@ -715,9 +715,11 @@
         '<textarea class="conn-mechanism" rows="2">' + escapeHtml(conn.mechanism || '') + '</textarea>' +
         '<label>В чём корневая проблема, к которой сходится эта связка</label>' +
         '<textarea class="conn-conclusion" rows="2" placeholder="только диагноз — какую корневую проблему обнажает эта цепочка (что с ней делать, спросим дальше)">' + escapeHtml(conn.conclusion || '') + '</textarea>' +
-        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:-2px 0 2px; line-height:1.45;">Решения, альтернативы и горизонт — в следующих раундах. Здесь только картина проблем.</div>' +
-        '<div class="conn-loop"><input type="checkbox" id="loop_' + conn.id + '"' + (conn.isLoop ? ' checked' : '') + ' />' +
-          '<label for="loop_' + conn.id + '" style="text-transform:none; letter-spacing:0; font-weight:400;">Цепочка замыкается обратно — конец усиливает (или гасит) начало</label></div>';
+        // Галочка «цепочка замыкается обратно» убрана (аудит 2026-07-27): судья АК-2
+        // её и так игнорирует (петли ищутся в тексте механизмов), а подпись преподавала
+        // понятие петли за секунду до ответа. conn.isLoop в стейте/бэкенде остаётся
+        // (легаси-данные старых участников).
+        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:-2px 0 2px; line-height:1.45;">Решения, альтернативы и горизонт — в следующих раундах. Здесь только картина проблем.</div>';
 
       if (!state.finished) {
         var rm = document.createElement('button');
@@ -749,10 +751,6 @@
       el.querySelector('.conn-conclusion').addEventListener('input', function (e) {
         conn.conclusion = e.target.value; saveState();
       });
-      el.querySelector('input[type="checkbox"]').addEventListener('change', function (e) {
-        conn.isLoop = e.target.checked; saveState();
-      });
-
       if (state.finished) el.querySelectorAll('textarea, input, .conn-chip').forEach(function (x) {
         x.setAttribute('disabled', 'disabled');
       });

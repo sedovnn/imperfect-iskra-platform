@@ -152,10 +152,12 @@
     raSources = raSources.map(function (s) { return String(s).trim(); }).filter(function (s) { return s; });
     if (ra && (ra.answer1 || ra.subdecisions || raSources.length || ra.sourceElaboration)) {
       section('Раунд 5 · Очередь в «Прожектор»');
-      if (ra.answer1) textB('Почему это сработает:', ra.answer1);
-      if (ra.subdecisions) textB('Что ещё рассматривал / отбросил:', ra.subdecisions);
-      if (raSources.length) textB('Источники идей:', raSources.map(function (s) { return GA_SOURCE[s] || s; }).join('; '));
-      if (ra.sourceElaboration) text(ra.sourceElaboration);
+      // подписи нейтральны к версии раунда: до редизайна answer1 был про собственную
+      // рекомендацию, после — про задачу Даши; спрашивал в обоих случаях Брагин
+      if (ra.answer1) textB('Ответ Брагину:', ra.answer1);
+      if (ra.subdecisions) textB('Где колебался, что отбросил:', ra.subdecisions);
+      if (raSources.length) textB('Источники идей (прежний формат):', raSources.map(function (s) { return GA_SOURCE[s] || s; }).join('; '));
+      if (ra.sourceElaboration) textB('Откуда ход:', ra.sourceElaboration);
     }
 
     // ---------- Финализация ----------
