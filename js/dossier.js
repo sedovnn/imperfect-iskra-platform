@@ -9,7 +9,7 @@
   }
   var bib = session.bib;
   document.getElementById('dossierRoot').style.display = '';
-  document.getElementById('hdrBib').textContent = '№ ' + String(bib).padStart(3, '0');
+  document.getElementById('hdrBib').textContent = '№ ' + String(bib).padStart(6, '0');
   document.getElementById('closeBtn').addEventListener('click', function () {
     // открыт в отдельной вкладке — закрываем; иначе назад
     if (window.opener) window.close(); else history.back();

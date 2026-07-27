@@ -118,7 +118,7 @@
     document.getElementById('gate').style.display = 'none';
     document.getElementById('gateStation1').style.display = 'none';
     document.getElementById('stationRoot').style.display = '';
-    document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(3, '0');
+    document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(6, '0');
     initWorkspace(s1cards);
   }
 

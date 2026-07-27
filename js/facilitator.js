@@ -120,7 +120,7 @@
   }
 
   function formatBib(n) {
-    return '№ ' + String(n).padStart(3, '0');
+    return '№ ' + String(n).padStart(6, '0');
   }
 
   // Сброс/удаление чистит серверные данные, но у участника мог остаться

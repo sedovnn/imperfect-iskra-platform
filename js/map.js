@@ -105,7 +105,7 @@
   function proceedToStation() {
     document.getElementById('gate').style.display = 'none';
     document.getElementById('stationRoot').style.display = '';
-    document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(3, '0');
+    document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(6, '0');
     initWorkspace();
   }
 
@@ -127,13 +127,21 @@
       introEl.style.display = 'flex';
     });
 
-    // контролы на экране сборки Р6 (свой ряд — .gate прячет шапку станции):
-    // номер участника + «?», который возвращает к легенде карты, закрыв сборку
-    document.getElementById('finalizeBib').textContent = '№ ' + String(session.bib).padStart(3, '0');
-    document.getElementById('finalizeHelpBtn').addEventListener('click', function () {
+    // шапка экрана сборки Р6 (свой ряд — .gate прячет шапку станции):
+    // номер участника, «?» (возвращает к легенде карты) и «← К карте» — тот же
+    // набор и тот же порядок, что в шапке раундов
+    document.getElementById('finalizeBib').textContent = '№ ' + String(session.bib).padStart(6, '0');
+    function closeFinalize() {
       document.getElementById('finalizeScreen').style.display = 'none';
       document.getElementById('stationRoot').style.display = '';
+    }
+    document.getElementById('finalizeHelpBtn').addEventListener('click', function () {
+      closeFinalize();
       introEl.style.display = 'flex';
+    });
+    document.getElementById('finalizeBackBtn').addEventListener('click', function (e) {
+      e.preventDefault();
+      closeFinalize();
     });
 
     // Плашка «слух о позиции разошёлся» теперь рендерится ВНУТРИ renderRooms —

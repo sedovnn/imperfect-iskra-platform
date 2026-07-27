@@ -375,7 +375,7 @@ deep +
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'imperfect-otchet-' + String(p.bib).padStart(3, '0') + '.html';
+    a.download = 'imperfect-otchet-' + String(p.bib).padStart(6, '0') + '.html';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

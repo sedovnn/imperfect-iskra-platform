@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=41" />
+<link rel="stylesheet" href="css/styles.css?v=42" />
 </head>
 <body class="frame-narrow">
 
@@ -46,14 +46,18 @@
          а .gate-экраны прячут шапку станции целиком. Установка обещает номер,
          «?» и «ⓘ» под рукой — поэтому здесь свой ряд контролов рядом с лого. -->
     <div class="finalize-top">
-      <div class="logo">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">stratos</span></div>
+      <div class="finalize-top-left">
+        <div class="logo">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">stratos</span></div>
+        <span class="station-sep">/</span>
+        <h2 class="finalize-screen-name">Раунд 6 · Сборка стратегии</h2>
+      </div>
       <div class="station-header-right">
         <button type="button" class="btn btn-ghost btn-xs" id="finalizeHelpBtn" title="Подсказка по этому экрану">?</button>
         <a class="btn btn-ghost btn-xs" href="intro.html" title="Как проходить — вернуться к установке" aria-label="Как проходить — вернуться к установке">ⓘ</a>
-        <span class="bib" id="finalizeBib">№ 000</span>
+        <span class="bib" id="finalizeBib">№ 000000</span>
+        <a class="btn btn-ghost btn-sm" href="#" id="finalizeBackBtn">← К карте</a>
       </div>
     </div>
-    <p class="kicker">Раунд 6 · Сборка стратегии</p>
     <div class="stratos-shell-tabs">
       <div class="sst-tabs">
         <span class="sst-tab is-active">Моя стратегия</span>
@@ -152,11 +156,11 @@
 <script src="js/main.js?v=2"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/api.js?v=2"></script>
-<script src="js/demo.js?v=10"></script>
+<script src="js/demo.js?v=11"></script>
 <script src="js/dossier-render.js?v=5"></script>
 <script src="js/dossier-panel.js?v=4"></script>
 <script src="js/case-ref.js?v=4"></script>
-<script src="js/map.js?v=14"></script>
+<script src="js/map.js?v=15"></script>
 <script src="js/progress.js?v=7"></script>
 <script src="js/save-status.js?v=1"></script>
 </body>
