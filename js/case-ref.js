@@ -60,6 +60,8 @@
     if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
   }
   function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
+  // клик по затемнённой подложке закрывает так же, как Escape и кнопка «Закрыть»
+  panel.addEventListener('click', function (e) { if (e.target === panel) close(); });
 
   function open() {
     if (cache !== null) { contentEl.innerHTML = cache; show(); return; }

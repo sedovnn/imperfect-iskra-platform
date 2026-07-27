@@ -18,11 +18,17 @@
     if (!session || !session.bib) return;
     contentEl.innerHTML = window.imp.buildDossierHtml(session.bib);
     panel.style.display = 'flex';
+    document.addEventListener('keydown', onKey);
   }
   function close() {
     panel.style.display = 'none';
+    document.removeEventListener('keydown', onKey);
   }
+  function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
 
   triggers.forEach(function (btn) { btn.addEventListener('click', open); });
   if (closeBtn) closeBtn.addEventListener('click', close);
+  // клик по затемнённой подложке (мимо самой панели) тоже закрывает — панель
+  // теперь ящик у правого края, и «промахнуться» в подложку — естественный жест
+  panel.addEventListener('click', function (e) { if (e.target === panel) close(); });
 })();
