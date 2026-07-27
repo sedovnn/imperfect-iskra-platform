@@ -93,7 +93,8 @@ body {
 
 .frame {
   border: 0;
-  min-height: 100vh;
+  /* минус хром демо — см. .station-shell; вне демо переменной нет → 100vh */
+  min-height: calc(100vh - var(--demo-chrome, 0px));
   background: var(--paper);
 }
 
@@ -2125,13 +2126,18 @@ body.imp-drawer-open .dock-rail { display: none; }
 .station-frame {
   padding: 0;
   border-width: 0;
-  min-height: 100vh;
+  /* та же поправка на хром демо, что у .station-shell: min-height:100vh поверх
+     padding'ов body давал странице лишние 77px и уводил шапку при скролле */
+  min-height: calc(100vh - var(--demo-chrome, 0px));
 }
 
 .station-shell {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  /* минус хром демо (--demo-chrome ставит demo.js): иначе 100vh + padding'и body
+     делали страницу выше экрана, она скроллилась целиком и шапка уезжала вверх
+     вместе со справочными кнопками. Вне демо переменной нет → чистые 100vh. */
+  height: calc(100vh - var(--demo-chrome, 0px));
   background: var(--paper);
   /* система координат для экрана легенды (.station-intro) — см. комментарий там */
   position: relative;
@@ -2145,6 +2151,12 @@ body.imp-drawer-open .dock-rail { display: none; }
   /* боковой отступ — тот же var(--frame-pad), что у тела раунда: иначе лого в
      шапке не встаёт по левому краю колонки контента (было 24 против 32 = разъезд 8px) */
   padding: 14px var(--frame-pad);
+  /* Подстраховка: если страница всё же прокрутится (низкий экран, чужой хром),
+     шапка остаётся на месте — справочные кнопки и номер должны быть достижимы
+     из любой точки, это было главное достоинство прежних плавающих язычков. */
+  position: sticky;
+  top: 0;
+  z-index: 75;
   border-bottom: 1px solid #ececec;
   flex: none;
   /* единая рамка: шапка той же ширины, что и контент (var(--maxw)), по центру —

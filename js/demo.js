@@ -580,6 +580,13 @@
         : 0;
       var clear = Math.max(bar.offsetHeight, noteClear);
       document.documentElement.style.setProperty('--demo-bottom', (clear + 12) + 'px');
+      // Оболочка станции — height:100vh. Вместе с padding'ами body под хром демо
+      // страница становилась выше экрана (на 1440×900 — на 77px), и при скролле
+      // уезжала ШАПКА, а с ней «Мои ответы» и «Кейс»: внизу длинной рабочей
+      // области до них было не достать. Отдаём фактическую высоту хрома, чтобы
+      // .station-shell вычитала её и страница не скроллилась (см. styles.css).
+      document.documentElement.style.setProperty(
+        '--demo-chrome', (badge.offsetHeight + bar.offsetHeight) + 'px');
     }
     syncDemoPadding();
     window.addEventListener('resize', syncDemoPadding);
