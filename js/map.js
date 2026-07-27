@@ -195,7 +195,7 @@
           slot.appendChild(card);
           var cloud = document.createElement('div');
           cloud.className = 'hub-stance-cloud';
-          cloud.innerHTML = stance.isOwn
+          cloud.innerHTML = (stance.isOwn && !stance.named)
             ? '<p>О том, что вы не приняли ни одну из двух готовых позиций и предложили свою, уже все в курсе: Агеев, похоже, ещё со встречи разослал вашу записку по чатам.</p>'
             : '<p>О вашей позиции — <b>' + esc(stance.label) + '</b> — уже все в курсе: Агеев, похоже, ещё со встречи разослал её по чатам.</p>';
           slot.appendChild(cloud);
@@ -247,36 +247,116 @@
     // Артефакты StratOS + откуда предзаполняем (карта §7 спека). Порядок — как в
     // «Обзоре стратегии» StratOS: горизонт → БАЦ → декомпозиция → текущее
     // состояние → фокус через отказ → ценностное предложение → проекты → риски.
+    // ⚠ Каждое поле обрабатывает ТРИ случая, а не один. Замер показал, что беда
+    // двусторонняя: ИИ-прогон переполняет поля (в «Первых действиях» 5089 знаков,
+    // в позиции 4536), а живые люди оставляют их ПУСТЫМИ — цели приоритетов не
+    // заполнены у 3 прогонов из 7, обоснования отказов у 5 из 7, этапы пути у 3
+    // из 7. Поэтому: пусто → участник видит подсказку ph, что здесь пишут (а не
+    // прочерк в карточке с заголовком «мы собрали вашу стратегию»); нормально →
+    // подставляем; слишком длинно → не подставляем обрубок, максимум лимита.
     var STRATOS_FIELDS = [
       { key: 'horizon', label: 'Горизонт планирования', kind: 'input',
+        ph: 'например: 2028 год · три года',
+        // поле в одну строку: длинный ответ показал бы обрубок первой трети (на
+        // прогоне 005001 сюда попало 337 знаков, горизонта в видимой части не было)
+        max: 130,
         seed: function (s) { return strVal(s.rf && s.rf.horizon).split('\n')[0]; } },
       { key: 'bhag', label: 'БАЦ — большая амбициозная цель', rows: 3,
         hint: 'формула: «К [горизонту] мы станем …, чтобы …»',
+        ph: 'К какому году кем станем и зачем',
         seed: function (s) { return strVal(s.rf && s.rf.vision); } },
       { key: 'decomp', label: 'Декомпозиция на метрики', rows: 4,
         hint: 'по направлениям ССП: финансы · клиенты/рынок · продукт/процессы · люди/технологии',
-        seed: function (s) { var p = []; if (s.rp && strVal(s.rp.targetState)) p.push('Цель: ' + strVal(s.rp.targetState)); var t = (((s.s2 && s.s2.priorities) || []).map(function (x) { return strVal(x.target); }).filter(Boolean)); if (t.length) p.push('Метрики приоритетов: ' + t.join('; ')); return p.join('\n'); } },
+        ph: 'метрика · порог · владелец — по каждому направлению',
+        seed: function (s) { var p = []; if (s.rp && strVal(s.rp.targetState)) p.push('Цель: ' + strVal(s.rp.targetState)); var t = (((s.s2 && s.s2.priorities) || []).map(function (x) { return strVal(x.target); }).filter(Boolean)); if (t.length) p.push('Метрики приоритетов (черновик — добавьте числа и владельцев): ' + t.join('; ')); return p.join('\n'); } },
+      // Отбор по смыслу, а не «первые восемь»: сначала та проблема, которую
+      // участник назвал корневой, затем помеченные как угроза, и только потом
+      // остальные до лимита. У живого участника карточек было 37 — «первые
+      // восемь» давали меньше четверти карты, и принцип нигде не назывался.
       { key: 'currentWeak', label: 'Текущее состояние — слабые места', rows: 3,
-        seed: function (s) { return (((s.s1 && s.s1.cards) || []).map(function (c) { return strVal(c.problem || c.text); }).filter(Boolean).slice(0, 8).map(function (x) { return '• ' + x; }).join('\n')); } },
+        hint: 'корневая проблема и то, что помечено угрозой',
+        ph: 'что в компании работает против неё прямо сейчас',
+        seed: function (s) { return weakSeed(s); } },
       { key: 'currentStrong', label: 'Текущее состояние — сильные стороны и ресурсы', rows: 3,
+        ph: 'на что опираемся: люди, деньги, продукты, данные',
         seed: function (s) { return (((s.rp && s.rp.enablers) || []).map(function (e) { return strVal(typeof e === 'string' ? e : (e && e.text)); }).filter(Boolean).map(function (x) { return '• ' + x; }).join('\n')); } },
+      // Первый ход и первый этап — «Проекты / дорожная карта» ниже держит ВСЕ
+      // этапы. Раньше оба поля получали один и тот же список: у 005001 5089 и
+      // 4215 знаков одного содержания подряд в одном документе.
       { key: 'currentActions', label: 'Первые действия', rows: 3,
-        seed: function (s) { var p = []; if (s.s2 && strVal(s.s2.firstAction)) p.push('Первый ход: ' + strVal(s.s2.firstAction)); var st = (((s.rp && s.rp.stages) || []).map(function (x) { return strVal(x.description); }).filter(Boolean)); if (st.length) p.push('Этапы: ' + st.join('; ')); return p.join('\n'); } },
+        hint: 'что делаем в первые недели',
+        ph: 'первый ход и чем он заканчивается',
+        seed: function (s) { var p = []; if (s.s2 && strVal(s.s2.firstAction)) p.push('Первый ход: ' + strVal(s.s2.firstAction)); var st = (((s.rp && s.rp.stages) || []).map(function (x) { return strVal(x.description); }).filter(Boolean)); if (st.length) p.push('Первый этап: ' + st[0]); return p.join('\n'); } },
+      // Фокус — это отказ от ДЕЙСТВИЙ. Обоснования отказов участник пишет сам
+      // («Не ставлю целью вернуться в первую тройку OMI в 2026 году…»), и если
+      // они есть — берём их. Прежний вариант печатал «Отказываемся от:» и текст
+      // отложенной ПРОБЛЕМЫ («Отказываемся от: ключевая компетенция ушла») —
+      // отказаться от проблемы нельзя. Обоснования пусты у 5 живых из 7,
+      // поэтому запасной путь остаётся, но с честной подписью.
       { key: 'focusRefusal', label: 'Фокус через отказ', rows: 3,
         hint: 'от чего сознательно отказываемся и по какому правилу',
-        seed: function (s) { var s2 = s.s2; if (!s2) return ''; var rej = ((s2.rejected || []).map(function (r) { var c = s.cardById[r.cardId]; return c ? strVal(c.text) : ''; }).filter(Boolean)); var out = []; if (rej.length) out.push('Отказываемся от: ' + rej.join('; ')); if (strVal(s2.rejectionRule)) out.push('Правило отсечения: ' + strVal(s2.rejectionRule)); return out.join('\n'); } },
+        ph: 'чего сознательно НЕ делаем в этот период и почему',
+        seed: function (s) { return refusalSeed(s); } },
       { key: 'valueProp', label: 'Ценностное предложение', rows: 3,
+        ph: 'чем ваша позиция ценна для компании и клиента',
         seed: function (s) { var st = s.stance ? s.stance.full : ''; var cr = strVal(s.s2 && s.s2.stanceCriteria); return st + (cr ? '\nКритерии: ' + cr : ''); } },
       { key: 'projects', label: 'Проекты / дорожная карта', rows: 3,
+        ph: 'этапы по порядку: что и когда готово',
         seed: function (s) { return (((s.rp && s.rp.stages) || []).filter(function (x) { return strVal(x.description); }).map(function (x, i) { return (i + 1) + ') ' + strVal(x.description) + (strVal(x.doneWhen) ? ' — готово когда: ' + strVal(x.doneWhen) : ''); }).join('\n')); } },
       { key: 'risks', label: 'Развороты и риски', rows: 3,
+        ph: 'что может пойти не так и что тогда меняем',
         seed: function (s) { var out = []; if (strVal(s.rf && s.rf.answer2)) out.push('Развороты: ' + strVal(s.rf.answer2)); var b = (((s.rp && s.rp.barriers) || []).map(function (x) { return strVal(typeof x === 'string' ? x : (x && x.text)); }).filter(Boolean)); if (b.length) out.push('Барьеры: ' + b.join('; ')); return out.join('\n'); } }
     ];
+
+    // Слабые места: корневая проблема → помеченные угрозой → остальные, до лимита.
+    function weakSeed(s) {
+      var cards = ((s.s1 && s.s1.cards) || []).filter(function (c) { return strVal(c.problem || c.text); });
+      if (!cards.length) return '';
+      var rootId = s.s1 && s.s1.mainProblemId;
+      // тег ставится в раунде 1 кнопками «угроза»/«возможность» и хранится как 'threat'
+      var isThreat = function (c) { return String(c.tag || '') === 'threat'; };
+      var root = cards.filter(function (c) { return c.id && c.id === rootId; });
+      var threats = cards.filter(function (c) { return !(c.id && c.id === rootId) && isThreat(c); });
+      var rest = cards.filter(function (c) { return !(c.id && c.id === rootId) && !isThreat(c); });
+      var picked = root.concat(threats).concat(rest).slice(0, 8);
+      var lines = picked.map(function (c) {
+        var mark = (c.id && c.id === rootId) ? ' (вы назвали это корнем остальных)' : '';
+        return '• ' + strVal(c.problem || c.text) + mark;
+      });
+      if (cards.length > picked.length) {
+        lines.push('— в карте ещё ' + (cards.length - picked.length) + ', полный список в «Моих ответах»');
+      }
+      return lines.join('\n');
+    }
+
+    // Фокус через отказ: сначала собственные формулировки отказов, иначе — что
+    // сняли с фокуса (без «отказываемся от <проблемы>»).
+    function refusalSeed(s) {
+      var s2 = s.s2;
+      if (!s2) return '';
+      var out = [];
+      var reasons = ((s2.rejected || []).map(function (r) { return strVal(r.freed); }).filter(Boolean));
+      if (reasons.length) {
+        out.push(reasons.map(function (x) { return '• ' + x; }).join('\n'));
+      } else {
+        var titles = ((s2.rejected || []).map(function (r) { var c = s.cardById[r.cardId]; return c ? strVal(c.text) : ''; }).filter(Boolean));
+        if (titles.length) out.push('Сняли с фокуса сейчас: ' + titles.join('; '));
+      }
+      if (strVal(s2.rejectionRule)) out.push('Правило отсечения: ' + strVal(s2.rejectionRule));
+      return out.join('\n');
+    }
 
     function seedStratos() {
       var s = stratosSources();
       var out = {};
-      STRATOS_FIELDS.forEach(function (f) { out[f.key] = f.seed(s) || ''; });
+      STRATOS_FIELDS.forEach(function (f) {
+        var v = f.seed(s) || '';
+        // третий случай: подставляемое не влезает в поле (f.max задан только у
+        // однострочных). Обрубок первой трети фразы читается как сбой платформы —
+        // лучше оставить пустым с подсказкой, участник впишет коротко сам.
+        if (f.max && v.length > f.max) v = '';
+        out[f.key] = v;
+      });
       return out;
     }
 
@@ -293,9 +373,12 @@
         var val = doc[f.key] || '';
         var head = '<div class="stratos-art-h">' + f.label +
           (f.hint ? ' <span class="stratos-hint">' + f.hint + '</span>' : '') + '</div>';
+        // подсказка вместо пустоты: карточка без ответа не должна выглядеть
+        // прочерком в документе, который экран называет собранной стратегией
+        var ph = f.ph ? ' placeholder="' + esc(f.ph) + '"' : '';
         var field = f.kind === 'input'
-          ? '<input class="stratos-in" data-sk="' + f.key + '" aria-label="' + esc(f.label) + '"' + (readOnly ? ' disabled' : '') + ' value="' + esc(val) + '" />'
-          : '<textarea class="stratos-ta" data-sk="' + f.key + '" aria-label="' + esc(f.label) + '" rows="' + (f.rows || 3) + '"' + (readOnly ? ' disabled' : '') + '>' + esc(val) + '</textarea>';
+          ? '<input class="stratos-in" data-sk="' + f.key + '" aria-label="' + esc(f.label) + '"' + ph + (readOnly ? ' disabled' : '') + ' value="' + esc(val) + '" />'
+          : '<textarea class="stratos-ta" data-sk="' + f.key + '" aria-label="' + esc(f.label) + '" rows="' + (f.rows || 3) + '"' + ph + (readOnly ? ' disabled' : '') + '>' + esc(val) + '</textarea>';
         return '<div class="stratos-art">' + head + field + '</div>';
       }
       strategyRecapEl.innerHTML = '<div class="stratos-grid">' + [1, 2, 3].map(function (col) {

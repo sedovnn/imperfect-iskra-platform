@@ -40,7 +40,7 @@
         if (top && top.text) chips.push({ k: 'Приоритет №1', v: '«' + truncate(top.text, 40) + '»' });
       }
       var st = window.imp.stanceOf && window.imp.stanceOf(s2);
-      if (st) chips.push({ k: 'Позиция', v: st.isOwn ? 'своя формулировка' : st.label });
+      if (st) chips.push({ k: 'Позиция', v: (st.isOwn && !st.named) ? 'своя формулировка' : st.label });
     }
     if (s3 && s3.finalDefense && String(s3.finalDefense).trim()) {
       chips.push({ k: 'Стратегия', v: 'защищена' });

@@ -1611,6 +1611,15 @@ body.imp-drawer-open .dock-rail { display: none; }
 .sst-tabs { display: flex; gap: 18px; flex-wrap: wrap; }
 .sst-tab { font-size: 13px; font-weight: 600; color: var(--muted-soft); white-space: nowrap; padding-bottom: 8px; border-bottom: 2px solid transparent; }
 .sst-tab.is-active { color: var(--ink); border-bottom-color: var(--accent); }
+/* почему пять вкладок закрыты — иначе читается как «я чего-то не сделал» */
+.sst-tab-note {
+  font-family: var(--ff-body);
+  font-size: 12px;
+  color: var(--muted-soft);
+  align-self: center;
+  padding-left: 4px;
+}
+
 .sst-tab.is-locked { color: var(--gray-3, #c9ccd0); }
 .stratos-shell-title { display: flex; justify-content: flex-start; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin: 0 0 16px; }
 .sst-title { margin: 0; }
@@ -2033,15 +2042,19 @@ body.imp-drawer-open .dock-rail { display: none; }
   margin-bottom: 24px;
 }
 
+/* Номер участника. Базовое правило осталось с до-редизайна (30px, радиус 12px,
+   рамка 3px) и переопределялось только в шапках раундов и Р6 — а в карточке
+   кабинета применялось как есть: номер шёл огромным блоком и наезжал на
+   «Обновить». Приводим базу к системе; scoped-правила теперь совпадают с ней. */
 .bib {
   font-family: var(--ff-display);
   font-weight: 900;
-  font-size: 30px;
+  font-size: 14px;
   background: var(--ink);
   color: var(--lime);
-  border: 3px solid var(--ink);
-  border-radius: 12px;
-  padding: 12px 18px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 6px 12px;
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
@@ -2572,6 +2585,14 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
 
 .appx-doc[open] > summary {
   border-bottom: 1px solid #ececec;
+  /* Приложение зачитывается прокруткой до конца, а статус («открыто · дочитайте
+     до конца» → «✓ изучено») стоит в этой шапке: пока она уезжала вверх,
+     участник в момент зачёта его уже не видел и возвращался проверять
+     (репорт прогона 005001). Держим шапку на виду. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--paper);
 }
 
 .appx-doc-badge {

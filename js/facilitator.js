@@ -1626,6 +1626,33 @@
   // Флаг ⚑ ставит арбитр-ИИ только на реальные расхождения (не на артефакт недо-вызова).
   var CONTROL_LABELS = { pr2: 'ПР-2 · обоснование выбора', mk2: 'МК-2 · развилки будущего', ga1: 'ГА-1 · генерация альтернатив' };
 
+  // ---- Документ стратегии раунда 6 ----
+  // Десять карточек StratOS, которые участник правит на финальном экране.
+  // На балл не влияют (судьи читают раунды 1–5 и записку защиты) — это
+  // материал для разбора: видно, что человек переписал сам, а что оставил
+  // как собрала платформа. До @68 документ вообще не доходил до сервера.
+  function stratosDocHtml(station3) {
+    var doc = station3 && station3.stratos;
+    if (!doc || typeof doc !== 'object') {
+      return '<p class="fac-detail-text" style="margin-top:10px;">Документ стратегии не сохранён — участник проходил раунд 6 до появления колонки, либо не открывал финальный экран.</p>';
+    }
+    var LABELS = {
+      horizon: 'Горизонт планирования', bhag: 'БАЦ', decomp: 'Декомпозиция на метрики',
+      currentWeak: 'Слабые места', currentStrong: 'Сильные стороны и ресурсы',
+      currentActions: 'Первые действия', focusRefusal: 'Фокус через отказ',
+      valueProp: 'Ценностное предложение', projects: 'Проекты / дорожная карта',
+      risks: 'Развороты и риски'
+    };
+    var rows = Object.keys(LABELS).filter(function (k) { return String(doc[k] || '').trim(); });
+    if (!rows.length) return '<p class="fac-detail-text" style="margin-top:10px;">Документ стратегии пуст.</p>';
+    var html = '<details class="fac-materials" style="margin-top:12px;"><summary class="fac-materials-sum">Документ стратегии — ' + rows.length + ' из 10 карточек заполнено</summary><div class="fac-materials-body">';
+    rows.forEach(function (k) {
+      html += '<p class="fac-detail-text" style="margin-top:8px;"><b>' + escapeHtml(LABELS[k]) + ':</b> ' + escapeHtml(String(doc[k])) + '</p>';
+    });
+    html += '</div></details>';
+    return html;
+  }
+
   function renderControlHtml(station3, livePrimary, overrides) {
     livePrimary = livePrimary || {};
     overrides = overrides || {};
@@ -1666,6 +1693,7 @@
 
     var body = '';
     body += recalcButtonHtml('3c', 'Пересчитать контроль');
+    body += stratosDocHtml(station3);
     if (!hasDefense) {
       body += '<p class="fac-detail-text">Финальная защита не заполнена — контроль не считался.</p>';
       return taskSectionHtml('Финальная защита и контроль', null, null, badges, body, anyFlag ? 'Есть расхождение основной и контрольной оценки' : null, ctlAttn);

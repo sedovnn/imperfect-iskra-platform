@@ -154,7 +154,16 @@
     if (code === 'fortress') return { code: code, label: '«Крепость»', full: '«Крепость»', isOwn: false };
     if (code === 'secondCurve') return { code: code, label: '«Вторая кривая»', full: '«Вторая кривая»', isOwn: false };
     if (code === 'other') {
-      return { code: code, label: 'своя позиция', full: (s2state.stanceOther || '').trim(), isOwn: true };
+      var own = (s2state.stanceOther || '').trim();
+      // named — своя позиция, которую участник УМЕСТИЛ в название: её показываем
+      // как обычную метку. Порог 130 знаков и без переносов строк: замер живых
+      // прогонов дал здесь 63 · 86 · 121 · 123 · 144 · 270 — то есть четверо из
+      // шести вписывают именно название, и прятать его за нейтральной подписью
+      // незачем. Всё, что длиннее, — уже описание: в реплику персонажа или в чип
+      // такое не вставить (у ИИ-прогона тут было 4536 знаков).
+      var named = !!own && own.length <= 130 && own.indexOf('\n') === -1;
+      return { code: code, label: named ? '«' + own + '»' : 'своя позиция',
+               full: own, isOwn: true, named: named };
     }
     return null;
   };
