@@ -263,7 +263,10 @@
             (locked ? '' : '<button class="btn btn-ghost" data-add="enablers" style="margin-top:8px;">+ добавить ресурс</button>') +
           '</div>' +
         '</div>' +
-        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:16px;">Завершить разговор →</button>');
+        // диегетическое закрытие вместо механического «Завершить разговор»:
+        // раунд заканчивается действием в истории (комментарий Егора про «обрыв
+        // таблицей»; глубокий закрывающий вопрос отвергнут — не перегружаем мышление)
+        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:16px;">Отдать наброски Штерну →</button>');
 
       // Барьеры (ПП-2): карточка = что мешает + тип «стена/можно обойти» + чем закрываем.
       function renderBarriers() {
