@@ -134,6 +134,10 @@
     try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
     var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
     var stancePhrase = stance ? stance.label : 'выбранный вами курс';
+    // Когда название позиции стоит ВНУТРИ реплики (сама реплика уже в «ёлочках»),
+    // берём его во внутренние „лапки“ — иначе на стыке выходит «« (stanceOf отдаёт
+    // метку уже в «ёлочках»). Тот же приём, что в репликах раунда 2.
+    var stanceInner = stancePhrase.replace(/^«/, '„').replace(/»$/, '“');
     // первый ход со станции 2 — подставляем как опору, чтобы путь не начинался с чистого листа
     var firstMove = (s2 && s2.firstAction ? String(s2.firstAction).trim() : '');
 
@@ -171,7 +175,7 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «Ну, ' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не лозунг. Покажите путь по-честному: где мы сейчас — и какими шагами дойдём до цели?»</p>' +
+        '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «' + escapeHtml(stanceInner) + ' — на словах красиво. Но я финансист, мне нужен путь, а не название. Покажите его по-честному: где мы сейчас — и какими шагами дойдём до цели?»</p>' +
         (firstMove ? '<div class="pp-firstmove">Ваш первый ход из раунда 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
           '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" aria-label="Текущее состояние — где мы сейчас" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
