@@ -1463,11 +1463,15 @@ button.hub-room-card {
 .round-fab > * { pointer-events: auto; }
 .round-fab .btn { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
 
-/* Язычки «Полный текст кейса» / «Мои ответы» в раунде 1 — только на фазе связок:
-   в фазе чтения кейс и так на экране, дублировать незачем. Гейт scoped к .round1-page,
-   чтобы в раундах 2–5 рельс оставался всегда видимым. */
-.round1-page .dock-rail { display: none; }
-.round1-page.phase-links .dock-rail { display: flex; }
+/* Язычки видны на ВСЕХ рабочих страницах, включая фазу чтения раунда 1 (решение
+   2026-07-27: одинаковые функции — одинаковая механика на каждой странице, чтобы
+   взгляду не приходилось адаптироваться; пустое досье показывает заглушку).
+   Прежний гейт «в раунде 1 только на фазе связок» снят.
+   Пока открыт любой ящик — язычки прячутся: ящик их всё равно перекрывал,
+   а «открытый лист» и «корешок листа» одновременно не имеют смысла. */
+body.imp-drawer-open .dock-rail,
+body.imp-drawer-open .dossier-dock,
+body.imp-drawer-open .case-ref-dock { display: none; }
 
 .gate-card.case-ref-card { max-width: 820px; }
 #caseRefPanel .case-content { margin-top: 8px; }
@@ -1498,8 +1502,12 @@ button.hub-room-card {
 }
 
 .gate-card.dossier-card {
-  width: 62%;
-  max-width: 720px;
+  /* одна ширина у ОБОИХ ящиков («Мои ответы» и «Полный текст кейса»):
+     разные ширины читались как разная механика, и более широкий кейс
+     перекрывал язычки, когда узкий — нет. 860 — по потребности кейса
+     (таблицы); ответы в той же ширине читаются нормально. */
+  width: 68%;
+  max-width: 860px;
   max-height: none;
   height: 100vh;
   margin: 0;
@@ -1509,10 +1517,8 @@ button.hub-room-card {
   flex-direction: column;
   overflow-y: auto; /* фолбэк: если внутренняя область не скроллится сама */
 }
-/* тексту кейса — шире: это чтение колонок таблиц, 720 ему мало */
-.gate-card.dossier-card.case-ref-card { max-width: 860px; width: 68%; }
 @media (max-width: 900px) {
-  .gate-card.dossier-card, .gate-card.dossier-card.case-ref-card { width: 100%; max-width: none; }
+  .gate-card.dossier-card { width: 100%; max-width: none; }
 }
 .dossier-card-header {
   display: flex;

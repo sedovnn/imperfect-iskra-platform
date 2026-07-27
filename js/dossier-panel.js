@@ -18,10 +18,13 @@
     if (!session || !session.bib) return;
     contentEl.innerHTML = window.imp.buildDossierHtml(session.bib);
     panel.style.display = 'flex';
+    // пока ящик открыт, язычки спрятаны (см. body.imp-drawer-open в styles.css)
+    document.body.classList.add('imp-drawer-open');
     document.addEventListener('keydown', onKey);
   }
   function close() {
     panel.style.display = 'none';
+    document.body.classList.remove('imp-drawer-open');
     document.removeEventListener('keydown', onKey);
   }
   function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }

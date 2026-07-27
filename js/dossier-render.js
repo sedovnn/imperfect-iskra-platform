@@ -34,10 +34,18 @@
     var s3 = read('imp_map_' + bib);
 
     var html = '';
-    function section(title) { html += '<h4>' + esc(title) + '</h4>'; }
-    function text(t) { html += '<p class="fac-detail-text">' + esc(t) + '</p>'; }
-    function textB(label, t) { html += '<p class="fac-detail-text"><b>' + esc(label) + '</b> ' + esc(t) + '</p>'; }
-    function cardsOpen() { html += '<div class="fac-cards">'; }
+    // Заголовок раздела — ЛЕНИВЫЙ: печатается только когда за ним появился
+    // реальный контент. Иначе пустой (но уже сохранённый) стейт раунда давал
+    // «голый» заголовок, и заглушка «пока ничего не сохранено» не срабатывала.
+    var pendingSection = null;
+    function section(title) { pendingSection = title; }
+    function flushSection() {
+      if (pendingSection) { html += '<h4>' + esc(pendingSection) + '</h4>'; pendingSection = null; }
+    }
+    function raw(s) { flushSection(); html += s; }
+    function text(t) { raw('<p class="fac-detail-text">' + esc(t) + '</p>'); }
+    function textB(label, t) { raw('<p class="fac-detail-text"><b>' + esc(label) + '</b> ' + esc(t) + '</p>'); }
+    function cardsOpen() { raw('<div class="fac-cards">'); }
     function cardsClose() { html += '</div>'; }
 
     // ---------- Станция 1 ----------
@@ -47,7 +55,7 @@
       // проблема = отметка: описание своими словами + цитата, откуда она
       var cards = (s1.cards || []).filter(function (c) { return c.text && String(c.text).trim(); });
       if (cards.length) {
-        html += '<p class="fac-detail-text"><b>Мои проблемы (' + cards.length + '):</b></p>';
+        raw('<p class="fac-detail-text"><b>Мои проблемы (' + cards.length + '):</b></p>');
         cardsOpen();
         cards.forEach(function (c) {
           html += '<div class="fac-card"><p>' + esc(c.text) + '</p>' +
@@ -66,7 +74,7 @@
 
       var conns = s1.connections || [];
       if (conns.length) {
-        html += '<p class="fac-detail-text"><b>Корневые связки (' + conns.length + '):</b></p>';
+        raw('<p class="fac-detail-text"><b>Корневые связки (' + conns.length + '):</b></p>');
         var cardById = {}; (s1.cards || []).forEach(function (c) { cardById[c.id] = c; });
         cardsOpen();
         conns.forEach(function (cn) {
@@ -91,7 +99,7 @@
 
       var prs = s2.priorities || [];
       if (prs.length) {
-        html += '<p class="fac-detail-text"><b>Мои приоритеты (по порядку):</b></p>';
+        raw('<p class="fac-detail-text"><b>Мои приоритеты (по порядку):</b></p>');
         cardsOpen();
         prs.forEach(function (p, i) {
           html += '<div class="fac-card"><p><b>' + (i + 1) + '.</b> ' + esc(t2(p.cardId)) + '</p>' +
@@ -101,7 +109,7 @@
       }
       var rej = s2.rejected || [];
       if (rej.length) {
-        html += '<p class="fac-detail-text"><b>Отложил (не сейчас):</b></p>';
+        raw('<p class="fac-detail-text"><b>Отложил (не сейчас):</b></p>');
         cardsOpen();
         rej.forEach(function (r) {
           html += '<div class="fac-card"><p>' + esc(t2(r.cardId)) + '</p>' +
@@ -131,7 +139,7 @@
       if (rp.currentState || rp.targetState) textB('Текущее → целевое:', (rp.currentState || '—') + ' → ' + (rp.targetState || '—'));
       var stages = (rp.stages || []).filter(function (s) { return s.description; });
       if (stages.length) {
-        html += '<p class="fac-detail-text"><b>Этапы пути:</b></p>';
+        raw('<p class="fac-detail-text"><b>Этапы пути:</b></p>');
         cardsOpen();
         stages.forEach(function (st, i) {
           html += '<div class="fac-card"><p><b>Этап ' + (i + 1) + '.</b> ' + esc(st.description) + '</p>' +
