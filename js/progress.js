@@ -27,9 +27,14 @@
 
   var st = document.createElement('style');
   st.textContent =
+    // полоса сидит на той же рамке, что шапка и тело (max-width + auto-маргины):
+    // раньше была full-bleed, и «Прошло времени» с justify-content:flex-end уезжало
+    // к краю ОКНА — на широком мониторе дальше рамки, вне поля зрения.
+    // Шрифт — брендовый (--ff-body), был системный.
     '.round-progress{display:flex;align-items:center;justify-content:flex-end;gap:16px;' +
-      'padding:8px 24px;border-bottom:1px solid #ececec;background:#fafafa;' +
-      'font-family:system-ui,sans-serif;font-size:12.5px;flex-wrap:wrap;}' +
+      'max-width:var(--maxw,1180px);width:100%;margin:0 auto;' +
+      'padding:8px var(--frame-pad,24px);border-bottom:1px solid #ececec;background:#fafafa;' +
+      'font-family:var(--ff-body,system-ui),system-ui,sans-serif;font-size:12.5px;flex-wrap:wrap;}' +
     '.round-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:#8a8f98;}' +
     '.rp-step{white-space:nowrap;}' +
     '.rp-step.is-done{color:#1a1e26;}' +
