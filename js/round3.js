@@ -156,7 +156,9 @@
     var s2 = null;
     try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
     var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
-    var stancePhrase = stance ? ('позицию ' + stance.label) : 'вашу рекомендацию';
+    var stancePhrase = stance
+      ? (stance.isOwn ? 'вашу собственную позицию' : ('позицию ' + stance.label))
+      : 'вашу рекомендацию';
 
     var introKey = 'imp_round3_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');

@@ -135,7 +135,8 @@
     var s2 = null;
     try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
     var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
-    var stancePhrase = stance ? stance.label : 'выбранный вами курс';
+    // своя позиция названия не имеет — в реплику Штерна её текст не вставляем
+    var stancePhrase = (stance && !stance.isOwn) ? stance.label : 'выбранный вами курс';
     // Когда название позиции стоит ВНУТРИ реплики (сама реплика уже в «ёлочках»),
     // берём его во внутренние „лапки“ — иначе на стыке выходит «« (stanceOf отдаёт
     // метку уже в «ёлочках»). Тот же приём, что в репликах раунда 2.

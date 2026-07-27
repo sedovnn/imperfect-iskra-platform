@@ -195,7 +195,9 @@
           slot.appendChild(card);
           var cloud = document.createElement('div');
           cloud.className = 'hub-stance-cloud';
-          cloud.innerHTML = '<p>О вашей позиции — <b>' + esc(stance.label) + '</b> — уже все в курсе: Агеев, похоже, ещё со встречи разослал её по чатам.</p>';
+          cloud.innerHTML = stance.isOwn
+            ? '<p>О том, что вы не приняли ни одну из двух готовых позиций и предложили свою, уже все в курсе: Агеев, похоже, ещё со встречи разослал вашу записку по чатам.</p>'
+            : '<p>О вашей позиции — <b>' + esc(stance.label) + '</b> — уже все в курсе: Агеев, похоже, ещё со встречи разослал её по чатам.</p>';
           slot.appendChild(cloud);
           list.appendChild(slot);
         } else {
@@ -250,7 +252,7 @@
         seed: function (s) { return strVal(s.rf && s.rf.horizon).split('\n')[0]; } },
       { key: 'bhag', label: 'БАЦ — большая амбициозная цель', rows: 3,
         hint: 'формула: «К [горизонту] мы станем …, чтобы …»',
-        seed: function (s) { var st = s.stance ? s.stance.label : ''; var v = strVal(s.rf && s.rf.vision); return (st ? st + ' — ' : '') + v; } },
+        seed: function (s) { return strVal(s.rf && s.rf.vision); } },
       { key: 'decomp', label: 'Декомпозиция на метрики', rows: 4,
         hint: 'по направлениям ССП: финансы · клиенты/рынок · продукт/процессы · люди/технологии',
         seed: function (s) { var p = []; if (s.rp && strVal(s.rp.targetState)) p.push('Цель: ' + strVal(s.rp.targetState)); var t = (((s.s2 && s.s2.priorities) || []).map(function (x) { return strVal(x.target); }).filter(Boolean)); if (t.length) p.push('Метрики приоритетов: ' + t.join('; ')); return p.join('\n'); } },
@@ -264,7 +266,7 @@
         hint: 'от чего сознательно отказываемся и по какому правилу',
         seed: function (s) { var s2 = s.s2; if (!s2) return ''; var rej = ((s2.rejected || []).map(function (r) { var c = s.cardById[r.cardId]; return c ? strVal(c.text) : ''; }).filter(Boolean)); var out = []; if (rej.length) out.push('Отказываемся от: ' + rej.join('; ')); if (strVal(s2.rejectionRule)) out.push('Правило отсечения: ' + strVal(s2.rejectionRule)); return out.join('\n'); } },
       { key: 'valueProp', label: 'Ценностное предложение', rows: 3,
-        seed: function (s) { var st = s.stance ? s.stance.label : ''; var cr = strVal(s.s2 && s.s2.stanceCriteria); return st + (cr ? '\nКритерии: ' + cr : ''); } },
+        seed: function (s) { var st = s.stance ? s.stance.full : ''; var cr = strVal(s.s2 && s.s2.stanceCriteria); return st + (cr ? '\nКритерии: ' + cr : ''); } },
       { key: 'projects', label: 'Проекты / дорожная карта', rows: 3,
         seed: function (s) { return (((s.rp && s.rp.stages) || []).filter(function (x) { return strVal(x.description); }).map(function (x, i) { return (i + 1) + ') ' + strVal(x.description) + (strVal(x.doneWhen) ? ' — готово когда: ' + strVal(x.doneWhen) : ''); }).join('\n')); } },
       { key: 'risks', label: 'Развороты и риски', rows: 3,
