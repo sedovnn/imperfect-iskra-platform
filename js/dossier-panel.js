@@ -7,9 +7,8 @@
 // кнопку «ещё раз посмотреть», ставшую избыточной рядом с этой панелью).
 
 (function () {
-  var triggers = document.querySelectorAll('.js-open-dossier');
   var panel = document.getElementById('dossierPanel');
-  if (!triggers.length || !panel) return;
+  if (!panel) return;
   var contentEl = document.getElementById('dossierPanelContent');
   var closeBtn = document.getElementById('closeDossierBtn');
 
@@ -38,7 +37,14 @@
   }
   function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
 
-  triggers.forEach(function (btn) { btn.addEventListener('click', open); });
+  // Делегирование, а не привязка к найденным кнопкам: справочные кнопки создаёт
+  // case-ref.js ПОСЛЕ этого скрипта и по одной паре на каждую шапку страницы
+  // (в раунде 1 их две — фаза чтения и фаза связок). При прямой привязке кнопки,
+  // созданные позже, оставались бы мёртвыми.
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest ? e.target.closest('.js-open-dossier') : null;
+    if (t) { e.preventDefault(); open(); }
+  });
   if (closeBtn) closeBtn.addEventListener('click', close);
   // клик по затемнённой подложке (мимо самой панели) тоже закрывает — панель
   // теперь ящик у правого края, и «промахнуться» в подложку — естественный жест

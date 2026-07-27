@@ -11,18 +11,62 @@
   var existingDock = document.querySelector('.dossier-dock');
   if (!existingDock) return; // только там, где есть докнутое «Мои ответы»
 
-  // ---- правый рельс из двух язычков ----
-  var rail = document.createElement('div');
-  rail.className = 'dock-rail';
-  existingDock.parentNode.insertBefore(rail, existingDock);
-  rail.appendChild(existingDock); // перенос сохраняет навешенный обработчик
+  // ---- две справочные кнопки — В ШАПКУ, а не плавающим рельсом ----
+  // Рельс из вертикальных язычков висел у правого края в пустоте: на диалоговых
+  // раундах справа от колонки ответов ничего нет, и он читался как случайный
+  // элемент вне композиции, плюс на него наезжал скроллбар. Теперь это обычные
+  // кнопки шапки рядом с «?», «ⓘ», номером и «К карте» — все контролы экрана в
+  // одном месте (ревизия 2026-07-27). Подписи короткие: на узкой рамке (1120)
+  // длинные не помещались, а заголовки самих панелей их раскрывают.
+  //
+  // Пара создаётся в КАЖДОЙ шапке страницы: в раунде 1 их две (фаза чтения и
+  // фаза связок), и одна пара обслуживала бы только первую. Клик по «Мои ответы»
+  // ловит делегирование в dossier-panel.js по классу .js-open-dossier.
+  var headers = document.querySelectorAll('.station-header .station-header-right');
+  var caseButtons = [];
 
-  var caseDock = document.createElement('button');
-  caseDock.type = 'button';
-  caseDock.className = 'case-ref-dock';
-  caseDock.setAttribute('aria-label', 'Открыть полный текст кейса');
-  caseDock.textContent = 'Полный текст кейса';
-  rail.appendChild(caseDock);
+  function buildGroup(headerRight, dossierBtn) {
+    var group = document.createElement('span');
+    group.className = 'hdr-ref-group';
+    dossierBtn.textContent = 'Мои ответы';
+    dossierBtn.className = 'dossier-dock js-open-dossier btn btn-ghost btn-sm';
+    group.appendChild(dossierBtn);
+
+    var cb = document.createElement('button');
+    cb.type = 'button';
+    cb.className = 'case-ref-dock btn btn-ghost btn-sm';
+    cb.setAttribute('aria-label', 'Открыть полный текст кейса');
+    cb.textContent = 'Кейс';
+    group.appendChild(cb);
+    caseButtons.push(cb);
+
+    headerRight.insertBefore(group, headerRight.firstChild);
+  }
+
+  if (headers.length) {
+    for (var h = 0; h < headers.length; h++) {
+      // в первую шапку переносим существующую кнопку (сохраняет разметку страницы),
+      // в остальные — свежие копии
+      buildGroup(headers[h], h === 0 ? existingDock : (function () {
+        var b = document.createElement('button');
+        b.type = 'button';
+        return b;
+      })());
+    }
+  } else {
+    // фолбэк (страница без шапки станции): прежний плавающий рельс
+    var rail = document.createElement('div');
+    rail.className = 'dock-rail';
+    existingDock.parentNode.insertBefore(rail, existingDock);
+    rail.appendChild(existingDock);
+    var cbFallback = document.createElement('button');
+    cbFallback.type = 'button';
+    cbFallback.className = 'case-ref-dock';
+    cbFallback.setAttribute('aria-label', 'Открыть полный текст кейса');
+    cbFallback.textContent = 'Полный текст кейса';
+    rail.appendChild(cbFallback);
+    caseButtons.push(cbFallback);
+  }
 
   // ---- оверлей ----
   var panel = document.createElement('div');
@@ -85,7 +129,7 @@
       });
   }
 
-  caseDock.addEventListener('click', open);
+  caseButtons.forEach(function (b) { b.addEventListener('click', open); });
   closeBtn.addEventListener('click', close);
   panel.addEventListener('click', function (e) { if (e.target === panel) close(); });
 })();
