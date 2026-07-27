@@ -47,12 +47,17 @@
 
     var style = document.createElement('style');
     style.textContent =
+      // Фон — бумага, а не вермилион: загрузчик стоит на месте будущего экрана,
+      // и оранжевая заливка на полэкрана читалась как отдельный «экран-заглушка».
+      // Акцент несёт только сам индикатор — по DESIGN.md вермилион сигнальный,
+      // не фоновый. Текст — ink: вермилион на белом даёт ~3.3:1, для мелкой
+      // подписи 11px этого мало (WCAG 1.4.3 требует 4.5:1).
       '#bootLoading{position:fixed;inset:0;z-index:40;display:flex;align-items:center;' +
-        'justify-content:center;background:var(--accent,#ff4800);}' +
-      '#bootLoading .boot-inner{text-align:center;color:#0a0a0a;' +
-        'font-family:Inter,system-ui,sans-serif;}' +
+        'justify-content:center;background:var(--paper,#fff);}' +
+      '#bootLoading .boot-inner{text-align:center;color:var(--ink,#181818);' +
+        'font-family:var(--ff-body,"Inter Tight"),system-ui,sans-serif;}' +
       '#bootLoading .boot-spin{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;' +
-        'border:3px solid rgba(10,10,10,.25);border-top-color:#0a0a0a;' +
+        'border:3px solid var(--accent-line,#ffd7c7);border-top-color:var(--accent,#ff4800);' +
         'animation:bootSpin .8s linear infinite;}' +
       '#bootLoading .boot-text{font-size:11px;font-weight:600;' +
         'text-transform:uppercase;letter-spacing:.12em;}' +
