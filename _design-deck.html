@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Дизайн-дек · разбор каждого экрана — «Искра» / futureproof</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
+<style>
+  :root{
+    --accent:#ff4800; --accent-tint:#fff2ec; --accent-dim:#e0410a;
+    --ink:#181818; --paper:#ffffff; --muted:#6b6e73; --muted-soft:#71747a;
+    --hairline:#e7e7e7; --soft:#f5f5f6; --radius:6px;
+    --ok:#2e7d32; --edit:#b26a00; --q:#2f6bb0;
+    --good:#2e7d32; --warn:#b26a00; --bad:#c0392b;
+    --ff:'Inter Tight',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--soft);color:var(--ink);font-family:var(--ff);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  .bar{position:sticky;top:0;z-index:20;background:var(--paper);border-bottom:1px solid var(--hairline);}
+  .bar-in{max-width:1240px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
+  .logo{font-weight:800;font-size:15px;display:inline-flex;align-items:center;gap:7px;color:var(--ink);}
+  .logo .prod{color:var(--muted-soft);font-weight:600;}
+  .bar-title{font-weight:700;font-size:15px;}
+  .bar-title span{color:var(--muted-soft);font-weight:500;}
+  .bar-spacer{flex:1;}
+  .bar-stat{font-size:13px;color:var(--muted);white-space:nowrap;}
+  .bar-stat b{color:var(--accent);}
+  .btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--ff);font-weight:700;font-size:13px;padding:9px 14px;border-radius:var(--radius);border:1px solid var(--hairline);background:var(--paper);color:var(--ink);cursor:pointer;transition:border-color .14s,background .14s,color .14s;white-space:nowrap;text-decoration:none;}
+  .btn:hover{border-color:var(--ink);}
+  .btn-quiet{border-color:transparent;color:var(--muted);}
+  .btn-quiet:hover{color:var(--ink);border-color:var(--hairline);}
+
+  .wrap{max-width:1240px;margin:0 auto;padding:22px 24px 80px;display:grid;grid-template-columns:230px minmax(0,1fr);gap:28px;align-items:start;}
+  nav.toc{position:sticky;top:70px;font-size:14px;max-height:calc(100vh - 90px);overflow-y:auto;}
+  nav.toc h4{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted-soft);margin:0 0 8px;}
+  nav.toc a{display:flex;justify-content:space-between;gap:8px;align-items:center;padding:6px 8px;border-radius:var(--radius);color:var(--ink);text-decoration:none;line-height:1.3;}
+  nav.toc a:hover{background:var(--paper);}
+  nav.toc a .cnt{font-size:11px;font-weight:700;color:var(--paper);background:var(--accent);border-radius:999px;min-width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;}
+  nav.toc a .cnt.zero{display:none;}
+  .toc-filter{margin-top:14px;padding-top:12px;border-top:1px solid var(--hairline);}
+  .toc-filter label{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--muted);cursor:pointer;}
+
+  main{min-width:0;}
+  .intro-note{background:var(--paper);border:1px solid var(--hairline);border-radius:var(--radius);padding:16px 18px;margin-bottom:22px;font-size:14px;line-height:1.55;color:var(--muted);}
+  .intro-note b{color:var(--ink);}
+
+  .sec-h{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:26px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--hairline);}
+  .sec:first-of-type .sec-h{margin-top:4px;}
+
+  .card{background:var(--paper);border:1px solid var(--hairline);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;scroll-margin-top:74px;}
+  .card.has-note{border-color:var(--accent);}
+  .card-head{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--hairline);flex-wrap:wrap;background:var(--soft);}
+  .card-head h3{font-size:15px;font-weight:700;margin:0;}
+  .sec-badge{font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted-soft);border:1px solid var(--hairline);border-radius:999px;padding:2px 8px;background:var(--paper);}
+  .open-live{margin-left:auto;font-size:12px;font-weight:700;color:var(--paper);background:var(--accent);border:1px solid var(--accent);border-radius:var(--radius);padding:6px 12px;cursor:pointer;white-space:nowrap;}
+  .open-live:hover{background:var(--accent-dim);border-color:var(--accent-dim);}
+  .lands{font-size:11px;color:var(--muted-soft);width:100%;margin:6px 0 0;}
+
+  .crit{padding:16px 20px;}
+  .crit .row{display:flex;gap:10px;padding:7px 0;font-size:14px;line-height:1.5;border-top:1px solid var(--hairline);}
+  .crit .row:first-child{border-top:none;}
+  .crit .mk{flex:none;width:18px;text-align:center;font-weight:700;}
+  .crit .row.good .mk{color:var(--good);}
+  .crit .row.warn .mk{color:var(--warn);}
+  .crit .row.bad .mk{color:var(--bad);}
+  .crit .row b{color:var(--ink);}
+  .crit .todo{color:var(--muted-soft);font-style:italic;}
+
+  .review{border-top:1px solid var(--hairline);padding:12px 18px;background:#fcfcfc;}
+  .status-row{display:flex;gap:6px;margin-bottom:8px;}
+  .st{font-size:12px;font-weight:700;padding:5px 11px;border-radius:999px;border:1px solid var(--hairline);background:var(--paper);color:var(--muted);cursor:pointer;}
+  .st:hover{border-color:var(--ink);color:var(--ink);}
+  .st.on[data-status="ok"]{background:var(--ok);color:#fff;border-color:var(--ok);}
+  .st.on[data-status="edit"]{background:var(--edit);color:#fff;border-color:var(--edit);}
+  .st.on[data-status="q"]{background:var(--q);color:#fff;border-color:var(--q);}
+  textarea.comment{width:100%;font-family:var(--ff);font-size:14px;line-height:1.5;color:var(--ink);background:var(--paper);border:1px solid var(--hairline);border-radius:var(--radius);padding:9px 11px;resize:vertical;min-height:44px;}
+  textarea.comment:focus{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink);}
+  @media (max-width:900px){ .wrap{grid-template-columns:1fr;} nav.toc{position:static;max-height:none;margin-bottom:10px;} }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <div class="bar-in">
+    <span class="logo">futureproof<span class="prod">i(m)perfect</span></span>
+    <span class="bar-title">Дизайн-дек <span>· разбор каждого экрана</span></span>
+    <span class="bar-spacer"></span>
+    <span class="bar-stat" id="stat">—</span>
+    <button class="btn" id="copyBtn">⧉ Скопировать замечания</button>
+    <button class="btn" id="dlBtn">↓ .md</button>
+    <button class="btn btn-quiet" id="clearBtn">Очистить</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <nav class="toc" id="toc"></nav>
+  <main>
+    <div class="intro-note">
+      <b>Как пользоваться.</b> Под каждым экраном: кнопка <b>«открыть живой экран»</b> (откроется в новой вкладке в демо-режиме — все раунды предзаполнены, гейтов нет), мой <b>разбор</b> (✓ работает · △ можно лучше · ✕ проблема) и поле для твоего замечания со статусом. Всё сохраняется в этом браузере. Закончишь — «Скопировать замечания» и пришли мне. <b>Разбор — стартовая точка, финальное слово по дизайну за тобой.</b><br><span style="color:var(--muted-soft);font-size:13px;">Демо-режим требует запущенного локального превью (localhost:4173). Многошаговые экраны открываются на своём состоянии демо; соседние шаги — клик внутри (ответы предзаполнены).</span>
+    </div>
+    <div id="deck"></div>
+  </main>
+</div>
+
+<script>
+/* Дизайн-дек: разбор дизайна каждого экрана. Живой экран открывается в демо
+   (imp_demo в sessionStorage копируется в новую вкладку). crit — массив
+   {tone:'good'|'warn'|'bad', html}. Заполняется по ходу захвата. */
+var DECK = [
+  { section:"Вход", screens:[
+    { id:"d-login", title:"Вход по номеру", page:"index.html", lands:"экран входа", crit:[
+      {tone:"good", html:"Чистая FP-типографика: дисплейный «ВХОД», разряженный плейсхолдер «000000», вермилионовая кнопка на всю ширину — на бренде."},
+      {tone:"warn", html:"<b>Композиция нижне-тяжёлая.</b> Большой пустой блок сверху, форма висит в нижней трети и не отцентрована по вертикали. На высоком экране пустота сверху ещё заметнее."},
+      {tone:"warn", html:"<b>Сдвиг влево.</b> Узкая колонка формы прижата к левому краю, справа мёртвое пустое поле. Вариант: центрировать блок по вертикали и горизонтали, либо дать левой части смысл (крупнее лого/легенда)."},
+      {tone:"warn", html:"«АССЕССМЕНТ» в правом верхнем углу — мелкий и висит сам по себе, ни с чем не сгруппирован."}
+    ] }
+  ]},
+  { section:"Установка", screens:[
+    { id:"d-intro", title:"Настройка на мышление", page:"intro.html", lands:"экран установки", crit:[
+      {tone:"good", html:"Сильная иерархия: дисплейный заголовок (вермилион «ассессмент»), тихие подзаголовки групп, нумерованные принципы, акцент-кружок только на №3 (ИИ) — единственный акцент."},
+      {tone:"good", html:"Одна колонка, комфортная ширина чтения, ритм разделами; логистика вынесена тихой полосой внизу (мы её только что и полировали)."},
+      {tone:"warn", html:"Разрежённый вертикальный разрыв между принципом №4 и блоком «Формат / Что в итоге» — низ страницы чуть провисает. Мелочь, но бросается."}
+    ] }
+  ]},
+  { section:"Карта ассессмента", screens:[
+    { id:"d-map-legend", title:"Легенда карты", page:"map.html", lands:"легенда (если не показывалась) → иначе хаб", crit:[
+      {tone:"good", html:"Та же брендовая система: кикер + короткий текст + два правила (→ / ✓) + одна кнопка. Чисто и воздушно — уместно для промежуточного экрана."},
+      {tone:"note", html:"Экран короткий; отдельных проблем нет. Сверить, что «Это ваш офис» не спорит с паркованной моделью навигации (мы держим это в уме)."}
+    ] },
+    { id:"d-map-hub", title:"Хаб: плитки раундов + облако-слух", page:"map.html", lands:"хаб с плитками", crit:[
+      {tone:"good", html:"Вертикальный стек плиток; текущая (Р3) вермилионовой рамкой + тинт — сразу видно «где я». Статус-пилюли справа, облако-слух справа от Р3 работает как задумано."},
+      {tone:"good", html:"«Раунд 6 · Собрать стратегию» отделён от пятёрки — финал не смешан с раундами."},
+      {tone:"warn", html:"<b>Сдвиг влево (та же тема, что на входе).</b> Блок плиток занимает левые ~60%, справа большое пустое поле (кроме облака-слуха). Правый воздух не работает на композицию."},
+      {tone:"warn", html:"Кнопка «Раунд 6» — ghost/обводка, визуально слабее, чем кульминация всего пути заслуживает. Стоит сделать её заметнее (она — цель)."},
+      {tone:"note", html:"Заблокированные плитки помечены текстом-пилюлей «откроется после предыдущего» — не только цветом, по a11y ок."}
+    ] }
+  ]},
+  { section:"Раунд 1 · Знакомство", screens:[
+    { id:"d-r1-legend", title:"Легенда (окно Агеева + имя)", page:"round1.html", lands:"легенда раунда 1", crit:[
+      {tone:"good", html:"Станция-интро + диегетический ввод имени (Агеев спрашивает) с живым эхо-ответом (только сделали). Блок «как выписать проблему» с нумерованными шагами обучает механике станции 1."},
+      {tone:"note", html:"Длиннее прочих легенд — есть инструкция по выделению/отметкам. Оправдано: это единственный экран со сложной механикой, её надо объяснить."}
+    ] },
+    { id:"d-r1-case", title:"Кейс: 3 колонки (оглавление · текст · рабочая область)", page:"round1.html", lands:"вид чтения кейса", crit:[
+      {tone:"good", html:"Три колонки чётко разделяют роли: навигация (липкое оглавление) / чтение (читаемая ширина центра) / работа (карточки проблем справа). Карточки — правильный аффорданс здесь: читать и делать заметки одновременно."},
+      {tone:"good", html:"Карточка проблемы = цитата в кавычках + поле «опишите своими словами» — понятная структура сбора; ссылки на приложения прямо в тексте."},
+      {tone:"warn", html:"<b>Самый плотный экран платформы.</b> Три колонки + длинный кейс + до N карточек справа. На ноутбуке (1366) колонки сильно сжимаются — критично проверить; заголовки разделов кейса мелковаты относительно объёма текста."}
+    ] },
+    { id:"d-r1-appx", title:"Приложение открыто (таблицы)", page:"round1.html", lands:"через оглавление → приложение", crit:[
+      {tone:"good", html:"Приложение открывается в центральной колонке, оглавление слева подсвечивает активный пункт; бейдж-статус («не открыто → изучено») даёт обратную связь по прочитанному."},
+      {tone:"good", html:"Кнопка «↑ вернуться к месту в тексте» — хорошая забота о навигации между кейсом и приложением."},
+      {tone:"warn", html:"Таблицы (финансы, индекс) плотные, мелкий шрифт; на узком/ноутбучном экране колонки жмутся. Проверить читаемость таблиц на 1366px."}
+    ] },
+    { id:"d-r1-links", title:"Фаза связок (корневые проблемы)", page:"round1.html", lands:"кнопка «Дальше: связки»", crit:[
+      {tone:"good", html:"Материалы убраны — на экране только свои формулировки. Правильный фокус: на этом шаге думают, а не читают."},
+      {tone:"warn", html:"Пилюли-теги «угроза/возможность» + поле влияния + конструктор связок на одной странице — заметная плотность контролов. Следить, чтобы не перегружало (тег-механику Егор и так просил обдумать — паркнуто)."},
+      {tone:"note", html:"Смена фазы обозначена шапкой «Связки: что порождает что» — контекст переключения ясен."}
+    ] },
+    { id:"d-r1-finish", title:"Финиш", page:"round1.html", lands:"после завершения", crit:[
+      {tone:"good", html:"Оверлей .gate-finish: кикер ✓ + заголовок + одна строка + вермилионовая кнопка. Чисто, на бренде, консистентно с финишами других раундов."}
+    ] }
+  ]},
+  { section:"Раунд 2 · Агеев", screens:[
+    { id:"d-r2-legend", title:"Легенда", page:"round2.html", lands:"легенда раунда 2", crit:[
+      {tone:"good", html:"Тот же станция-интро шаблон: кикер + реплика Агеева + правила (→ / ⚠). Консистентно, узкая центрированная колонка — сдвига влево нет (в отличие от входа/хаба)."},
+      {tone:"note", html:"Мы только что убрали блок 📂 (дубль пояснения с карты) — интро стало короче и чище."}
+    ] },
+    { id:"d-r2-sort", title:"Шаг 1 · Сортировка (3 колонки)", page:"round2.html", lands:"шаг сортировки", crit:[
+      {tone:"good", html:"Три колонки (Карта / Приоритеты / Не сейчас): «Приоритеты» выделены белым фоном + вермилионовой гранью среди серых — целевая зона считывается сразу."},
+      {tone:"good", html:"Кнопки-действия на карточках («в приоритеты» / «не сейчас» / ↑↓ / ✕) дают путь без drag&drop — важно для доступности и не-мышиных сценариев."},
+      {tone:"warn", html:"Три колонки + поля целей/принципа/высвобождения на одном экране — плотно; на ноутбуке колонки узкие. Проверить на 1366px, чтобы карточки не рвались."}
+    ] },
+    { id:"d-r2-steps", title:"Шаги 2–5 · обоснование/стресс/развилка/проактив", page:"round2.html", lands:"диалог по шагам", crit:[
+      {tone:"good", html:"Разговорный формат (.s2-body): реплики Агеева опознаются жирным именем (по DESIGN.md, без боковой полосы), поля/радио под ними. Читается как встреча. Одна колонка, комфортная ширина."},
+      {tone:"warn", html:"Ритм «реплика → поле → реплика → поле» монотонный: одинаковые широкие textarea подряд. Для диалога приемлемо, но на длинной цепочке шагов глаз устаёт. Можно варьировать (короткие поля/чипы там, где ответ короткий)."},
+      {tone:"note", html:"Радио стресс-теста и развилки — стандартные .s2-radio, понятны."}
+    ] },
+    { id:"d-r2-finish", title:"Финиш", page:"round2.html", lands:"после завершения", crit:[
+      {tone:"good", html:"gate-finish, консистентно. Мостик обновили (лифт → 6-й этаж)."}
+    ] }
+  ]},
+  { section:"Раунд 3 · Лемех", screens:[
+    { id:"d-r3-legend", title:"Легенда", page:"round3.html", lands:"легенда раунда 3", crit:[
+      {tone:"good", html:"Станция-интро шаблон, коротко: сцена у лифта + реплика Лемеха с именем. Чисто, узкая колонка."},
+      {tone:"note", html:"Как и все легенды — короткий воздушный экран; отдельных дизайн-проблем нет (общий разбор шаблона см. в раунде 2)."}
+    ] },
+    { id:"d-r3-steps", title:"Вопросы 1–3 (разговор)", page:"round3.html", lands:"диалог", crit:[
+      {tone:"good", html:"Тот же .s2-body диалог, что и в раунде 2 — консистентно; реплики Лемеха жирным именем, поля под ними."},
+      {tone:"warn", html:"Та же монотонность «реплика → большое поле» ×3. Один экран — терпимо; в сумме по всем раундам однообразие копится (системный пункт, см. ниже)."}
+    ] },
+    { id:"d-r3-finish", title:"Финиш", page:"round3.html", lands:"после завершения", crit:[
+      {tone:"good", html:"gate-finish; мы обновили реплику Лемеха (мостик к комитету). Консистентно."}
+    ] }
+  ]},
+  { section:"Раунд 4 · Штерн", screens:[
+    { id:"d-r4-legend", title:"Легенда", page:"round4.html", lands:"легенда раунда 4", crit:[
+      {tone:"good", html:"Станция-интро шаблон; реплика Штерна с именем (приветствие подставляется). Консистентно."}
+    ] },
+    { id:"d-r4-steps", title:"Вопросы 1–2 (путь · барьеры/ресурсы)", page:"round4.html", lands:"диалог + колонки", crit:[
+      {tone:"good", html:"Вопрос 1 — этапы пути (добавляемые карточки этапов со спойлером деталей): хорошая прогрессивная сложность, необязательное спрятано."},
+      {tone:"good", html:"Вопрос 2 — две колонки «Барьеры / Опора-ресурсы» (как s2-columns), у барьера теги «стена / можно обойти». Наглядное разделение."},
+      {tone:"warn", html:"Самый «конструкторный» раунд: этапы + 2 колонки + теги + контр-меры. Плотность высокая; на ноутбуке две колонки барьеров/ресурсов узкие. Проверить на 1366px."}
+    ] },
+    { id:"d-r4-finish", title:"Финиш", page:"round4.html", lands:"после завершения", crit:[
+      {tone:"good", html:"gate-finish; реплика Штерна отправляет в «Прожектор». Консистентно."}
+    ] }
+  ]},
+  { section:"Раунд 5 · Прожектор", screens:[
+    { id:"d-r5-legend", title:"Легенда", page:"round5.html", lands:"легенда раунда 5", crit:[
+      {tone:"good", html:"Станция-интро шаблон; сцена в «Прожекторе», Брагин. Консистентно. (Копия/механика раунда 5 может измениться — ГА-редизайн у Кати/Егора.)"}
+    ] },
+    { id:"d-r5-steps", title:"Вопросы 1–3 (разговор + источники)", page:"round5.html", lands:"диалог", crit:[
+      {tone:"good", html:".s2-body диалог + шаг с чекбоксами источников (ГА-2) — чуть разнообразит монотонность полей."},
+      {tone:"warn", html:"Та же «реплика → поле» цепочка; плюс к системному пункту про монотонность диалогов."}
+    ] },
+    { id:"d-r5-finish", title:"Финиш", page:"round5.html", lands:"после завершения", crit:[
+      {tone:"good", html:"gate-finish; Брагин + переход к сборке стратегии. Консистентно."}
+    ] }
+  ]},
+  { section:"Раунд 6 · Сборка", screens:[
+    { id:"d-r6-doc", title:"Финализация: документ стратегии (оболочка StratOS)", page:"map.html", lands:"кнопка «Собрать стратегию»", crit:[
+      {tone:"good", html:"Кульминация ощущается как продукт, а не форма: лёгкая оболочка StratOS (вкладки, «/ обзор»), 3-колоночный дашборд стратегии (Куда идём / Где мы сейчас / Как движемся) с предзаполненными наработками."},
+      {tone:"good", html:"Заблокированные вкладки (Команда/Компания… 🔒) помечены иконкой замка — не только цветом, a11y ок."},
+      {tone:"warn", html:"3 колонки карточек-полей на одном экране — на ноутбуке узко; проверить перенос на 1366px (мы делали адаптив, но это самый тяжёлый по полям экран)."}
+    ] },
+    { id:"d-r6-defense", title:"Финализация: записка к совету (шаг 2)", page:"map.html", lands:"после «Финализировать»", crit:[
+      {tone:"good", html:"Двухшаговость (только сделали): записка появляется после «Финализировать», кнопка → «Отправить К. Агееву». Финальный ход управляемый, не теряется среди полей."},
+      {tone:"warn", html:"Появление блока записки — резкое (без плавности). Мелочь, но лёгкий fade/slide сделал бы переход мягче (с учётом prefers-reduced-motion)."}
+    ] },
+    { id:"d-r6-finish", title:"Финиш «Стратегия собрана» + письмо Агеева", page:"map.html", lands:"после отправки", crit:[
+      {tone:"good", html:"Тёплое закрытие: персональное письмо Агеева под выбранную позицию на вермилион-тинт полосе. Хорошая эмоция после двух часов работы."},
+      {tone:"note", html:"Проверить контраст текста письма на тинте (accent-tint) — должен быть ink, не muted."}
+    ] }
+  ]},
+  { section:"Кабинет фасилитатора", screens:[
+    { id:"d-fac-login", title:"Вход в кабинет", page:"facilitator.html", lands:"экран входа кабинета", crit:[
+      {tone:"good", html:"Та же брендовая форма, что и вход участника — консистентно."},
+      {tone:"warn", html:"Тот же сдвиг влево + пустой верх, что на входе участника. Общий системный пункт по формам-логинам."}
+    ] },
+    { id:"d-fac-list", title:"Список участников + волны", page:"facilitator.html", lands:"после входа (пароль)", crit:[
+      {tone:"good", html:"Плотная информативная таблица — ровно то, что нужно фасилитатору: прогресс P1–P6 пилюлями, уровни навыков числами, итог x/50. Вкладки, поиск, фильтр волн."},
+      {tone:"good", html:"ИИ-строки подсвечены тинтом И различимы по имени («AI Opus 3») — не только цвет."},
+      {tone:"warn", html:"Много цвета и пилюль сразу (P1–P6 в рамках, 5 подколонок навыков, тинты строк) — на грани busy. Для рабочего инструмента плотность оправдана, но лёгкая разгрузка (меньше рамок, тоньше разделители) пошла бы на пользу."}
+    ] },
+    { id:"d-fac-detail", title:"Карточка участника (спойлеры по заданиям)", page:"facilitator.html", lands:"клик по участнику", crit:[
+      {tone:"good", html:"Всё в одной модалке: чипы уровней навыков, спойлеры по раундам, панель действий, кнопка отчёта. Вермилионовый бейдж № + «Сформировать отчёт» акцентируют главное."},
+      {tone:"warn", html:"Чипы уровней (АК-1 L4, АК-2 L5, ПР-1…) однообразны и читаются как россыпь. Усилить иерархию: навык крупнее, способности мельче/сгруппированы."},
+      {tone:"warn", html:"<b>Деструктив в общем ряду.</b> «Сбросить прогресс» и сбросы раундов (P1–P5) стоят рядом с рутинными контролами без визуального отделения по опасности. Опасные действия стоит выделить (цвет/секция/подтверждение уже есть, но визуально не отделены)."}
+    ] }
+  ]},
+  { section:"Отчёт и прочее", screens:[
+    { id:"d-report-light", title:"Отчёт участника — светлая тема", page:"report-example.html", lands:"пример отчёта", crit:[
+      {tone:"good", html:"Самый проработанный экран платформы: редакционный дисплейный заголовок, чёткая мета-строка, шкала-сравнение с ИИ (синее окно ИИ + вермилионовая точка участника) — главная фича «сравнение с ИИ» визуализирована."},
+      {tone:"good", html:"Семантика цвета последовательна (синий = ИИ-референс, вермилион = участник); per-skill секции с тегами «сильная сторона / зона роста». Шрифт/hairline консистентны с продуктом — отчёт как достойная кульминация-носитель бренда."},
+      {tone:"note", html:"Три числа рядом (ваш балл / окно ИИ / передовая) требуют секунду на разбор, но подписи есть — приемлемо."}
+    ] },
+    { id:"d-report-dark", title:"Отчёт участника — тёмная тема", page:"report-example.html", lands:"переключатель темы в отчёте", crit:[
+      {tone:"warn", html:"<b>Не проверено.</b> В примере (report-example.html) тёмная тема не переключается: тумблера нет, prefers-color-scheme:dark не срабатывает, data-theme=dark не влияет. Либо dark только в реально генерируемом отчёте, либо в примере не реализована — надо проверить отдельно на живом отчёте."}
+    ] },
+    { id:"d-dossier", title:"Досье «Мои ходы»", page:"dossier.html", lands:"досье", crit:[
+      {tone:"good", html:"Read-only досье — только ответы, без баллов (по задумке: память ≠ конфаунд). Карточная структура, консистентна с панелью «Мои ответы»."},
+      {tone:"note", html:"Вживую в этом проходе не снимал; общий разбор по компоненту. При детальном заходе стоит глянуть отдельно."}
+    ] },
+    { id:"d-vitrina", title:"Витрина / демо", page:"vitrina.html", lands:"витрина", crit:[
+      {tone:"good", html:"Выбор профиля (сильный/средний/слабый) кнопками, оранжевый демо-блок выделен accent-tint, ссылки на пример отчёта и кабинет. Понятная служебная страница."},
+      {tone:"note", html:"Демо-блок — единственное место с крупной accent-tint заливкой; как служебный акцент уместно."}
+    ] }
+  ]},
+  { section:"Служебные и общие", screens:[
+    { id:"d-gate-login", title:"Гейт «Нужен вход»", page:"round1.html", lands:"без сессии", crit:[
+      {tone:"good", html:"Центрированная .gate-карточка: кикер + заголовок + строка + кнопка. Чисто, на бренде, консистентно между всеми гейтами."}
+    ] },
+    { id:"d-gate-closed", title:"Гейт «Закрыто»", page:"round2.html", lands:"без пройденного предыдущего", crit:[
+      {tone:"good", html:"Тот же паттерн gate-карточки; текст объясняет, почему закрыто, и кнопка возврата. Ок."}
+    ] },
+    { id:"d-dossier-panel", title:"Панель «Мои ответы» (выезжающая)", page:"round3.html", lands:"кнопка «Мои ответы»", crit:[
+      {tone:"good", html:".dossier-overlay (fixed, свой z-index) — появляется поверх текущего экрана, даже поверх .gate. Правильное решение (не normal-flow шаг). Заголовок + пояснение «оценок здесь нет»."},
+      {tone:"note", html:"Содержимое собирается динамически; при детальном заходе глянуть переполнение/скролл на длинных ответах."}
+    ] }
+  ]}
+];
+
+var LS_KEY = "imp_designdeck_v1";
+var store = {};
+try { store = JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch(e){ store = {}; }
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(store)); }catch(e){} }
+function esc(s){ return String(s).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];}); }
+
+function renderCrit(crit){
+  if(!crit || !crit.length) return '<div class="crit"><p class="todo">— разбор добавляется —</p></div>';
+  var mk = {good:'✓', warn:'△', bad:'✕'};
+  return '<div class="crit">' + crit.map(function(r){
+    return '<div class="row '+(r.tone||'')+'"><span class="mk">'+(mk[r.tone]||'·')+'</span><span>'+r.html+'</span></div>';
+  }).join('') + '</div>';
+}
+
+function render(){
+  var deck=document.getElementById("deck"), toc=document.getElementById("toc");
+  deck.innerHTML=""; var tocHtml='<h4>Экраны</h4>';
+  DECK.forEach(function(sec,si){
+    var wrap=document.createElement("div"); wrap.className="sec"; wrap.id="sec-"+si;
+    var cnt=0, inner='<div class="sec-h">'+esc(sec.section)+'</div>';
+    sec.screens.forEach(function(s){
+      var rec=store[s.id]||{}; var has=!!(rec.status||(rec.comment&&rec.comment.trim())); if(has)cnt++;
+      inner+='<article class="card'+(has?' has-note':'')+'" id="scr-'+esc(s.id)+'" data-id="'+esc(s.id)+'">'
+        +'<div class="card-head"><span class="sec-badge">'+esc(sec.section.split("·")[0].trim())+'</span><h3>'+esc(s.title)+'</h3>'
+          +'<button class="open-live" data-page="'+esc(s.page)+'">открыть живой экран →</button>'
+          +'<p class="lands">открывается на: '+esc(s.lands||'')+' · <code>'+esc(s.page)+'</code></p>'
+        +'</div>'
+        +renderCrit(s.crit)
+        +'<div class="review"><div class="status-row">'
+          +'<button class="st'+(rec.status==="ok"?" on":"")+'" data-status="ok">👍 ок</button>'
+          +'<button class="st'+(rec.status==="edit"?" on":"")+'" data-status="edit">✏️ правка</button>'
+          +'<button class="st'+(rec.status==="q"?" on":"")+'" data-status="q">❓ вопрос</button>'
+        +'</div><textarea class="comment" placeholder="замечание по дизайну этого экрана…">'+esc(rec.comment||"")+'</textarea></div>'
+        +'</article>';
+    });
+    wrap.innerHTML=inner; deck.appendChild(wrap);
+    tocHtml+='<a href="#sec-'+si+'">'+esc(sec.section)+'<span class="cnt'+(cnt?"":" zero")+'">'+cnt+'</span></a>';
+  });
+  tocHtml+='<div class="toc-filter"><label><input type="checkbox" id="onlyNotes"> только с замечаниями</label></div>';
+  toc.innerHTML=tocHtml; wire(); updateStat(); applyFilter();
+}
+
+function wire(){
+  document.querySelectorAll(".card").forEach(function(card){
+    var id=card.getAttribute("data-id");
+    card.querySelectorAll(".st").forEach(function(btn){
+      btn.addEventListener("click",function(){
+        var st=btn.getAttribute("data-status"); store[id]=store[id]||{};
+        store[id].status=(store[id].status===st)?"":st; save(); refreshCard(card,id);
+      });
+    });
+    var ta=card.querySelector(".comment");
+    ta.addEventListener("input",function(){ store[id]=store[id]||{}; store[id].comment=ta.value; save(); markCard(card,id); });
+    var ol=card.querySelector(".open-live");
+    if(ol) ol.addEventListener("click",function(){
+      try{ sessionStorage.setItem('imp_demo', JSON.stringify({active:true, profile:'strong', seededFor:null})); }catch(e){}
+      window.open(ol.getAttribute('data-page'), '_blank');
+    });
+  });
+  var f=document.getElementById("onlyNotes"); if(f) f.addEventListener("change",applyFilter);
+  document.getElementById("toc").querySelectorAll('a[href^="#sec-"]').forEach(function(a){
+    a.addEventListener("click",function(e){ e.preventDefault(); var el=document.querySelector(a.getAttribute("href")); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); });
+  });
+}
+function markCard(card,id){ var r=store[id]||{}; card.classList.toggle("has-note",!!(r.status||(r.comment&&r.comment.trim()))); updateStat(); updateTocCounts(); }
+function refreshCard(card,id){ var r=store[id]||{}; card.querySelectorAll(".st").forEach(function(b){ b.classList.toggle("on",b.getAttribute("data-status")===r.status); }); markCard(card,id); }
+function allScreens(){ var a=[]; DECK.forEach(function(s){ s.screens.forEach(function(sc){a.push(sc);}); }); return a; }
+function updateStat(){ var scr=allScreens(); var w=scr.filter(function(s){var r=store[s.id]||{};return r.status||(r.comment&&r.comment.trim());}).length; document.getElementById("stat").innerHTML='<b>'+w+'</b> / '+scr.length+' экранов с замечаниями'; }
+function updateTocCounts(){ DECK.forEach(function(sec,si){ var c=sec.screens.filter(function(s){var r=store[s.id]||{};return r.status||(r.comment&&r.comment.trim());}).length; var a=document.querySelector('nav.toc a[href="#sec-'+si+'"] .cnt'); if(a){a.textContent=c;a.classList.toggle("zero",!c);} }); }
+function applyFilter(){ var only=document.getElementById("onlyNotes"); var on=only&&only.checked; document.querySelectorAll(".card").forEach(function(card){ var r=store[card.getAttribute("data-id")]||{}; var has=!!(r.status||(r.comment&&r.comment.trim())); card.style.display=(on&&!has)?"none":""; }); }
+function statusLabel(s){ return s==="ok"?"ОК":s==="edit"?"ПРАВКА":s==="q"?"ВОПРОС":""; }
+function buildMarkdown(){
+  var out=["# Замечания по дизайну «Искры»",""]; var any=false;
+  DECK.forEach(function(sec){ var rows=[]; sec.screens.forEach(function(s){ var r=store[s.id]||{}; if(r.status||(r.comment&&r.comment.trim())){ any=true; rows.push("### "+sec.section+" — "+s.title+"  ("+s.page+")\n"+(r.status?"**["+statusLabel(r.status)+"]** ":"")+(r.comment?r.comment.trim():"(без текста)")+"\n"); } }); if(rows.length) out.push(rows.join("\n")); });
+  if(!any) out.push("_Замечаний пока нет._"); return out.join("\n");
+}
+document.getElementById("copyBtn").addEventListener("click",function(){ var md=buildMarkdown(); navigator.clipboard.writeText(md).then(function(){var b=document.getElementById("copyBtn");var t=b.textContent;b.textContent="✓ Скопировано";setTimeout(function(){b.textContent=t;},1600);},function(){window.prompt("Скопируйте вручную:",md);}); });
+document.getElementById("dlBtn").addEventListener("click",function(){ var md=buildMarkdown(); var blob=new Blob([md],{type:"text/markdown;charset=utf-8"}); var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="designdeck-замечания.md"; a.click(); });
+document.getElementById("clearBtn").addEventListener("click",function(){ if(window.confirm("Очистить все ваши статусы и замечания?")){ store={}; save(); render(); } });
+render();
+</script>
+</body>
+</html>

@@ -83,8 +83,10 @@
   }
 
   function syncStateToBackend() {
-    if (!window.imp.isApiConfigured()) return;
-    window.imp.callApi('saveStation2', { bib: session.bib, state: state });
+    // возвращает Promise<boolean>: подтвердил ли бэкенд запись. Нужно на завершении
+    // раунда — финиш-оверлей не показываем, пока ответ не принят (см. finishRoom)
+    if (!window.imp.isApiConfigured()) return Promise.resolve(true);
+    return window.imp.callApiConfirmed('saveStation2', { bib: session.bib, state: state });
   }
 
   // ---------- gate ----------
@@ -354,13 +356,18 @@
         });
         block.querySelector('#commitSortBtn').addEventListener('click', function () {
           if (!state.priorities.length) {
-            window.alert('Агеев ждёт хотя бы один приоритет — с чем-то идти к совету нужно.');
+            window.imp.alert('Агеев ждёт хотя бы один приоритет — с чем-то идти к совету нужно.');
             return;
           }
-          if (!window.confirm('Приоритеты зафиксируются, и разговор пойдёт дальше — вернуться и пересобрать список будет нельзя. Продолжаем?')) return;
-          state.step = 'rationale';
-          saveState();
-          render();
+          window.imp.confirm(
+            'Приоритеты зафиксируются, и разговор пойдёт дальше — вернуться и пересобрать список будет нельзя.',
+            { confirmLabel: 'Зафиксировать', cancelLabel: 'Ещё подумаю' }
+          ).then(function (ok) {
+            if (!ok) return;
+            state.step = 'rationale';
+            saveState();
+            render();
+          });
         });
       }
 
@@ -396,12 +403,18 @@
           state.firstAction = e.target.value; saveState();
         });
         block.querySelector('#commitRationaleBtn').addEventListener('click', function () {
+          var go = function () {
+            state.step = 'stress';
+            saveState();
+            render();
+          };
           if (!state.rationale.trim()) {
-            if (!window.confirm('Ответ пустой — промолчать в ответ на прямой вопрос Агеева? Так и зафиксируем.')) return;
+            window.imp.confirm('Ответ пустой — промолчать в ответ на прямой вопрос Агеева?',
+              { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
+              .then(function (ok) { if (ok) go(); });
+            return;
           }
-          state.step = 'stress';
-          saveState();
-          render();
+          go();
         });
       }
       return block;
@@ -432,7 +445,7 @@
         });
         block.querySelector('#commitStressBtn').addEventListener('click', function () {
           if (!state.stressChoice) {
-            window.alert('Агеев ждёт ответа: настаиваете или пересобираем.');
+            window.imp.alert('Агеев ждёт ответа: настаиваете или пересобираем.');
             return;
           }
           // после стресс-теста идёт РАЗВИЛКА (stance), не финальный вопрос —
@@ -497,15 +510,21 @@
         });
         block.querySelector('#commitStanceBtn').addEventListener('click', function () {
           if (!state.stance) {
-            window.alert('Агеев ждёт рекомендацию по развилке — выберите позицию.');
+            window.imp.alert('Агеев ждёт рекомендацию по развилке — выберите позицию.');
             return;
           }
+          var go = function () {
+            state.step = 'proactive';
+            saveState();
+            render();
+          };
           if (state.stance === 'other' && !state.stanceOther.trim()) {
-            if (!window.confirm('Вы отвергли обе позиции, но свою не сформулировали. Так и зафиксируем?')) return;
+            window.imp.confirm('Вы отвергли обе позиции, но свою не сформулировали.',
+              { confirmLabel: 'Так и зафиксировать', cancelLabel: 'Сформулирую' })
+              .then(function (ok) { if (ok) go(); });
+            return;
           }
-          state.step = 'proactive';
-          saveState();
-          render();
+          go();
         });
       }
       return block;
@@ -569,9 +588,13 @@
       state.finishedAt = new Date().toISOString();
       saveState();
       clearTimeout(backendSyncTimer);
-      syncStateToBackend();
       render();
-      showFinishOverlay();
+      // Финиш-оверлей ждёт подтверждения записи: раньше он показывался сразу,
+      // и при сбое сети участник уходил дальше уверенным, что ответ сохранён,
+      // хотя до бэкенда он не дошёл. Не дождались — оверлей всё равно покажем
+      // (локально всё сохранено), но статус в полосе времени скажет «не
+      // сохранено», а api.js повторит отправку сам.
+      syncStateToBackend().then(showFinishOverlay, showFinishOverlay);
     }
 
     render();

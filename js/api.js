@@ -13,31 +13,151 @@
     return Boolean(API_URL);
   };
 
-  // action: строка ('register' | 'recover' | 'saveStation1' | ...), payload: обычный объект.
-  // Возвращает Promise<object|null> — null при любой сетевой/конфигурационной проблеме.
-  window.imp.callApi = function (action, payload) {
-    if (!API_URL) return Promise.resolve(null);
+  // ---------- статус синхронизации + очередь повторной отправки ----------
+  // Раньше сбой сети уходил в console.warn: участник видел финиш-оверлей и был
+  // уверен, что ответ записан, а на бэкенд он не доходил (на этом устройстве
+  // данные живы в localStorage, но при пересадке за другой компьютер — потеряны,
+  // и фасилитатор видел пустой раунд). Теперь: (1) статус наблюдаем в UI
+  // (js/save-status.js рисует его в полосе времени), (2) неотправленные
+  // сохранения складываются в очередь в localStorage и повторяются сами.
 
+  var QUEUE_KEY = 'imp_sync_queue';
+  var state = { pending: 0, failed: 0, lastOkAt: null, offline: false };
+  var listeners = [];
+
+  function notify() {
+    var snap = {
+      pending: state.pending, failed: state.failed,
+      lastOkAt: state.lastOkAt, offline: state.offline
+    };
+    listeners.forEach(function (fn) { try { fn(snap); } catch (e) {} });
+  }
+
+  window.imp.onSyncStatus = function (fn) {
+    if (typeof fn !== 'function') return;
+    listeners.push(fn);
+    notify();
+  };
+  window.imp.syncStatus = function () {
+    return { pending: state.pending, failed: state.failed, lastOkAt: state.lastOkAt, offline: state.offline };
+  };
+
+  function readQueue() {
+    try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function writeQueue(q) {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q.slice(-40))); } catch (e) {}
+    state.failed = q.length;
+    notify();
+  }
+
+  // В очередь попадают только сохранения (save*): повторить их безопасно —
+  // бэкенд пишет строку по bib (upsert), дубликата не возникнет. Чтения (load*)
+  // не копим: они и так повторятся при следующей загрузке страницы.
+  function enqueue(action, payload) {
+    if (!/^save/.test(action)) return;
+    var q = readQueue();
+    // на один action+bib держим только последнее состояние — очередь не растёт
+    // при каждом нажатии клавиши, а хранит актуальный снимок
+    var bib = payload && payload.bib;
+    q = q.filter(function (it) { return !(it.action === action && it.payload && it.payload.bib === bib); });
+    q.push({ action: action, payload: payload, at: Date.now() });
+    writeQueue(q);
+  }
+
+  function post(action, payload) {
     var body = Object.assign({ action: action }, payload || {});
-
-    // маркер ИИ-помощи: к каждому сохранению цепляем агрегаты ввода (не содержание).
-    // Отдельным top-level полем, чтобы не трогать state страницы. Бэкенд читает params.telemetry.
     if (/^save/.test(action) && window.imp.telemetry && typeof window.imp.telemetry.snapshot === 'function') {
       try { body.telemetry = window.imp.telemetry.snapshot(); } catch (e) {}
     }
-
     return fetch(API_URL, {
       method: 'POST',
       // text/plain — намеренно не application/json: иначе браузер шлёт CORS-preflight,
       // который Apps Script Web App не умеет обрабатывать (см. backend/README.md).
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(body)
-    })
-      .then(function (res) { return res.json(); })
+    }).then(function (res) { return res.json(); });
+  }
+
+  var flushing = false;
+  function flushQueue() {
+    if (flushing || !API_URL) return Promise.resolve();
+    var q = readQueue();
+    if (!q.length) return Promise.resolve();
+    flushing = true;
+    var item = q[0];
+    return post(item.action, item.payload)
+      .then(function () {
+        var rest = readQueue().filter(function (it) {
+          return !(it.action === item.action && it.at === item.at);
+        });
+        writeQueue(rest);
+        state.lastOkAt = Date.now();
+        state.offline = false;
+        notify();
+        flushing = false;
+        return flushQueue(); // следующий из очереди
+      })
+      .catch(function () {
+        state.offline = true;
+        notify();
+        flushing = false;
+      });
+  }
+  window.imp.flushSyncQueue = flushQueue;
+
+  // повторяем: при возврате связи, при возврате на вкладку и раз в 20 секунд
+  window.addEventListener('online', flushQueue);
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) flushQueue();
+  });
+  setInterval(flushQueue, 20000);
+  // предупредить, если участник закрывает вкладку с неотправленным
+  window.addEventListener('beforeunload', function (e) {
+    if (readQueue().length) { e.preventDefault(); e.returnValue = ''; return ''; }
+  });
+
+  // action: строка ('register' | 'recover' | 'saveStation1' | ...), payload: обычный объект.
+  // Возвращает Promise<object|null> — null при любой сетевой/конфигурационной проблеме.
+  // Возвращает Promise<object|null> — null при любой сетевой/конфигурационной
+  // проблеме (вызывающий код не ломается). Сохранения при сбое уходят в очередь.
+  window.imp.callApi = function (action, payload) {
+    if (!API_URL) return Promise.resolve(null);
+
+    var isSave = /^save/.test(action);
+    if (isSave) { state.pending++; notify(); }
+
+    return post(action, payload)
+      .then(function (json) {
+        if (isSave) {
+          state.pending--;
+          state.lastOkAt = Date.now();
+          state.offline = false;
+          notify();
+          flushQueue(); // связь есть — доотправим то, что залежалось
+        }
+        return json;
+      })
       .catch(function (err) {
         console.warn('[imp.callApi] ' + action + ' failed:', err);
+        if (isSave) {
+          state.pending--;
+          state.offline = true;
+          enqueue(action, payload); // не теряем: повторим сами
+          notify();
+        }
         return null;
       });
+  };
+
+  // Сохранить и ДОЖДАТЬСЯ подтверждения: используется на завершении раунда,
+  // чтобы финиш-оверлей не показывался, пока ответ не принят бэкендом.
+  // Возвращает Promise<boolean> — true, если бэкенд подтвердил запись.
+  window.imp.callApiConfirmed = function (action, payload) {
+    if (!API_URL) return Promise.resolve(true); // бэкенд не настроен — локального достаточно
+    return window.imp.callApi(action, payload).then(function (res) {
+      return !!(res && res.ok);
+    });
   };
 
   // Восстановление доступа на новом устройстве иначе оставляет

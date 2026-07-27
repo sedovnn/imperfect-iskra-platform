@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Прототип · Раунд 5 (ГА) — «Искра» / futureproof</title>
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
+<style>
+  :root{
+    --accent:#ff4800; --accent-tint:#fff2ec; --accent-dim:#e0410a;
+    --ink:#181818; --paper:#ffffff; --muted:#6b6e73; --muted-soft:#71747a;
+    --hairline:#e7e7e7; --soft:#f5f5f6; --radius:4px;
+    --ff:'Inter Tight',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--soft);color:var(--ink);font-family:var(--ff);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+
+  /* ---- шапка «на согласование» (вне станции) ---- */
+  .review{max-width:1180px;margin:0 auto;padding:26px 32px 6px;}
+  .review-card{background:var(--paper);border:1px solid var(--hairline);border-radius:var(--radius);padding:22px 24px;}
+  .review-tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin:0 0 10px;}
+  .review-card h1{font-size:20px;font-weight:800;margin:0 0 14px;letter-spacing:-.01em;}
+  .review-row{display:flex;gap:12px;padding:9px 0;border-top:1px solid var(--hairline);font-size:14px;line-height:1.55;color:var(--muted);}
+  .review-row:first-of-type{border-top:none;}
+  .review-row b{color:var(--ink);font-weight:700;flex:none;width:96px;}
+  .review-q{background:var(--accent-tint);border:1px solid var(--accent);border-radius:var(--radius);padding:12px 14px;margin-top:14px;font-size:14px;line-height:1.55;}
+  .review-q b{color:var(--ink);}
+
+  /* ---- рамка станции ---- */
+  .frame{max-width:1180px;margin:14px auto 60px;padding:0 32px;}
+  .station{background:var(--paper);border:1px solid var(--hairline);border-radius:var(--radius);overflow:hidden;}
+  .st-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 28px;border-bottom:1px solid var(--hairline);flex-wrap:wrap;row-gap:8px;}
+  .logo{font-weight:800;font-size:15px;letter-spacing:-.01em;display:inline-flex;align-items:center;gap:7px;color:var(--ink);text-decoration:none;}
+  .logo .arrow{display:inline-flex;}
+  .logo .prod{color:var(--muted-soft);font-weight:600;}
+  .st-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .st-sep{color:var(--hairline);}
+  .st-name{font-size:15px;font-weight:700;margin:0;}
+  .bib{font-size:13px;color:var(--muted-soft);font-weight:600;}
+
+  .body{padding:30px 34px 40px;max-width:760px;}
+
+  .kicker{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted-soft);margin:0 0 12px;}
+  .lead{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 14px;}
+  .lead .soft{color:var(--muted);}
+
+  .line{font-size:15px;line-height:1.65;margin:0 0 16px;}
+  .line b{color:var(--ink);font-weight:700;}
+  .line.aside{color:var(--muted);font-style:italic;}
+
+  label.field-lbl{display:block;font-size:13px;font-weight:700;color:var(--ink);margin:18px 0 7px;}
+  textarea{width:100%;font-family:var(--ff);font-size:14px;line-height:1.5;color:var(--ink);background:var(--paper);border:1px solid var(--hairline);border-radius:var(--radius);padding:11px 12px;resize:vertical;}
+  textarea:focus{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink);}
+  textarea::placeholder{color:var(--muted-soft);}
+
+  .checks{display:flex;flex-direction:column;gap:2px;margin-top:6px;}
+  .check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;font-size:14px;line-height:1.45;cursor:pointer;}
+  .check input{margin-top:3px;flex:none;accent-color:var(--accent);}
+
+  .actions{margin-top:26px;display:flex;gap:10px;flex-wrap:wrap;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font-family:var(--ff);font-weight:700;font-size:15px;padding:13px 22px;border-radius:var(--radius);border:1px solid transparent;cursor:pointer;text-decoration:none;transition:background .14s,border-color .14s,color .14s;}
+  .btn-primary{background:var(--accent);color:var(--paper);}
+  .btn-primary:hover{background:var(--accent-dim);}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--hairline);}
+  .btn-ghost:hover{border-color:var(--ink);}
+
+  .step{display:none;}
+  .step.on{display:block;animation:fade .18s ease;}
+  @keyframes fade{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){.step.on{animation:none;}}
+
+  .finish{background:var(--accent-tint);border-top:1px solid var(--accent);}
+  .finish .kicker{color:var(--accent);}
+  .finish h2{font-size:24px;font-weight:800;margin:0 0 14px;letter-spacing:-.01em;}
+
+  .note-tag{display:inline-block;font-size:11px;font-weight:700;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:middle;letter-spacing:.03em;}
+  .foot{max-width:1180px;margin:0 auto;padding:0 32px 40px;font-size:12px;color:var(--muted-soft);}
+</style>
+</head>
+<body>
+
+<!-- ============ шапка на согласование (Катя / Егор) ============ -->
+<div class="review">
+  <div class="review-card">
+    <p class="review-tag">Прототип на согласование · futureproof / «Искра»</p>
+    <h1>Редизайн раунда 5 — навык ГА (генерация альтернатив)</h1>
+    <div class="review-row"><b>Что это</b><span>Черновой кликабельный макет раунда. Можно пройти по диалогу до конца, оставляя поля пустыми, — важен ход разговора, а не ответы.</span></div>
+    <div class="review-row"><b>Зачем</b><span>Сейчас ГА-1 у всех живых прогонов упирается в минимум: раунд стоит в конце и просит вспомнить альтернативы к уже зафиксированной стратегии. Генерации на живой задаче там негде случиться — решение принято ещё в раунде 2. Здесь ГА провоцируется свежей, <b>ещё не решённой</b> под-задачей внутри «Искры» (утечка команды к конкуренту): участник отдыхает от основного кейса, но реально генерирует.</span></div>
+    <div class="review-row"><b>Не меняется</b><span>Рубрика и баллы. Те же 8 граничных тестов ГА-1/ГА-2, те же поля ответа. Меняется только стимул — <b>о чём</b> разговор. Открытый вопрос по-прежнему не просит «списком» — чтобы засчитывалась именно спонтанная генерация.</span></div>
+    <div class="review-q"><b>Вопрос к вам:</b> нормально ли по методологии мерить ГА на смежной под-задаче внутри «Искры», а не на центральной развилке? Под-задача выбрана с «двойным дном» (за очевидным «перебить офферы» есть переформулировка проблемы — это и есть верхние уровни ГА). Ваш зов — прототип, чтобы пощупать.</div>
+  </div>
+</div>
+
+<!-- ============ станция ============ -->
+<div class="frame">
+  <div class="station">
+
+    <div class="st-header">
+      <div class="st-left">
+        <span class="logo">futureproof<span class="arrow"><svg width="13" height="13" viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="prod">i(m)perfect</span></span>
+        <span class="st-sep">/</span>
+        <h1 class="st-name">Раунд 5 · Очередь в «Прожектор»</h1>
+      </div>
+      <span class="bib">№ 000 · прототип</span>
+    </div>
+
+    <!-- ЛЕГЕНДА -->
+    <div class="body step on" id="s0">
+      <p class="kicker">Легенда</p>
+      <p class="lead">После Штерна голова гудит — самое время выдохнуть. Спускаетесь на минус первый, в «Прожектор»: единственное место в кампусе, где сходятся все двенадцать этажей. <span class="soft">До финальной сборки стратегии ещё успеете — сейчас можно просто взять кофе, остыть и поговорить не о судьбе компании, а о чём-нибудь живом.</span> Очередь ползёт медленно, и разговор завязывается сам собой.</p>
+      <div class="actions">
+        <button class="btn btn-primary" data-next="s1">Взять кофе →</button>
+      </div>
+    </div>
+
+    <!-- ШАГ 1 — затравка + открытый вопрос (ГА-1) -->
+    <div class="body step" id="s1">
+      <p class="line"><b>Олег Брагин</b> — тот самый, из первой сотни, что двадцать лет держит платформу, — ловит взглядом ваш бейдж: «Консультант? Со стороны, значит. Тогда рассудите — а то мы тут с Дашей второй кофе спорим».</p>
+      <p class="line"><b>Даша</b>, тимлид одной из продуктовых команд, не отрываясь от стакана: «Да что спорить. У меня половина команды переписывается с Nord Labs — сама видела, как двое ходили „на кофе" к их рекрутеру. Мне сверху спустили бюджет: перебей офферы, удержи людей. „Просто заматчи, и всё". А я стою и думаю — деньги ли это вообще?»</p>
+      <p class="line"><b>Брагин</b> поворачивается к вам: «Вот. Вы со стороны — как думаете, сработает так, как ей велят? Что бы вы на её месте держали в голове?»</p>
+      <label class="field-lbl" for="f1">Ваш ответ</label>
+      <textarea id="f1" rows="5" aria-label="Сработает ли «просто перебить офферы» и что бы вы держали в голове" placeholder="здесь свободно, своими словами"></textarea>
+      <div class="actions">
+        <button class="btn btn-primary" data-next="s2">Далее →</button>
+        <button class="btn btn-ghost" data-next="s0">← Назад к легенде</button>
+      </div>
+    </div>
+
+    <!-- ШАГ 2 — под-развилки (ГА-1 систематичность) -->
+    <div class="body step" id="s2">
+      <p class="line"><b>Брагин</b> отхлёбывает: «Допустим. А внутри-то — где бы вы сами колебались? Наверняка что-то перебрали по дороге и отбросили».</p>
+      <label class="field-lbl" for="f2">Где сами колебались</label>
+      <textarea id="f2" rows="4" aria-label="Где сами колебались — что перебрали и отбросили и почему" placeholder="по одному-двум словам на каждый ход — и почему отмели"></textarea>
+      <div class="actions">
+        <button class="btn btn-primary" data-next="s3">Далее →</button>
+        <button class="btn btn-ghost" data-next="s1">← Назад</button>
+      </div>
+    </div>
+
+    <!-- ШАГ 3 — источник идей (ГА-2, кросс-домен) -->
+    <div class="body step" id="s3">
+      <p class="line aside"><b>Женщина с логистики Меридиана</b>, вполуха из очереди позади: «У нас была та же песня — держали людей деньгами, а уходили всё равно. Оказалось, дело было не в деньгах». Забирает стакан, идёт к лифтам.</p>
+      <p class="line"><b>Брагин</b> провожает её взглядом: «Тут все друг у друга подсматривают, кофейня такая. А вы к своему ходу как пришли — из своего опыта, где-то видели, из совсем другой области?»</p>
+      <label class="field-lbl">Откуда ваш ход <span style="font-weight:400;color:var(--muted-soft);">(можно несколько)</span></label>
+      <div class="checks">
+        <label class="check"><input type="checkbox" name="src" /> <span>Из личного опыта — сталкивался сам</span></label>
+        <label class="check"><input type="checkbox" name="src" /> <span>Видел в другой компании</span></label>
+        <label class="check"><input type="checkbox" name="src" /> <span>Перенёс из другой отрасли или сферы</span></label>
+        <label class="check"><input type="checkbox" name="src" /> <span>Из данных этого кейса</span></label>
+        <label class="check"><input type="checkbox" name="src" /> <span>Придумал с нуля, под ситуацию</span></label>
+      </div>
+      <label class="field-lbl" for="f3">Коротко — откуда именно</label>
+      <textarea id="f3" rows="3" aria-label="Откуда ход — коротко; если перенос из другой области, из какой и что взяли" placeholder="если перенос из другой области — из какой и что именно оттуда взяли"></textarea>
+      <div class="actions">
+        <button class="btn btn-primary" data-next="s4">Далее →</button>
+        <button class="btn btn-ghost" data-next="s2">← Назад</button>
+      </div>
+    </div>
+
+    <!-- ШАГ 4 — возвратный мостик к своей стратегии -->
+    <div class="body step" id="s4">
+      <p class="line"><b>Брагин</b> допивает кофе: «И вот что — придержите это в голове к своей сборке. Иногда чужой затык подсказывает про свою же компанию больше, чем сам о ней думаешь». Подмигивает.</p>
+      <div class="actions">
+        <button class="btn btn-primary" data-next="fin">Далее →</button>
+        <button class="btn btn-ghost" data-next="s3">← Назад</button>
+      </div>
+    </div>
+
+    <!-- ЗАКРЫТИЕ -->
+    <div class="body step finish" id="fin">
+      <p class="kicker">✓ Разговор закончен</p>
+      <h2>Дашу зовут к стойке</h2>
+      <p class="line"><b>Даша</b> забирает свой кофе: «Слушайте, спасибо. Пришла с одним „заматчить офферы", а ухожу с несколькими разными ходами в голове — и, кажется, копала не там. Пойду думать». <b>Брагин</b> салютует чашкой: «Идите и вы — вас, смотрю, финализация заждалась».</p>
+      <p class="lead">Кофе выпит, голова остыла — пора собрать всё, что вы наработали в предыдущих раундах, в единую стратегию.</p>
+      <div class="actions">
+        <button class="btn btn-primary" id="toFinalize">К сборке стратегии →<span class="note-tag">в бою → карта</span></button>
+        <button class="btn btn-ghost" data-next="s0">↺ Пройти разговор заново</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="foot">© futureproof · «Искра» · прототип раунда 5 для внутреннего согласования</div>
+
+<script>
+  (function(){
+    var steps = ['s0','s1','s2','s3','s4','fin'];
+    function show(id){
+      steps.forEach(function(s){
+        document.getElementById(s).classList.toggle('on', s===id);
+      });
+      // прокрутить к верху рамки станции
+      document.querySelector('.station').scrollIntoView({behavior:'smooth', block:'start'});
+    }
+    document.querySelectorAll('[data-next]').forEach(function(btn){
+      btn.addEventListener('click', function(){ show(btn.getAttribute('data-next')); });
+    });
+    var toFin = document.getElementById('toFinalize');
+    if(toFin) toFin.addEventListener('click', function(){
+      alert('В боевой платформе эта кнопка ведёт на карту ассессмента, к раунду 6 (сборка стратегии). В прототипе — конец демонстрации.');
+    });
+  })();
+</script>
+</body>
+</html>

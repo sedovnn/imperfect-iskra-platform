@@ -73,9 +73,11 @@
   }
 
   function syncStateToBackend() {
-    if (!window.imp.isApiConfigured()) return;
+    // возвращает Promise<boolean>: подтвердил ли бэкенд запись. Нужно на завершении
+    // раунда — финиш-оверлей не показываем, пока ответ не принят (см. finishRoom)
+    if (!window.imp.isApiConfigured()) return Promise.resolve(true);
     // name — имя из окна Агеева; бэкенд кладёт его в псевдоним (если пусто)
-    window.imp.callApi('saveStation1', { bib: session.bib, state: state, name: session.name || '' });
+    return window.imp.callApiConfirmed('saveStation1', { bib: session.bib, state: state, name: session.name || '' });
   }
 
   function saveCaseHtml() {
@@ -821,12 +823,16 @@
     state.finishedAt = new Date().toISOString();
     saveState();
     clearTimeout(backendSyncTimer);
-    syncStateToBackend();
 
     renderTagCards();
     renderConnections();
     lockEverything();
-    showFinishOverlay();
+    // Финиш-оверлей ждёт подтверждения записи: раньше он показывался сразу,
+    // и при сбое сети участник уходил дальше уверенным, что ответ сохранён,
+    // хотя до бэкенда он не дошёл. Не дождались — оверлей всё равно покажем
+    // (локально всё сохранено), но статус в полосе времени скажет «не
+    // сохранено», а api.js повторит отправку сам.
+    syncStateToBackend().then(showFinishOverlay, showFinishOverlay);
   }
 
   document.getElementById('finishBtn').addEventListener('click', goToLinksPhase);

@@ -127,6 +127,15 @@
       introEl.style.display = 'flex';
     });
 
+    // контролы на экране сборки Р6 (свой ряд — .gate прячет шапку станции):
+    // номер участника + «?», который возвращает к легенде карты, закрыв сборку
+    document.getElementById('finalizeBib').textContent = '№ ' + String(session.bib).padStart(3, '0');
+    document.getElementById('finalizeHelpBtn').addEventListener('click', function () {
+      document.getElementById('finalizeScreen').style.display = 'none';
+      document.getElementById('stationRoot').style.display = '';
+      introEl.style.display = 'flex';
+    });
+
     // Плашка «слух о позиции разошёлся» теперь рендерится ВНУТРИ renderRooms —
     // между плиткой «Встреча с Агеевым» и разговорами (мост после развилки).
 

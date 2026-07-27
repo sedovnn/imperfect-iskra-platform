@@ -88,8 +88,10 @@
   }
 
   function syncStateToBackend() {
-    if (!window.imp.isApiConfigured()) return;
-    window.imp.callApi('saveRoomFuture', { bib: session.bib, state: state });
+    // возвращает Promise<boolean>: подтвердил ли бэкенд запись. Нужно на завершении
+    // раунда — финиш-оверлей не показываем, пока ответ не принят (см. finishRoom)
+    if (!window.imp.isApiConfigured()) return Promise.resolve(true);
+    return window.imp.callApiConfirmed('saveRoomFuture', { bib: session.bib, state: state });
   }
 
   // ---------- gate ----------
@@ -188,12 +190,13 @@
           state.vision = e.target.value; syncAnswer1(); saveState();
         });
         block.querySelector('#commitQ1Btn').addEventListener('click', function () {
+          var go = function () { state.step = 'q2'; saveState(); render(); };
           if (!state.vision.trim()) {
-            if (!window.confirm('Ничего не ответить Лемеху — так и зафиксируем?')) return;
+            window.imp.confirm('Ничего не ответить Лемеху — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
+              .then(function (ok) { if (ok) go(); });
+            return;
           }
-          state.step = 'q2';
-          saveState();
-          render();
+          go();
         });
       }
       return block;
@@ -267,9 +270,13 @@
       state.finishedAt = new Date().toISOString();
       saveState();
       clearTimeout(backendSyncTimer);
-      syncStateToBackend();
       render();
-      showFinishOverlay();
+      // Финиш-оверлей ждёт подтверждения записи: раньше он показывался сразу,
+      // и при сбое сети участник уходил дальше уверенным, что ответ сохранён,
+      // хотя до бэкенда он не дошёл. Не дождались — оверлей всё равно покажем
+      // (локально всё сохранено), но статус в полосе времени скажет «не
+      // сохранено», а api.js повторит отправку сам.
+      syncStateToBackend().then(showFinishOverlay, showFinishOverlay);
     }
 
     render();

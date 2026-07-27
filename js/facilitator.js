@@ -113,34 +113,10 @@
   }
 
   // Внутрисистемный диалог подтверждения вместо native confirm. Возвращает Promise<boolean>.
+  // Реализация перенесена в js/dialog.js (общая с раундами участника) —
+  // здесь тонкая обёртка, чтобы не переписывать 8 вызовов impConfirm.
   function impConfirm(message, opts) {
-    opts = opts || {};
-    return new Promise(function (resolve) {
-      var ov = document.createElement('div');
-      ov.className = 'imp-confirm';
-      var msgHtml = escapeHtml(message).replace(/\n/g, '<br>');
-      ov.innerHTML =
-        '<div class="imp-confirm-card" role="alertdialog" aria-modal="true">' +
-          '<p class="imp-confirm-msg">' + msgHtml + '</p>' +
-          '<div class="imp-confirm-actions">' +
-            '<button type="button" class="btn btn-ghost" data-act="cancel">' + escapeHtml(opts.cancelLabel || 'Отмена') + '</button>' +
-            '<button type="button" class="btn ' + (opts.danger ? 'btn-danger' : 'btn-primary') + '" data-act="ok">' + escapeHtml(opts.confirmLabel || 'Подтвердить') + '</button>' +
-          '</div>' +
-        '</div>';
-      function close(val) {
-        document.removeEventListener('keydown', onKey);
-        if (ov.parentNode) ov.parentNode.removeChild(ov);
-        resolve(val);
-      }
-      function onKey(e) { if (e.key === 'Escape') close(false); }
-      ov.addEventListener('click', function (e) { if (e.target === ov) close(false); });
-      ov.querySelector('[data-act="cancel"]').addEventListener('click', function () { close(false); });
-      ov.querySelector('[data-act="ok"]').addEventListener('click', function () { close(true); });
-      document.addEventListener('keydown', onKey);
-      document.body.appendChild(ov);
-      var okBtn = ov.querySelector('[data-act="ok"]');
-      if (okBtn) okBtn.focus();
-    });
+    return window.imp.confirm(message, opts);
   }
 
   function formatBib(n) {

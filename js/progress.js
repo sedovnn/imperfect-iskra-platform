@@ -41,7 +41,10 @@
     '.rp-step.is-current{color:#1a1e26;font-weight:700;background:var(--accent,#ff4800);border-radius:6px;padding:2px 8px;}' +
     '.rp-sep{color:#c8cdd4;}' +
     '.round-time{color:#5c6675;white-space:nowrap;font-variant-numeric:tabular-nums;}' +
-    '.round-time-label{color:#8a8f98;text-transform:uppercase;letter-spacing:.04em;font-size:11px;margin-right:6px;}';
+    '.round-time-label{color:#8a8f98;text-transform:uppercase;letter-spacing:.04em;font-size:11px;margin-right:6px;}' +
+    // статус сохранения (js/save-status.js): тихий, пока всё хорошо; акцент — только на сбое
+    '.save-status{margin-right:auto;color:#8a8f98;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}' +
+    '.save-status.is-failed{color:var(--accent,#ff4800);font-weight:700;text-transform:none;letter-spacing:0;font-size:12.5px;}';
   document.head.appendChild(st);
 
   var stepsHtml = STEPS.map(function (s, i) {

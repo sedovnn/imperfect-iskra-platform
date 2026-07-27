@@ -1353,6 +1353,17 @@ button.hub-room-card {
    здесь max-width. Составной селектор специфичнее одиночного класса — теперь
    порядок правил в файле не важен. */
 .gate-card.finalize-card { max-width: 1080px; }
+/* ряд «лого + контролы» на экране сборки Р6: .gate прячет шапку станции,
+   а обещание установки («номер, ?, ⓘ под рукой») должно держаться и здесь */
+.finalize-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  row-gap: 8px;
+  margin-bottom: 14px;
+}
 
 /* «Ваша линия» — полоса решений под шапкой (spine.js), одинаковая на ст.2/3 и в
    комнатах. Приглушённая: серая подложка + волосяная линия, без лаймового сигнала
@@ -2306,13 +2317,9 @@ body.imp-drawer-open .case-ref-dock { display: none; }
   color: var(--lime-dim);
 }
 
-.case-nav-progress {
-  margin-top: 14px;
-  padding: 10px;
-  font-size: 12px;
-  color: var(--muted-soft);
-  border-top: 1px solid #ececec;
-}
+/* .case-nav-progress удалён 2026-07-27: элемента #appxProgress в разметке нет —
+   счётчик «N/8 приложений» убран намеренно, «изучено» трекается для кабинета. */
+
 
 /* средняя колонка: вкладки сверху, под ними прокручиваемый текст или заметки */
 .case-main {

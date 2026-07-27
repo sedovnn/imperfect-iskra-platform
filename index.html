@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=39" />
+<link rel="stylesheet" href="css/styles.css?v=41" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -91,7 +91,7 @@
 </div>
 
 <script src="js/main.js?v=2"></script>
-<script src="js/api.js?v=1"></script>
+<script src="js/api.js?v=2"></script>
 <script>
 /* Окно входа. ⚠ Настоящая аутентификация по номеру+паролю — это ещё не
    построенный access-бэкенд (выдача 6-значного кода + пароля в кабинете).
@@ -112,6 +112,13 @@
   var codeEl = document.getElementById('entryCode');
   var passEl = document.getElementById('entryPass');
   var errEl = document.getElementById('entryErr');
+
+  // единственная задача экрана — ввести номер: ставим курсор сразу в поле.
+  // Не через атрибут autofocus: на мобильных он поднимает клавиатуру и прячет
+  // заголовок, поэтому фокусируем только на устройствах с мышью/клавиатурой.
+  if (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches) {
+    try { codeEl.focus(); } catch (e) {}
+  }
 
   codeEl.addEventListener('input', function () {
     codeEl.value = codeEl.value.replace(/\D/g, '').slice(0, 6);

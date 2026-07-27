@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=39" />
+<link rel="stylesheet" href="css/styles.css?v=41" />
 </head>
 <body class="frame-narrow">
 
@@ -26,13 +26,13 @@
     <p class="kicker">Закрыто</p>
     <h2>Сначала — встреча с Агеевым</h2>
     <p class="section-lead" style="margin:0 0 24px;">Этот разговор открывается после того, как вы закончите раунд 2.</p>
-    <a class="btn btn-primary btn-block" href="round2.html">Вернуться в раунд 2 →</a>
+    <a class="btn btn-primary btn-block" href="round2.html">← Вернуться в раунд 2</a>
   </div>
 </div>
 
 <div id="finishOverlay" class="gate gate-finish" style="display:none;">
   <div class="gate-card">
-    <p class="kicker">✓ Разговор закончен</p>
+    <p class="kicker">✓ Раунд 5 завершён</p>
     <h2>Дашу зовут к стойке</h2>
     <p style="text-align:left; font-style:italic; line-height:1.6; margin:0 0 20px; color:var(--ink);"><b>Даша</b> забирает свой кофе: «Слушайте, спасибо. Пришла с одним „заматчи офферы“ — ухожу с несколькими ходами в голове. Пойду думать». <b>Брагин</b> салютует чашкой: «И вы идите, вас финализация заждалась. Да, и придержите этот разговор в голове: чужой затык иногда подсказывает про свою компанию больше, чем сам о ней надумаешь».</p>
     <p class="section-lead" style="margin:0 0 24px;">Три разговора позади — пора собрать всё, что вы наработали, в единую стратегию. Она ждёт вас на карте, к финальной сборке.</p>
@@ -40,8 +40,8 @@
   </div>
 </div>
 
-<div id="dossierPanel" class="dossier-overlay" style="display:none;">
-  <div class="gate-card dossier-card">
+<div id="dossierPanel" class="dossier-overlay" style="display:none;" aria-hidden="true">
+  <div class="gate-card dossier-card" role="dialog" aria-modal="true" aria-label="Мои ответы — что вы уже сделали">
     <div class="dossier-card-header">
       <div>
         <p class="kicker">Мои ответы</p>
@@ -95,12 +95,14 @@
 
 <script src="js/boot-loading.js?v=3"></script>
 <script src="js/main.js?v=2"></script>
-<script src="js/api.js?v=1"></script>
+<script src="js/dialog.js?v=1"></script>
+<script src="js/api.js?v=2"></script>
 <script src="js/demo.js?v=10"></script>
 <script src="js/dossier-render.js?v=5"></script>
-<script src="js/dossier-panel.js?v=3"></script>
+<script src="js/dossier-panel.js?v=4"></script>
 <script src="js/case-ref.js?v=4"></script>
-<script src="js/round5.js?v=10"></script>
-<script src="js/progress.js?v=6"></script>
+<script src="js/round5.js?v=12"></script>
+<script src="js/progress.js?v=7"></script>
+<script src="js/save-status.js?v=1"></script>
 </body>
 </html>

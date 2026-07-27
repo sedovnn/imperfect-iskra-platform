@@ -66,8 +66,10 @@
   }
 
   function syncStateToBackend() {
-    if (!window.imp.isApiConfigured()) return;
-    window.imp.callApi('saveRoomPath', { bib: session.bib, state: state });
+    // возвращает Promise<boolean>: подтвердил ли бэкенд запись. Нужно на завершении
+    // раунда — финиш-оверлей не показываем, пока ответ не принят (см. finishRoom)
+    if (!window.imp.isApiConfigured()) return Promise.resolve(true);
+    return window.imp.callApiConfirmed('saveRoomPath', { bib: session.bib, state: state });
   }
 
   // ---------- gate ----------
@@ -231,12 +233,13 @@
           renderStages();
         });
         block.querySelector('#commitQ1Btn').addEventListener('click', function () {
+          var go = function () { state.step = 'q2'; saveState(); render(); };
           if (!state.targetState.trim() && !state.stages.length) {
-            if (!window.confirm('Ничего не ответить — так и зафиксируем?')) return;
+            window.imp.confirm('Ничего не ответить Штерну — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
+              .then(function (ok) { if (ok) go(); });
+            return;
           }
-          state.step = 'q2';
-          saveState();
-          render();
+          go();
         });
       }
       return block;
@@ -346,7 +349,9 @@
         });
         block.querySelector('#finishBtn').addEventListener('click', function () {
           if (!state.barriers.length && !state.enablers.length) {
-            if (!window.confirm('Ничего не ответить — так и зафиксируем?')) return;
+            window.imp.confirm('Ничего не ответить Штерну — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
+              .then(function (ok) { if (ok) finishRoom(); });
+            return;
           }
           finishRoom();
         });
@@ -373,9 +378,13 @@
       state.finishedAt = new Date().toISOString();
       saveState();
       clearTimeout(backendSyncTimer);
-      syncStateToBackend();
       render();
-      showFinishOverlay();
+      // Финиш-оверлей ждёт подтверждения записи: раньше он показывался сразу,
+      // и при сбое сети участник уходил дальше уверенным, что ответ сохранён,
+      // хотя до бэкенда он не дошёл. Не дождались — оверлей всё равно покажем
+      // (локально всё сохранено), но статус в полосе времени скажет «не
+      // сохранено», а api.js повторит отправку сам.
+      syncStateToBackend().then(showFinishOverlay, showFinishOverlay);
     }
 
     render();

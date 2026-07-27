@@ -13,19 +13,28 @@
   var contentEl = document.getElementById('dossierPanelContent');
   var closeBtn = document.getElementById('closeDossierBtn');
 
+  // фокус возвращаем на тот язычок, с которого открыли (паритет с case-ref.js:
+  // до этого фокус оставался на триггере ЗА оверлеем — клавиатура «теряла» панель)
+  var lastFocus = null;
+
   function open() {
     var session = window.imp.loadSession();
     if (!session || !session.bib) return;
     contentEl.innerHTML = window.imp.buildDossierHtml(session.bib);
+    lastFocus = document.activeElement;
     panel.style.display = 'flex';
+    panel.setAttribute('aria-hidden', 'false');
     // пока ящик открыт, язычки спрятаны (см. body.imp-drawer-open в styles.css)
     document.body.classList.add('imp-drawer-open');
     document.addEventListener('keydown', onKey);
+    if (closeBtn) closeBtn.focus();
   }
   function close() {
     panel.style.display = 'none';
+    panel.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('imp-drawer-open');
     document.removeEventListener('keydown', onKey);
+    if (lastFocus && lastFocus.focus) { try { lastFocus.focus(); } catch (e) {} }
   }
   function onKey(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
 
