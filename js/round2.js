@@ -591,6 +591,8 @@
       // им пустой запертый блок при просмотре не показываем
       if (upTo >= 3 && (state.stance || !state.finished)) body.appendChild(buildStanceBlock());
       if (upTo >= 4) body.appendChild(buildProactiveBlock());
+      // неразрывные пробелы после предлогов — уже по вставленной разметке
+      if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       var last = body.lastElementChild;
       if (last && !state.finished) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
     }

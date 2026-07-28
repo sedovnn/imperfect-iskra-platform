@@ -3962,3 +3962,21 @@ tr.fac-row-ai td { background: var(--band); }
 /* .section-lead ограничен 42ch для страничной прозы; внутри карточки это делало
    абзац заметно уже самой карточки и баблов — здесь тянем по её ширине */
 .gate-card .section-lead { max-width: none; }
+
+/* ---------- переносы строк ---------- */
+/* Браузер рвёт строку по последнему пробелу и не смотрит, что получилось:
+   заголовок в две строки выходит «семь слов / одно», у абзаца последняя строка —
+   одно слово. balance выравнивает длину строк в коротком блоке, pretty убирает
+   висячие слова в прозе. Неразрывные пробелы после предлогов ставит js/typo.js —
+   этого CSS не умеет. */
+h1, h2, h3, .gate-card h2, .hub-room-title, .chat-name {
+  text-wrap: balance;
+}
+p, li, .section-lead, .chat-bubble, .chat-act, .chat-after, label {
+  text-wrap: pretty;
+}
+/* В полях ввода и в тексте кейса — обычный перенос: там участник пишет и читает
+   документ, выравнивание строк только мешает попадать в свою же строку. */
+textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .appx-doc li {
+  text-wrap: wrap;
+}

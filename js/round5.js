@@ -311,6 +311,8 @@
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
       if (upTo >= 2) body.appendChild(buildQ3Block());
+      // неразрывные пробелы после предлогов — уже по вставленной разметке
+      if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       var last = body.lastElementChild;
       if (last && !state.finished) {
         // подряд идущие реплики одного человека не повторяют подпись — как в

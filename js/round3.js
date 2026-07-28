@@ -293,6 +293,8 @@
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
       if (upTo >= 2) body.appendChild(buildQ3Block());
+      // неразрывные пробелы после предлогов — уже по вставленной разметке
+      if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       // короткое появление только у реплик текущего шага: перечитывая переписку,
       // участник не должен ждать анимации на уже отвеченном
       var last = body.lastElementChild;

@@ -205,6 +205,8 @@
         }
         prevDone = done;
       });
+      // неразрывные пробелы после предлогов — уже по вставленной разметке
+      if (window.imp.typoDom) window.imp.typoDom(list);
     }
 
     renderRooms();
