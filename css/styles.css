@@ -3928,3 +3928,6 @@ tr.fac-row-ai td { background: var(--band); }
 @media (max-width: 600px) { .chat-msg { max-width: 92%; } }
 /* на финиш-экранах карточка и так узкая — ограничение в 76% там только зажимает */
 .gate-card .chat-msg { max-width: 100%; }
+/* .section-lead ограничен 42ch для страничной прозы; внутри карточки это делало
+   абзац заметно уже самой карточки и баблов — здесь тянем по её ширине */
+.gate-card .section-lead { max-width: none; }
