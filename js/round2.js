@@ -405,7 +405,9 @@
         them('', { act: 'смотрит на верхнюю карточку', speech: '«Хорошо. Почему «' + escapeHtml(topPriorityText()) + '» — первым? На совете это придётся защищать — убедите сначала меня.»' }) +
         '<textarea class="s2-rationale" aria-label="Почему этот приоритет идёт первым" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
         // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
-        '<div class="rationale-block" style="margin-top:12px;">' +
+        // отступ инлайном перебивал CSS: 12px прилипали к предыдущей текстареа,
+        // и заголовок читался как её подпись — оставляем воздух блока (22px)
+        '<div class="rationale-block">' +
           '<label>С чего начнёте — первый шаг</label>' +
           '<textarea class="s2-first-action" aria-label="Первый конкретный ход" rows="2" placeholder="первый конкретный шаг по приоритету №1"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.firstAction || '') + '</textarea>' +
         '</div>' +

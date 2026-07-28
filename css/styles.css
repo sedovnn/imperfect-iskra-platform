@@ -2717,6 +2717,10 @@ table mark.hl {
 }
 
 .rationale-block { margin-bottom: 22px; }
+/* Поле, идущее сразу за другим полем («с чего начнёте» после защиты приоритета),
+   прилипало к предыдущей текстареа — заголовок читался как её подпись. */
+.rationale-block + .rationale-block,
+textarea + .rationale-block { margin-top: 22px; }
 
 .rationale-block label {
   display: block;
@@ -3878,8 +3882,9 @@ tr.fac-row-ai td { background: var(--band); }
 /* В раунде 4 каждая реплика — свой .chat (между ними идёт форма), поэтому gap
    внутри контейнера их не разделяет: нужен внешний отступ, иначе подпись второй
    реплики прилипает к пузырю первой. */
-.chat + .chat { margin-top: 14px; }
-.chat { margin-bottom: 14px; }
+.chat + .chat { margin-top: 0; }
+.chat { margin-bottom: 20px; }            /* перед формой нужен воздух */
+.chat:has(+ .chat) { margin-bottom: 8px; } /* между репликами — теснее */
 .chat-msg { max-width: 76%; }
 .chat-msg.them { align-self: flex-start; }
 .chat-msg.me { align-self: flex-end; }
