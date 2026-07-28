@@ -178,16 +178,23 @@
     function stepIndex(s) { return STEPS.indexOf(s); }
     function stepLocked(s) { return state.finished || stepIndex(s) < stepIndex(state.step); }
 
-    // ── чат-формат: реплика слева, ответ участника справа, ввод снизу ──
-    // Собеседник и его слова — как есть из реплик раунда; отданный ответ
-    // становится нередактируемым баббл ом, поэтому необратимость видна глазами.
-    function them(name, html) {
-      return '<div class="chat-msg them"><span class="chat-name">' + name + '</span>' +
-             '<div class="chat-bubble">' + html + '</div></div>';
+    // ── чат: в пузыре только прямая речь ──
+    // name — кто говорит (капсом), note — уточнение о нём (в скобках),
+    // act — что делает при этом (курсивом), speech — сама реплика,
+    // after — ремарка после реплики (курсивом).
+    function them(name, o) {
+      o = o || {};
+      return '<div class="chat-msg them">' +
+        (name ? '<span class="chat-name">' + name + '</span>' : '') +
+        (o.note ? '<div class="chat-note">(' + o.note + ')</div>' : '') +
+        (o.act ? '<div class="chat-act">' + o.act + '</div>' : '') +
+        '<div class="chat-bubble">' + (o.speech || '') + '</div>' +
+        (o.after ? '<div class="chat-after">' + o.after + '</div>' : '') +
+        '</div>';
     }
     function me(text) {
       var t = String(text || '').trim();
-      if (!t) t = '<i>промолчали</i>'; else t = escapeHtml(t);
+      t = t ? escapeHtml(t) : '<i>промолчали</i>';
       return '<div class="chat-msg me"><span class="chat-name">Вы</span>' +
              '<div class="chat-bubble">' + t + '</div></div>';
     }
@@ -203,7 +210,7 @@
       var block = document.createElement('div');
       block.className = 'chat';
       block.innerHTML =
-        them('Лемех', '«' + (pname() ? escapeHtml(pname()) + ', мне' : 'Мне') + ' это через полгода нести на совет Меридиана — а я пока не вижу, к чему оно в итоге ведёт. Своими словами: если пойдём по-вашему, где „Искра“ окажется?»') +
+        them('Лемех', { speech: '«' + (pname() ? escapeHtml(pname()) + ', мне' : 'Мне') + ' это через полгода нести на совет Меридиана — а я пока не вижу, к чему оно в итоге ведёт. Своими словами: если пойдём по-вашему, где „Искра“ окажется?»' }) +
         (locked ? me(state.vision)
                 : inputBox('s2-rationale', 'Куда придёт «Искра», если пойти по-вашему', state.vision, 'ваш ответ Лемеху', 'commitQ1Btn', 'Ответить'));
       if (!locked) {
@@ -230,7 +237,7 @@
       var block = document.createElement('div');
       block.className = 'chat';
       block.innerHTML =
-        them('Лемех', 'кивает: «Ясно, картинку вижу. А на какой результат вы в итоге работаете — и почему туда, а не куда попроще?»') +
+        them('Лемех', { act: 'кивает', speech: '«Ясно, картинку вижу. А на какой результат вы в итоге работаете — и почему туда, а не куда попроще?»' }) +
         (locked ? me(state.horizon)
                 : (inputBox('ga-horizon', 'На какой результат работаете и почему туда', state.horizon, 'ваш ответ Лемеху', 'commitQ2Btn', 'Ответить') +
                    '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:6px 0 0; line-height:1.45;">Здесь — про куда и зачем, а не про как: направление и результат, без пошагового плана.</div>'));
@@ -252,13 +259,14 @@
     function buildQ3Block() {
       var locked = stepLocked('q3');
       var block = document.createElement('div');
-      var react = (state.horizon || '').trim().length >= 40
-        ? 'слушает, не перебивая, потом медленно: «Хм. Дальше вы заглянули, чем половина моего комитета».'
-        : 'ждёт секунду, будто надеясь на продолжение: «Коротко. Ну ладно, зайдём с другой стороны».';
+      var deep = (state.horizon || '').trim().length >= 40;
+      var react = deep
+        ? { act: 'слушает, не перебивая, потом медленно', speech: '«Хм. Дальше вы заглянули, чем половина моего комитета».' }
+        : { act: 'ждёт секунду, будто надеясь на продолжение', speech: '«Коротко. Ну ладно, зайдём с другой стороны».' };
       block.className = 'chat';
       block.innerHTML =
         them('Лемех', react) +
-        them('Лемех', 'щурится: «Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт не сойдётся. Что тогда — и как вы поймёте, что пора менять курс?»') +
+        them('Лемех', { act: 'щурится', speech: '«Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт не сойдётся. Что тогда — и как вы поймёте, что пора менять курс?»' }) +
         (locked ? me(state.answer2)
                 : inputBox('s2-rationale', 'Что если будущее пойдёт иначе и как поймёте, что пора менять курс', state.answer2, 'ваш ответ', 'finishBtn', 'Ответить и закончить'));
       if (!locked) {

@@ -3885,6 +3885,19 @@ tr.fac-row-ai td { background: var(--band); }
   margin: 0 0 4px 2px;
 }
 .chat-msg.me .chat-name { text-align: right; margin-right: 2px; }
+/* Служебное — ВНЕ пузыря: в пузыре только прямая речь. Уточнение, кто это, —
+   обычным текстом в скобках; действие и реакция — курсивом. Иначе ремарки
+   («фыркает», «ставит стакан») читались как часть реплики. */
+.chat-note,
+.chat-act {
+  font-family: var(--ff-body);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.chat-note { margin: 0 0 2px 2px; }
+.chat-act { font-style: italic; margin: 0 0 4px 2px; }
+.chat-after { font-family: var(--ff-body); font-size: 13px; font-style: italic; color: var(--muted-soft); margin: 5px 0 0 2px; }
 .chat-bubble {
   font-size: 16px;
   line-height: 1.55;
@@ -3904,4 +3917,6 @@ tr.fac-row-ai td { background: var(--band); }
 }
 .chat-input { margin-top: 4px; }
 .chat-input textarea { width: 100%; }
+/* отправка — справа: и у мессенджеров так, и ответы участника в переписке справа */
+.chat-input .btn { display: block; margin-left: auto; }
 @media (max-width: 600px) { .chat-msg { max-width: 92%; } }
