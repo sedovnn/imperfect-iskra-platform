@@ -652,13 +652,22 @@
 
   function renderRoster() {
     rosterTableBody.innerHTML = '';
-    // фильтр по потоку — тот же список волн, что и в «Ходе»
-    if (rosterWaveSel && rosterWaveSel.options.length <= 1) {
-      Object.keys(waveLabelMap).forEach(function (id) {
+    // Фильтр по потоку — как в «Ходе»: из актуального списка волн плюс волны,
+    // которые встречаются у участников. Строился однократно и из waveLabelMap, а
+    // та до ответа бэкенда содержит временный фолбэк (w1/w2/w3 с июльскими
+    // датами) — в селект попадали несуществующие потоки. Перестраиваем каждый
+    // раз, сохраняя выбор.
+    if (rosterWaveSel) {
+      var cur = rosterWaveSel.value;
+      var ids = waves.map(function (w) { return w.id; });
+      lastParticipants.forEach(function (p) { if (ids.indexOf(p.wave) === -1) ids.push(p.wave); });
+      rosterWaveSel.innerHTML = '<option value="">Все потоки</option>';
+      ids.forEach(function (id) {
         var o = document.createElement('option');
         o.value = id; o.textContent = waveLabelMap[id] || id;
         rosterWaveSel.appendChild(o);
       });
+      if (ids.indexOf(cur) !== -1) rosterWaveSel.value = cur;
     }
     var wave = rosterWaveSel ? rosterWaveSel.value : '';
     var rows = lastParticipants.filter(function (p) { return !wave || String(p.wave) === wave; });
