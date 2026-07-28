@@ -186,16 +186,33 @@
     // разных ходов должны появиться сами (ГА-1 2→3 «б»). Даша НЕ проговаривает
     // сомнение «деньги ли это» — иначе переформулировка задачи (верхний уровень)
     // была бы подсказана; спор Брагина и Даши сигналит только «это обсуждаемо».
+    // ── чат-формат: реплика слева, ответ участника справа, ввод снизу ──
+    function them(name, html) {
+      return '<div class="chat-msg them"><span class="chat-name">' + name + '</span>' +
+             '<div class="chat-bubble">' + html + '</div></div>';
+    }
+    function me(text) {
+      var t = String(text || '').trim();
+      t = t ? escapeHtml(t) : '<i>промолчали</i>';
+      return '<div class="chat-msg me"><span class="chat-name">Вы</span>' +
+             '<div class="chat-bubble">' + t + '</div></div>';
+    }
+    function inputBox(cls, aria, value, ph, btnId, btnLabel) {
+      return '<div class="chat-input"><textarea class="' + cls + '" aria-label="' + aria + '" rows="4" placeholder="' + ph + '">' +
+             escapeHtml(value || '') + '</textarea>' +
+             '<button class="btn btn-primary" id="' + btnId + '" style="margin-top:10px;">' + btnLabel + '</button></div>';
+    }
+
     function buildQ1Block() {
       var locked = stepLocked('q1');
       var block = document.createElement('div');
-      block.className = 's2-block';
+      block.className = 'chat';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Олег Брагин</b> — тот самый, из первой сотни, — ловит взглядом ваш бейдж: «' + (pname() ? escapeHtml(pname()) + '? Консультант' : 'Консультант') + ', значит. Со стороны. Тогда рассудите — а то мы тут с Дашей второй кофе спорим».</p>' +
-        '<p class="s2-ageev"><b>Даша</b>, тимлид одной из продуктовых команд, не отрываясь от стакана: «Да что спорить. У меня половина команды переписывается с Nord Labs — сама видела, как двое ходили „на кофе“ к их рекрутеру. Сверху спустили бюджет: перебей офферы, удержи людей. А я думаю — да и уйдут, правильно сделают. Там интереснее, чем у нас.»</p>' +
-        '<p class="s2-ageev"><b>Брагин</b> фыркает: «Да ничего они не построят. Наберут звёзд и утонут». Поворачивается к вам: «Вот и рассудите: кто из нас прав — получится у них или нет? И если бы вы у них за это отвечали — что бы делали?»</p>' +
-        '<textarea class="s2-rationale" aria-label="Получится ли у Nord Labs и что бы вы делали на их месте" rows="5" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer1) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
+        them('Олег Брагин', '— тот самый, из первой сотни, — ловит взглядом ваш бейдж: «' + (pname() ? escapeHtml(pname()) + '? Консультант' : 'Консультант') + ', значит. Со стороны. Тогда рассудите — а то мы тут с Дашей второй кофе спорим».') +
+        them('Даша', 'тимлид одной из продуктовых команд, не отрываясь от стакана: «Да что спорить. У меня половина команды переписывается с Nord Labs — сама видела, как двое ходили „на кофе“ к их рекрутеру. Сверху спустили бюджет: перебей офферы, удержи людей. А я думаю — да и уйдут, правильно сделают. Там интереснее, чем у нас.»') +
+        them('Брагин', 'фыркает: «Да ничего они не построят. Наберут звёзд и утонут». Поворачивается к вам: «Вот и рассудите: кто из нас прав — получится у них или нет? И если бы вы у них за это отвечали — что бы делали?»') +
+        (locked ? me(state.answer1)
+                : inputBox('s2-rationale', 'Получится ли у Nord Labs и что бы вы делали на их месте', state.answer1, 'ваш ответ', 'commitQ1Btn', 'Ответить'));
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
           state.answer1 = e.target.value; saveState();
@@ -218,14 +235,14 @@
     function buildQ2Block() {
       var locked = stepLocked('q2');
       var block = document.createElement('div');
-      block.className = 's2-block';
+      block.className = 'chat';
       block.innerHTML =
-        '<p class="s2-ageev">' + ((state.answer1 || '').trim().length >= 40
-          ? '<b>Брагин</b> хмыкает: «Смотрите-ка, не пустой звук».'
-          : '<b>Брагин</b> пожимает плечами: «Ну, допустим».') + '</p>' +
-        '<p class="s2-ageev"><b>Даша</b> ставит стакан: «А что ещё у них есть в руках? И почему вы бы выбрали именно то, что сказали?»</p>' +
-        '<textarea class="ga-subdec" aria-label="Где колебались — что перебрали и отбросили и почему" rows="3" placeholder="ваш ответ Брагину"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.subdecisions) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
+        them('Брагин', (state.answer1 || '').trim().length >= 40
+          ? 'хмыкает: «Смотрите-ка, не пустой звук».'
+          : 'пожимает плечами: «Ну, допустим».') +
+        them('Даша', 'ставит стакан: «А что ещё у них есть в руках? И почему вы бы выбрали именно то, что сказали?»') +
+        (locked ? me(state.subdecisions)
+                : inputBox('ga-subdec', 'Что ещё есть у них в руках и почему выбрали именно это', state.subdecisions, 'ваш ответ Даше', 'commitQ2Btn', 'Ответить'));
       if (!locked) {
         block.querySelector('.ga-subdec').addEventListener('input', function (e) {
           state.subdecisions = e.target.value; saveState();
@@ -246,12 +263,12 @@
     function buildQ3Block() {
       var locked = stepLocked('q3');
       var block = document.createElement('div');
-      block.className = 's2-block';
+      block.className = 'chat';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Девушка из отдела логистики «Меридиана»</b>, вполуха из очереди позади: «У нас пару лет назад соседи по рынку полкоманды увели — до сих пор спорим, кто в итоге выиграл». Забирает свой стакан, уходит к лифтам.</p>' +
-        '<p class="s2-ageev"><b>Брагин</b> провожает её взглядом: «Тут все друг у друга подсматривают, кофейня такая. Только вы про них ничего толком не знаете — ни цифр, ни планов. Откуда тогда всё это? Из головы или видели где-то?»</p>' +
-        '<textarea class="ga-elab" aria-label="Откуда ваш ход" rows="3" placeholder="ваш ответ Брагину"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.sourceElaboration) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
+        them('Девушка из отдела логистики «Меридиана»', 'вполуха из очереди позади: «У нас пару лет назад соседи по рынку полкоманды увели — до сих пор спорим, кто в итоге выиграл». Забирает свой стакан, уходит к лифтам.') +
+        them('Брагин', 'провожает её взглядом: «Тут все друг у друга подсматривают, кофейня такая. Только вы про них ничего толком не знаете — ни цифр, ни планов. Откуда тогда всё это? Из головы или видели где-то?»') +
+        (locked ? me(state.sourceElaboration)
+                : inputBox('ga-elab', 'Откуда ваш ход', state.sourceElaboration, 'ваш ответ Брагину', 'finishBtn', 'Ответить и закончить'));
       if (!locked) {
         block.querySelector('.ga-elab').addEventListener('input', function (e) {
           state.sourceElaboration = e.target.value; saveState();
@@ -275,7 +292,11 @@
       if (upTo >= 1) body.appendChild(buildQ2Block());
       if (upTo >= 2) body.appendChild(buildQ3Block());
       var last = body.lastElementChild;
-      if (last && !state.finished) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (last && !state.finished) {
+        last.querySelectorAll('.chat-msg.them').forEach(function (m) { m.classList.add('is-new'); });
+        var ta = last.querySelector('textarea');
+        (ta || last).scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
     }
 
     function showFinishOverlay() {
