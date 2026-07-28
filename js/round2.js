@@ -186,6 +186,21 @@
       return top ? top.text : '';
     }
 
+  // ── речь персонажей — теми же пузырями, что в раундах 3–5 ──
+  // Раунд 2 не переписка: под репликой идёт сортировка карточек, радио и поля.
+  function speechOf(t) {
+    return String(t || '').trim().replace(/^«/, '').replace(/»([.!?…]?)$/, '$1');
+  }
+  function them(name, o) {
+    o = o || {};
+    return '<div class="chat"><div class="chat-msg them" data-who="' + name + '">' +
+      (name ? '<span class="chat-name">' + name +
+        (o.note ? ' <span class="chat-note">(' + o.note + ')</span>' : '') + '</span>' : '') +
+      (o.act ? '<div class="chat-act">' + o.act + '</div>' : '') +
+      '<div class="chat-bubble">' + speechOf(o.speech) + '</div>' +
+      '</div></div>';
+  }
+
     var STEPS = ['sort', 'rationale', 'stress', 'stance', 'proactive'];
     function stepIndex(step) { return STEPS.indexOf(step); }
     function stepLocked(step) {
@@ -266,7 +281,8 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Агеев</b>: «' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что откладываем. Не обязательно раскладывать всё, что собрали, — но порядок в приоритетах для меня важен».</p>' +
+        them('Кирилл Агеев', { note: 'гендиректор «Поиска и рекламы»',
+          speech: '«' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что откладываем. Не обязательно раскладывать всё, что собрали, — но порядок в приоритетах для меня важен».' }) +
         '<div class="s2-columns">' +
           '<div class="s2-col" data-zone="pool"><h4>Карта</h4><p class="links-hint">неразобранное</p><div class="s2-list" data-list="pool"></div></div>' +
           '<div class="s2-col is-priorities" data-zone="priorities"><h4>Приоритеты</h4><p class="links-hint">порядок = ранг; обычно хватает 3–5</p><div class="s2-list" data-list="priorities"></div></div>' +
@@ -380,13 +396,13 @@
       var locked = stepLocked('rationale');
       // реакция Агеева на разбор (п.11): заметил ли отказы
       var sortReact = state.rejected.length
-        ? '<b>Агеев</b> ведёт пальцем по списку: «Вижу, кое-что вы честно отложили. Хорошо — значит, не пытаетесь спасти всё сразу».'
-        : '<b>Агеев</b>: «Ничего не отложили, всё оставили в приоритетах — смело. Тогда задам пару неудобных вопросов — как на совете».';
+        ? { act: 'ведёт пальцем по списку', speech: '«Вижу, кое-что вы честно отложили. Хорошо — значит, не пытаетесь спасти всё сразу».' }
+        : { speech: '«Ничего не отложили, всё оставили в приоритетах — смело. Тогда задам пару неудобных вопросов — как на совете».' };
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev">' + sortReact + '</p>' +
-        '<p class="s2-ageev"><b>Агеев</b> смотрит на верхнюю карточку: «Хорошо. Почему „' + escapeHtml(topPriorityText()) + '“ — первым? На совете это придётся защищать — убедите сначала меня.»</p>' +
+        them('Кирилл Агеев', sortReact) +
+        them('', { act: 'смотрит на верхнюю карточку', speech: '«Хорошо. Почему «' + escapeHtml(topPriorityText()) + '» — первым? На совете это придётся защищать — убедите сначала меня.»' }) +
         '<textarea class="s2-rationale" aria-label="Почему этот приоритет идёт первым" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
         // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
         '<div class="rationale-block" style="margin-top:12px;">' +
@@ -427,7 +443,8 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Агеев</b> откидывается в кресле: «Теперь то, что вы услышите на совете. Штерн скажет: „' + escapeHtml(topPriorityText()) + '“ — не горит. Подождём полгода, будет больше данных, вернёмся к вопросу. И часть совета его поддержит. Настаиваете, что это идёт первым, — или пересобираем список?»</p>' +
+        them('Кирилл Агеев', { act: 'откидывается в кресле',
+          speech: '«Теперь то, что вы услышите на совете. Штерн скажет: «' + escapeHtml(topPriorityText()) + '» — не горит. Подождём полгода, будет больше данных, вернёмся к вопросу. И часть совета его поддержит. Настаиваете, что это идёт первым, — или пересобираем список?»' }) +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Настаиваю: это идёт первым</label>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Пересоберу — вот что меняю, а что удерживаю</label>' +
         '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Соглашусь пересобрать список целиком</label>' +
@@ -471,17 +488,17 @@
       // реакция Агеева на стресс-тест: нейтральная, три варианта равновесны —
       // не поощряем «настоять» соц-желательно, иначе смещаем замер устойчивости (ПР-2).
       var stressReact = state.stressChoice === 'hold'
-        ? '<b>Агеев</b> кивает: «Настояли. Услышал вашу позицию — на совете передам как есть».'
+        ? { act: 'кивает', speech: '«Настояли. Услышал вашу позицию — на совете передам как есть».' }
         : (state.stressChoice === 'calibrate'
-          ? '<b>Агеев</b> хмыкает: «Понял: что-то меняете, что-то держите. Так и передам».'
+          ? { act: 'хмыкает', speech: '«Понял: что-то меняете, что-то держите. Так и передам».' }
           : (state.stressChoice === 'change'
-            ? '<b>Агеев</b>: «Пересобрали. Ок, посмотрим, куда это выведет».'
-            : ''));
+            ? { speech: '«Пересобрали. Ок, посмотрим, куда это выведет».' }
+            : null));
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        (stressReact ? '<p class="s2-ageev">' + stressReact + '</p>' : '') +
-        '<p class="s2-ageev"><b>Агеев</b> кладёт распечатку письма на стол: «И то, ради чего я, собственно, и звал. В совете директоров две позиции — вы их видели. „Крепость“: защищать рекламное ядро, „Миру“ на партнёрскую модель, железо свернуть. „Вторая кривая“: вынести устройства в отдельную компанию и строить новую выручку к 2030-му. Мне нужна ваша рекомендация — и два критерия, на которых она стоит. Считаете, что обе мимо, — так и скажите, но тогда предложите свою.»</p>' +
+        (stressReact ? them('Кирилл Агеев', stressReact) : '') +
+        them(stressReact ? '' : 'Кирилл Агеев', { act: 'кладёт распечатку письма на стол', speech: '«И то, ради чего я, собственно, и звал. В совете директоров две позиции — вы их видели. „Крепость“: защищать рекламное ядро, „Миру“ на партнёрскую модель, железо свернуть. „Вторая кривая“: вынести устройства в отдельную компанию и строить новую выручку к 2030-му. Мне нужна ваша рекомендация — и два критерия, на которых она стоит. Считаете, что обе мимо, — так и скажите, но тогда предложите свою.»' }) +
         '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Крепость» — защищать рекламное ядро</label>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Вторая кривая» — ставка на новое направление</label>' +
         '<label class="s2-radio"><input type="radio" name="stance" value="other"' + (state.stance === 'other' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Обе позиции неверны — предложу свою</label>' +
@@ -537,17 +554,17 @@
       // реакция Агеева на выбранную позицию (п.11)
       var st = window.imp.stanceOf && window.imp.stanceOf(state);
       var stanceReact = st && st.code === 'fortress'
-        ? '<b>Агеев</b>: «Крепость. Осторожно — но вы хотя бы не делаете вид, что всё хорошо».'
+        ? { speech: '«Крепость. Осторожно — но вы хотя бы не делаете вид, что всё хорошо».' }
         : (st && st.code === 'secondCurve'
-          ? '<b>Агеев</b> усмехается: «Вторая кривая. Смело. Если вы правы — я буду должен вам ужин».'
+          ? { act: 'усмехается', speech: '«Вторая кривая. Смело. Если вы правы — я буду должен вам ужин».' }
           : (st && st.code === 'other'
-            ? '<b>Агеев</b> откидывается: «Своя позиция. Убедите совет так же, как убедили меня сейчас — и мы сработаемся».'
-            : ''));
+            ? { act: 'откидывается', speech: '«Своя позиция. Убедите совет так же, как убедили меня сейчас — и мы сработаемся».' }
+            : null));
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        (stanceReact ? '<p class="s2-ageev">' + stanceReact + '</p>' : '') +
-        '<p class="s2-ageev"><b>Агеев</b> встаёт: «' + (pname() ? escapeHtml(pname()) + ', последний вопрос' : 'Последний вопрос') + '. Что должно случиться, чтобы вы сами сказали: пора пересматривать?»</p>' +
+        (stanceReact ? them('Кирилл Агеев', stanceReact) : '') +
+        them(stanceReact ? '' : 'Кирилл Агеев', { act: 'встаёт', speech: '«' + (pname() ? escapeHtml(pname()) + ', последний вопрос' : 'Последний вопрос') + '. Что должно случиться, чтобы вы сами сказали: пора пересматривать?»' }) +
         '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="2" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить встречу →</button>');
 
