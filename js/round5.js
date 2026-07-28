@@ -190,13 +190,19 @@
     // name — кто говорит (капсом), note — уточнение о нём (в скобках),
     // act — что делает при этом (курсивом), speech — сама реплика,
     // after — ремарка после реплики (курсивом).
+    // Пузырь сам обозначает прямую речь — внешние «ёлочки» в нём лишние.
+    // Внутренние лапки („на кофе“) не трогаем, точку в конце сохраняем.
+    function speechOf(t) {
+      return String(t || '').trim().replace(/^«/, '').replace(/»([.!?…]?)$/, '$1');
+    }
+
     function them(name, o) {
       o = o || {};
       return '<div class="chat-msg them">' +
-        (name ? '<span class="chat-name">' + name + '</span>' : '') +
-        (o.note ? '<div class="chat-note">(' + o.note + ')</div>' : '') +
+        (name ? '<span class="chat-name">' + name +
+          (o.note ? ' <span class="chat-note">(' + o.note + ')</span>' : '') + '</span>' : '') +
         (o.act ? '<div class="chat-act">' + o.act + '</div>' : '') +
-        '<div class="chat-bubble">' + (o.speech || '') + '</div>' +
+        '<div class="chat-bubble">' + speechOf(o.speech) + '</div>' +
         (o.after ? '<div class="chat-after">' + o.after + '</div>' : '') +
         '</div>';
     }

@@ -3895,7 +3895,7 @@ tr.fac-row-ai td { background: var(--band); }
   line-height: 1.45;
   color: var(--muted);
 }
-.chat-note { margin: 0 0 2px 2px; }
+.chat-note { text-transform: none; letter-spacing: 0; font-weight: 400; }
 .chat-act { font-style: italic; margin: 0 0 4px 2px; }
 .chat-after { font-family: var(--ff-body); font-size: 13px; font-style: italic; color: var(--muted-soft); margin: 5px 0 0 2px; }
 .chat-bubble {
@@ -3915,8 +3915,10 @@ tr.fac-row-ai td { background: var(--band); }
 @media (prefers-reduced-motion: reduce) {
   .chat-msg.is-new { animation: none; }
 }
-.chat-input { margin-top: 4px; }
-.chat-input textarea { width: 100%; }
+.chat-input { margin-top: 4px; width: 100%; }
+/* переписка занимает всю рабочую область, поэтому поле ответа тоже: общий лимит
+   --w-form (для форм-колонок) здесь оставлял пустую полосу справа */
+.chat-input textarea { width: 100%; max-width: none; }
 /* отправка — справа: и у мессенджеров так, и ответы участника в переписке справа */
 .chat-input .btn { display: block; margin-left: auto; }
 @media (max-width: 600px) { .chat-msg { max-width: 92%; } }
