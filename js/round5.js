@@ -322,9 +322,17 @@
           if (nameEl && who && who === prevWho) nameEl.remove();
           prevWho = who;
         });
+        // Пауза перед следующей репликой = время на прочтение предыдущей:
+        // 0.55с плюс 0.012с на знак, но не больше 2.2с — иначе на длинной реплике
+        // участник ждёт вместо чтения. Фиксированные 0.42с были слишком коротки:
+        // вопрос выезжал раньше, чем прочитана реакция.
+        var d = 0, prevLen = 0;
         last.querySelectorAll('.chat-msg.them').forEach(function (m, i) {
-          m.style.animationDelay = (i * 0.42) + 's';
+          if (i) d += Math.min(2.2, 0.55 + prevLen * 0.012);
+          m.style.animationDelay = d.toFixed(2) + 's';
           m.classList.add('is-new');
+          var b = m.querySelector('.chat-bubble');
+          prevLen = b ? b.textContent.trim().length : 0;
         });
         var ta = last.querySelector('textarea');
         (ta || last).scrollIntoView({ block: 'center', behavior: 'smooth' });
