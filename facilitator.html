@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=52" />
+<link rel="stylesheet" href="css/styles.css?v=53" />
 </head>
 <body>
 
@@ -120,6 +120,10 @@
           <button class="btn btn-ghost" id="facExportBtn">Скачать CSV</button>
         </div>
 
+        <div class="fac-filters" style="margin:0 0 12px;">
+          <select id="facRosterWave" aria-label="Фильтр по потоку"><option value="">Все потоки</option></select>
+        </div>
+
         <div class="fac-table-scroll">
           <table class="fac-table" id="facRosterTable">
             <thead>
@@ -129,6 +133,7 @@
                 <th>Пароль</th>
                 <th>Волна</th>
                 <th>Регистрация</th>
+                <th></th>
               </tr>
             </thead>
             <tbody id="facRosterTableBody"></tbody>
@@ -167,6 +172,6 @@
 <script src="js/api.js?v=3"></script>
 <script src="js/report-texts.js?v=1"></script>
 <script src="js/report.js?v=5"></script>
-<script src="js/facilitator.js?v=23"></script>
+<script src="js/facilitator.js?v=24"></script>
 </body>
 </html>

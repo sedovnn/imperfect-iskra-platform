@@ -3864,3 +3864,44 @@ tr.fac-row-ai td { background: var(--band); }
   .s2-body { padding: 16px var(--frame-pad) 60px; }
   .case-content { padding: 18px 40px 16px; }
 }
+
+/* ── Чат-формат диалоговых раундов (3 и 5) ────────────────────────────────
+   Раунды 3 и 5 — чистые разговоры без структурных полей, поэтому они читаются
+   как переписка: реплика собеседника слева, ответ участника справа, ввод снизу.
+   Ответ, отданный собеседнику, превращается в баббл и больше не редактируется —
+   необратимость раунда становится видимой, а не только описанной в легенде. */
+.chat { display: flex; flex-direction: column; gap: 14px; }
+.chat-msg { max-width: 76%; }
+.chat-msg.them { align-self: flex-start; }
+.chat-msg.me { align-self: flex-end; }
+.chat-name {
+  display: block;
+  font-family: var(--ff-body);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-soft);
+  margin: 0 0 4px 2px;
+}
+.chat-msg.me .chat-name { text-align: right; margin-right: 2px; }
+.chat-bubble {
+  font-size: 16px;
+  line-height: 1.55;
+  padding: 12px 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--hairline);
+  background: var(--paper);
+  white-space: pre-wrap;
+}
+.chat-msg.them .chat-bubble { background: var(--soft); }
+.chat-msg.me .chat-bubble { background: var(--accent-tint); border-color: var(--accent); }
+/* появление последней реплики — короткое, чтобы не заставлять ждать */
+.chat-msg.is-new { animation: chatIn 260ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes chatIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .chat-msg.is-new { animation: none; }
+}
+.chat-input { margin-top: 4px; }
+.chat-input textarea { width: 100%; }
+@media (max-width: 600px) { .chat-msg { max-width: 92%; } }

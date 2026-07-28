@@ -31,6 +31,7 @@
   var rosterTableBody = document.getElementById('facRosterTableBody');
   var rosterTable = document.getElementById('facRosterTable');
   var rosterEmpty = document.getElementById('facRosterEmpty');
+  var rosterWaveSel = document.getElementById('facRosterWave');
   var tabButtons = document.querySelectorAll('.fac-tab-btn');
   var tabPanels = {
     progress: document.getElementById('facTabProgress'),
@@ -216,6 +217,7 @@
   // Раньше клик не давал никакой отдачи — нажал и будто ничего не произошло.
   // Теперь кнопка реально показывает состояние: идёт запрос → секунда
   // подтверждения → обратно, тем же паттерном, что и кнопки пересчёта.
+  if (rosterWaveSel) rosterWaveSel.addEventListener('change', renderRoster);
   refreshBtn.addEventListener('click', function () {
     refreshBtn.disabled = true;
     refreshBtn.textContent = 'Обновляю…';
@@ -267,8 +269,8 @@
       { label: 'контекст', value: typeof p.station1.akSkill === 'number' ? p.station1.akSkill : null },
       { label: 'приоритизация', value: typeof p.station2.prSkill === 'number' ? p.station2.prSkill : null },
       { label: 'образ будущего', value: typeof p.roomFuture.skill === 'number' ? p.roomFuture.skill : null },
-      { label: 'альтернативы', value: typeof p.roomAlternatives.skill === 'number' ? p.roomAlternatives.skill : null },
-      { label: 'путь к цели', value: typeof p.roomPath.skill === 'number' ? p.roomPath.skill : null }
+      { label: 'путь к цели', value: typeof p.roomPath.skill === 'number' ? p.roomPath.skill : null },
+      { label: 'альтернативы', value: typeof p.roomAlternatives.skill === 'number' ? p.roomAlternatives.skill : null }
     ];
   }
 
@@ -279,7 +281,7 @@
   }
 
   // Компактная разбивка по пяти навыкам прямо в строке списка (детали — в карточке).
-  var SKILL_CODES = ['АК', 'ПР', 'МК', 'ГА', 'ПП'];
+  var SKILL_CODES = ['АК', 'ПР', 'МК', 'ПП', 'ГА'];   // порядок раундов: Р4 = ПП, Р5 = ГА
   function skillMiniHtml(p) {
     var scores = skillScores(p);
     var chips = scores.map(function (s, i) {
@@ -650,21 +652,47 @@
 
   function renderRoster() {
     rosterTableBody.innerHTML = '';
-    rosterEmpty.style.display = lastParticipants.length ? 'none' : '';
-    rosterTable.style.display = lastParticipants.length ? '' : 'none';
+    // фильтр по потоку — тот же список волн, что и в «Ходе»
+    if (rosterWaveSel && rosterWaveSel.options.length <= 1) {
+      Object.keys(waveLabelMap).forEach(function (id) {
+        var o = document.createElement('option');
+        o.value = id; o.textContent = waveLabelMap[id] || id;
+        rosterWaveSel.appendChild(o);
+      });
+    }
+    var wave = rosterWaveSel ? rosterWaveSel.value : '';
+    var rows = lastParticipants.filter(function (p) { return !wave || String(p.wave) === wave; });
+    rosterEmpty.style.display = rows.length ? 'none' : '';
+    rosterTable.style.display = rows.length ? '' : 'none';
 
-    lastParticipants.slice().sort(function (a, b) { return Number(a.bib) - Number(b.bib); }).forEach(function (p) {
+    rows.slice().sort(function (a, b) { return Number(a.bib) - Number(b.bib); }).forEach(function (p) {
       var tr = document.createElement('tr');
       tr.innerHTML =
         '<td>' + escapeHtml(formatBib(p.bib)) + '</td>' +
         '<td>' + escapeHtml((p.firstName + ' ' + p.lastName).trim() || '—') + '</td>' +
         '<td style="font-family:ui-monospace,Menlo,monospace; letter-spacing:.06em;">' + escapeHtml(p.password || '—') + '</td>' +
         '<td>' + escapeHtml(waveLabelMap[p.wave] || p.wave) + (waveAiMap[p.wave] ? ' <span class="fac-ai-wave-chip">ИИ</span>' : '') + '</td>' +
-        '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>';
+        '<td>' + escapeHtml(formatDate(p.registeredAt)) + '</td>' +
+        '<td><button type="button" class="btn btn-ghost btn-xs fac-rename">Переименовать</button></td>';
+      var rn = tr.querySelector('.fac-rename');
+      if (rn) rn.addEventListener('click', function (e) { e.stopPropagation(); renameParticipant(p, rn); });
       if (p.noScore) { tr.style.opacity = '0.5'; tr.title = 'Не оценивается (тест-прогон)'; }
       if (waveAiMap[p.wave]) tr.classList.add('fac-row-ai');
       rosterTableBody.appendChild(tr);
     });
+  }
+
+  // Псевдоним участника: у ИИ-прогонов это метка модели, и её приходилось
+  // править руками в таблице. Пишем в firstName, фамилию не трогаем.
+  function renameParticipant(p, btn) {
+    var next = window.prompt('Псевдоним для ' + formatBib(p.bib) + ' (модель или имя):', (p.firstName || '').trim());
+    if (next === null) return;
+    btn.disabled = true;
+    window.imp.callApi('setParticipantName', { password: currentPassword(), bib: p.bib, firstName: String(next).trim() })
+      .then(function (res) {
+        if (res && res.ok) { refresh(); }
+        else { btn.disabled = false; impToast('Не удалось переименовать: ' + ((res && res.error) || 'нет ответа'), 'error'); }
+      });
   }
 
   function deleteParticipant(p, btn) {

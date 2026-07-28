@@ -178,15 +178,34 @@
     function stepIndex(s) { return STEPS.indexOf(s); }
     function stepLocked(s) { return state.finished || stepIndex(s) < stepIndex(state.step); }
 
+    // ── чат-формат: реплика слева, ответ участника справа, ввод снизу ──
+    // Собеседник и его слова — как есть из реплик раунда; отданный ответ
+    // становится нередактируемым баббл ом, поэтому необратимость видна глазами.
+    function them(name, html) {
+      return '<div class="chat-msg them"><span class="chat-name">' + name + '</span>' +
+             '<div class="chat-bubble">' + html + '</div></div>';
+    }
+    function me(text) {
+      var t = String(text || '').trim();
+      if (!t) t = '<i>промолчали</i>'; else t = escapeHtml(t);
+      return '<div class="chat-msg me"><span class="chat-name">Вы</span>' +
+             '<div class="chat-bubble">' + t + '</div></div>';
+    }
+    function inputBox(cls, aria, value, ph, btnId, btnLabel) {
+      return '<div class="chat-input"><textarea class="' + cls + '" aria-label="' + aria + '" rows="4" placeholder="' + ph + '">' +
+             escapeHtml(value || '') + '</textarea>' +
+             '<button class="btn btn-primary" id="' + btnId + '" style="margin-top:10px;">' + btnLabel + '</button></div>';
+    }
+
     // q1 — образ будущего (МК-2). Горизонт тут не спрашивается сознательно.
     function buildQ1Block() {
       var locked = stepLocked('q1');
       var block = document.createElement('div');
-      block.className = 's2-block';
+      block.className = 'chat';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b>: «' + (pname() ? escapeHtml(pname()) + ', мне' : 'Мне') + ' это через полгода нести на совет Меридиана — а я пока не вижу, к чему оно в итоге ведёт. Своими словами: если пойдём по-вашему, где „Искра“ окажется?»</p>' +
-        '<textarea class="s2-rationale" aria-label="Куда придёт «Искра», если пойти по-вашему" rows="5" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.vision) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
+        them('Лемех', '«' + (pname() ? escapeHtml(pname()) + ', мне' : 'Мне') + ' это через полгода нести на совет Меридиана — а я пока не вижу, к чему оно в итоге ведёт. Своими словами: если пойдём по-вашему, где „Искра“ окажется?»') +
+        (locked ? me(state.vision)
+                : inputBox('s2-rationale', 'Куда придёт «Искра», если пойти по-вашему', state.vision, 'ваш ответ Лемеху', 'commitQ1Btn', 'Ответить'));
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
           state.vision = e.target.value; syncAnswer1(); saveState();
@@ -209,12 +228,12 @@
     function buildQ2Block() {
       var locked = stepLocked('q2');
       var block = document.createElement('div');
-      block.className = 's2-block';
+      block.className = 'chat';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Лемех</b> кивает: «Ясно, картинку вижу. А на какой результат вы в итоге работаете — и почему туда, а не куда попроще?»</p>' +
-        '<textarea class="ga-horizon" aria-label="На какой результат работаете и почему туда" rows="3" placeholder="ваш ответ Лемеху"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.horizon) + '</textarea>' +
-        '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:8px 0 0; line-height:1.45;">Здесь — про куда и зачем, а не про как: направление и результат, без пошагового плана.</div>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Дальше →</button>');
+        them('Лемех', 'кивает: «Ясно, картинку вижу. А на какой результат вы в итоге работаете — и почему туда, а не куда попроще?»') +
+        (locked ? me(state.horizon)
+                : (inputBox('ga-horizon', 'На какой результат работаете и почему туда', state.horizon, 'ваш ответ Лемеху', 'commitQ2Btn', 'Ответить') +
+                   '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:6px 0 0; line-height:1.45;">Здесь — про куда и зачем, а не про как: направление и результат, без пошагового плана.</div>'));
       if (!locked) {
         block.querySelector('.ga-horizon').addEventListener('input', function (e) {
           state.horizon = e.target.value; syncAnswer1(); saveState();
@@ -234,14 +253,14 @@
       var locked = stepLocked('q3');
       var block = document.createElement('div');
       var react = (state.horizon || '').trim().length >= 40
-        ? '<b>Лемех</b> слушает, не перебивая, потом медленно: «Хм. Дальше вы заглянули, чем половина моего комитета».'
-        : '<b>Лемех</b> ждёт секунду, будто надеясь на продолжение: «Коротко. Ну ладно, зайдём с другой стороны».';
-      block.className = 's2-block';
+        ? 'слушает, не перебивая, потом медленно: «Хм. Дальше вы заглянули, чем половина моего комитета».'
+        : 'ждёт секунду, будто надеясь на продолжение: «Коротко. Ну ладно, зайдём с другой стороны».';
+      block.className = 'chat';
       block.innerHTML =
-        '<p class="s2-ageev">' + react + '</p>' +
-        '<p class="s2-ageev"><b>Лемех</b> щурится: «Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт не сойдётся. Что тогда — и как вы поймёте, что пора менять курс?»</p>' +
-        '<textarea class="s2-rationale" aria-label="Что если будущее пойдёт иначе и как поймёте, что пора менять курс" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.answer2) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить разговор →</button>');
+        them('Лемех', react) +
+        them('Лемех', 'щурится: «Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт не сойдётся. Что тогда — и как вы поймёте, что пора менять курс?»') +
+        (locked ? me(state.answer2)
+                : inputBox('s2-rationale', 'Что если будущее пойдёт иначе и как поймёте, что пора менять курс', state.answer2, 'ваш ответ', 'finishBtn', 'Ответить и закончить'));
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
           state.answer2 = e.target.value; saveState();
@@ -257,8 +276,14 @@
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
       if (upTo >= 2) body.appendChild(buildQ3Block());
+      // короткое появление только у реплик текущего шага: перечитывая переписку,
+      // участник не должен ждать анимации на уже отвеченном
       var last = body.lastElementChild;
-      if (last && !state.finished) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (last && !state.finished) {
+        last.querySelectorAll('.chat-msg.them').forEach(function (m) { m.classList.add('is-new'); });
+        var ta = last.querySelector('textarea');
+        (ta || last).scrollIntoView({ block: 'center', behavior: 'smooth' });
+      }
     }
 
     function showFinishOverlay() {
