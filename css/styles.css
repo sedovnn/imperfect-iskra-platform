@@ -3886,7 +3886,10 @@ tr.fac-row-ai td { background: var(--band); }
 .chat-name {
   display: block;
   font-family: var(--ff-body);
-  font-size: 11px;
+  /* 13px — тот же шаг, что у .chat-note и .chat-act рядом: подпись перестаёт
+     теряться в тексте, а новый размер в системе не появляется. Отличие от
+     ремарок держится капсом и весом, не размером. */
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
