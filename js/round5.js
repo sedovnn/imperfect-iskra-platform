@@ -198,7 +198,7 @@
 
     function them(name, o) {
       o = o || {};
-      return '<div class="chat-msg them">' +
+      return '<div class="chat-msg them" data-who="' + name + '">' +
         (name ? '<span class="chat-name">' + name +
           (o.note ? ' <span class="chat-note">(' + o.note + ')</span>' : '') + '</span>' : '') +
         (o.act ? '<div class="chat-act">' + o.act + '</div>' : '') +
@@ -209,7 +209,7 @@
     function me(text) {
       var t = String(text || '').trim();
       t = t ? escapeHtml(t) : '<i>промолчали</i>';
-      return '<div class="chat-msg me"><span class="chat-name">Вы</span>' +
+      return '<div class="chat-msg me" data-who="Вы"><span class="chat-name">Вы</span>' +
              '<div class="chat-bubble">' + t + '</div></div>';
     }
     function inputBox(cls, aria, value, ph, btnId, btnLabel) {
@@ -313,6 +313,15 @@
       if (upTo >= 2) body.appendChild(buildQ3Block());
       var last = body.lastElementChild;
       if (last && !state.finished) {
+        // подряд идущие реплики одного человека не повторяют подпись — как в
+        // мессенджерах; действие курсивом при этом остаётся у каждой
+        var prevWho = null;
+        body.querySelectorAll('.chat-msg').forEach(function (m) {
+          var who = m.getAttribute('data-who') || '';
+          var nameEl = m.querySelector('.chat-name');
+          if (nameEl && who && who === prevWho) nameEl.remove();
+          prevWho = who;
+        });
         last.querySelectorAll('.chat-msg.them').forEach(function (m, i) {
           m.style.animationDelay = (i * 0.42) + 's';
           m.classList.add('is-new');
