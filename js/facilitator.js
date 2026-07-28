@@ -1587,7 +1587,10 @@
     );
 
     // ---- Три комнаты финального отрезка ----
-    ['roomFuture', 'roomAlternatives', 'roomPath'].forEach(function (key) {
+    // Порядок = нумерация раундов: Р3 «Лемех» → Р4 «Черновик к комитету» →
+    // Р5 «Прожектор». Прежний порядок остался от старых имён комнат (будущее →
+    // альтернативы → путь) и после переименования показывал в карточке 3, 5, 4.
+    ['roomFuture', 'roomPath', 'roomAlternatives'].forEach(function (key) {
       var config = ROOM_CONFIGS[key];
       var state = key === 'roomFuture' ? roomFuture : (key === 'roomAlternatives' ? roomAlternatives : roomPath);
       var room = renderRoomHtml(key, state);
