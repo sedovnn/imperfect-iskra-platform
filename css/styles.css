@@ -3922,3 +3922,5 @@ tr.fac-row-ai td { background: var(--band); }
 /* отправка — справа: и у мессенджеров так, и ответы участника в переписке справа */
 .chat-input .btn { display: block; margin-left: auto; }
 @media (max-width: 600px) { .chat-msg { max-width: 92%; } }
+/* на финиш-экранах карточка и так узкая — ограничение в 76% там только зажимает */
+.gate-card .chat-msg { max-width: 100%; }

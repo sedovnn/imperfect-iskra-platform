@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=56" />
+<link rel="stylesheet" href="css/styles.css?v=57" />
 </head>
 <body class="frame-narrow">
 
@@ -34,7 +34,20 @@
   <div class="gate-card">
     <p class="kicker">✓ Раунд 5 завершён</p>
     <h2>Дашу зовут к стойке</h2>
-    <p style="text-align:left; font-style:italic; line-height:1.6; margin:0 0 20px; color:var(--ink);"><b>Даша</b> забирает свой кофе: «Слушайте, спасибо. Пришла с одним „заматчи офферы“ — ухожу с несколькими ходами в голове. Пойду думать». <b>Брагин</b> салютует чашкой: «И вы идите, вас финализация заждалась. Да, и придержите этот разговор в голове: чужой затык иногда подсказывает про свою компанию больше, чем сам о ней надумаешь».</p>
+    <!-- Финал раунда — теми же баблами, что и сам разговор: имя капсом, действие
+         курсивом, в бабле только речь (см. .chat-* в styles.css). -->
+    <div class="chat" style="text-align:left; margin:0 0 20px;">
+      <div class="chat-msg them">
+        <span class="chat-name">Даша</span>
+        <div class="chat-act">забирает свой кофе</div>
+        <div class="chat-bubble">Слушайте, спасибо. Пришла с одним „перебей офферы“ — ухожу с несколькими ходами в голове. Пойду думать.</div>
+      </div>
+      <div class="chat-msg them">
+        <span class="chat-name">Олег Брагин</span>
+        <div class="chat-act">салютует чашкой</div>
+        <div class="chat-bubble">И вы идите, вас финализация стратегии заждалась, думаю. Да, и придержите этот разговор в голове: чужой затык иногда подсказывает про свою компанию больше, чем сам о ней надумаешь.</div>
+      </div>
+    </div>
     <p class="section-lead" style="margin:0 0 24px;">Три разговора позади — пора собрать всё, что вы наработали, в единую стратегию. Она ждёт вас на карте, к финальной сборке.</p>
     <a class="btn btn-primary btn-block" href="map.html">Вернуться к карте →</a>
   </div>
