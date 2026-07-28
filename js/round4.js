@@ -131,6 +131,22 @@
   function initWorkspace() {
     state = loadState(session.bib);
 
+    // ── речь персонажей — теми же пузырями, что в раундах 3 и 5 ──
+    // Раунд 4 не переписка: под репликой идёт рабочая форма (состояния, этапы,
+    // барьеры). Пузырь нужен только чтобы речь везде выглядела одинаково.
+    function speechOf(t) {
+      return String(t || '').trim().replace(/^«/, '').replace(/»([.!?…]?)$/, '$1');
+    }
+    function them(name, o) {
+      o = o || {};
+      return '<div class="chat"><div class="chat-msg them" data-who="' + name + '">' +
+        '<span class="chat-name">' + name +
+        (o.note ? ' <span class="chat-note">(' + o.note + ')</span>' : '') + '</span>' +
+        (o.act ? '<div class="chat-act">' + o.act + '</div>' : '') +
+        '<div class="chat-bubble">' + speechOf(o.speech) + '</div>' +
+        '</div></div>';
+    }
+
     // позиция со станции 2 — то, путь к чему Штерн заставляет расписать (ПП).
     var s2 = null;
     try { s2 = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
@@ -138,9 +154,9 @@
     // своя позиция без названия (длинное описание) в реплику Штерна не влезает —
     // тогда говорим о «курсе»; названную позицию подставляем как обычно
     var stancePhrase = (stance && (!stance.isOwn || stance.named)) ? stance.label : 'выбранный вами курс';
-    // Когда название позиции стоит ВНУТРИ реплики (сама реплика уже в «ёлочках»),
-    // берём его во внутренние „лапки“ — иначе на стыке выходит «« (stanceOf отдаёт
-    // метку уже в «ёлочках»). Тот же приём, что в репликах раунда 2.
+    // stanceInner (лапки вместо «ёлочек») нужен был, пока реплика целиком стояла
+    // в кавычках. В пузыре внешних кавычек нет, поэтому подставляем stancePhrase
+    // как есть — «Крепость» в «ёлочках». Переменная ниже осталась для раунда 2.
     var stanceInner = stancePhrase.replace(/^«/, '„').replace(/»$/, '“');
     // первый ход со станции 2 — подставляем как опору, чтобы путь не начинался с чистого листа
     var firstMove = (s2 && s2.firstAction ? String(s2.firstAction).trim() : '');
@@ -179,7 +195,8 @@
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        '<p class="s2-ageev"><b>Штерн</b> ставит чашку: «' + escapeHtml(stanceInner) + ' — на словах красиво. Но я финансист, мне нужен путь, а не название. Покажите его по-честному: где мы сейчас — и какими шагами дойдём до цели?»</p>' +
+        them('Григорий Штерн', { note: 'финансовый директор', act: 'ставит чашку',
+          speech: '«' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не название. Покажите его по-честному: где мы сейчас — и какими шагами дойдём до цели?»' }) +
         (firstMove ? '<div class="pp-firstmove">Ваш первый ход из раунда 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
           '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" aria-label="Текущее состояние — где мы сейчас" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
@@ -255,11 +272,12 @@
       block.className = 's2-block';
       var pathLaidOut = (state.targetState || '').trim() || (state.stages || []).some(function (s) { return (s.description || '').trim(); });
       var react = pathLaidOut
-        ? '<b>Штерн</b> кивает на этапы: «Уже похоже на план. Хорошо».'
-        : '<b>Штерн</b> поднимает бровь: «Для меня это пока набросок — и тогда у меня к вам ещё один вопрос».';
+        ? { act: 'кивает на этапы', speech: '«Уже похоже на план. Хорошо».' }
+        : { act: 'поднимает бровь', speech: '«Для меня это пока набросок — и тогда у меня к вам ещё один вопрос».' };
       block.innerHTML =
-        '<p class="s2-ageev">' + react + '</p>' +
-        '<p class="s2-ageev"><b>Штерн</b> проходится по вашим этапам глазами: «Что реально этому помешает — и есть ли на что опереться? Мешает всегда что-то конкретное, а не „рынок вообще“. Ну и где совсем стена, а где можно обойти — тоже не маловажный фактор в бизнесе.»</p>' +
+        them('Григорий Штерн', react) +
+        them('Григорий Штерн', { act: 'проходится по вашим этапам глазами',
+          speech: '«Что реально этому помешает — и есть ли на что опереться? Мешает всегда что-то конкретное, а не «рынок вообще». Ну и где совсем стена, а где можно обойти — тоже не маловажный фактор в бизнесе.»' }) +
         '<div class="pp-columns">' +
           '<div class="pp-column"><h4>Барьеры</h4><div class="pp-list" data-list="barriers"></div>' +
             (locked ? '' : '<button class="btn btn-ghost" data-add="barriers" style="margin-top:8px;">+ добавить барьер</button>') +
