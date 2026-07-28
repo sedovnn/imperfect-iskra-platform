@@ -297,7 +297,10 @@
       // участник не должен ждать анимации на уже отвеченном
       var last = body.lastElementChild;
       if (last && !state.finished) {
-        last.querySelectorAll('.chat-msg.them').forEach(function (m) { m.classList.add('is-new'); });
+        last.querySelectorAll('.chat-msg.them').forEach(function (m, i) {
+          m.style.animationDelay = (i * 0.42) + 's';
+          m.classList.add('is-new');
+        });
         var ta = last.querySelector('textarea');
         (ta || last).scrollIntoView({ block: 'center', behavior: 'smooth' });
       }
