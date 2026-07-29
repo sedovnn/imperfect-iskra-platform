@@ -1607,7 +1607,9 @@ body.imp-drawer-open .dock-rail { display: none; }
 .stratos-art { padding: 14px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--paper); }
 @media (max-width: 860px) { .stratos-grid { grid-template-columns: 1fr; } }
 /* лёгкая «оболочка» StratOS: вкладки + заголовок «…/обзор» — в нашем бренде */
-.stratos-shell-tabs { display: flex; justify-content: flex-start; align-items: flex-end; gap: 12px; flex-wrap: wrap; border-bottom: 1px solid var(--hairline); margin: 4px 0 16px; }
+/* Линии под вкладками нет: активную вкладку и так помечает вермилионовая грань,
+   а сплошная черта через всю ширину читалась как разделитель разделов. */
+.stratos-shell-tabs { display: flex; justify-content: flex-start; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 4px 0 16px; }
 .sst-tabs { display: flex; gap: 18px; flex-wrap: wrap; }
 .sst-tab { font-size: 13px; font-weight: 600; color: var(--muted-soft); white-space: nowrap; padding-bottom: 8px; border-bottom: 2px solid transparent; }
 .sst-tab.is-active { color: var(--ink); border-bottom-color: var(--accent); }
