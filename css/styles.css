@@ -1606,28 +1606,15 @@ body.imp-drawer-open .dock-rail { display: none; }
 .stratos-col-h { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin: 2px 0 0; }
 .stratos-art { padding: 14px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--paper); }
 @media (max-width: 860px) { .stratos-grid { grid-template-columns: 1fr; } }
-/* лёгкая «оболочка» StratOS: вкладки + заголовок «…/обзор» — в нашем бренде */
-/* Линии под вкладками нет: активную вкладку и так помечает вермилионовая грань,
-   а сплошная черта через всю ширину читалась как разделитель разделов. */
-.stratos-shell-tabs { display: flex; justify-content: flex-start; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin: 4px 0 16px; }
-.sst-tabs { display: flex; gap: 18px; flex-wrap: wrap; }
-.sst-tab { font-size: 13px; font-weight: 600; color: var(--muted-soft); white-space: nowrap; padding-bottom: 8px; border-bottom: 2px solid transparent; }
-.sst-tab.is-active { color: var(--ink); border-bottom-color: var(--accent); }
-/* почему пять вкладок закрыты — иначе читается как «я чего-то не сделал» */
-.sst-tab-note {
-  font-family: var(--ff-body);
-  font-size: 12px;
-  color: var(--muted-soft);
-  align-self: center;
-  padding-left: 4px;
-}
-
-.sst-tab.is-locked { color: var(--gray-3, #c9ccd0); }
+/* лёгкая «оболочка» StratOS: заголовок «…/обзор» — в нашем бренде.
+   Ряд вкладок («Моя стратегия · Команда 🔒 … откроются в командном раунде»)
+   убран целиком: пять закрытых замков обещали разделы, которых в соло-режиме
+   нет, — обещание будущего вместо работы над стратегией. Стили .sst-tab*
+   удалены вместе с разметкой, чтобы не оставлять мёртвых правил. */
 .stratos-shell-title { display: flex; justify-content: flex-start; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin: 0 0 16px; }
 .sst-title { margin: 0; }
 .sst-obzor { color: var(--accent); }
 .sst-sub { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
-.sst-tab { cursor: default; } /* визуальная рамка StratOS, не кликабельные контролы */
 /* единое видимое фокус-кольцо для клавиатурной навигации (WCAG 2.4.7) — доборка к точечным :focus-visible */
 .btn:focus-visible, a.hub-room-card:focus-visible, .fac-tab-btn:focus-visible, .fac-table tbody tr:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .stratos-art-h { font-size: 12px; font-weight: 700; letter-spacing: 0.02em; color: var(--ink); margin-bottom: 8px; }
