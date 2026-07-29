@@ -3952,10 +3952,17 @@ tr.fac-row-ai td { background: var(--band); }
 .s2-block > .btn-primary,
 .s2-body > div > .btn-primary,
 .links-body .conn-actions > .btn-primary,
+.btn-advance.btn-primary,
 #finishBtn.btn-primary {
   display: block;
   margin-left: auto;
 }
+/* .btn-advance — метка «кнопка продвижения вперёд» для тех кнопок, что стоят в
+   разметке страницы, а не собираются JS внутри известного контейнера. Появилась
+   после реального дефекта: правило было написано на #finishBtn, а на раунде 1
+   кнопок завершения две (#finishBtn / #finishBtn2), и вторая осталась слева —
+   на одном экране одна кнопка справа, другая слева. Новую кнопку продвижения
+   помечать этим классом, а не дописывать сюда очередной идентификатор. */
 @media (max-width: 600px) { .chat-msg { max-width: 92%; } }
 /* на финиш-экранах карточка и так узкая — ограничение в 76% там только зажимает */
 .gate-card .chat-msg { max-width: 100%; }
