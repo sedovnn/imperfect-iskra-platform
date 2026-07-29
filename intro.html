@@ -15,29 +15,29 @@
      Приглушённый FP-лист: настраивает, а не оценивает (прайминг, не рубрика). */
   .intro { max-width: 760px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 40px); min-height: 100vh; display: flex; flex-direction: column; }
   .intro-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
-  .intro-sec { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-soft); }
   .intro-hero { padding: 40px 0 6px; }
   .intro-hero h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 800; text-transform: uppercase; letter-spacing: -.015em; line-height: 1.02; margin: 14px 0 0; }
-  .intro-hero .lead { font-size: 17px; line-height: 1.55; color: var(--muted); margin-top: 16px; max-width: 58ch; }
+  /* лид и текст пунктов — системные роли (.section-lead 16 / body 15), своих
+     размеров страница больше не заводит: было 17/15/14/13/12/11 на одном экране */
+  .intro-hero .lead { margin-top: 16px; max-width: 58ch; }
   .intro-hero .lead b { color: var(--ink); }
-  /* группы принципов */
+  /* три равноправные секции: метки у всех трёх — один системный .kicker */
   .pgroup { margin-top: 34px; }
-  .pgroup-h { font-size: 15px; font-weight: 700; color: var(--ink); margin: 0 0 10px; }
   .prin { display: flex; gap: 14px; padding: 13px 0; border-top: 1px solid var(--hairline); }
   .prin:first-of-type { border-top: none; }
   .prin .n { flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--ink); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .prin .t { font-size: 15px; line-height: 1.5; color: var(--ink); }
   .prin .t b { font-weight: 700; }
-  .prin .t .sub { display: block; color: var(--muted); font-size: 14px; margin-top: 3px; }
   /* «про ИИ» — единственный акцент-блок (это важно проговорить прямо) */
   .prin.accent .n { border-color: var(--accent); color: var(--accent); }
-  /* логистика/мета — тихая полоса без нумерации: читается легче прайминга */
-  .intro-notes { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--hairline); }
-  .intro-note { padding: 11px 0; border-top: 1px solid var(--hairline); font-size: 14px; line-height: 1.5; color: var(--muted); }
+  /* Логистика — та же секция, но без нумерации: нумерованное = принципы,
+     ненумерованное = справка. Различие намеренное, а не «дописали в конце». */
+  .intro-note { padding: 13px 0; border-top: 1px solid var(--hairline); font-size: 15px; line-height: 1.5; color: var(--muted); }
   .intro-note:first-of-type { border-top: none; }
   .intro-note b { color: var(--ink); font-weight: 700; }
+  .intro-disclaimer { margin-top: 28px; font-size: 15px; line-height: 1.5; color: var(--muted); }
   .intro-cta { margin: 40px 0; }
-  .intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: 12px; color: var(--muted-soft); }
+  .intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: 13px; color: var(--muted-soft); }
 </style>
 </head>
 <body>
@@ -46,17 +46,17 @@
 
     <header class="intro-head">
       <a class="logo" href="map.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
-      <div class="intro-sec">Перед стартом</div>
+      <p class="kicker" style="margin:0;">Перед стартом</p>
     </header>
 
     <div class="intro-hero">
       <p class="kicker">Настройка на мышление</p>
       <h1>Как проходить<br><span style="color:var(--accent);">ассессмент</span></h1>
-      <p class="lead">Это не экзамен и не тест на «правильный ответ». Мы смотрим, <b>как вы думаете</b> над живым кейсом, а не решили ли вы его «верно». Пара минут на настройку — и начинаем.</p>
+      <p class="section-lead lead">Это не экзамен и не тест на «правильный ответ». Мы смотрим, <b>как вы думаете</b> над живым кейсом, а не решили ли вы его «верно». Пара минут на настройку — и начинаем.</p>
     </div>
 
     <div class="pgroup">
-      <p class="pgroup-h">Как отвечать</p>
+      <p class="kicker">Как отвечать</p>
       <!-- Аудит 2026-07-27: из принципов убраны формулы навыков («охватите картину
            целиком» = АК-1, «что рассмотрели, что отвергли» = ГА-1) — они выдавались
            всем до старта, а судья ГА считает перечисление отвергнутого спонтанным. -->
@@ -70,18 +70,19 @@
     </div>
 
     <div class="pgroup">
-      <p class="pgroup-h">ИИ и источники</p>
+      <p class="kicker">ИИ и источники</p>
       <div class="prin accent"><span class="n">4</span><span class="t"><b>Отвечайте сами, без ИИ.</b> Смысл ассессмента — ваш собственный профиль: чужие ответы сделают его бессмысленным.</span></div>
       <div class="prin"><span class="n">5</span><span class="t"><b>Опирайтесь на данные кейса и свой опыт:</b> знаете релевантные сигналы, которых в кейсе нет напрямую, — приносите, объясняя логику.</span></div>
     </div>
 
-    <div class="intro-notes">
+    <div class="pgroup">
+      <p class="kicker">Что ещё важно знать</p>
       <div class="intro-note"><b>Формат.</b> Пишите всё на платформе — заметки доступны всю игру. Шесть раундов, около 2 часов; удобнее всего проходить с компьютера или планшета.</div>
       <div class="intro-note"><b>Что в итоге.</b> Профиль по пяти навыкам и сравнение с ИИ, с рекомендациями по развитию. Персональные данные платформа не хранит — так оценка честнее; отчёт формируется по вашему fp(id).</div>
-      <div class="intro-note"><b>Навигация.</b> В правом верхнем углу каждого рабочего экрана всегда под рукой: <b>«Мои ответы»</b> — всё, что вы уже написали, <b>«Кейс»</b> — полный текст материалов «Искры», ваш номер участника, «?» — подсказка по текущему экрану, и «ⓘ» — возврат на эту страницу («Как проходить»).</div>
+      <div class="intro-note"><b>Навигация.</b> В правом верхнем углу каждого рабочего экрана всегда под рукой: «Мои ответы» — всё, что вы уже написали, «Кейс» — полный текст материалов «Искры», ваш номер участника, «?» — подсказка по текущему экрану, и «ⓘ» — возврат на эту страницу («Как проходить»).</div>
     </div>
 
-    <p style="margin-top:28px; font-size:13px; color:var(--muted); line-height:1.5;"><i>Кейс вымышленный — любые совпадения случайны; не переносите в ответы факты о конкретных реальных компаниях, которые он может напоминать.</i></p>
+    <p class="intro-disclaimer"><i>Кейс вымышленный — любые совпадения случайны; не переносите в ответы факты о конкретных реальных компаниях, которые он может напоминать.</i></p>
 
     <div class="intro-cta">
       <a class="btn btn-primary btn-block" id="startBtn" href="map.html">К карте ассессмента →</a>
@@ -100,6 +101,6 @@
     } catch (e) {}
   });
 </script>
-<script src="js/typo.js?v=1"></script>
+<script src="js/typo.js?v=2"></script>
 </body>
 </html>
