@@ -4060,5 +4060,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    самом конце и всегда раскрыта. Сворачивать её незачем — к ней приходят за
    одним словом по ходу чтения, и лишний клик тут только мешает. Отбита так же,
    как приложения, чтобы не читалась продолжением П10. */
-.appx-doc-open { border-top: 1px solid var(--hairline); padding-top: 18px; }
-.appx-doc-open .appx-doc-head h3 { margin: 0 0 10px; }
+/* Заголовок раскрытой справки повторяет отступы шапки приложения: раньше их
+   давал selector .appx-doc > summary, а после замены details на div правило
+   перестало действовать, и заголовок уезжал левее текста. Своей границы блоку
+   не добавляем — рамка карточки .appx-doc уже отделяет его от П10. */
+.appx-doc-open > .appx-doc-head { padding: 20px 24px 0; }
+.appx-doc-open > .appx-doc-head h3 { margin: 0; }

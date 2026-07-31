@@ -617,6 +617,15 @@
   // Ряд действий карточки обновляем ТОЧЕЧНО, без перерисовки списка: кнопка
   // «подпереть» должна появиться сразу, как участник описал наблюдение, а полный
   // ре-рендер на каждый ввод отнимал бы фокус прямо во время набора.
+  // Обновить ряды действий у всех карточек, не пересобирая список: полная
+  // перерисовка уносит фокус из поля, в котором человек печатает.
+  function syncAllCardActions() {
+    document.querySelectorAll('#cardsList .problem-card').forEach(function (el) {
+      var h = (state.highlights || []).filter(function (x) { return x.id === el.dataset.hlId; })[0];
+      if (h) syncCardActions(el, h);
+    });
+  }
+
   function syncCardActions(el, h) {
     var row = el.querySelector('.card-actions');
     var usedBy = propUsedBy(h.id);
@@ -804,6 +813,19 @@
 
   function renderDeep() {
     var wrap = document.getElementById('deepList');
+    // Запоминаем, где стоял курсор: блок пересобирается целиком (в том числе из
+    // renderProblems), и без этого человек терял поле прямо во время набора —
+    // экран дёргался, а буквы уходили в никуда.
+    var focus = null;
+    var act = document.activeElement;
+    if (act && wrap && wrap.contains(act) && act.tagName === 'TEXTAREA') {
+      var host = act.closest('.deep');
+      focus = {
+        deepId: host ? host.dataset.deepId : '',
+        mech: act.getAttribute('data-mech') || '',
+        start: act.selectionStart, end: act.selectionEnd
+      };
+    }
     var empty = document.getElementById('deepEmpty');
     var addBtn = document.getElementById('deepAdd');
     var chip = document.getElementById('deepChip');
@@ -859,6 +881,17 @@
     }
     growCardTextareas(wrap);
     wrap.querySelectorAll('textarea').forEach(growTextarea);
+
+    if (focus) {
+      var host2 = wrap.querySelector('.deep[data-deep-id="' + focus.deepId + '"]');
+      var back = host2 && (focus.mech
+        ? host2.querySelector('[data-mech="' + focus.mech + '"]')
+        : host2.querySelector('[data-deep-text]'));
+      if (back) {
+        back.focus();
+        try { back.setSelectionRange(focus.start, focus.end); } catch (e) {}
+      }
+    }
   }
 
   // ввод в полях глубинной
@@ -873,7 +906,7 @@
       var wasEmpty = !deepList().some(function (x) { return (x.text || '').trim(); });
       d.text = t.value; saveState();
       // первая написанная буква открывает кнопки «в обоснование» у наблюдений
-      if (wasEmpty && d.text.trim()) renderProblems();
+      if (wasEmpty && d.text.trim()) syncAllCardActions();
       return;
     }
     var mech = t.getAttribute('data-mech');
