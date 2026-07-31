@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=78" />
+<link rel="stylesheet" href="css/styles.css?v=79" />
 <style>
   /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
   .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -488,7 +488,7 @@
             <div class="wblock-head">
               <div class="wblock-head-left">
                 <div class="kicker" style="margin:0;">Наблюдения из текста</div>
-                <span class="wchip" id="cardCount">0 проблем</span>
+                <span class="wchip wchip-num" id="cardCount">0</span>
               </div>
               <button type="button" class="wtoggle" data-collapse="obsBody">свернуть</button>
             </div>
@@ -509,7 +509,7 @@
             <div class="wblock-head">
               <div class="wblock-head-left">
                 <div class="kicker" style="margin:0;">Связки</div>
-                <span class="wchip" id="connCount">0</span>
+                <span class="wchip wchip-num" id="connCount">0</span>
               </div>
               <button type="button" class="wtoggle" data-collapse="connBody">свернуть</button>
             </div>
@@ -523,7 +523,7 @@
           <!-- Продвижение — в потоке рабочей области, как во всех раундах
                (ревизия 2026-07-27: плавающая кнопка в углу была последним местом,
                где механика отличалась от остальных экранов). -->
-          <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--hairline);">
+          <div class="work-advance">
             <button class="btn btn-primary btn-advance" id="finishBtn">Завершить раунд →</button>
           </div>
 
@@ -568,7 +568,7 @@
 <script src="js/dossier-render.js?v=5"></script>
 <script src="js/dossier-panel.js?v=6"></script>
 <script src="js/case-ref.js?v=7"></script>
-<script src="js/round1.js?v=42"></script>
+<script src="js/round1.js?v=44"></script>
 <script src="js/progress.js?v=7"></script>
 <script src="js/save-status.js?v=1"></script>
 </body>

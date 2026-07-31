@@ -14,6 +14,7 @@
   --accent-dim: #e63f00;
   --accent-tint: #fff2ec;
   --accent-line: #ffd7c7;
+  --accent-ink: #c73500;  /* вермилион для мелкого текста на --accent-tint: 4.9:1 (WCAG 1.4.3); сам --accent там даёт 3.1:1 */
   --jb: #89bbf1;
   --band: #eaf3fb;
   --band-line: #bcd9f2;
@@ -3995,6 +3996,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 2px 7px; white-space: nowrap;
 }
 .wchip.is-ok { color: var(--accent); border-color: var(--accent); }
+/* Счётчик — просто число. Ноль молчит серым, любое ненулевое становится
+   акцентным: по колонке одним взглядом видно, где работа уже есть. */
+.wchip-num { letter-spacing: 0; min-width: 24px; text-align: center; }
+.wchip-num.is-active { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-tint); }
 .wblock-lead { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
 
 .deep { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 12px 14px; margin-top: 10px; }
@@ -4066,3 +4071,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Волосок над первым блоком: без него подсказка про выделение текста слипалась
    с «Главной проблемой» и читалась как её описание, а не как общее пояснение. */
 .wblock:first-of-type { border-top: 1px solid var(--hairline); padding-top: 18px; }
+/* Полоса «Завершить раунд» опирается на отступ последнего блока и не добавляет
+   свой: иначе под свёрнутыми «Связками» зияло полсотни пикселей пустоты. */
+.work-advance { padding-top: 20px; border-top: 1px solid var(--hairline); }

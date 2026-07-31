@@ -577,11 +577,12 @@
       });
   }
 
-  function pluralProblems(n) {
-    var m10 = n % 10, m100 = n % 100;
-    if (m10 === 1 && m100 !== 11) return 'а';
-    if ([2, 3, 4].indexOf(m10) !== -1 && [12, 13, 14].indexOf(m100) === -1) return 'ы';
-    return '';
+
+  // Счётчик в шапке блока: ноль молчит серым, ненулевое — акцентом.
+  function setChip(el, n) {
+    if (!el) return;
+    el.textContent = n;
+    el.className = 'wchip wchip-num' + (n ? ' is-active' : '');
   }
 
   function updateProblemCount() {
@@ -589,7 +590,7 @@
     var n = orderedHighlights().filter(function (h) {
       return (h.snippet && h.snippet.trim()) || (h.problem && h.problem.trim());
     }).length;
-    document.getElementById('cardCount').textContent = n + ' проблем' + pluralProblems(n);
+    setChip(document.getElementById('cardCount'), n);
   }
 
   // Поля в карточках растут под содержимое. При rows="2" третья строка уходила во
@@ -998,8 +999,7 @@
 
   // Связки: проблемы выбираются кликом по чипам (не печатаются).
   function updateConnCount() {
-    var el = document.getElementById('connCount');
-    if (el) el.textContent = (state.connections || []).length;
+    setChip(document.getElementById('connCount'), (state.connections || []).length);
   }
 
   function renderConnections() {
