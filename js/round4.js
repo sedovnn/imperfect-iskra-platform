@@ -279,7 +279,7 @@
                 : '<div class="s2-mine"><span class="chat-name">Вы</span>' +
                     '<textarea class="pp-barriers" aria-label="Что остановит и на что опираетесь" rows="9" placeholder="ваш ответ Штерну">' + escapeHtml(state.barriersText) + '</textarea>' +
                   '</div>' +
-                  '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Отдать наброски Штерну →</button>');
+                  '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Ответить и закончить</button>');
 
       if (!locked) {
         block.querySelector('.pp-barriers').addEventListener('input', function (e) {
@@ -287,7 +287,7 @@
         });
         block.querySelector('#finishBtn').addEventListener('click', function () {
           if (!state.barriersText.trim()) {
-            window.imp.confirm('Отдать наброски без ответа на второй вопрос?', { confirmLabel: 'Отдать', cancelLabel: 'Вернуться к ответу' })
+            window.imp.confirm('Ничего не ответить Штерну — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
               .then(function (ok) { if (ok) finishRoom(); });
             return;
           }
