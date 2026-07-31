@@ -676,7 +676,7 @@
         // Подписи у первого поля нет: плейсхолдер объясняет то же самое, а строка
         // занимала место в и без того тесной колонке.
         '<textarea rows="2" data-field="problem"' + (state.finished ? ' disabled' : '') +
-          ' placeholder="в чём здесь проблема для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>' +
+          ' placeholder="в чём здесь проблема для компании">' + escapeHtml(h.problem || '') + '</textarea>' +
         // Пометка «угроза/возможность» убрана 2026-07-31. Ни один маркер АК-2 её не
         // использует, а методология называет ярлык сквозным дисквалификатором:
         // «ярлык („угроза“/„возможность“) — это не анализ». Техническая роль у неё
@@ -857,7 +857,7 @@
 
       el.innerHTML =
         '<textarea data-deep-text rows="3"' + (locked ? ' disabled' : '') +
-          ' placeholder="одним предложением">' + escapeHtml(d.text || '') + '</textarea>' +
+          ' placeholder="в чём она — своими словами">' + escapeHtml(d.text || '') + '</textarea>' +
         '<div class="deep-sub"><span>На чём основано</span>' +
           '<span class="deep-need' + (left ? '' : ' is-ok') + '">' +
           (left ? ('нужно ещё ' + left) : 'обосновано') + '</span></div>' +
