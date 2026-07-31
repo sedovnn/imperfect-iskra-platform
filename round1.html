@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=70" />
+<link rel="stylesheet" href="css/styles.css?v=71" />
 <style>
   /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
   .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -491,8 +491,13 @@
           <div class="wblock" id="deepBlock">
             <div class="wblock-head">
               <div class="kicker" style="margin:0;">Главная проблема</div>
-              <span class="wchip" id="deepChip">необязательно</span>
+              <div style="display:flex; align-items:baseline; gap:10px;">
+                <button type="button" class="wtoggle" id="deepToggle" style="display:none;">свернуть</button>
+                <span class="wchip" id="deepChip">необязательно</span>
+              </div>
             </div>
+
+            <p class="deep-summary" id="deepSummary" style="display:none;"></p>
 
             <div id="deepEmpty">
               <p class="wblock-lead">Агеев пишет: «решив эту задачку, нам, возможно, не нужно будет решать все остальные». Если видите такую — сформулируйте. Не видите — идите дальше, это не штраф.</p>
@@ -578,7 +583,7 @@
 <script src="js/dossier-render.js?v=5"></script>
 <script src="js/dossier-panel.js?v=6"></script>
 <script src="js/case-ref.js?v=7"></script>
-<script src="js/round1.js?v=35"></script>
+<script src="js/round1.js?v=36"></script>
 <script src="js/progress.js?v=7"></script>
 <script src="js/save-status.js?v=1"></script>
 </body>

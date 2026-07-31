@@ -4029,3 +4029,19 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    и 32 лишних пикселя там дороже выравнивания с шапкой. Слева и справа теперь
    одинаково по 24px, и весь выигрыш уходит содержимому. */
 .work-header, .work-scroll { padding-right: 24px; }
+
+/* Левое поле навигации: было var(--frame-pad) = 56px, чтобы «Материалы» стояли
+   ровно под лого в шапке. Но справа у рабочей области теперь 24px, и разница
+   в поле читалась как перекос. Выравниваем на 24 с обеих сторон: колонка при
+   этом сужается ровно на ту же величину, полезная ширина ссылок (226px)
+   сохраняется, а высвобожденные 32px уходят колонке чтения.
+   Плата: «Материалы» больше не стоят под лого — сознательный размен. */
+.case-nav { padding-left: 24px; }
+@media (min-width: 981px) {
+  .station-body { grid-template-columns: 250px minmax(0, 1.5fr) minmax(0, 1fr); }
+}
+.wtoggle { font-size: 12px; color: var(--muted); background: none; border: 0; cursor: pointer; padding: 0; text-decoration: underline; }
+/* Свёрнутая формулировка занимает строку вместо половины колонки: собранная
+   главная проблема с обоснованиями иначе выдавливает наблюдения за экран. */
+.deep-summary { font-size: 14px; line-height: 1.45; margin: 8px 0 0; }
+.deep-summary i { color: var(--muted-soft); font-style: normal; }

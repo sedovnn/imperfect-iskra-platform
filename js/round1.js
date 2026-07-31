@@ -753,6 +753,9 @@
 
     if (empty) empty.style.display = list.length ? 'none' : '';
     if (addBtn) addBtn.style.display = (list.length && !locked) ? '' : 'none';
+    var tgl = document.getElementById('deepToggle');
+    if (tgl) tgl.style.display = list.length ? '' : 'none';
+    if (collapsed) renderDeepSummary();
 
     wrap.innerHTML = '';
     list.forEach(function (d, idx) {
@@ -828,6 +831,33 @@
     // клик по карточке глубинной делает её целевой для следующего «подпереть»
     var deepEl = t.closest && t.closest('.deep');
     if (deepEl) window.__deepTarget = deepEl.dataset.deepId;
+  });
+
+  // Свёрнутое состояние. Собранная главная проблема с двумя-тремя обоснованиями
+  // занимает половину колонки и выдавливает наблюдения за экран — а возвращаться
+  // к ним нужно постоянно. Сворачивается в строку, разворачивается одним кликом.
+  var collapsed = false;
+
+  function renderDeepSummary() {
+    var sum = document.getElementById('deepSummary');
+    if (!sum) return;
+    var parts = deepList().map(function (d) {
+      var t = (d.text || '').trim();
+      return (t ? escapeHtml(t) : '<i>без формулировки</i>') +
+             ' <i>· обоснований: ' + ((d.props || []).length) + '</i>';
+    });
+    sum.innerHTML = parts.join('<br />');
+  }
+
+  var deepToggleBtn = document.getElementById('deepToggle');
+  if (deepToggleBtn) deepToggleBtn.addEventListener('click', function () {
+    collapsed = !collapsed;
+    document.getElementById('deepList').style.display = collapsed ? 'none' : '';
+    var addB = document.getElementById('deepAdd');
+    if (addB) addB.style.display = (collapsed || !deepList().length || state.finished) ? 'none' : '';
+    document.getElementById('deepSummary').style.display = collapsed ? '' : 'none';
+    this.textContent = collapsed ? 'развернуть' : 'свернуть';
+    if (collapsed) renderDeepSummary();
   });
 
   var deepStartBtn = document.getElementById('deepStart');
