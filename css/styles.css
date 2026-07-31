@@ -79,6 +79,10 @@ body.frame-narrow {
    наследуем всем, чтобы точечные textarea/input без явного font-family
    не выпадали из Inter Tight. */
 input, textarea, select, button { font-family: inherit; }
+/* Синего в палитре нет: браузерный accent-color по умолчанию красит радио
+   и галочки в системный синий. Один раз на всю платформу — чернила.
+   (Jordy Blue --jb — это окно ИИ в отчёте, не элементы управления.) */
+input[type="radio"], input[type="checkbox"] { accent-color: var(--ink); }
 
 html, body {
   margin: 0;
@@ -1254,9 +1258,14 @@ footer {
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  margin-bottom: 20px;
+  /* Тот же ритм, что у .chat: 20px до следующей реплики, 8px внутри своей
+     стороны. Иначе поля отбивались от подписи иначе, чем пузырь от имени. */
+  margin: 0 0 20px;
 }
 .s2-mine > * { width: 76%; max-width: 76%; }
+/* Подпись своей стороны — та же .chat-name, что у Агеева, только справа:
+   иначе непонятно, кто говорит, и правая сторона читается как форма. */
+.s2-mine .chat-name { text-align: right; margin: 0 2px 0 0; }
 .s2-mine textarea {
   border-color: var(--accent);
   background: var(--accent-tint);
@@ -1275,6 +1284,8 @@ footer {
   font-weight: 600;
 }
 .s2-mine-label {
+  align-self: flex-end;
+  text-align: right;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .07em;
