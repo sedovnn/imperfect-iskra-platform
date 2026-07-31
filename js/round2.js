@@ -24,7 +24,7 @@
     try { return window.imp.loadSession(); } catch (e) { return null; }
   }
 
-  var STEPS = ['ownMove', 'stance', 'stress', 'backlog', 'rule'];
+  var STEPS = ['ownMove', 'stance', 'stress', 'backlog', 'rule', 'done'];
 
   function blankState() {
     return {
@@ -748,7 +748,7 @@
     // отсечения» — он просит помощи, а не заполнения рубрики.
 
     function buildRuleBlock() {
-      var locked = state.finished;
+      var locked = stepLocked('rule');
       var block = document.createElement('div');
       block.className = 's2-block';
       // Обещание «в конце скажете, чем платите» выполняется только если человек
@@ -774,7 +774,7 @@
         them('', { act: 'уже стоя', speech: 'И обратное. Что должно случиться, чтобы вы сами пришли ко мне и сказали: пора пересматривать?' }) +
         (locked ? me(state.proactiveText)
           : mine('<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="3" placeholder="ваш ответ">' + escapeHtml(state.proactiveText) + '</textarea>')) +
-        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:14px;">Завершить встречу →</button>');
+        (locked ? '' : '<button class="btn btn-primary" id="commitRuleBtn" style="margin-top:14px;">Ответить</button>');
 
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
@@ -786,8 +786,22 @@
         block.querySelector('.s2-proactive').addEventListener('input', function (e) {
           state.proactiveText = e.target.value; saveState();
         });
-        block.querySelector('#finishBtn').addEventListener('click', finishStation);
+        block.querySelector('#commitRuleBtn').addEventListener('click', function () {
+          state.step = 'done'; saveState(); render();
+        });
       }
+      return block;
+    }
+
+    // Последние ответы сначала становятся репликами, и только потом встреча
+    // заканчивается. Прежняя кнопка делала оба действия сразу: участник нажимал
+    // «Завершить встречу» и три своих последних ответа в разговоре не видел —
+    // сразу улетал в оверлей.
+    function buildDoneBlock() {
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML = '<button class="btn btn-primary" id="finishBtn">Завершить встречу →</button>';
+      block.querySelector('#finishBtn').addEventListener('click', finishStation);
       return block;
     }
 
@@ -802,6 +816,7 @@
       if (upTo >= 2) body.appendChild(buildStressBlock());
       if (upTo >= 3) body.appendChild(buildBacklogBlock());
       if (upTo >= 4) body.appendChild(buildRuleBlock());
+      if (state.step === 'done' && !state.finished) body.appendChild(buildDoneBlock());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       var last = body.lastElementChild;

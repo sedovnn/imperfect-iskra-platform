@@ -93,13 +93,36 @@
   </div>
 </div>
 <script>
-  // запомнить, что установку показали — при следующем входе сразу станция 1
-  document.getElementById('startBtn').addEventListener('click', function () {
-    try {
-      var s = JSON.parse(localStorage.getItem('imp_current_session') || 'null');
-      if (s && s.bib) localStorage.setItem('imp_intro_seen_' + s.bib, '1');
-    } catch (e) {}
-  });
+  // Установку открывают двумя способами: из входа (тогда дальше карта) и кнопкой ⓘ
+  // из шапки любого раунда. Во втором случае возврат на карту выбивал участника
+  // из середины разговора — теперь возвращаем туда, откуда пришли.
+  // Откуда пришли, читаем из ?from=, но НЕ доверяем значению: переход только по
+  // белому списку своих страниц, иначе параметр в адресе стал бы открытой
+  // переадресацией.
+  (function () {
+    var ALLOWED = {
+      'round1.html': 'в раунд 1',
+      'round2.html': 'в раунд 2',
+      'round3.html': 'в раунд 3',
+      'round4.html': 'в раунд 4',
+      'round5.html': 'в раунд 5',
+      'map.html': 'к карте ассессмента'
+    };
+    var btn = document.getElementById('startBtn');
+    var from = '';
+    try { from = new URLSearchParams(location.search).get('from') || ''; } catch (e) {}
+    if (from && ALLOWED[from] && from !== 'map.html') {
+      btn.setAttribute('href', from);
+      btn.textContent = 'Вернуться ' + ALLOWED[from] + ' →';
+    }
+    // запомнить, что установку показали — при следующем входе сразу раунд 1
+    btn.addEventListener('click', function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('imp_current_session') || 'null');
+        if (s && s.bib) localStorage.setItem('imp_intro_seen_' + s.bib, '1');
+      } catch (e) {}
+    });
+  })();
 </script>
 <script src="js/typo.js?v=2"></script>
 </body>

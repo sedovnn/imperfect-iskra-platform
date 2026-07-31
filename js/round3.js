@@ -317,13 +317,26 @@
         them('Виктор Лемех', react) +
         them('Виктор Лемех', { act: 'щурится', speech: 'Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт окажется неверным. И что тогда — как нам понять, что пора менять курс?' }) +
         (locked ? me(state.answer2)
-                : inputBox('s2-rationale', 'Что если будущее пойдёт иначе и как поймёте, что пора менять курс', state.answer2, 'ваш ответ', 'finishBtn', 'Ответить и закончить'));
+                : inputBox('s2-rationale', 'Что если будущее пойдёт иначе и как поймёте, что пора менять курс', state.answer2, 'ваш ответ', 'commitQ3Btn', 'Ответить'));
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
           state.answer2 = e.target.value; saveState();
         });
-        block.querySelector('#finishBtn').addEventListener('click', finishRoom);
+        block.querySelector('#commitQ3Btn').addEventListener('click', function () {
+          state.step = 'done'; saveState(); render();
+        });
       }
+      return block;
+    }
+
+    // Последний ответ сначала становится репликой, и только потом раунд можно
+    // закончить: прежняя кнопка «Ответить и закончить» уводила в оверлей, и свой
+    // последний ответ участник в разговоре не видел.
+    function buildDoneBlock() {
+      var block = document.createElement('div');
+      block.className = 'chat';
+      block.innerHTML = '<button class="btn btn-primary" id="finishBtn">Закончить раунд →</button>';
+      block.querySelector('#finishBtn').addEventListener('click', finishRoom);
       return block;
     }
 
@@ -334,6 +347,7 @@
       if (upTo >= 1) body.appendChild(buildQ2Block());
       if (upTo >= 2) body.appendChild(buildMetricsBlock());
       if (upTo >= 3) body.appendChild(buildQ3Block());
+      if (state.step === 'done' && !state.finished) body.appendChild(buildDoneBlock());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       // короткое появление только у реплик текущего шага: перечитывая переписку,

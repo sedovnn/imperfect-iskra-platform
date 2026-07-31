@@ -265,7 +265,7 @@
     // была дословной формулировкой маркера, то есть прямой утечкой рубрики.
 
     function buildQ2Block() {
-      var locked = state.finished;
+      var locked = stepLocked('q2');
       var laid = String(state.pathText || '').trim().length;
       var react = laid >= 200
         ? { act: 'дочитывает', speech: 'Ясно. Уже похоже на путь, а не на список желаний.' }
@@ -279,21 +279,33 @@
                 : '<div class="s2-mine"><span class="chat-name">Вы</span>' +
                     '<textarea class="pp-barriers" aria-label="Что остановит и на что опираетесь" rows="9" placeholder="ваш ответ Штерну">' + escapeHtml(state.barriersText) + '</textarea>' +
                   '</div>' +
-                  '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Ответить и закончить</button>');
+                  '<button class="btn btn-primary" id="commitQ2Btn" style="margin-top:12px;">Ответить</button>');
 
       if (!locked) {
         block.querySelector('.pp-barriers').addEventListener('input', function (e) {
           state.barriersText = e.target.value; saveState();
         });
-        block.querySelector('#finishBtn').addEventListener('click', function () {
+        block.querySelector('#commitQ2Btn').addEventListener('click', function () {
+          var go = function () { state.step = 'done'; saveState(); render(); };
           if (!state.barriersText.trim()) {
             window.imp.confirm('Ничего не ответить Штерну — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
-              .then(function (ok) { if (ok) finishRoom(); });
+              .then(function (ok) { if (ok) go(); });
             return;
           }
-          finishRoom();
+          go();
         });
       }
+      return block;
+    }
+
+    // Последний ответ сначала становится репликой, и только потом раунд можно
+    // закончить: прежняя кнопка делала оба действия сразу, и свой последний ответ
+    // участник в разговоре не видел — он сразу улетал в оверлей.
+    function buildDoneBlock() {
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML = '<button class="btn btn-primary" id="finishBtn">Закончить раунд →</button>';
+      block.querySelector('#finishBtn').addEventListener('click', finishRoom);
       return block;
     }
 
@@ -302,6 +314,7 @@
       var upTo = state.finished ? STEPS.length - 1 : stepIndex(state.step);
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
+      if (state.step === 'done' && !state.finished) body.appendChild(buildDoneBlock());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       var last = body.lastElementChild;

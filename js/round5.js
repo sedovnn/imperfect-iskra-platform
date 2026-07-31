@@ -291,20 +291,33 @@
           after: 'Забирает свой стакан, уходит к лифтам.' }) +
         them('Олег Брагин', { act: 'провожает её взглядом', speech: 'Тут все друг у друга подсматривают, кофейня такая. Только вот у нас так не делают, как вы говорите. Откуда вы это взяли — придумали сейчас или видели где-то?' }) +
         (locked ? me(state.sourceElaboration)
-                : inputBox('ga-elab', 'Откуда вы это взяли', state.sourceElaboration, 'ваш ответ Брагину', 'finishBtn', 'Ответить и закончить'));
+                : inputBox('ga-elab', 'Откуда вы это взяли', state.sourceElaboration, 'ваш ответ Брагину', 'commitQ3Btn', 'Ответить'));
       if (!locked) {
         block.querySelector('.ga-elab').addEventListener('input', function (e) {
           state.sourceElaboration = e.target.value; saveState();
         });
-        block.querySelector('#finishBtn').addEventListener('click', function () {
+        block.querySelector('#commitQ3Btn').addEventListener('click', function () {
+          var go = function () { state.step = 'done'; saveState(); render(); };
           if (!state.sourceElaboration.trim()) {
             window.imp.confirm('Ничего не ответить Брагину — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
-              .then(function (ok) { if (ok) finishRoom(); });
+              .then(function (ok) { if (ok) go(); });
             return;
           }
-          finishRoom();
+          go();
         });
       }
+      return block;
+    }
+
+    // Последний ответ сначала становится репликой, и только потом раунд можно
+    // закончить. Раньше кнопка делала оба действия сразу: участник нажимал
+    // «Ответить и закончить» и его последний ответ вообще не появлялся в разговоре —
+    // он улетал в оверлей, не увидев, что сказал.
+    function buildDoneBlock() {
+      var block = document.createElement('div');
+      block.className = 'chat';
+      block.innerHTML = '<button class="btn btn-primary" id="finishBtn">Закончить раунд →</button>';
+      block.querySelector('#finishBtn').addEventListener('click', finishRoom);
       return block;
     }
 
@@ -314,6 +327,7 @@
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
       if (upTo >= 2) body.appendChild(buildQ3Block());
+      if (state.step === 'done' && !state.finished) body.appendChild(buildDoneBlock());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       var last = body.lastElementChild;
