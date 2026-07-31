@@ -270,7 +270,7 @@
       { key: 'decomp', label: 'Декомпозиция на метрики', rows: 4,
         hint: 'по направлениям ССП: финансы · клиенты/рынок · продукт/процессы · люди/технологии',
         ph: 'метрика · порог · владелец — по каждому направлению',
-        seed: function (s) { var p = []; if (s.rp && strVal(s.rp.targetState)) p.push('Цель: ' + strVal(s.rp.targetState)); var t = (((s.s2 && s.s2.priorities) || []).map(function (x) { return strVal(x.target); }).filter(Boolean)); if (t.length) p.push('Метрики приоритетов (черновик — добавьте числа и владельцев): ' + t.join('; ')); return p.join('\n'); } },
+        seed: function (s) { var p = []; if (s.rp && strVal(s.rp.targetState)) p.push('Цель: ' + strVal(s.rp.targetState)); if (s.s2 && strVal(s.s2.rationale)) p.push('Из разбора приоритетов года (черновик — добавьте числа и владельцев): ' + strVal(s.s2.rationale)); var t = (((s.s2 && s.s2.priorities) || []).map(function (x) { return strVal(x.target); }).filter(Boolean)); if (t.length) p.push('Метрики приоритетов: ' + t.join('; ')); return p.join('\n'); } },
       // Отбор по смыслу, а не «первые восемь»: сначала та проблема, которую
       // участник назвал корневой, затем помеченные как угроза, и только потом
       // остальные до лимита. У живого участника карточек было 37 — «первые
@@ -288,7 +288,7 @@
       { key: 'currentActions', label: 'Первые действия', rows: 3,
         hint: 'что делаем в первые недели',
         ph: 'первый ход и чем он заканчивается',
-        seed: function (s) { var p = []; if (s.s2 && strVal(s.s2.firstAction)) p.push('Первый ход: ' + strVal(s.s2.firstAction)); var st = (((s.rp && s.rp.stages) || []).map(function (x) { return strVal(x.description); }).filter(Boolean)); if (st.length) p.push('Первый этап: ' + st[0]); return p.join('\n'); } },
+        seed: function (s) { var p = []; var fm = firstMoveOf(s.s2); if (fm) p.push('Первый ход: ' + fm); var st = (((s.rp && s.rp.stages) || []).map(function (x) { return strVal(x.description); }).filter(Boolean)); if (st.length) p.push('Первый этап: ' + st[0]); return p.join('\n'); } },
       // Фокус — это отказ от ДЕЙСТВИЙ. Обоснования отказов участник пишет сам
       // («Не ставлю целью вернуться в первую тройку OMI в 2026 году…»), и если
       // они есть — берём их. Прежний вариант печатал «Отказываемся от:» и текст
@@ -337,15 +337,36 @@
       var s2 = s.s2;
       if (!s2) return '';
       var out = [];
-      var reasons = ((s2.rejected || []).map(function (r) { return strVal(r.freed); }).filter(Boolean));
-      if (reasons.length) {
-        out.push(reasons.map(function (x) { return '• ' + x; }).join('\n'));
+      // Разговор переписан 2026-07-31: отказы — это решения менеджеров, от которых
+      // участник отказался с причиной. Прежняя форма (отложенные карточки раунда 1)
+      // остаётся запасным путём для уже пройденных прогонов.
+      var picks = s2.picks || {};
+      var dropped = Object.keys(picks).filter(function (k) { return picks[k] && !picks[k].take && strVal(picks[k].reason); });
+      if (dropped.length) {
+        out.push(dropped.map(function (k) {
+          var own = (s2.ownItems || []).filter(function (o) { return String(o.id) === String(k); })[0];
+          var it = own || (window.imp.backlogById && window.imp.backlogById(k));
+          return '• ' + (it ? it.title + ' — ' : '') + strVal(picks[k].reason);
+        }).join('\n'));
       } else {
-        var titles = ((s2.rejected || []).map(function (r) { var c = s.cardById[r.cardId]; return c ? strVal(c.text) : ''; }).filter(Boolean));
-        if (titles.length) out.push('Сняли с фокуса сейчас: ' + titles.join('; '));
+        var reasons = ((s2.rejected || []).map(function (r) { return strVal(r.freed); }).filter(Boolean));
+        if (reasons.length) {
+          out.push(reasons.map(function (x) { return '• ' + x; }).join('\n'));
+        } else {
+          var titles = ((s2.rejected || []).map(function (r) { var c = s.cardById[r.cardId]; return c ? strVal(c.text) : ''; }).filter(Boolean));
+          if (titles.length) out.push('Сняли с фокуса сейчас: ' + titles.join('; '));
+        }
       }
       if (strVal(s2.rejectionRule)) out.push('Правило отсечения: ' + strVal(s2.rejectionRule));
       return out.join('\n');
+    }
+
+    // «Первый ход» отдельным полем больше не спрашивается: в новом разговоре его
+    // роль играет собственное решение, названное ДО того, как прозвучали позиции
+    // правления. У прежних прогонов берём старое поле.
+    function firstMoveOf(s2) {
+      if (!s2) return '';
+      return strVal(s2.ownMove) || strVal(s2.firstAction);
     }
 
     function seedStratos() {

@@ -1,6 +1,13 @@
-// i(m)perfect — станция 2 «Встреча с Агеевым» (кейс «Искра»).
-// Навык ПР целиком: ПР-1 (что выбрано — сортировка собственных карточек станции 1
-// в приоритеты и явные отказы) + ПР-2 (почему выбрано и держится ли под давлением).
+// i(m)perfect — раунд 2 «Встреча с Агеевым» (кейс «Искра»).
+// Навык ПР целиком: ПР-2 (свой ход → позиция по развилке с критериями → удержание
+// под давлением) и ПР-1 (разбор двадцати решений менеджеров под ограничениями:
+// что берём, от чего отказываемся и почему, плюс правило проверки новых идей).
+//
+// Порядок шагов — по ~/Desktop/FP/встреча_с_агеевым_диалог_v1.md. Он не случаен:
+// собственное решение снимается ДО того, как названы позиции правления, иначе
+// нельзя отличить свою мысль от выбора из предложенного. Бэклог идёт ПОСЛЕ
+// стратегического выбора — годовые приоритеты проверяются на связность с ним.
+//
 // Разговор идёт только вперёд: зафиксированные шаги не переигрываются — как в
 // настоящей встрече. Оценку считает бэкенд при завершении; участнику не показывается.
 
@@ -17,48 +24,57 @@
     try { return window.imp.loadSession(); } catch (e) { return null; }
   }
 
+  var STEPS = ['ownMove', 'stance', 'stress', 'backlog', 'rule'];
+
+  function blankState() {
+    return {
+      cardsSnapshot: [],   // карта раунда 1 — во входе больше не участвует, остаётся в записи как контекст
+      ownMove: '',         // шаг 1: свой ход и зачем — снимается ДО того, как названы позиции
+      // шаг 2: рекомендация по развилке из письма Агеева (задание №3 кейса) —
+      // спина всего финала: карта ссылается на неё, три разговора раскрывают грани.
+      stance: '',          // 'fortress' | 'secondCurve' | 'other'
+      stanceOther: '',
+      stanceCriteria: '',
+      stressChoice: '',    // шаг 3: 'hold' | 'calibrate' | 'change'
+      stressComment: '',
+      picks: {},           // шаг 4: { '<id решения>': { take: bool, reason: '' } }
+      ownItems: [],        // шаг 4: свои позиции — [{id, title, people, money}]
+      rationale: '',       // шаг 5: почему именно эти приоритеты
+      rejectionRule: '',   // шаг 5: правило, по которому проверяется новая инициатива
+      proactiveText: '',   // шаг 5: что должно случиться, чтобы вы сами пришли пересматривать
+      step: 'ownMove',
+      finished: false,
+      startedAt: new Date().toISOString()
+    };
+  }
+
   function loadState(bib) {
     try {
       var raw = localStorage.getItem(storageKey(bib));
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (!parsed.cardsSnapshot) parsed.cardsSnapshot = [];
-        if (!parsed.priorities) parsed.priorities = [];
-        if (!parsed.rejected) parsed.rejected = [];
-        if (!parsed.step) parsed.step = 'sort';
-        if (!parsed.stance) parsed.stance = '';
-        if (!parsed.stanceOther) parsed.stanceOther = '';
-        if (!parsed.stanceCriteria) parsed.stanceCriteria = '';
-        if (parsed.firstAction === undefined) parsed.firstAction = '';
-        // миграция: сессия, начатая ДО появления шага 'stance', могла уже уйти
-        // на 'proactive' — тогда вставленный позади текущего шага блок развилки
-        // рендерился «пройденным», т.е. запертым: радио видны, но не кликабельны.
-        // Возвращаем разговор на шаг развилки; набранный текст proactive не
-        // теряется (лежит в state.proactiveText и вернётся при следующем шаге).
-        if (parsed.step === 'proactive' && !parsed.stance && !parsed.finished) parsed.step = 'stance';
+        var def = blankState();
+        Object.keys(def).forEach(function (k) {
+          if (parsed[k] === undefined) parsed[k] = def[k];
+        });
+        if (!parsed.picks || typeof parsed.picks !== 'object') parsed.picks = {};
+        if (!Array.isArray(parsed.ownItems)) parsed.ownItems = [];
+        // Миграция на новый разговор (2026-07-31). Прежняя цепочка шагов была
+        // 'sort' → 'rationale' → 'stress' → 'stance' → 'proactive' и начиналась
+        // с сортировки собственных карточек — её больше нет. Незавершённый
+        // прогон старой формы возвращаем в начало нового разговора: прежние
+        // ответы из стейта НЕ стираем (уходят в запись и в «Мои ответы»), но
+        // спрашиваем заново, потому что вопросы стали другими.
+        if (!parsed.finished && STEPS.indexOf(parsed.step) === -1) parsed.step = 'ownMove';
         return parsed;
       }
     } catch (e) {}
-    return {
-      cardsSnapshot: [],   // копия карточек станции 1 (id+text) — самодостаточна для судьи и кабинета
-      priorities: [],      // [{cardId, target}] — порядок массива = ранг
-      rejected: [],        // [{cardId, freed}] — явные отказы
-      rejectionRule: '',
-      rationale: '',
-      firstAction: '',     // «первый ход» — каким действием откроют приоритет №1 (нарратив, не в балл)
-      stressChoice: '',    // 'hold' | 'calibrate' | 'change'
-      stressComment: '',
-      proactiveText: '',
-      // рекомендация по развилке из письма Агеева (задание №3 кейса) — спина
-      // всего финала. 'fortress' | 'secondCurve' | 'other'; stanceOther — своя
-      // позиция, если обе неверны; stanceCriteria — два критерия, что Агеев просит.
-      stance: '',
-      stanceOther: '',
-      stanceCriteria: '',
-      step: 'sort',        // 'sort' → 'rationale' → 'stress' → 'stance' → 'proactive'
-      finished: false,
-      startedAt: new Date().toISOString()
-    };
+    return blankState();
+  }
+
+  // прогон старой формы: завершён, но разбора бэклога в нём не было
+  function isLegacyRun() {
+    return state.finished && !Object.keys(state.picks || {}).length;
   }
 
   function uid() { return 'id_' + Math.random().toString(36).slice(2, 10); }
@@ -67,6 +83,12 @@
     var div = document.createElement('div');
     div.textContent = s == null ? '' : String(s);
     return div.innerHTML;
+  }
+
+  // 0.4 → «0,4», 5 → «5»: запятая как десятичный разделитель, целые без хвоста
+  function num(n) {
+    var v = Math.round(Number(n) * 10) / 10;
+    return String(v).replace('.', ',');
   }
 
   var backendSyncTimer = null;
@@ -84,7 +106,7 @@
 
   function syncStateToBackend() {
     // возвращает Promise<boolean>: подтвердил ли бэкенд запись. Нужно на завершении
-    // раунда — финиш-оверлей не показываем, пока ответ не принят (см. finishRoom)
+    // раунда — финиш-оверлей не показываем, пока ответ не принят (см. finishStation)
     if (!window.imp.isApiConfigured()) return Promise.resolve(true);
     return window.imp.callApiConfirmed('saveStation2', { bib: session.bib, state: state });
   }
@@ -97,10 +119,9 @@
     return;
   }
 
-  // восстановление доступа на новом устройстве: локально для этой станции пусто —
+  // восстановление доступа на новом устройстве: локально для этого раунда пусто —
   // сначала подтягиваем реальный прогресс с бэкенда, иначе следующий же автосейв
-  // затрёт его пустым стейтом (см. api.js hydrateOnce) — фоновая проверка,
-  // не блокирует рендер; если найдётся реальный прогресс, страница перезагрузится сама
+  // затрёт его пустым стейтом (см. api.js hydrateOnce)
   window.imp.hydrateOnce('loadStation2', session.bib, storageKey(session.bib));
 
   function localStation1() {
@@ -126,7 +147,7 @@
     document.getElementById('gateStation1').style.display = 'flex';
   }
 
-  // источник правды — бэкенд (кросс-девайсный), локальный стейт станции 1 — фолбэк
+  // источник правды — бэкенд (кросс-девайсный), локальный стейт раунда 1 — фолбэк
   if (window.imp.isApiConfigured()) {
     window.imp.callApi('loadStation1', { bib: session.bib }).then(function (res) {
       if (res && res.ok && res.state && res.state.finished) {
@@ -150,8 +171,8 @@
   function initWorkspace(s1cards) {
     state = loadState(session.bib);
 
-    // снимок карточек: судья и кабинет читают тексты отсюда, не из станции 1.
-    // Станция 1 к этому моменту завершена и заперта, так что дрейфа не будет.
+    // снимок карточек раунда 1: во входе не участвует, но кабинет и судья читают
+    // контекст отсюда, а не из раунда 1 — тот к этому моменту завершён и заперт.
     if (!state.cardsSnapshot.length) {
       state.cardsSnapshot = s1cards.map(function (c) { return { id: c.id, text: c.text }; });
       saveState();
@@ -170,344 +191,89 @@
 
     var body = document.getElementById('s2Body');
 
-    function cardById(id) {
-      return state.cardsSnapshot.filter(function (c) { return c.id === id; })[0];
+    // ── речь персонажей — теми же пузырями, что в раундах 3–5 ──
+    function speechOf(t) {
+      return String(t || '').trim().replace(/^«/, '').replace(/»([.!?…]?)$/, '$1');
+    }
+    function them(name, o) {
+      o = o || {};
+      return '<div class="chat"><div class="chat-msg them" data-who="' + name + '">' +
+        (name ? '<span class="chat-name">' + name +
+          (o.note ? ' <span class="chat-note">(' + o.note + ')</span>' : '') + '</span>' : '') +
+        (o.act ? '<div class="chat-act">' + o.act + '</div>' : '') +
+        '<div class="chat-bubble">' + speechOf(o.speech) + '</div>' +
+        '</div></div>';
     }
 
-    function unsortedCards() {
-      var used = {};
-      state.priorities.forEach(function (p) { used[p.cardId] = true; });
-      state.rejected.forEach(function (r) { used[r.cardId] = true; });
-      return state.cardsSnapshot.filter(function (c) { return !used[c.id]; });
-    }
-
-    function topPriorityText() {
-      var top = state.priorities[0] && cardById(state.priorities[0].cardId);
-      return top ? top.text : '';
-    }
-
-  // ── речь персонажей — теми же пузырями, что в раундах 3–5 ──
-  // Раунд 2 не переписка: под репликой идёт сортировка карточек, радио и поля.
-  function speechOf(t) {
-    return String(t || '').trim().replace(/^«/, '').replace(/»([.!?…]?)$/, '$1');
-  }
-  function them(name, o) {
-    o = o || {};
-    return '<div class="chat"><div class="chat-msg them" data-who="' + name + '">' +
-      (name ? '<span class="chat-name">' + name +
-        (o.note ? ' <span class="chat-note">(' + o.note + ')</span>' : '') + '</span>' : '') +
-      (o.act ? '<div class="chat-act">' + o.act + '</div>' : '') +
-      '<div class="chat-bubble">' + speechOf(o.speech) + '</div>' +
-      '</div></div>';
-  }
-
-    var STEPS = ['sort', 'rationale', 'stress', 'stance', 'proactive'];
     function stepIndex(step) { return STEPS.indexOf(step); }
     function stepLocked(step) {
-      // шаг залочен, если разговор уже ушёл дальше него (или станция завершена)
+      // шаг залочен, если разговор уже ушёл дальше него (или раунд завершён)
       return state.finished || stepIndex(step) < stepIndex(state.step);
     }
-
-    // ---------- блок 1: сортировка (ПР-1) ----------
-
-    function moveToPriorities(cardId) {
-      // мягкий предел: лимит не жёсткий (методология мерит сам факт отсева, не число);
-      // «обычно 3–5» — подсказка в хинте колонки, но добавить можно больше.
-      state.rejected = state.rejected.filter(function (r) { return r.cardId !== cardId; });
-      if (!state.priorities.some(function (p) { return p.cardId === cardId; })) {
-        state.priorities.push({ cardId: cardId, target: '' });
-      }
+    function advance(to) {
+      state.step = to;
       saveState();
       render();
     }
 
-    function moveToRejected(cardId) {
-      state.priorities = state.priorities.filter(function (p) { return p.cardId !== cardId; });
-      if (!state.rejected.some(function (r) { return r.cardId === cardId; })) {
-        state.rejected.push({ cardId: cardId, freed: '' });
-      }
-      saveState();
-      render();
-    }
+    // ---------- шаг 1: своё решение — до того, как названы позиции ----------
+    // Собственная формулировка снимается ДО чужих вариантов: если дальше участник
+    // предложит свою третью позицию, будет видно, придумал он её сам или
+    // оттолкнулся от предложенных.
 
-    function moveToPool(cardId) {
-      state.priorities = state.priorities.filter(function (p) { return p.cardId !== cardId; });
-      state.rejected = state.rejected.filter(function (r) { return r.cardId !== cardId; });
-      saveState();
-      render();
-    }
-
-    function movePriority(cardId, delta) {
-      var idx = -1;
-      state.priorities.forEach(function (p, i) { if (p.cardId === cardId) idx = i; });
-      var to = idx + delta;
-      if (idx === -1 || to < 0 || to >= state.priorities.length) return;
-      var item = state.priorities.splice(idx, 1)[0];
-      state.priorities.splice(to, 0, item);
-      saveState();
-      render();
-    }
-
-    function attachCardDrag(el, cardId, locked) {
-      if (locked) return;
-      el.draggable = true;
-      el.addEventListener('dragstart', function (ev) {
-        ev.dataTransfer.setData('application/x-imp-s2-card', cardId);
-        ev.dataTransfer.effectAllowed = 'move';
-      });
-    }
-
-    function attachDropZone(el, onDrop, locked) {
-      if (locked) return;
-      el.addEventListener('dragover', function (ev) {
-        ev.preventDefault();
-        el.classList.add('is-drop-target');
-      });
-      el.addEventListener('dragleave', function () { el.classList.remove('is-drop-target'); });
-      el.addEventListener('drop', function (ev) {
-        ev.preventDefault();
-        el.classList.remove('is-drop-target');
-        var cardId = ev.dataTransfer.getData('application/x-imp-s2-card');
-        if (cardId) onDrop(cardId);
-      });
-    }
-
-    function buildSortBlock() {
-      var locked = stepLocked('sort');
-      // в экскурсии показываем механику разбора даже на залоченном шаге —
-      // кнопки видны, но неактивны (обработчики вешаются только при !locked)
-      var demoShow = !!(window.imp.isDemo && window.imp.isDemo());
-      var showActions = !locked || demoShow;
+    function buildOwnMoveBlock() {
+      var locked = stepLocked('ownMove');
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        them('Кирилл Агеев', { note: 'гендиректор «Поиска и рекламы»',
-          speech: '«' + (pname() ? escapeHtml(pname()) + ', разложите' : 'Разложите') + ': с чем идём к совету в первую очередь, что — потом, а что откладываем. Не обязательно раскладывать всё, что собрали, — но порядок в приоритетах для меня важен».' }) +
-        '<div class="s2-columns">' +
-          '<div class="s2-col" data-zone="pool"><h4>Карта</h4><p class="links-hint">неразобранное</p><div class="s2-list" data-list="pool"></div></div>' +
-          '<div class="s2-col is-priorities" data-zone="priorities"><h4>Приоритеты</h4><p class="links-hint">порядок = ранг; обычно хватает 3–5</p><div class="s2-list" data-list="priorities"></div></div>' +
-          '<div class="s2-col" data-zone="rejected"><h4>Не сейчас</h4><p class="links-hint">явные отказы</p><div class="s2-list" data-list="rejected"></div></div>' +
-        '</div>' +
-        '<div class="rationale-block" style="margin-top:18px;">' +
-          '<label>Как вы выбирали</label>' +
-          '<textarea class="s2-rejection-rule" aria-label="Как вы выбирали" rows="2" placeholder="чем руководствовались, когда решали: это берём, это откладываем"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
-        '</div>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitSortBtn" style="margin-top:14px;">Зафиксировать приоритеты →</button>');
-
-      var poolList = block.querySelector('[data-list="pool"]');
-      var prioList = block.querySelector('[data-list="priorities"]');
-      var rejList = block.querySelector('[data-list="rejected"]');
-
-      unsortedCards().forEach(function (c) {
-        var item = document.createElement('div');
-        item.className = 's2-item';
-        item.innerHTML = '<p>' + escapeHtml(c.text) + '</p>' +
-          (showActions ?
-            '<div class="s2-item-actions">' +
-              '<button class="s2-act" data-act="prio"' + (locked ? ' disabled' : '') + '>в приоритеты</button>' +
-              '<button class="s2-act" data-act="rej"' + (locked ? ' disabled' : '') + '>не сейчас</button>' +
-            '</div>' : '');
-        if (!locked) {
-          var actPrio = item.querySelector('[data-act="prio"]');
-          if (actPrio) actPrio.addEventListener('click', function () { moveToPriorities(c.id); });
-          item.querySelector('[data-act="rej"]').addEventListener('click', function () { moveToRejected(c.id); });
-        }
-        attachCardDrag(item, c.id, locked);
-        poolList.appendChild(item);
-      });
-      if (!unsortedCards().length) poolList.innerHTML = '<p class="links-hint">пусто</p>';
-
-      state.priorities.forEach(function (p, i) {
-        var c = cardById(p.cardId);
-        if (!c) return;
-        var item = document.createElement('div');
-        item.className = 's2-item is-priority';
-        item.innerHTML =
-          '<div class="s2-item-rank">' + (i + 1) + '</div>' +
-          '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
-          '<input type="text" class="s2-target" aria-label="Чего хотите добиться по этому приоритету" placeholder="чего хотите этим добиться" value="' + escapeHtml(p.target || '') + '"' + (locked ? ' disabled' : '') + ' />' +
-          '</div>' +
-          (showActions ?
-            '<div class="s2-item-actions">' +
-              '<button class="s2-act" data-act="up" title="выше"' + (locked ? ' disabled' : '') + '>↑</button>' +
-              '<button class="s2-act" data-act="down" title="ниже"' + (locked ? ' disabled' : '') + '>↓</button>' +
-              '<button class="s2-act" data-act="back" title="вернуть в карту"' + (locked ? ' disabled' : '') + '>✕</button>' +
-            '</div>' : '');
-        if (!locked) {
-          item.querySelector('[data-act="up"]').addEventListener('click', function () { movePriority(p.cardId, -1); });
-          item.querySelector('[data-act="down"]').addEventListener('click', function () { movePriority(p.cardId, 1); });
-          item.querySelector('[data-act="back"]').addEventListener('click', function () { moveToPool(p.cardId); });
-          item.querySelector('.s2-target').addEventListener('input', function (e) { p.target = e.target.value; saveState(); });
-        }
-        attachCardDrag(item, p.cardId, locked);
-        prioList.appendChild(item);
-      });
-      if (!state.priorities.length) prioList.innerHTML = '<p class="links-hint">перетащите или нажмите «в приоритеты»</p>';
-
-      state.rejected.forEach(function (r) {
-        var c = cardById(r.cardId);
-        if (!c) return;
-        var item = document.createElement('div');
-        item.className = 's2-item is-rejected';
-        item.innerHTML = '<div class="s2-item-body"><p>' + escapeHtml(c.text) + '</p>' +
-          '<input type="text" class="s2-freed" aria-label="Почему откладываете именно это" placeholder="почему откладываете именно это" value="' + escapeHtml(r.freed || '') + '"' + (locked ? ' disabled' : '') + ' />' +
-          '</div>' +
-          (showActions ? '<div class="s2-item-actions"><button class="s2-act" data-act="back" title="вернуть в карту"' + (locked ? ' disabled' : '') + '>✕</button></div>' : '');
-        if (!locked) {
-          item.querySelector('[data-act="back"]').addEventListener('click', function () { moveToPool(r.cardId); });
-          item.querySelector('.s2-freed').addEventListener('input', function (e) { r.freed = e.target.value; saveState(); });
-        }
-        attachCardDrag(item, r.cardId, locked);
-        rejList.appendChild(item);
-      });
-      if (!state.rejected.length) rejList.innerHTML = '<p class="links-hint">сюда — то, что откладываете сознательно</p>';
-
-      attachDropZone(block.querySelector('[data-zone="pool"]'), moveToPool, locked);
-      attachDropZone(block.querySelector('[data-zone="priorities"]'), moveToPriorities, locked);
-      attachDropZone(block.querySelector('[data-zone="rejected"]'), moveToRejected, locked);
+        them('Кирилл Агеев', { note: 'гендиректор «Поиска и рекламы»', act: 'пожимает руку, кладёт распечатку на стол',
+          speech: '«Спасибо, что приехали. Я прочитал. Спорить с формулировками не буду — на это нужен день, а у нас час.' }) +
+        them('', { speech: '«Давайте сразу. Если бы решали вы — что делаем? Одним ходом, без списка. И обязательно скажите зачем. „Что“ я и сам придумаю, а вот „зачем“ у меня внутри никто не проговаривает».' }) +
+        '<textarea class="s2-own-move" aria-label="Ваш ход и зачем вы его делаете" rows="4" placeholder="ваш ход — и зачем вы его делаете"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.ownMove) + '</textarea>' +
+        (locked ? '' : '<button class="btn btn-primary" id="commitOwnMoveBtn" style="margin-top:12px;">Ответить →</button>');
 
       if (!locked) {
-        block.querySelector('.s2-rejection-rule').addEventListener('input', function (e) {
-          state.rejectionRule = e.target.value; saveState();
+        block.querySelector('.s2-own-move').addEventListener('input', function (e) {
+          state.ownMove = e.target.value; saveState();
         });
-        block.querySelector('#commitSortBtn').addEventListener('click', function () {
-          if (!state.priorities.length) {
-            window.imp.alert('Агеев ждёт хотя бы один приоритет — с чем-то идти к совету нужно.');
-            return;
-          }
-          window.imp.confirm(
-            'Приоритеты зафиксируются, и разговор пойдёт дальше — вернуться и пересобрать список будет нельзя.',
-            { confirmLabel: 'Зафиксировать', cancelLabel: 'Ещё подумаю' }
-          ).then(function (ok) {
-            if (!ok) return;
-            state.step = 'rationale';
-            saveState();
-            render();
-          });
-        });
-      }
-
-      return block;
-    }
-
-    // ---------- блок 2: обоснование №1 (вход в ПР-2) ----------
-
-    function buildRationaleBlock() {
-      var locked = stepLocked('rationale');
-      // реакция Агеева на разбор (п.11): заметил ли отказы
-      var sortReact = state.rejected.length
-        ? { act: 'ведёт пальцем по списку', speech: '«Вижу, кое-что вы честно отложили. Хорошо — значит, не пытаетесь спасти всё сразу».' }
-        : { speech: '«Ничего не отложили, всё оставили в приоритетах — смело. Тогда задам пару неудобных вопросов — как на совете».' };
-      var block = document.createElement('div');
-      block.className = 's2-block';
-      block.innerHTML =
-        them('Кирилл Агеев', sortReact) +
-        them('', { act: 'смотрит на верхнюю карточку', speech: '«Хорошо. Почему «' + escapeHtml(topPriorityText()) + '» — первым? На совете это придётся защищать — убедите сначала меня.»' }) +
-        '<textarea class="s2-rationale" aria-label="Почему этот приоритет идёт первым" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
-        // «первый ход» (п.12): чтобы финал читался как стратегия действий, а не список бед
-        // отступ инлайном перебивал CSS: 12px прилипали к предыдущей текстареа,
-        // и заголовок читался как её подпись — оставляем воздух блока (22px)
-        '<div class="rationale-block">' +
-          '<label>С чего начнёте — первый шаг</label>' +
-          '<textarea class="s2-first-action" aria-label="Первый конкретный ход" rows="2" placeholder="первый конкретный шаг по приоритету №1"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.firstAction || '') + '</textarea>' +
-        '</div>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitRationaleBtn" style="margin-top:12px;">Ответить →</button>');
-
-      if (!locked) {
-        block.querySelector('.s2-rationale').addEventListener('input', function (e) {
-          state.rationale = e.target.value; saveState();
-        });
-        block.querySelector('.s2-first-action').addEventListener('input', function (e) {
-          state.firstAction = e.target.value; saveState();
-        });
-        block.querySelector('#commitRationaleBtn').addEventListener('click', function () {
-          var go = function () {
-            state.step = 'stress';
-            saveState();
-            render();
-          };
-          if (!state.rationale.trim()) {
+        block.querySelector('#commitOwnMoveBtn').addEventListener('click', function () {
+          if (!state.ownMove.trim()) {
             window.imp.confirm('Ответ пустой — промолчать в ответ на прямой вопрос Агеева?',
               { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
-              .then(function (ok) { if (ok) go(); });
+              .then(function (ok) { if (ok) advance('stance'); });
             return;
           }
-          go();
+          advance('stance');
         });
       }
       return block;
     }
 
-    // ---------- блок 3: давление (стресс-тест ПР-2) ----------
-
-    function buildStressBlock() {
-      var locked = stepLocked('stress');
-      var block = document.createElement('div');
-      block.className = 's2-block';
-      block.innerHTML =
-        them('Кирилл Агеев', { act: 'откидывается в кресле',
-          speech: '«Теперь то, что вы услышите на совете. Штерн скажет: «' + escapeHtml(topPriorityText()) + '» — не горит. Подождём полгода, будет больше данных, вернёмся к вопросу. И часть совета его поддержит. Настаиваете, что это идёт первым, — или пересобираем список?»' }) +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Настаиваю: это идёт первым</label>' +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Пересоберу — вот что меняю, а что удерживаю</label>' +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Соглашусь пересобрать список целиком</label>' +
-        '<textarea class="s2-stress-comment" aria-label="Что меняете, что оставляете и почему" rows="3" placeholder="что меняете, что оставляете — и почему"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitStressBtn" style="margin-top:12px;">Ответить →</button>');
-
-      if (!locked) {
-        block.querySelectorAll('input[name="stressChoice"]').forEach(function (r) {
-          r.addEventListener('change', function () {
-            if (r.checked) { state.stressChoice = r.value; saveState(); }
-          });
-        });
-        block.querySelector('.s2-stress-comment').addEventListener('input', function (e) {
-          state.stressComment = e.target.value; saveState();
-        });
-        block.querySelector('#commitStressBtn').addEventListener('click', function () {
-          if (!state.stressChoice) {
-            window.imp.alert('Агеев ждёт ответа: настаиваете или пересобираем.');
-            return;
-          }
-          // после стресс-теста идёт РАЗВИЛКА (stance), не финальный вопрос —
-          // прыжок сразу на 'proactive' показывал блок развилки запертым
-          // («радио видны, но не кликабельны») до перезагрузки страницы
-          state.step = 'stance';
-          saveState();
-          render();
-        });
-      }
-      return block;
-    }
-
-    // ---------- блок 4: рекомендация по развилке (задание №3 кейса) ----------
-    // Это спина финала: с этого момента у участника есть занятая позиция, на
-    // которую ссылается холл и вокруг которой раскрываются три разговора.
-    // Сам выбор не оценивается как отдельный навык — это ось, а не балл; но он
-    // питает контрольный вопрос финала и собирается в документ стратегии.
+    // ---------- шаг 2: рамка и две позиции ----------
+    // Обязательное в этой реплике (иначе замер ломается): обе позиции названы
+    // с ценой, сказано что хватит только на одну, и проговорено что люди в обеих
+    // программах одни и те же. Цифры совпадают с кейсом — менять только парой.
 
     function buildStanceBlock() {
       var locked = stepLocked('stance');
-      // реакция Агеева на стресс-тест (п.11): настоял или согласился пересобрать
-      // реакция Агеева на стресс-тест: нейтральная, три варианта равновесны —
-      // не поощряем «настоять» соц-желательно, иначе смещаем замер устойчивости (ПР-2).
-      var stressReact = state.stressChoice === 'hold'
-        ? { act: 'кивает', speech: '«Настояли. Услышал вашу позицию — на совете передам как есть».' }
-        : (state.stressChoice === 'calibrate'
-          ? { act: 'хмыкает', speech: '«Понял: что-то меняете, что-то держите. Так и передам».' }
-          : (state.stressChoice === 'change'
-            ? { speech: '«Пересобрали. Ок, посмотрим, куда это выведет».' }
-            : null));
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        (stressReact ? them('Кирилл Агеев', stressReact) : '') +
-        them(stressReact ? '' : 'Кирилл Агеев', { act: 'кладёт распечатку письма на стол', speech: '«И то, ради чего я, собственно, и звал. В совете директоров две позиции — вы их видели. „Крепость“: защищать рекламное ядро, „Миру“ на партнёрскую модель, железо свернуть. „Вторая кривая“: вынести устройства в отдельную компанию и строить новую выручку к 2030-му. Мне нужна ваша рекомендация — и два критерия, на которых она стоит. Считаете, что обе мимо, — так и скажите, но тогда предложите свою.»' }) +
-        '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Крепость» — защищать рекламное ядро</label>' +
-        '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Вторая кривая» — ставка на новое направление</label>' +
-        '<label class="s2-radio"><input type="radio" name="stance" value="other"' + (state.stance === 'other' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Обе позиции неверны — предложу свою</label>' +
+        them('Кирилл Агеев', { act: 'убирает распечатку',
+          speech: '«Теперь то, ради чего я вас звал. В правлении оформились две позиции, у каждой сильные сторонники. Обычно в таких историях побеждает компромисс — вложиться и туда, и туда. У нас такой возможности нет, и вот почему.' }) +
+        them('', { speech: '«„Меридиан“ зафиксировал инвестиционную рамку до 2029 года. После программы дата-центров, обязательств по „Маяку“ и дивидендов консорциума свободного капитала на стратегические программы остаётся около 210 миллиардов на три года. Привлекать долг под новые направления консорциум не будет — нам это сказали прямо и довольно откровенно».' }) +
+        them('', { speech: '«Первую позицию называют „Крепость“. Это ставка на то, что кормит сегодня: перестроить выдачу под монетизацию „Ответа“, встроить рекламу в ИИ-ответ, дожать точность в цифровых каналах. Часть правления не хочет отказываться от бизнеса, который двадцать лет всех нас кормил. Обойдётся в 180 миллиардов.' }) +
+        them('', { speech: '«Вторая — „Вторая кривая“. Ставка на следующее поколение устройств: восстановить локальные модели, довести „Миру“ до проактивного помощника, который живёт на любом устройстве, а дальше, возможно, и своё производство. Порядка 230 миллиардов.' }) +
+        them('', { speech: '«Штерн оценил обе и сказал коротко: профинансировать обе на половину — способ гарантированно похоронить обе».' }) +
+        them('', { act: 'делает паузу', speech: '«И ещё одно, что стоит держать в голове. В обеих программах работают одни и те же люди — инженеры, разработчики, ML-специалисты. Кандидатов нужного уровня на рынке единицы, и дерёмся мы за них не только со своей индустрией.' }) +
+        them('', { speech: '«Что выбираете? Может быть, есть третий вариант, которого мы не видим, — тогда говорите его. И назовите два критерия, на которых стоит ваш ответ».' }) +
+        '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Крепость» — 180 млрд</label>' +
+        '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Вторая кривая» — 230 млрд</label>' +
+        '<label class="s2-radio"><input type="radio" name="stance" value="other"' + (state.stance === 'other' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Третий вариант — свой</label>' +
         '<textarea class="s2-stance-other" aria-label="Опишите вашу позицию" rows="2" placeholder="опишите вашу позицию" style="display:' + (state.stance === 'other' ? '' : 'none') + ';"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceOther) + '</textarea>' +
-        '<div class="rationale-block" style="margin-top:12px;">' +
-          '<label>Два критерия, на которых стоит рекомендация</label>' +
-          '<textarea class="s2-stance-criteria" aria-label="Два критерия, на которых держится рекомендация" rows="3" placeholder="два критерия, на которых держится ваша рекомендация"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceCriteria) + '</textarea>' +
+        '<div class="rationale-block" style="margin-top:14px;">' +
+          '<label>Два критерия, на которых стоит ваш ответ</label>' +
+          '<textarea class="s2-stance-criteria" aria-label="Два критерия, на которых стоит ваш ответ" rows="3" placeholder="два критерия"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceCriteria) + '</textarea>' +
         '</div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitStanceBtn" style="margin-top:12px;">Дать рекомендацию →</button>');
 
@@ -529,48 +295,285 @@
         });
         block.querySelector('#commitStanceBtn').addEventListener('click', function () {
           if (!state.stance) {
-            window.imp.alert('Агеев ждёт рекомендацию по развилке — выберите позицию.');
+            window.imp.alert('Агеев ждёт рекомендацию — выберите позицию или предложите свою.');
             return;
           }
-          var go = function () {
-            state.step = 'proactive';
-            saveState();
-            render();
-          };
           if (state.stance === 'other' && !state.stanceOther.trim()) {
-            window.imp.confirm('Вы отвергли обе позиции, но свою не сформулировали.',
-              { confirmLabel: 'Так и зафиксировать', cancelLabel: 'Сформулирую' })
-              .then(function (ok) { if (ok) go(); });
+            window.imp.confirm('Вы выбрали третий вариант, но не описали его.',
+              { confirmLabel: 'Так и зафиксировать', cancelLabel: 'Опишу' })
+              .then(function (ok) { if (ok) advance('stress'); });
             return;
           }
-          go();
+          advance('stress');
         });
       }
       return block;
     }
 
-    // ---------- блок 5: проактивность (финал, необязательно) ----------
+    // ---------- шаг 3: стресс-тест ----------
 
-    function buildProactiveBlock() {
+    function buildStressBlock() {
+      var locked = stepLocked('stress');
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML =
+        them('Кирилл Агеев', { act: 'откидывается в кресле',
+          speech: '«Хорошо. Только Штерн вчера сказал мне другое: любое из этих решений можно отложить на полгода и посмотреть на цифры — деньги никуда не убегут. Половина правления его поддержит, и, честно, аргумент неглупый.' }) +
+        them('', { speech: '«Держите свою позицию или пересматриваете? И что вы скажете тем пятерым, кто считает наоборот, — им ведь тоже есть чем крыть».' }) +
+        '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Держу позицию</label>' +
+        '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Меняю детали, ядро оставляю</label>' +
+        '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Пересматриваю</label>' +
+        '<textarea class="s2-stress-comment" aria-label="Что вы скажете правлению" rows="4" placeholder="что вы скажете тем пятерым"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
+        (locked ? '' : '<button class="btn btn-primary" id="commitStressBtn" style="margin-top:12px;">Ответить →</button>');
+
+      if (!locked) {
+        block.querySelectorAll('input[name="stressChoice"]').forEach(function (r) {
+          r.addEventListener('change', function () {
+            if (r.checked) { state.stressChoice = r.value; saveState(); }
+          });
+        });
+        block.querySelector('.s2-stress-comment').addEventListener('input', function (e) {
+          state.stressComment = e.target.value; saveState();
+        });
+        block.querySelector('#commitStressBtn').addEventListener('click', function () {
+          if (!state.stressChoice) {
+            window.imp.alert('Агеев ждёт ответа: держите позицию или пересматриваете.');
+            return;
+          }
+          advance('backlog');
+        });
+      }
+      return block;
+    }
+
+    // ---------- шаг 4: двадцать решений менеджеров (ПР-1) ----------
+    // Ограничения названы Агеевым вслух и совпадают с цифрами бэклога: 22 млрд
+    // и около 500 человек против заявленных 2660 и 65. Дефицитны ЛЮДИ, а не
+    // деньги — поэтому счётчик показывает оба ресурса, иначе переподписка
+    // ненаблюдаема и ловушки бэклога (№16 просит 320 человек при нуле денег,
+    // №18 «наймём 700» не работает внутри года) не срабатывают.
+    // Выход за рамку НЕ блокируется намеренно: превышение — это наблюдаемый
+    // ответ, а не ошибка формы.
+
+    function allItems() {
+      return (window.imp.backlog || []).concat(state.ownItems.map(function (o) {
+        return { id: o.id, title: o.title, who: 'ваше предложение', people: o.people, money: o.money, argument: '', own: true };
+      }));
+    }
+
+    function pickOf(id) {
+      var p = state.picks[String(id)];
+      return p && typeof p === 'object' ? p : null;
+    }
+
+    function takenTotals() {
+      var people = 0, money = 0, taken = 0, undecided = 0, noReason = 0;
+      allItems().forEach(function (it) {
+        var p = pickOf(it.id);
+        if (!p) { undecided++; return; }
+        if (p.take) { taken++; people += Number(it.people) || 0; money += Number(it.money) || 0; }
+        else if (!String(p.reason || '').trim()) noReason++;
+      });
+      return { people: people, money: money, taken: taken, undecided: undecided, noReason: noReason };
+    }
+
+    function setPick(id, take) {
+      var key = String(id);
+      var prev = state.picks[key];
+      state.picks[key] = { take: take, reason: prev && !take ? (prev.reason || '') : '' };
+      saveState();
+      renderBacklog();
+    }
+
+    var backlogHost = null;
+
+    function backlogSummaryHtml() {
+      var t = takenTotals();
+      var lim = window.imp.backlogLimits;
+      var overP = t.people > lim.people, overM = t.money > lim.money;
+      return '<div class="bl-sum' + (overP || overM ? ' is-over' : '') + '">' +
+        '<span class="bl-sum-item"><b>' + t.taken + '</b> берём</span>' +
+        '<span class="bl-sum-item' + (overP ? ' is-over' : '') + '"><b>' + t.people + '</b> человек из ' + lim.people + '</span>' +
+        '<span class="bl-sum-item' + (overM ? ' is-over' : '') + '"><b>' + num(t.money) + '</b> млрд из ' + lim.money + '</span>' +
+        (t.undecided ? '<span class="bl-sum-left">осталось решить: ' + t.undecided + '</span>' : '') +
+        '</div>';
+    }
+
+    function renderBacklog() {
+      if (!backlogHost) return;
+      var locked = stepLocked('backlog');
+      var sum = backlogHost.querySelector('.bl-sum-host');
+      if (sum) sum.innerHTML = backlogSummaryHtml();
+      var list = backlogHost.querySelector('.bl-list');
+      if (!list) return;
+      list.innerHTML = '';
+
+      allItems().forEach(function (it) {
+        var p = pickOf(it.id);
+        var row = document.createElement('div');
+        row.className = 'bl-item' + (p && p.take ? ' is-taken' : '') + (p && !p.take ? ' is-dropped' : '');
+        row.innerHTML =
+          '<div class="bl-head">' +
+            '<p class="bl-title">' + escapeHtml(it.title) + '</p>' +
+            '<div class="bl-cost"><span>' + it.people + ' чел.</span><span>' + num(it.money) + ' млрд</span></div>' +
+          '</div>' +
+          '<p class="bl-who">' + escapeHtml(it.who) + '</p>' +
+          (it.argument ? '<p class="bl-arg">' + escapeHtml(it.argument) + '</p>' : '') +
+          (locked ? '' :
+            '<div class="bl-actions">' +
+              '<button type="button" class="s2-act' + (p && p.take ? ' is-on' : '') + '" data-take="1">берём</button>' +
+              '<button type="button" class="s2-act' + (p && !p.take ? ' is-on' : '') + '" data-take="0">не сейчас</button>' +
+              (it.own ? '<button type="button" class="s2-act" data-own-remove="1">убрать</button>' : '') +
+            '</div>') +
+          (p && !p.take ?
+            '<input type="text" class="bl-reason" aria-label="Почему откладываете" placeholder="почему откладываете именно это"' +
+              (locked ? ' disabled' : '') + ' value="' + escapeHtml(p.reason || '') + '" />' : '');
+
+        if (!locked) {
+          row.querySelector('[data-take="1"]').addEventListener('click', function () { setPick(it.id, true); });
+          row.querySelector('[data-take="0"]').addEventListener('click', function () { setPick(it.id, false); });
+          var rm = row.querySelector('[data-own-remove]');
+          if (rm) rm.addEventListener('click', function () {
+            state.ownItems = state.ownItems.filter(function (o) { return o.id !== it.id; });
+            delete state.picks[String(it.id)];
+            saveState(); renderBacklog();
+          });
+          var reason = row.querySelector('.bl-reason');
+          if (reason) reason.addEventListener('input', function (e) {
+            state.picks[String(it.id)].reason = e.target.value;
+            saveState();
+            // счётчик «осталось решить» причины не считает, полный ререндер не нужен —
+            // иначе поле теряло бы фокус на каждом символе
+          });
+        }
+        list.appendChild(row);
+      });
+
+      if (window.imp && window.imp.typoDom) window.imp.typoDom(list);
+    }
+
+    function buildBacklogBlock() {
+      var locked = stepLocked('backlog');
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML =
+        them('Кирилл Агеев', { act: 'достаёт другую распечатку',
+          speech: '«Хорошо, надеюсь, что вы знаете, о чём говорите, и это решение действительно подкрепляют какие-то данные.' }) +
+        them('', { speech: '«Но это ещё не всё. Помимо долгосрочных планов у меня на столе двадцать решений от моих менеджеров. Часть из них, возможно, подходят под вашу стратегию, часть должны быть реализованы в любом случае — не важно, какой позиции мы в итоге будем придерживаться. В общем и целом, мы ждём от вас рекомендации по поводу того, что нам приоритизировать на ближайший год.' }) +
+        them('', { speech: '«Что вам стоит знать: у нас есть ресурсные ограничения, именно поэтому мы не можем сделать всё. Речь и о деньгах, и о людях. Финансирование сжимается сверху, и я бы не рассчитывал больше чем на 22 миллиарда. С точки зрения людей — перебросить между направлениями в принципе не сложно, свободных рук на год у нас около пятисот, но вот с наймом есть сложности: вакансия закрывается почти полгода, а офферы принимает меньше половины.' }) +
+        them('', { speech: '«Если захотите выйти за рамки этих ограничений, у вас должны быть очень веские причины, иначе мы это даже не будем рассматривать. Помогите разобраться: что берём, от чего отказываемся и почему».' }) +
+        (isLegacyRun()
+          ? '<p class="links-hint">Разбор бэклога появился в разговоре позже — в этом прогоне его не было.</p>'
+          : '<div class="bl-sum-host"></div>' +
+            '<div class="bl-list"></div>' +
+            (locked ? '' :
+              '<button type="button" class="btn btn-ghost btn-small" id="addOwnItemBtn" style="margin-top:12px;">+ своё решение</button>' +
+              '<button class="btn btn-primary" id="commitBacklogBtn" style="margin-top:12px; margin-left:10px;">Зафиксировать разбор →</button>'));
+
+      backlogHost = block;
+      if (!isLegacyRun()) renderBacklog();
+
+      if (!locked && !isLegacyRun()) {
+        block.querySelector('#addOwnItemBtn').addEventListener('click', function () {
+          addOwnItem(block);
+        });
+        block.querySelector('#commitBacklogBtn').addEventListener('click', function () {
+          var t = takenTotals();
+          if (t.undecided) {
+            window.imp.alert('Агеев просил пройти по всему списку: не решено ещё ' + t.undecided + '. По каждому — берём или не сейчас.');
+            return;
+          }
+          if (!t.taken) {
+            window.imp.alert('Ни одно решение не взято — с пустыми руками к правлению не выйти.');
+            return;
+          }
+          if (t.noReason) {
+            window.imp.alert('У отказов Агеев просил причину. Без причины осталось: ' + t.noReason + '.');
+            return;
+          }
+          window.imp.confirm(
+            'Разбор зафиксируется, и разговор пойдёт дальше — вернуться и пересобрать список будет нельзя.',
+            { confirmLabel: 'Зафиксировать', cancelLabel: 'Ещё подумаю' }
+          ).then(function (ok) { if (ok) advance('rule'); });
+        });
+      }
+      return block;
+    }
+
+    // «своё решение»: участник может добавить то, чего в списке менеджеров нет.
+    // Цена обязательна — иначе своя позиция ничего не стоит и обходит ограничение,
+    // на котором держится весь шаг.
+    function addOwnItem(block) {
+      var form = block.querySelector('.bl-own-form');
+      if (form) { form.querySelector('input').focus(); return; }
+      form = document.createElement('div');
+      form.className = 'bl-own-form';
+      form.innerHTML =
+        '<input type="text" class="bl-own-title" placeholder="что предлагаете" aria-label="Что предлагаете" />' +
+        '<div class="bl-own-cost">' +
+          '<input type="number" class="bl-own-people" min="0" step="5" placeholder="человек" aria-label="Сколько человек" />' +
+          '<input type="number" class="bl-own-money" min="0" step="0.1" placeholder="млрд ₽" aria-label="Сколько млрд рублей" />' +
+        '</div>' +
+        '<button type="button" class="btn btn-ghost btn-xs bl-own-add">Добавить в список</button>';
+      block.querySelector('#addOwnItemBtn').before(form);
+      form.querySelector('.bl-own-add').addEventListener('click', function () {
+        var title = form.querySelector('.bl-own-title').value.trim();
+        var people = Number(form.querySelector('.bl-own-people').value);
+        var money = Number(form.querySelector('.bl-own-money').value);
+        if (!title) { window.imp.alert('Напишите, что предлагаете.'); return; }
+        if (!(people >= 0) || !(money >= 0) || (!people && !money)) {
+          window.imp.alert('Своё решение тоже чего-то стоит — укажите людей и деньги.');
+          return;
+        }
+        var id = 'own_' + uid();
+        state.ownItems.push({ id: id, title: title, people: people, money: money });
+        state.picks[id] = { take: true, reason: '' };
+        saveState();
+        form.remove();
+        renderBacklog();
+      });
+      form.querySelector('input').focus();
+    }
+
+    // ---------- шаг 5: почему эти, правило, триггер пересмотра ----------
+    // Последний вопрос Агеева намеренно не называет слов «правило» и «критерий
+    // отсечения» — он просит помощи, а не заполнения рубрики.
+
+    function buildRuleBlock() {
       var locked = state.finished;
-      // реакция Агеева на выбранную позицию (п.11)
       var st = window.imp.stanceOf && window.imp.stanceOf(state);
       var stanceReact = st && st.code === 'fortress'
         ? { speech: '«Крепость. Осторожно — но вы хотя бы не делаете вид, что всё хорошо».' }
         : (st && st.code === 'secondCurve'
           ? { act: 'усмехается', speech: '«Вторая кривая. Смело. Если вы правы — я буду должен вам ужин».' }
           : (st && st.code === 'other'
-            ? { act: 'откидывается', speech: '«Своя позиция. Убедите совет так же, как убедили меня сейчас — и мы сработаемся».' }
+            ? { act: 'откидывается', speech: '«Свой вариант. Убедите правление так же, как убедили меня сейчас, — и мы сработаемся».' }
             : null));
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
         (stanceReact ? them('Кирилл Агеев', stanceReact) : '') +
-        them(stanceReact ? '' : 'Кирилл Агеев', { act: 'встаёт', speech: '«' + (pname() ? escapeHtml(pname()) + ', последний вопрос' : 'Последний вопрос') + '. Что должно случиться, чтобы вы сами сказали: пора пересматривать?»' }) +
-        '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="2" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
-        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Завершить встречу →</button>');
+        them(stanceReact ? '' : 'Кирилл Агеев', { act: 'просматривает разбор',
+          speech: '«И последнее. Ко мне с новой идеей приходят каждую неделю. Как мне понять, что она попадает в то, что вы сейчас разложили, — не дёргая вас каждый раз?»' }) +
+        '<div class="rationale-block">' +
+          '<label>Почему выбраны именно эти приоритеты</label>' +
+          '<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
+        '</div>' +
+        '<div class="rationale-block">' +
+          '<label>Как проверить новую идею на попадание</label>' +
+          '<textarea class="s2-rule" aria-label="Как проверить новую идею на попадание в приоритеты" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
+        '</div>' +
+        them('', { act: 'уже стоя', speech: '«И обратное. Что должно случиться, чтобы вы сами пришли ко мне и сказали: пора пересматривать?»' }) +
+        '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
+        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:14px;">Завершить встречу →</button>');
 
       if (!locked) {
+        block.querySelector('.s2-rationale').addEventListener('input', function (e) {
+          state.rationale = e.target.value; saveState();
+        });
+        block.querySelector('.s2-rule').addEventListener('input', function (e) {
+          state.rejectionRule = e.target.value; saveState();
+        });
         block.querySelector('.s2-proactive').addEventListener('input', function (e) {
           state.proactiveText = e.target.value; saveState();
         });
@@ -582,15 +585,14 @@
     // ---------- рендер разговора ----------
 
     function render() {
+      backlogHost = null;
       body.innerHTML = '';
       var upTo = state.finished ? STEPS.length - 1 : stepIndex(state.step);
-      if (upTo >= 0) body.appendChild(buildSortBlock());
-      if (upTo >= 1) body.appendChild(buildRationaleBlock());
+      if (upTo >= 0) body.appendChild(buildOwnMoveBlock());
+      if (upTo >= 1) body.appendChild(buildStanceBlock());
       if (upTo >= 2) body.appendChild(buildStressBlock());
-      // старые ЗАВЕРШЁННЫЕ прогоны (до появления развилки) — без stance;
-      // им пустой запертый блок при просмотре не показываем
-      if (upTo >= 3 && (state.stance || !state.finished)) body.appendChild(buildStanceBlock());
-      if (upTo >= 4) body.appendChild(buildProactiveBlock());
+      if (upTo >= 3) body.appendChild(buildBacklogBlock());
+      if (upTo >= 4) body.appendChild(buildRuleBlock());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       var last = body.lastElementChild;
@@ -610,11 +612,10 @@
       saveState();
       clearTimeout(backendSyncTimer);
       render();
-      // Финиш-оверлей ждёт подтверждения записи: раньше он показывался сразу,
-      // и при сбое сети участник уходил дальше уверенным, что ответ сохранён,
-      // хотя до бэкенда он не дошёл. Не дождались — оверлей всё равно покажем
-      // (локально всё сохранено), но статус в полосе времени скажет «не
-      // сохранено», а api.js повторит отправку сам.
+      // Финиш-оверлей ждёт подтверждения записи: при сбое сети участник иначе
+      // ушёл бы дальше уверенным, что ответ сохранён. Не дождались — оверлей
+      // покажем (локально всё сохранено), но статус скажет «не сохранено»,
+      // а api.js повторит отправку сам.
       syncStateToBackend().then(showFinishOverlay, showFinishOverlay);
     }
 

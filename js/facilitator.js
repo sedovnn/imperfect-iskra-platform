@@ -1251,6 +1251,46 @@
 
     // ——— материалы участника ———
     var mat = '';
+
+    // Разбор бэклога менеджеров (разговор переписан 2026-07-31). Прежняя форма
+    // — ранжированные карточки раунда 1 — ниже, для уже пройденных прогонов.
+    var picks = s2.picks || {};
+    var pickIds = Object.keys(picks);
+    if (pickIds.length) {
+      function blItem(id) {
+        var own = (s2.ownItems || []).filter(function (o) { return String(o.id) === String(id); })[0];
+        return own ? { title: own.title, people: own.people, money: own.money, own: true }
+                   : (window.imp.backlogById ? window.imp.backlogById(id) : null);
+      }
+      var taken = pickIds.filter(function (id) { return picks[id] && picks[id].take; }).map(blItem).filter(Boolean);
+      var dropped = pickIds.filter(function (id) { return picks[id] && !picks[id].take; });
+      var usedP = 0, usedM = 0;
+      taken.forEach(function (it) { usedP += Number(it.people) || 0; usedM += Number(it.money) || 0; });
+      var lim = window.imp.backlogLimits || { people: 500, money: 22 };
+      var bl = '<p class="fac-detail-text"><span class="fac-k">Набрано:</span> ' + usedP + ' человек из ' + lim.people +
+        (usedP > lim.people ? ' — превышение' : '') + ', ' + usedM + ' млрд из ' + lim.money +
+        (usedM > lim.money ? ' — превышение' : '') + '</p><div class="fac-cards">';
+      taken.forEach(function (it) {
+        bl += '<div class="fac-card"><p>' + escapeHtml(it.title) + (it.own ? ' <i>(своё)</i>' : '') + '</p>' +
+          '<div class="fac-card-meta"><span>' + escapeHtml(it.people) + ' чел.</span><span>' + escapeHtml(it.money) + ' млрд</span></div></div>';
+      });
+      bl += '</div>';
+      mat += dataSection('Берёт на год (' + taken.length + ')', bl);
+
+      if (dropped.length) {
+        var dl = '<div class="fac-cards">';
+        dropped.forEach(function (id) {
+          var it = blItem(id); if (!it) return;
+          dl += '<div class="fac-card"><p>' + escapeHtml(it.title) + '</p>' +
+            (picks[id].reason ? '<div class="fac-card-meta"><span>' + escapeHtml(picks[id].reason) + '</span></div>'
+                              : '<div class="fac-card-meta"><span>причина не написана</span></div>') + '</div>';
+        });
+        dl += '</div>';
+        mat += dataSection('Откладывает (' + dropped.length + ')', dl);
+      }
+      if (s2.rejectionRule) mat += dataSection('Как проверять новые идеи', '<p class="fac-detail-text">' + escapeHtml(s2.rejectionRule) + '</p>');
+    }
+
     if ((s2.priorities || []).length) {
       var pr = '<div class="fac-cards">';
       s2.priorities.forEach(function (p, i) {
@@ -1271,17 +1311,18 @@
       rj += '</div>';
       if (s2.rejectionRule) rj += '<p class="fac-detail-text"><span class="fac-k">Правило отказа:</span> ' + escapeHtml(s2.rejectionRule) + '</p>';
       mat += dataSection('Явные отказы («не сейчас»)', rj);
-    } else if (s2.rejectionRule) {
+    } else if (s2.rejectionRule && !pickIds.length) {
       mat += dataSection('Правило отказа', '<p class="fac-detail-text">' + escapeHtml(s2.rejectionRule) + '</p>');
     }
 
     var defend = '';
+    if (s2.ownMove) defend += '<p class="fac-detail-text"><span class="fac-k">Свой ход (до того, как названы позиции):</span> ' + escapeHtml(s2.ownMove) + '</p>';
     if (s2.firstAction) defend += '<p class="fac-detail-text"><span class="fac-k">Первый ход по приоритету №1:</span> ' + escapeHtml(s2.firstAction) + '</p>';
-    if (s2.rationale) defend += '<p class="fac-detail-text"><span class="fac-k">Почему №1 первым:</span> ' + escapeHtml(s2.rationale) + '</p>';
+    if (s2.rationale) defend += '<p class="fac-detail-text"><span class="fac-k">Почему именно эти приоритеты:</span> ' + escapeHtml(s2.rationale) + '</p>';
     if (s2.stressChoice) {
       defend += '<p class="fac-detail-text"><span class="fac-k">Стресс-тест «отложим на полгода»:</span> <span class="fac-pill ' +
         (s2.stressChoice === 'hold' ? 'is-done' : 'is-progress') + '">' +
-        (s2.stressChoice === 'hold' ? 'настоял на своём' : (s2.stressChoice === 'calibrate' ? 'пересобрал частично' : 'согласился пересобрать')) + '</span></p>';
+        (s2.stressChoice === 'hold' ? 'держит позицию' : (s2.stressChoice === 'calibrate' ? 'меняет детали, ядро оставляет' : 'пересматривает')) + '</span></p>';
       if (s2.stressComment) defend += '<p class="fac-detail-text">' + escapeHtml(s2.stressComment) + '</p>';
     }
     if (s2.proactiveText) defend += '<p class="fac-detail-text"><span class="fac-k">Условия пересмотра выбора:</span> ' + escapeHtml(s2.proactiveText) + '</p>';

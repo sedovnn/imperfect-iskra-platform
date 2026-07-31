@@ -97,34 +97,72 @@
       var cardById2 = {}; (s2.cardsSnapshot || []).forEach(function (c) { cardById2[c.id] = c; });
       function t2(id) { var c = cardById2[id]; return c ? c.text : '(карточка)'; }
 
-      var prs = s2.priorities || [];
-      if (prs.length) {
-        raw('<p class="fac-detail-text"><b>Мои приоритеты (по порядку):</b></p>');
-        cardsOpen();
-        prs.forEach(function (p, i) {
-          html += '<div class="fac-card"><p><b>' + (i + 1) + '.</b> ' + esc(t2(p.cardId)) + '</p>' +
-            (p.target ? '<div class="fac-card-meta"><span>ориентир: ' + esc(p.target) + '</span></div>' : '') + '</div>';
-        });
-        cardsClose();
-      }
-      var rej = s2.rejected || [];
-      if (rej.length) {
-        raw('<p class="fac-detail-text"><b>Отложил (не сейчас):</b></p>');
-        cardsOpen();
-        rej.forEach(function (r) {
-          html += '<div class="fac-card"><p>' + esc(t2(r.cardId)) + '</p>' +
-            (r.freed ? '<div class="fac-card-meta"><span>освобождает: ' + esc(r.freed) + '</span></div>' : '') + '</div>';
-        });
-        cardsClose();
-      }
-      if (s2.rejectionRule) textB('Правило отказа:', s2.rejectionRule);
-      if (s2.firstAction) textB('Первый ход по приоритету №1:', s2.firstAction);
-      if (s2.rationale) textB('Почему №1 первым:', s2.rationale);
+      if (s2.ownMove) textB('Мой ход (до того, как услышал позиции правления):', s2.ownMove);
+      var st2 = window.imp.stanceOf && window.imp.stanceOf(s2);
+      if (st2) textB('Позиция по развилке:', st2.isOwn && st2.named ? st2.named : st2.label);
+      if (s2.stanceCriteria) textB('Два критерия:', s2.stanceCriteria);
       if (s2.stressChoice) {
-        textB('Стресс-тест «отложим на полгода»:', s2.stressChoice === 'hold' ? 'настоял на своём' : (s2.stressChoice === 'calibrate' ? 'пересобрал частично' : 'согласился пересобрать'));
+        textB('Штерн предложил отложить на полгода:', s2.stressChoice === 'hold' ? 'держу позицию' : (s2.stressChoice === 'calibrate' ? 'меняю детали, ядро оставляю' : 'пересматриваю'));
         if (s2.stressComment) text(s2.stressComment);
       }
-      if (s2.proactiveText) textB('При каких условиях пересмотрю выбор:', s2.proactiveText);
+
+      // Разбор бэклога менеджеров (разговор переписан 2026-07-31).
+      var picks = s2.picks || {};
+      var pickIds = Object.keys(picks);
+      if (pickIds.length && window.imp.backlogById) {
+        function itemOf(id) {
+          var own = (s2.ownItems || []).filter(function (o) { return String(o.id) === String(id); })[0];
+          return own ? { title: own.title, people: own.people, money: own.money, own: true } : window.imp.backlogById(id);
+        }
+        var taken = pickIds.filter(function (id) { return picks[id] && picks[id].take; });
+        var dropped = pickIds.filter(function (id) { return picks[id] && !picks[id].take; });
+        if (taken.length) {
+          raw('<p class="fac-detail-text"><b>Беру на год (' + taken.length + '):</b></p>');
+          cardsOpen();
+          taken.forEach(function (id) {
+            var it = itemOf(id); if (!it) return;
+            html += '<div class="fac-card"><p>' + esc(it.title) + (it.own ? ' <i>(моё предложение)</i>' : '') + '</p>' +
+              '<div class="fac-card-meta"><span>' + esc(it.people) + ' чел.</span><span>' + esc(it.money) + ' млрд</span></div></div>';
+          });
+          cardsClose();
+        }
+        if (dropped.length) {
+          raw('<p class="fac-detail-text"><b>Откладываю (' + dropped.length + '):</b></p>');
+          cardsOpen();
+          dropped.forEach(function (id) {
+            var it = itemOf(id); if (!it) return;
+            html += '<div class="fac-card"><p>' + esc(it.title) + '</p>' +
+              (picks[id].reason ? '<div class="fac-card-meta"><span>' + esc(picks[id].reason) + '</span></div>' : '') + '</div>';
+          });
+          cardsClose();
+        }
+      } else {
+        // прогоны прежней формы: ранжированные карточки раунда 1
+        var prs = s2.priorities || [];
+        if (prs.length) {
+          raw('<p class="fac-detail-text"><b>Мои приоритеты (по порядку):</b></p>');
+          cardsOpen();
+          prs.forEach(function (p, i) {
+            html += '<div class="fac-card"><p><b>' + (i + 1) + '.</b> ' + esc(t2(p.cardId)) + '</p>' +
+              (p.target ? '<div class="fac-card-meta"><span>ориентир: ' + esc(p.target) + '</span></div>' : '') + '</div>';
+          });
+          cardsClose();
+        }
+        var rej = s2.rejected || [];
+        if (rej.length) {
+          raw('<p class="fac-detail-text"><b>Отложил (не сейчас):</b></p>');
+          cardsOpen();
+          rej.forEach(function (r) {
+            html += '<div class="fac-card"><p>' + esc(t2(r.cardId)) + '</p>' +
+              (r.freed ? '<div class="fac-card-meta"><span>освобождает: ' + esc(r.freed) + '</span></div>' : '') + '</div>';
+          });
+          cardsClose();
+        }
+        if (s2.firstAction) textB('Первый ход по приоритету №1:', s2.firstAction);
+      }
+      if (s2.rationale) textB('Почему именно эти приоритеты:', s2.rationale);
+      if (s2.rejectionRule) textB('Как проверить новую идею:', s2.rejectionRule);
+      if (s2.proactiveText) textB('Что заставит меня пересматривать:', s2.proactiveText);
     }
 
     // ---------- Комнаты (по порядку раундов: 3 → 4 → 5) ----------

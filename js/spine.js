@@ -33,11 +33,21 @@
       if (cards.length) chips.push({ k: 'Карта', v: cards.length + ' ' + plural(cards.length, 'проблема', 'проблемы', 'проблем') });
     }
     if (s2) {
-      var prs = s2.priorities || [];
-      if (prs.length) {
-        var snap = {}; (s2.cardsSnapshot || []).forEach(function (c) { snap[c.id] = c; });
-        var top = snap[prs[0].cardId];
-        if (top && top.text) chips.push({ k: 'Приоритет №1', v: '«' + truncate(top.text, 40) + '»' });
+      // Разговор переписан 2026-07-31: приоритеты года — это разбор бэклога
+      // менеджеров, а не ранжированный список своих карточек. Отдельного
+      // «приоритета №1» больше нет — линия показывает объём взятого.
+      var takenCount = 0;
+      Object.keys(s2.picks || {}).forEach(function (k) { if (s2.picks[k] && s2.picks[k].take) takenCount++; });
+      if (takenCount) {
+        chips.push({ k: 'Приоритеты года', v: takenCount + ' ' + plural(takenCount, 'решение', 'решения', 'решений') });
+      } else {
+        // прогоны прежней формы
+        var prs = s2.priorities || [];
+        if (prs.length) {
+          var snap = {}; (s2.cardsSnapshot || []).forEach(function (c) { snap[c.id] = c; });
+          var top = snap[prs[0].cardId];
+          if (top && top.text) chips.push({ k: 'Приоритет №1', v: '«' + truncate(top.text, 40) + '»' });
+        }
       }
       var st = window.imp.stanceOf && window.imp.stanceOf(s2);
       if (st) chips.push({ k: 'Позиция', v: (st.isOwn && !st.named) ? 'своя формулировка' : st.label });
