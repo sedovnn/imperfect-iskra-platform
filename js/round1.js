@@ -771,7 +771,13 @@
     return found;
   }
 
+  // Слот ровно один. «Решив эту задачку, не нужно будет решать все остальные» —
+  // это по построению одна штука; список того, что человек увидел, живёт в
+  // соседнем блоке «Наблюдения». Возможность добавить вторую снимала цену
+  // выбора: перечислить вместо того, чтобы свести, — это и есть поведение,
+  // которое мы хотим отличать, а форма позволяла его не показать.
   function addDeep() {
+    if (deepList().length) return;
     deepList().push({ id: uid(), text: '', props: [] });
     saveState(); renderDeep(); renderProblems();
   }
@@ -779,13 +785,9 @@
   function attachProp(hlId) {
     var list = deepList();
     if (!list.length) list.push({ id: uid(), text: '', props: [] });
-    // при нескольких глубинных подпираем последнюю открытую — выбор целевой
-    // проблемы делается кликом по ней (см. data-deep-target ниже)
-    var target = list[list.length - 1];
-    if (window.__deepTarget) {
-      var t = list.filter(function (d) { return d.id === window.__deepTarget; })[0];
-      if (t) target = t;
-    }
+    // Слот один, поэтому выбирать цель не нужно: опора всегда идёт к нему.
+    // Старые сессии могли сохранить несколько — подпираем первую.
+    var target = list[0];
     if (!target.props) target.props = [];
     if (!target.props.some(function (p) { return p.hlId === hlId; })) {
       target.props.push({ hlId: hlId, mechanism: '' });
@@ -828,14 +830,12 @@
       };
     }
     var empty = document.getElementById('deepEmpty');
-    var addBtn = document.getElementById('deepAdd');
     var chip = document.getElementById('deepChip');
     if (!wrap) return;
     var list = deepList();
     var locked = !!state.finished;
 
     if (empty) empty.style.display = list.length ? 'none' : '';
-    if (addBtn) addBtn.style.display = (list.length && !locked) ? '' : 'none';
     var tgl = document.getElementById('deepToggle');
     if (tgl) tgl.style.display = list.length ? '' : 'none';
     if (collapsed) renderDeepSummary();
@@ -866,8 +866,8 @@
         }).join('') +
         (props.length >= MIN_PROPS || locked ? '' :
           '<div class="deep-slot">Нажмите «↑ в обоснование» у наблюдения ниже — оно встанет сюда, и вы объясните связь.</div>') +
-        (locked || list.length < 2 ? '' :
-          '<button type="button" class="btn btn-ghost btn-xs deep-remove" data-deep-remove="' + d.id + '">убрать</button>');
+        (locked ? '' :
+          '<button type="button" class="btn btn-ghost btn-xs deep-remove" data-deep-remove="' + d.id + '">убрать формулировку</button>');
 
       wrap.appendChild(el);
     });
@@ -927,9 +927,6 @@
       state.deepProblems = deepList().filter(function (d) { return d.id !== rid; });
       saveState(); renderDeep(); renderProblems(); return;
     }
-    // клик по карточке глубинной делает её целевой для следующего «подпереть»
-    var deepEl = t.closest && t.closest('.deep');
-    if (deepEl) window.__deepTarget = deepEl.dataset.deepId;
   });
 
   // Сворачивание любого блока рабочей области: колонка узкая, а ходить между
@@ -972,8 +969,6 @@
     document.getElementById('deepList').style.display = collapsed ? 'none' : '';
     var empty = document.getElementById('deepEmpty');
     if (empty) empty.style.display = (collapsed || deepList().length) ? 'none' : '';
-    var addB = document.getElementById('deepAdd');
-    if (addB) addB.style.display = (collapsed || !deepList().length || state.finished) ? 'none' : '';
     if (!collapsed) document.getElementById('deepSummary').style.display = 'none';
     this.textContent = collapsed ? 'развернуть' : 'свернуть';
     if (collapsed) renderDeepSummary();
@@ -981,8 +976,6 @@
 
   var deepStartBtn = document.getElementById('deepStart');
   if (deepStartBtn) deepStartBtn.addEventListener('click', addDeep);
-  var deepAddBtn = document.getElementById('deepAdd');
-  if (deepAddBtn) deepAddBtn.addEventListener('click', addDeep);
 
   // ---------- фаза 2: связки (АК-2) ----------
 
