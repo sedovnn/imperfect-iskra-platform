@@ -745,19 +745,24 @@
       var locked = stepLocked('rationale');
       var block = document.createElement('div');
       block.className = 's2-block';
+      // Перебор — не отдельный вопрос с отдельным полем, а часть этого же: «почему
+      // эти» и «чем платите за перебор» — про одно, про размен. Отдельное поле
+      // означало бы новую колонку и условный шаг в цепочке ради случая, который
+      // срабатывает только у вышедших за рамку; а два вопроса на одно поле — ровно
+      // то, что мы отсюда и убирали. Поэтому одна реплика и один ответ.
       var over = takenTotals();
       var lim = window.imp.backlogLimits;
-      var overText = (over.people > lim.people || over.money > lim.money)
-        ? them('Кирилл Агеев', { act: 'считает в столбик',
-            speech: 'У вас вышло ' + over.people + ' человек при ' + lim.people + ' и ' + num(over.money) +
-              ' млрд при ' + lim.money + '. Я обещал спросить — чем платим за перебор?' })
-        : '';
+      var isOver = over.people > lim.people || over.money > lim.money;
       block.innerHTML =
-        overText +
-        them(overText ? '' : 'Кирилл Агеев', { act: overText ? '' : 'просматривает разбор',
-          speech: 'Хорошо. Тогда объясните мне главное: почему именно эти, а не другие?' }) +
+        them('Кирилл Агеев', isOver
+          ? { act: 'считает в столбик',
+              speech: 'У вас вышло ' + over.people + ' человек при ' + lim.people + ' и ' + num(over.money) +
+                ' млрд при ' + lim.money + '. Объясните мне главное: почему именно эти — и чем платим за перебор?' }
+          : { act: 'просматривает разбор',
+              speech: 'Хорошо. Тогда объясните мне главное: почему именно эти, а не другие?' }) +
         (locked ? me(state.rationale)
-          : mine('<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="5" placeholder="ваш ответ">' + escapeHtml(state.rationale) + '</textarea>')) +
+          : mine('<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="5" placeholder="' +
+              (isOver ? 'почему эти — и чем платите за перебор' : 'ваш ответ') + '">' + escapeHtml(state.rationale) + '</textarea>')) +
         (locked ? '' : '<button class="btn btn-primary" id="commitRationaleBtn" style="margin-top:12px;">Ответить</button>');
 
       if (!locked) {
