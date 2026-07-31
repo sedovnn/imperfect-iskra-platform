@@ -24,7 +24,7 @@
     try { return window.imp.loadSession(); } catch (e) { return null; }
   }
 
-  var STEPS = ['ownMove', 'stance', 'stress', 'backlog', 'rule', 'done'];
+  var STEPS = ['ownMove', 'stance', 'stress', 'backlog', 'rationale', 'rule', 'proactive', 'done'];
 
   function blankState() {
     return {
@@ -77,6 +77,13 @@
         // ответы из стейта НЕ стираем (уходят в запись и в «Мои ответы»), но
         // спрашиваем заново, потому что вопросы стали другими.
         if (!parsed.finished && STEPS.indexOf(parsed.step) === -1) parsed.step = 'ownMove';
+        // Финал разбит на три такта 2026-07-31: прежний единый шаг 'rule' задавал
+        // все три вопроса сразу. Незавершённую сессию возвращаем на тот такт,
+        // где у неё ещё нет ответа, — иначе первые блоки отрисовались бы
+        // запертыми и пустыми, то есть с «промолчали» на месте неспрошенного.
+        if (!parsed.finished && parsed.step === 'rule' && !String(parsed.rationale || '').trim()) parsed.step = 'rationale';
+        if (!parsed.finished && parsed.step === 'done' && !String(parsed.proactiveText || '').trim()
+            && !String(parsed.rejectionRule || '').trim()) parsed.step = 'rule';
         return parsed;
       }
     } catch (e) {}
@@ -714,7 +721,7 @@
             window.imp.confirm(
               'Разбор зафиксируется, и разговор пойдёт дальше — вернуться и пересобрать список будет нельзя.',
               { confirmLabel: 'Зафиксировать', cancelLabel: 'Ещё подумаю' }
-            ).then(function (ok) { if (ok) advance('rule'); });
+            ).then(function (ok) { if (ok) advance('rationale'); });
           };
           lock();
         });
@@ -726,12 +733,18 @@
     // Последний вопрос Агеева намеренно не называет слов «правило» и «критерий
     // отсечения» — он просит помощи, а не заполнения рубрики.
 
-    function buildRuleBlock() {
-      var locked = stepLocked('rule');
+    // Финал разбит на три отдельных такта — по одному вопросу за раз, как весь
+    // остальной разговор. Раньше все три вопроса и все три поля выпадали на экран
+    // одновременно: получалась анкета в конце беседы, а не беседа.
+
+    // Такт 1: почему именно эти приоритеты. Если человек вышел за названные
+    // ограничения, Агеев сначала спрашивает про перебор — обещание из шага
+    // с бэклогом («в конце скажете, чем платите») выполняется здесь, и ответ
+    // на него идёт в то же обоснование.
+    function buildRationaleBlock() {
+      var locked = stepLocked('rationale');
       var block = document.createElement('div');
       block.className = 's2-block';
-      // Обещание «в конце скажете, чем платите» выполняется только если человек
-      // реально вышел за рамку — иначе это вопрос ни о чём.
       var over = takenTotals();
       var lim = window.imp.backlogLimits;
       var overText = (over.people > lim.people || over.money > lim.money)
@@ -742,31 +755,65 @@
       block.innerHTML =
         overText +
         them(overText ? '' : 'Кирилл Агеев', { act: overText ? '' : 'просматривает разбор',
-          speech: 'И последнее. Ко мне с новой идеей приходят каждую неделю. Как мне понять, что она попадает в то, что вы сейчас разложили, — не дёргая вас каждый раз?' }) +
-        (locked
-          ? me(state.rationale) + me(state.rejectionRule)
-          : mine(
-            '<label class="s2-mine-label">Почему выбраны именно эти приоритеты</label>' +
-            '<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="4" placeholder="ваш ответ">' + escapeHtml(state.rationale) + '</textarea>' +
-            '<label class="s2-mine-label">Как проверить новую идею на попадание</label>' +
-            '<textarea class="s2-rule" aria-label="Как проверить новую идею на попадание в приоритеты" rows="3" placeholder="ваш ответ">' + escapeHtml(state.rejectionRule) + '</textarea>')) +
-        them('', { act: 'уже стоя', speech: 'И обратное. Что должно случиться, чтобы вы сами пришли ко мне и сказали: пора пересматривать?' }) +
-        (locked ? me(state.proactiveText)
-          : mine('<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="3" placeholder="ваш ответ">' + escapeHtml(state.proactiveText) + '</textarea>')) +
-        (locked ? '' : '<button class="btn btn-primary" id="commitRuleBtn" style="margin-top:14px;">Ответить</button>');
+          speech: 'Хорошо. Тогда объясните мне главное: почему именно эти, а не другие?' }) +
+        (locked ? me(state.rationale)
+          : mine('<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="5" placeholder="ваш ответ">' + escapeHtml(state.rationale) + '</textarea>')) +
+        (locked ? '' : '<button class="btn btn-primary" id="commitRationaleBtn" style="margin-top:12px;">Ответить</button>');
 
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
           state.rationale = e.target.value; saveState();
         });
+        block.querySelector('#commitRationaleBtn').addEventListener('click', function () {
+          advance('rule');
+        });
+      }
+      return block;
+    }
+
+    // Такт 2: правило проверки новых идей. Вопрос намеренно не называет слов
+    // «правило» и «критерий отсечения» — Агеев просит помощи, а не заполнения рубрики.
+    function buildRuleBlock() {
+      var locked = stepLocked('rule');
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML =
+        them('Кирилл Агеев', { act: 'кладёт распечатку',
+          speech: 'И последнее. Ко мне с новой идеей приходят каждую неделю. Как мне понять, что она попадает в то, что вы сейчас разложили, — не дёргая вас каждый раз?' }) +
+        (locked ? me(state.rejectionRule)
+          : mine('<textarea class="s2-rule" aria-label="Как проверить новую идею на попадание в приоритеты" rows="4" placeholder="ваш ответ">' + escapeHtml(state.rejectionRule) + '</textarea>')) +
+        (locked ? '' : '<button class="btn btn-primary" id="commitRuleBtn" style="margin-top:12px;">Ответить</button>');
+
+      if (!locked) {
         block.querySelector('.s2-rule').addEventListener('input', function (e) {
           state.rejectionRule = e.target.value; saveState();
         });
+        block.querySelector('#commitRuleBtn').addEventListener('click', function () {
+          advance('proactive');
+        });
+      }
+      return block;
+    }
+
+    // Такт 3: обратный триггер. Держит маркер proactiveReal — без него ПР-2 L5
+    // недостижим (см. комментарий у поля proactiveText в состоянии).
+    function buildProactiveBlock() {
+      var locked = stepLocked('proactive');
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML =
+        them('Кирилл Агеев', { act: 'уже стоя',
+          speech: 'И обратное. Что должно случиться, чтобы вы сами пришли ко мне и сказали: пора пересматривать?' }) +
+        (locked ? me(state.proactiveText)
+          : mine('<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="4" placeholder="ваш ответ">' + escapeHtml(state.proactiveText) + '</textarea>')) +
+        (locked ? '' : '<button class="btn btn-primary" id="commitProactiveBtn" style="margin-top:12px;">Ответить</button>');
+
+      if (!locked) {
         block.querySelector('.s2-proactive').addEventListener('input', function (e) {
           state.proactiveText = e.target.value; saveState();
         });
-        block.querySelector('#commitRuleBtn').addEventListener('click', function () {
-          state.step = 'done'; saveState(); render();
+        block.querySelector('#commitProactiveBtn').addEventListener('click', function () {
+          advance('done');
         });
       }
       return block;
@@ -794,7 +841,9 @@
       if (upTo >= 1) body.appendChild(buildStanceBlock());
       if (upTo >= 2) body.appendChild(buildStressBlock());
       if (upTo >= 3) body.appendChild(buildBacklogBlock());
-      if (upTo >= 4) body.appendChild(buildRuleBlock());
+      if (upTo >= 4) body.appendChild(buildRationaleBlock());
+      if (upTo >= 5) body.appendChild(buildRuleBlock());
+      if (upTo >= 6) body.appendChild(buildProactiveBlock());
       if (state.step === 'done' && !state.finished) body.appendChild(buildDoneBlock());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
