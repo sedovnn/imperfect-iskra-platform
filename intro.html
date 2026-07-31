@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=91" />
+<link rel="stylesheet" href="css/styles.css?v=93" />
 <style>
   /* Экран установки на мышление — показывается один раз после входа, до станции 1.
      Приглушённый FP-лист: настраивает, а не оценивает (прайминг, не рубрика). */
@@ -84,6 +84,17 @@
 
     <p class="intro-disclaimer"><i>Кейс вымышленный — любые совпадения случайны; не переносите в ответы факты о конкретных реальных компаниях, которые он может напоминать.</i></p>
 
+    <!-- Имя спрашиваем ЗДЕСЬ, а не репликой персонажа. Диегетический повод пришлось
+         бы выдумывать: знакомиться заново после звонка, пакета и письма Агееву
+         незачем, а «внести в список на входе» просит полные данные, а не «Алекс».
+         Прямой вопрос честнее: имя нужно платформе, чтобы к участнику обращались
+         герои, и об этом можно сказать прямо. -->
+    <div class="pgroup intro-name">
+      <p class="kicker">Прежде чем начать</p>
+      <p>Как к вам обращаться? Так к вам будут обращаться в разговорах по ходу дня. Можно имя, можно псевдоним — на оценку это не влияет.</p>
+      <input type="text" id="introName" maxlength="60" autocomplete="off" placeholder="Имя или как вам удобно" />
+    </div>
+
     <div class="intro-cta">
       <a class="btn btn-primary btn-block" id="startBtn" href="map.html">К карте ассессмента →</a>
     </div>
@@ -115,8 +126,33 @@
       btn.setAttribute('href', from);
       btn.textContent = 'Вернуться ' + ALLOWED[from] + ' →';
     }
+    // Имя: префилл из сессии и сохранение при уходе. Пишем и в localStorage,
+    // и в sessionStorage — сессию читают оба (см. js/main.js loadSession).
+    var nameEl = document.getElementById('introName');
+    function readSession() {
+      try {
+        return JSON.parse(sessionStorage.getItem('imp_current_session')
+          || localStorage.getItem('imp_current_session') || 'null');
+      } catch (e) { return null; }
+    }
+    var sess = readSession();
+    if (nameEl && sess && sess.name) nameEl.value = sess.name;
+    function persistName() {
+      if (!nameEl) return;
+      var nm = (nameEl.value || '').trim();
+      var s = readSession();
+      if (!s || !s.bib || !nm) return;
+      s.name = nm;
+      try {
+        sessionStorage.setItem('imp_current_session', JSON.stringify(s));
+        localStorage.setItem('imp_current_session', JSON.stringify(s));
+      } catch (e) {}
+    }
+    if (nameEl) nameEl.addEventListener('change', persistName);
+
     // запомнить, что установку показали — при следующем входе сразу раунд 1
     btn.addEventListener('click', function () {
+      persistName();
       try {
         var s = JSON.parse(localStorage.getItem('imp_current_session') || 'null');
         if (s && s.bib) localStorage.setItem('imp_intro_seen_' + s.bib, '1');

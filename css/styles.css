@@ -535,12 +535,21 @@ h2 {
   color: var(--muted);
 }
 
-/* живой отклик Агеева после ввода имени (round1) */
-.intro-name-echo {
-  margin: 10px 0 0;
-  font-size: 14px;
-  color: var(--muted);
+/* Поле имени на экране установки. Ширина как у полей формы, а не во всю колонку:
+   имя короткое, растянутый инпут читается как поле для абзаца. */
+.intro-name input {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 12px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 11px 13px;
+  font: inherit;
+  font-size: 15px;
+  background: var(--paper);
 }
+.intro-name input:focus { outline: none; border-color: var(--accent); }
 
 /* ---------- steps / format ---------- */
 
@@ -2506,11 +2515,12 @@ body.imp-drawer-open .dock-rail { display: none; }
   color: var(--muted-soft);
   padding: 6px 10px 4px;
 }
-/* Приложения отделены от материалов волоском — так же, как «Справка по терминам»
-   отделена от приложений. Без него список из семнадцати ссылок читался как один
-   поток, и было не видно, где кончается сам кейс и начинаются приложения.
-   Первый заголовок («Материалы») линии не получает: над ним ничего нет. */
-.case-nav-title + .case-nav-link ~ .case-nav-title {
+/* Группы оглавления отделены волоском — так же, как «Справка по терминам»
+   отделена от приложений. Без него список из семнадцати ссылок читался одним
+   потоком, и было не видно, где кончается обращение к читателю, где сам пакет,
+   а где приложения. Линию получает любой заголовок, ПЕРЕД которым уже есть
+   ссылки; самый первый элемент списка её не получает — над ним ничего нет. */
+.case-nav-link ~ .case-nav-title {
   margin-top: 16px;
   border-top: 1px solid var(--hairline);
   padding-top: 14px;

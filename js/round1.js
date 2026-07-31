@@ -199,38 +199,13 @@
 
   var introKey = 'imp_round1_intro_seen_' + session.bib;
   var introEl = document.getElementById('stationIntro');
-  var introNameEl = document.getElementById('introName');
-  // диегетический ввод имени (Агеев спрашивает): префилл, если имя уже есть,
-  // и сохранение в сессию — им Агеев обращается к участнику дальше.
-  if (introNameEl && session.name) introNameEl.value = session.name;
-  // живой отклик Агеева: как только участник вписывает имя, оно тут же
-  // подставляется в подтверждающую реплику под полем.
-  var introNameEchoEl = document.getElementById('introNameEcho');
-  function updateNameEcho() {
-    if (!introNameEl || !introNameEchoEl) return;
-    var nm = (introNameEl.value || '').trim();
-    if (nm) {
-      introNameEchoEl.innerHTML = '<b>Агеев</b>: «Записал: ' + escapeHtml(nm) + '. До встречи в понедельник».';
-      introNameEchoEl.style.display = '';
-    } else {
-      introNameEchoEl.style.display = 'none';
-    }
-  }
-  if (introNameEl) introNameEl.addEventListener('input', updateNameEcho);
-  updateNameEcho();
-  function persistName() {
-    if (!introNameEl) return;
-    var nm = (introNameEl.value || '').trim();
-    if (!nm) return;
-    session.name = nm;
-    try {
-      sessionStorage.setItem('imp_current_session', JSON.stringify(session));
-      localStorage.setItem('imp_current_session', JSON.stringify(session));
-    } catch (e) {}
-  }
+  // Имя спрашивается на экране установки (intro.html), а не здесь: выдумывать
+  // персонажу повод знакомиться заново после звонка, пакета и письма было незачем,
+  // а «внести в список на входе» просит полные данные, а не «Алекс». Имя приходит
+  // в сессии и подставляется в реплики раундов 2–5; если его нет, реплики
+  // обходятся без обращения (см. pname() в каждом раунде).
   if (localStorage.getItem(introKey)) introEl.style.display = 'none';
   document.getElementById('dismissIntro').addEventListener('click', function () {
-    persistName();
     introEl.style.display = 'none';
     localStorage.setItem(introKey, '1');
   });

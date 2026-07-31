@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=91" />
+<link rel="stylesheet" href="css/styles.css?v=93" />
 <style>
   /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
   .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -59,9 +59,8 @@
 
     <div class="station-intro" id="stationIntro">
       <div class="station-intro-inner">
-        <p class="kicker">Легенда</p>
-        <p>Вы — независимый консультант по стратегии. Вас позвал Кирилл Агеев — гендиректор «Поиска и рекламы», ключевого бизнеса компании «Искра» (поиск, реклама, устройства «Мира», финтех «Пэй»). Он просит взгляд снаружи — прочитать материалы и назвать то, что он перестал видеть изнутри.</p>
-        <p>В следующем окне самого раунда: слева — оглавление и десять приложений, в центре — сам кейс («Перед чтением» и дальше), справа — ваша рабочая область для размышлений.</p>
+        <p class="kicker">Как устроен экран</p>
+        <p>Слева — оглавление и десять приложений, в центре — материалы «Искры», справа — ваша рабочая область. Кто вас позвал и зачем — в первых абзацах материалов, начните с них.</p>
         <div class="case-rule">
           <span>✎</span>
           <span>
@@ -73,11 +72,6 @@
             <span class="intro-note">Клик по отметке в тексте подсвечивает её карточку; удалить отметку можно крестиком в карточке.</span>
           </span>
         </div>
-        <div class="intro-name">
-          <p class="intro-name-q"><b>Агеев</b>: «Да, и вас нужно внести в список на входе. Как записать?»</p>
-          <input type="text" id="introName" maxlength="60" autocomplete="off" placeholder="Имя или как вам удобно" />
-          <p class="intro-name-echo" id="introNameEcho" style="display:none;"></p>
-        </div>
         <button class="btn btn-primary btn-advance" id="dismissIntro" style="margin-top:20px;">К материалам ↓</button>
       </div>
     </div>
@@ -86,8 +80,8 @@
 
       <section class="case-pane">
         <nav class="case-nav" id="caseNav">
-          <div class="case-nav-title">Материалы</div>
           <a href="#sec-intro" class="case-nav-link">Перед чтением</a>
+          <div class="case-nav-title">Материалы</div>
           <a href="#sec-1" class="case-nav-link">1. Как строилась «Искра»</a>
           <a href="#sec-2" class="case-nav-link">2. Бизнес сегодня</a>
           <a href="#sec-3" class="case-nav-link">3. Новый акционер</a>
@@ -117,13 +111,14 @@
 
         <div class="case-content" id="caseContent" data-case-version="v5-2026-07-31">
           <article id="sec-intro">
-            <div class="case-tag-small">«Искра» · пакет материалов</div>
-            <p class="case-meta-line"><i>Учебный кейс. Время работы с материалами — 30–40 минут. Материалы переданы вам офисом К. Агеева в пятницу, 6 февраля 2026 года.</i></p>
             <h2>Перед чтением</h2>
             <p>Вы — независимый консультант по стратегии. В четверг вечером вам позвонил Кирилл Агеев, генеральный директор бизнеса «Поиск и реклама» компании «Искра». Разговор занял семь минут. Агеев сказал примерно следующее: «Формально у меня всё хорошо. Выручка растет, доля рекордная, правление довольно. Именно поэтому я вам и звоню. Мне нужен человек снаружи, который прочитает про нас всё и скажет, что я перестал видеть изнутри».</p>
             <p>Встреча назначена на понедельник, 9 февраля, на 10:00. Агеев не ждет презентацию — он ждет разговор по существу. В пятницу днём его офис передал вам пакет: справку о компании, подготовленную аппаратом на основе внутренних документов, и десять приложений. Поздним вечером пришло письмо самого Агеева с постановкой задачи. Всё, что вы знаете о компании, — ниже.</p>
 
           </article>
+
+          <div class="appx-divider">«Искра» · пакет материалов</div>
+          <p class="case-meta-line"><i>Учебный кейс. Время работы с материалами — 30–40 минут. Материалы переданы вам офисом К. Агеева в пятницу, 6 февраля 2026 года.</i></p>
 
           <article id="sec-1">
             <h2>1. Как строилась «Искра»</h2>
@@ -564,7 +559,7 @@
 <script src="js/dossier-render.js?v=9"></script>
 <script src="js/dossier-panel.js?v=6"></script>
 <script src="js/case-ref.js?v=7"></script>
-<script src="js/round1.js?v=53"></script>
+<script src="js/round1.js?v=55"></script>
 <script src="js/progress.js?v=7"></script>
 <script src="js/save-status.js?v=1"></script>
 </body>
