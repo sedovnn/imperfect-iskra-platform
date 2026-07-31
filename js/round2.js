@@ -311,6 +311,21 @@
     }
 
     // ---------- шаг 3: стресс-тест ----------
+    // Давят КОМПРОМИССОМ, а не отсрочкой (замена посылки 2026-07-31, решение
+    // пользователя). Причина методологическая: шаг несёт heldUnderPressure —
+    // «удержал ли участник ЯДРО выбора», — а отсрочка ядра не касается, поэтому
+    // «согласен подождать» и «отказался от ставки» были неразличимы: судья не мог
+    // отделить уступку от нормального ответа. Плюс отсрочка проверяла ровно то,
+    // что через минуту проверяет бэклог (дефицит в людях, а не в деньгах) — дубль.
+    // Компромисс бьёт прямо в ядро: половина по условию убивает обе программы
+    // (Штерн сказал это на шаге 2), значит удержаться можно только назвав, что
+    // в ставке неделимо. Это heldUnderPressure и tradeoffReal без дубля.
+    // Компромисс арифметически ВОЗМОЖЕН — 90 + 115 из 210 — и именно поэтому
+    // смертелен: так сделать можно, соблазн настоящий. Правление тянет к нему не
+    // потому, что он лучший, а потому, что при нём никто не проигрывает.
+    // Реплики Агеева на шаге 2 («обычно побеждает компромисс», цитата Штерна)
+    // готовят этот ход — менять их только парой.
+    // Значения радио (hold/calibrate/change) НЕ меняем: на них стоит бэкенд.
 
     function buildStressBlock() {
       var locked = stepLocked('stress');
@@ -318,12 +333,13 @@
       block.className = 's2-block';
       block.innerHTML =
         them('Кирилл Агеев', { act: 'откидывается в кресле',
-          speech: '«Хорошо. Только Штерн вчера сказал мне другое: любое из этих решений можно отложить на полгода и посмотреть на цифры — деньги никуда не убегут. Половина правления его поддержит, и, честно, аргумент неглупый.' }) +
-        them('', { speech: '«Держите свою позицию или пересматриваете? И что вы скажете тем пятерым, кто считает наоборот, — им ведь тоже есть чем крыть».' }) +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Держу позицию</label>' +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Меняю детали, ядро оставляю</label>' +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Пересматриваю</label>' +
-        '<textarea class="s2-stress-comment" aria-label="Что вы скажете правлению" rows="4" placeholder="что вы скажете тем пятерым"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
+          speech: '«Теперь плохая новость. Я поговорил с правлением. Проигрывать никто не хочет, поэтому все тянут к одному: дать обеим программам по половине и через год посмотреть, что вышло. Денег на это как раз хватит, впритык.' }) +
+        them('', { speech: '«Штерн против — говорит, так мы похороним обе. Но он один, а остальные за».' }) +
+        them('', { speech: '«В этом варианте ваша ставка получает половину. Держите её целиком или согласны? Если держите — дайте мне аргумент, с которым я к ним выйду».' }) +
+        '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Только целиком</label>' +
+        '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Урезать можно, но вот это — нет</label>' +
+        '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Согласен на половину</label>' +
+        '<textarea class="s2-stress-comment" aria-label="Аргумент для правления" rows="4" placeholder="с чем Агеев выйдет к правлению"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitStressBtn" style="margin-top:12px;">Ответить →</button>');
 
       if (!locked) {
