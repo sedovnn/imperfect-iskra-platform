@@ -3984,7 +3984,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    необязательна, отсутствие не штраф). */
 .wblock { padding-bottom: 20px; }
 .wblock + .wblock { border-top: 1px solid var(--hairline); padding-top: 18px; }
+/* Состояние блока стоит вплотную к заголовку — это часть подписи, а не
+   отдельный контрол. Переключатель уходит к правому краю: он действие, и его
+   место там же, где действия в остальных блоках. */
 .wblock-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.wblock-head-left { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
 .wchip {
   font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
   color: var(--muted-soft); border: 1px solid var(--hairline); border-radius: var(--radius);

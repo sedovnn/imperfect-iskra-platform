@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=76" />
+<link rel="stylesheet" href="css/styles.css?v=77" />
 <style>
   /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
   .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -465,11 +465,11 @@
                проблемы это не штраф, а сигнал сам по себе. -->
           <div class="wblock" id="deepBlock">
             <div class="wblock-head">
-              <div class="kicker" style="margin:0;">Главная проблема</div>
-              <div style="display:flex; align-items:baseline; gap:10px;">
-                <button type="button" class="wtoggle" id="deepToggle" style="display:none;">свернуть</button>
+              <div class="wblock-head-left">
+                <div class="kicker" style="margin:0;">Главная проблема</div>
                 <span class="wchip" id="deepChip">необязательно</span>
               </div>
+              <button type="button" class="wtoggle" id="deepToggle" style="display:none;">свернуть</button>
             </div>
 
             <p class="deep-summary" id="deepSummary" style="display:none;"></p>
@@ -486,11 +486,11 @@
           <!-- Блок 2: та же метка, тот же вес. -->
           <div class="wblock">
             <div class="wblock-head">
-              <div class="kicker" style="margin:0;">Наблюдения из текста</div>
-              <div style="display:flex; align-items:baseline; gap:10px;">
-                <button type="button" class="wtoggle" data-collapse="obsBody">свернуть</button>
+              <div class="wblock-head-left">
+                <div class="kicker" style="margin:0;">Наблюдения из текста</div>
                 <span class="wchip" id="cardCount">0 проблем</span>
               </div>
+              <button type="button" class="wtoggle" data-collapse="obsBody">свернуть</button>
             </div>
 
             <div id="obsBody">
@@ -507,11 +507,11 @@
                здесь, и участник описывал одно и то же дважды на разных экранах. -->
           <div class="wblock">
             <div class="wblock-head">
-              <div class="kicker" style="margin:0;">Связки</div>
-              <div style="display:flex; align-items:baseline; gap:10px;">
-                <button type="button" class="wtoggle" data-collapse="connBody">свернуть</button>
+              <div class="wblock-head-left">
+                <div class="kicker" style="margin:0;">Связки</div>
                 <span class="wchip" id="connCount">0</span>
               </div>
+              <button type="button" class="wtoggle" data-collapse="connBody">свернуть</button>
             </div>
             <div id="connBody">
               <p class="links-hint" style="margin:8px 0 10px;">Если какие-то наблюдения связаны между собой — соберите связку и объясните механизм: почему одно порождает другое.</p>
