@@ -658,33 +658,13 @@
         list.appendChild(row);
       });
 
-      // ── взгляд снаружи: только когда список разложен ──
-      // Стоит здесь, а не в финальном блоке, потому что предмет вопроса — сам
-      // список: спрашивать «чего они не видят» до того, как человек прочёл все
-      // двадцать, бессмысленно. И задан от лица Агеева как его личный интерес —
-      // приписывать этому вопросу цель приглашения нельзя, она другая (см. выше). Формулировка намеренно НЕ «чего не хватает
-      // в списке»: на такой вопрос ответ лежит в самом списке (он раздаёт карту
-      // тем), и мы получили бы перечисление, а не наблюдение.
+      // Вопрос «чего никто из них со своего места не видит» убран (решение
+      // пользователя): после разбора списка разговор и так продолжается целым
+      // шагом — почему эти приоритеты, как проверять новые идеи, что заставит
+      // пересматривать, — и лишняя реплика на выходе из бэклога висела ни к чему.
+      // Поле blindSpot остаётся в стейте и в колонке листа: по нему могут быть
+      // уже записанные ответы, и кабинет их показывает.
       syncReasonHint();
-
-      var blindHost = backlogHost.querySelector('.bl-blind');
-      if (blindHost) {
-        if (undecided.length) {
-          blindHost.innerHTML = '';
-        } else if (!blindHost.querySelector('.s2-blind')) {
-          blindHost.innerHTML =
-            them('Кирилл Агеев', { act: 'откладывает распечатку',
-              speech: 'И ещё одно, это уже для меня, не для правления. Все двадцать писали мои же менеджеры — каждый про свой участок. Чего никто из них со своего места не видит?' }) +
-            (locked ? me(state.blindSpot)
-              : mine('<textarea class="s2-blind" aria-label="Чего менеджеры не могут увидеть по своему положению" rows="4" placeholder="ваш ответ">' + escapeHtml(state.blindSpot || '') + '</textarea>'));
-          if (!locked) {
-            blindHost.querySelector('.s2-blind').addEventListener('input', function (e) {
-              state.blindSpot = e.target.value; saveState();
-            });
-          }
-          if (window.imp && window.imp.typoDom) window.imp.typoDom(blindHost);
-        }
-      }
 
       if (window.imp && window.imp.typoDom) {
         window.imp.typoDom(list);
@@ -709,7 +689,6 @@
           : '<div class="bl-sum-host"></div>' +
             '<div class="bl-decided"></div>' +
             '<div class="bl-list"></div>' +
-            '<div class="bl-blind"></div>' +
             '<p class="bl-hint" style="display:none;"></p>' +
             (locked ? '' : '<button class="btn btn-primary" id="commitBacklogBtn" style="margin-top:16px;">Зафиксировать разбор →</button>'));
 
@@ -737,12 +716,6 @@
               { confirmLabel: 'Зафиксировать', cancelLabel: 'Ещё подумаю' }
             ).then(function (ok) { if (ok) advance('rule'); });
           };
-          if (!String(state.blindSpot || '').trim()) {
-            window.imp.confirm('Агеев спросил прямо: чего его менеджеры не видят. Промолчать?',
-              { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
-              .then(function (ok) { if (ok) lock(); });
-            return;
-          }
           lock();
         });
       }

@@ -1152,6 +1152,12 @@ footer {
    ненаблюдаемо и ловушки бэклога не срабатывают. Выход за рамку не
    блокируется: превышение — наблюдаемый ответ, а не ошибка формы. */
 
+/* Вся колонка разбора — одной шириной. Иначе строка растягивалась на всю рабочую
+   область: текст кончался на 62ch, кнопки были прижаты к правому краю, и между
+   ними оставалось полполосы пустоты. Ширина посчитана под содержимое: 62ch
+   названия плюс зазор плюс две кнопки по 92px. */
+.bl-sum, .bl-decided, .bl-list, .bl-hint { max-width: 880px; }
+
 .bl-sum {
   position: sticky;
   top: 0;
@@ -1173,45 +1179,75 @@ footer {
 .bl-sum-left { margin-left: auto; color: var(--muted-soft); }
 .bl-sum.is-over { border-bottom-color: var(--accent); }
 
-/* Нерешённая карточка: заголовок, одна строка мета (автор · люди · деньги),
-   аргумент автора, кнопки справа. Мета и кнопки собраны в одну строку каждая —
-   на двадцати позициях это экономит два экрана против прежней раскладки. */
+/* Нерешённая позиция. Пустота между мелким текстом и мелкими кнопками была
+   не случайной: сетка стояла в две колонки, кнопки прижимались к верху правой,
+   а аргумент автора занимал только левую — справа от него оставалась дыра высотой
+   в две-три строки, и в ней тонули сами кнопки.
+   Теперь аргумент растянут на всю ширину (grid-column: 1 / -1), а решение стоит
+   там, где на него смотрят: в одной строке с названием. Дыры нет, и кнопки
+   перестали быть мелочью в углу — они и есть работа на этом экране. */
 .bl-item {
   border-top: 1px solid var(--hairline);
-  padding: 14px 0;
+  padding: 16px 0;
   display: grid;
   grid-template-columns: 1fr auto;
-  gap: 16px;
+  column-gap: 20px;
+  row-gap: 6px;
   align-items: start;
 }
 .bl-item:last-child { border-bottom: 1px solid var(--hairline); }
-.bl-body { min-width: 0; }
-.bl-title { margin: 0; font-size: 15px; line-height: 1.4; font-weight: 600; max-width: 62ch; }
+.bl-title {
+  grid-column: 1;
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.4;
+  font-weight: 600;
+  max-width: 62ch;
+}
+/* Автор и цена — одной строкой под названием. Цифры моноширинно, чтобы двадцать
+   позиций сравнивались взглядом по вертикали, а не пересчитывались. */
 .bl-meta {
-  margin: 3px 0 0;
+  grid-column: 1;
+  margin: 0;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--muted-soft);
 }
-/* Цена — тем же кеглем, но не капсом и цифрами в моноширинных ячейках:
-   двадцать строк надо сравнивать глазом по вертикали. */
 .bl-meta span {
   text-transform: none;
   letter-spacing: 0;
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
+  color: var(--ink);
+  font-weight: 600;
   margin-left: 10px;
 }
 .bl-arg {
-  margin: 6px 0 0;
-  font-size: 13px;
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  font-size: 13.5px;
   line-height: 1.5;
   color: var(--muted);
   max-width: var(--w-read);
 }
-.bl-actions { display: flex; flex-direction: column; gap: 6px; flex: none; }
+/* Решение — в первой строке, рядом с названием, и кнопки нормального размера.
+   Две равные по ширине, чтобы выбор читался как выбор, а не как ссылка. */
+.bl-actions {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  gap: 8px;
+  flex: none;
+  align-self: start;
+}
+.bl-actions .s2-act {
+  font-size: 13px;
+  padding: 7px 14px;
+  min-width: 92px;
+  text-align: center;
+  border-radius: var(--radius);
+}
 
 /* Решённое уезжает наверх в две сводки по одной строке на позицию — полотно
    тает по мере работы, к концу разбора нерешённого списка нет вообще.
@@ -1314,11 +1350,10 @@ footer {
   max-width: var(--w-read);
 }
 
-.bl-blind { margin-top: 30px; }
-
 @media (max-width: 700px) {
   .bl-item { grid-template-columns: 1fr; }
-  .bl-actions { flex-direction: row; }
+  .bl-actions { grid-column: 1; grid-row: auto; margin-top: 4px; }
+  .bl-actions .s2-act { flex: 1; min-width: 0; }
   .bl-mini { grid-template-columns: 1fr auto; }
   .bl-mini-cost { grid-column: 1 / -1; }
   .bl-sum-left { margin-left: 0; width: 100%; }
