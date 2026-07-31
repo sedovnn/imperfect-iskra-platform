@@ -986,7 +986,6 @@
 
   // ---------- фаза 2: связки (АК-2) ----------
 
-  var linksRoot = document.getElementById('linksRoot');
 
   function cardShortLabel(h) {
     var t = (h.problem || '').trim();
@@ -1074,9 +1073,12 @@
 
   // ---------- finish ----------
 
+  // Отдельного экрана «Связки» (#linksRoot) больше нет — связки переехали
+  // в рабочую панель при слиянии экранов 2026-07-31. Обращение к нему осталось
+  // и падало РОВНО здесь: рабочая область уже спрятана, оверлей ещё не показан,
+  // участник видел белый экран вместо «Раунд 1 завершён».
   function showFinishOverlay() {
     document.getElementById('stationRoot').style.display = 'none';
-    linksRoot.style.display = 'none';
     document.getElementById('finishOverlay').style.display = 'flex';
   }
 
