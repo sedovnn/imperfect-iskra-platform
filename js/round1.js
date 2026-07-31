@@ -662,8 +662,15 @@
       el.className = 'card problem-card' + (state.finished ? ' is-locked' : '');
       el.dataset.hlId = h.id;
       var head = h.snippet
-        ? '<blockquote class="problem-quote">«' + escapeHtml(h.snippet) + '»</blockquote>'
-        : '<div class="problem-quote-none" style="font-size:12.5px; color:var(--muted-soft); font-style:italic; margin:0 0 6px;">вывод из прочитанного — прямой цитаты нет</div>';
+        // span технический: .card — flex-контейнер, прямой потомок блокифицируется,
+        // и краска легла бы плашкой во всю ширину карточки вместо того, чтобы идти
+        // по фразе с рваным краем, как в тексте. Ёлочки сняты: краска уже говорит
+        // «это цитата», а в тексте кейса вокруг отметки ёлочек нет — и в самом
+        // кейсе своих «ёлочек» полно (названия компаний), добавленные в них
+        // вкладывались. В «Моих ответах» (dossier-render.js) ёлочки остаются:
+        // там краски нет и они единственный признак цитаты.
+        ? '<blockquote class="problem-quote"><span class="quote-ink">' + escapeHtml(h.snippet) + '</span></blockquote>'
+        : '<div class="problem-quote-none">вывод из прочитанного — прямой цитаты нет</div>';
       el.innerHTML =
         head +
         // Подписи у первого поля нет: плейсхолдер объясняет то же самое, а строка
