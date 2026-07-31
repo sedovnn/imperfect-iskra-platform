@@ -102,7 +102,15 @@
       if (st2) textB('Позиция по развилке:', st2.isOwn && st2.named ? st2.named : st2.label);
       if (s2.stanceCriteria) textB('Два критерия:', s2.stanceCriteria);
       if (s2.stressChoice) {
-        textB('Штерн предложил отложить на полгода:', s2.stressChoice === 'hold' ? 'держу позицию' : (s2.stressChoice === 'calibrate' ? 'меняю детали, ядро оставляю' : 'пересматриваю'));
+        // Подпись зависит от версии разговора: до 2026-07-31 давили отсрочкой
+        // («Штерн предложил отложить»), теперь — компромиссом правления, причём
+        // Штерн единственный против. Прежняя подпись переворачивала его позицию
+        // на противоположную; различаем по наличию разбора бэклога.
+        var pressedByBoard = !!Object.keys(s2.picks || {}).length;
+        textB(pressedByBoard ? 'Правление предложило поделить пополам:' : 'Штерн предложил отложить на полгода:',
+          s2.stressChoice === 'hold' ? (pressedByBoard ? 'держу своё целиком' : 'держу позицию')
+            : (s2.stressChoice === 'calibrate' ? 'урезать можно, но не всё'
+              : (pressedByBoard ? 'согласен, пусть делят пополам' : 'пересматриваю')));
         if (s2.stressComment) text(s2.stressComment);
       }
 
@@ -203,10 +211,13 @@
     raSources = raSources.map(function (s) { return String(s).trim(); }).filter(function (s) { return s; });
     if (ra && (ra.answer1 || ra.subdecisions || raSources.length || ra.sourceElaboration)) {
       section('Раунд 5 · Очередь в «Прожектор»');
-      // подписи нейтральны к версии раунда: до редизайна answer1 был про собственную
-      // рекомендацию, после — про задачу Даши; спрашивал в обоих случаях Брагин
-      if (ra.answer1) textB('Ответ Брагину:', ra.answer1);
-      if (ra.subdecisions) textB('Где колебался, что отбросил:', ra.subdecisions);
+      // Кто спрашивал, зависит от версии раунда. В нынешней (v3) первые два
+      // вопроса задаёт Дарья («что бы вы сделали на моём месте», «как нам людей
+      // удерживать»), Брагину адресован только третий — про источник. Прежняя
+      // подпись «Ответ Брагину» стояла над ответом Дарье.
+      var askedByDarya = ra.v === 3;
+      if (ra.answer1) textB(askedByDarya ? 'Что бы я сделал на месте Дарьи:' : 'Ответ Брагину:', ra.answer1);
+      if (ra.subdecisions) textB(askedByDarya ? 'Как удерживать людей и почему такие выводы:' : 'Где колебался, что отбросил:', ra.subdecisions);
       if (raSources.length) textB('Источники идей (прежний формат):', raSources.map(function (s) { return GA_SOURCE[s] || s; }).join('; '));
       if (ra.sourceElaboration) textB('Откуда ход:', ra.sourceElaboration);
     }

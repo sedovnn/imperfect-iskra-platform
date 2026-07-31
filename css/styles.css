@@ -2506,6 +2506,15 @@ body.imp-drawer-open .dock-rail { display: none; }
   color: var(--muted-soft);
   padding: 6px 10px 4px;
 }
+/* Приложения отделены от материалов волоском — так же, как «Справка по терминам»
+   отделена от приложений. Без него список из семнадцати ссылок читался как один
+   поток, и было не видно, где кончается сам кейс и начинаются приложения.
+   Первый заголовок («Материалы») линии не получает: над ним ничего нет. */
+.case-nav-title + .case-nav-link ~ .case-nav-title {
+  margin-top: 16px;
+  border-top: 1px solid var(--hairline);
+  padding-top: 14px;
+}
 
 /* «Справка по терминам» — отдельный блок в самом низу навигации: это служебный
    справочник, не приложение кейса. Текст — в стиле заголовков групп
@@ -4253,6 +4262,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    акцентным: по колонке одним взглядом видно, где работа уже есть. */
 .wchip-num { letter-spacing: 0; min-width: 24px; text-align: center; }
 .wchip-num.is-active { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-tint); }
+/* Пустой чип не должен оставлять рамку-призрак рядом с заголовком. */
+.wchip.is-hidden { display: none; }
 .wblock-lead { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
 /* Содержимое блока всегда отбито от его заголовка. Без этого, когда подсказка
    «пока пусто» скрывалась, первая карточка вставала вплотную и её рамка шла
