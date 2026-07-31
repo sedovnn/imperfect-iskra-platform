@@ -441,7 +441,7 @@
       fb.style.display = '';
       fb.textContent = 'Финализировать стратегию →';
       var db = document.getElementById('defenseBlock');
-      if (db) db.style.display = 'none'; // записка к совету появится после «Финализировать»
+      if (db) db.style.display = 'none'; // записка правлению появится после «Финализировать»
       reviewMode = false;
       document.getElementById('stationRoot').style.display = 'none';
       finalizeScreenEl.style.display = 'flex';
@@ -522,7 +522,7 @@
     document.getElementById('reviewStrategyBtn').addEventListener('click', function () {
       renderStratosDoc(true);
       var db = document.getElementById('defenseBlock');
-      if (db) db.style.display = ''; // показать записку к совету read-only
+      if (db) db.style.display = ''; // показать записку правлению read-only
       document.getElementById('finishOverlay').style.display = 'none';
       document.getElementById('finalizeBtn').style.display = 'none';
       if (defenseEl) defenseEl.disabled = true;
@@ -540,12 +540,12 @@
       var stance = window.imp.stanceOf && window.imp.stanceOf(s2);
       var code = stance ? stance.code : null;
       if (code === 'fortress')
-        return '«Прочитал вашу записку. Крепость — значит, держим то, что кормит, и не геройствуем. Спорить на совете будут, но иду туда с вашими словами, а не со своими сомнениями». — К. Агеев';
+        return '«Прочитал вашу записку. Крепость — значит, держим то, что кормит, и не геройствуем. Спорить на правлении будут, но иду туда с вашими словами, а не со своими сомнениями». — К. Агеев';
       if (code === 'secondCurve')
-        return '«Прочитал. Вторая кривая — это ставка, и вы её не спрятали за оговорками. Рискованно. И, кажется, впервые за месяц я не думаю, что мы просто плывём по течению. Иду на совет с вашей запиской». — К. Агеев';
+        return '«Прочитал. Вторая кривая — это ставка, и вы её не спрятали за оговорками. Рискованно. И, кажется, впервые за месяц я не думаю, что мы просто плывём по течению. Иду на правление с вашей запиской». — К. Агеев';
       if (code === 'other')
-        return '«Прочитал. Вы не приняли ни одну из готовых позиций — и, чёрт возьми, у вас есть основания. Спорить будут. Иду на совет с вашей запиской». — К. Агеев';
-      return '«Прочитал. Спорить на совете будут, но иду туда с вашей запиской». — К. Агеев';
+        return '«Прочитал. Вы не приняли ни одну из готовых позиций — и, чёрт возьми, у вас есть основания. Спорить будут. Иду на правление с вашей запиской». — К. Агеев';
+      return '«Прочитал. Спорить на правлении будут, но иду туда с вашей запиской». — К. Агеев';
     }
 
     function showFinishOverlay() {
@@ -556,7 +556,7 @@
       document.getElementById('finishOverlay').style.display = 'flex';
     }
 
-    // двухшаговая финализация: 1-й клик открывает записку к совету и меняет
+    // двухшаговая финализация: 1-й клик открывает записку правлению и меняет
     // кнопку на «Отправить К. Агееву», 2-й — собственно финализирует.
     function handleFinalizeClick() {
       var db = document.getElementById('defenseBlock');

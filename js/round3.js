@@ -286,7 +286,7 @@
       var block = document.createElement('div');
       block.className = 'chat';
       block.innerHTML =
-        them('Виктор Лемех', { act: 'записывает что-то на салфетке',
+        them('Виктор Лемех', { act: 'черкает на обороте распечатки',
           speech: 'Допустим. А как мы поймём, что дошли — по каким параметрам? Мне на совете скажут: покажи, где мы будем считать, что получилось.' }) +
         (locked ? me(state.metrics)
                 : inputBox('mk-metrics', 'По каким параметрам поймёте, что дошли', state.metrics, 'ваш ответ Лемеху', 'commitMetricsBtn', 'Ответить'));
