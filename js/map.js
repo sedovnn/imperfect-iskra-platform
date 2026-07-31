@@ -162,11 +162,6 @@
     function renderRooms() {
       var list = document.getElementById('hubRooms');
       list.innerHTML = '';
-      // позиция с развилки (станция 2) — для плашки-моста «слух разошёлся», которая
-      // появляется МЕЖДУ встречей с Агеевым и разговорами (после того, как ст.2 пройдена)
-      var s2state = null;
-      try { s2state = JSON.parse(localStorage.getItem(station2Key(session.bib)) || 'null'); } catch (e) {}
-      var stance = (window.imp.stanceOf && window.imp.stanceOf(s2state)) || null;
       // фиксированный порядок: этап открыт, если уже завершён ИЛИ предыдущий завершён
       // (первый — всегда). prevDone ведёт цепочку; текущий = первый незавершённый (фокус).
       var prevDone = true;
@@ -187,22 +182,11 @@
             '<h3>' + room.title + '</h3>' + pill +
           '</div>' +
           '<p>' + room.teaser + '</p>';
-        // слух о позиции — «облако мысли» справа от 3-го раунда (первого коридорного
-        // разговора), а не вклейкой в вертикальный поток плиток (ломала визуальную логику).
-        if (room.key === 'future' && stance) {
-          var slot = document.createElement('div');
-          slot.className = 'hub-room-slot';
-          slot.appendChild(card);
-          var cloud = document.createElement('div');
-          cloud.className = 'hub-stance-cloud';
-          cloud.innerHTML = (stance.isOwn && !stance.named)
-            ? '<p>О том, что вы не приняли ни одну из двух готовых позиций и предложили свою, уже все в курсе: Агеев, похоже, ещё со встречи разослал вашу записку по чатам.</p>'
-            : '<p>О вашей позиции — <b>' + esc(stance.label) + '</b> — уже все в курсе: Агеев, похоже, ещё со встречи разослал её по чатам.</p>';
-          slot.appendChild(cloud);
-          list.appendChild(slot);
-        } else {
-          list.appendChild(card);
-        }
+        // Плашка «о вашей позиции уже все в курсе: Агеев разослал записку по чатам»
+        // убрана: записки в этот момент ещё нет (её пишут в раунде 6), а сама мысль
+        // ничего не добавляла — позиция и так подставляется в реплики Лемеха, Штерна
+        // и в финал, то есть осведомлённость персонажей видна там, где она работает.
+        list.appendChild(card);
         prevDone = done;
       });
       // неразрывные пробелы после предлогов — уже по вставленной разметке

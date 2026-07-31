@@ -22,7 +22,11 @@
   // Пара создаётся в КАЖДОЙ шапке страницы: в раунде 1 их две (фаза чтения и
   // фаза связок), и одна пара обслуживала бы только первую. Клик по «Мои ответы»
   // ловит делегирование в dossier-panel.js по классу .js-open-dossier.
-  var headers = document.querySelectorAll('.station-header .station-header-right');
+  // Экран сборки (раунд 6) — не .station-header, а свой ряд .finalize-top: шапка
+  // станции там спрятана .gate-экраном. Пары не было ровно там, где сверка нужнее
+  // всего — участник сводит нестыковки и пишет записку, и ему надо и свои ответы,
+  // и текст кейса. Установка при этом обещает эти кнопки «на каждом рабочем экране».
+  var headers = document.querySelectorAll('.station-header .station-header-right, .finalize-top .station-header-right');
   var caseButtons = [];
 
   function buildGroup(headerRight, dossierBtn) {
