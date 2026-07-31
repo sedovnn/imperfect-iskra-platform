@@ -100,7 +100,7 @@
     document.getElementById('stationRoot').style.display = '';
     document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(6, '0');
     var sg = document.getElementById('sternGreet');
-    if (sg) sg.textContent = pname() ? (pname() + ', слышал') : 'Слышал';
+    if (sg) sg.textContent = pname() ? (pname() + ', Агеев написал') : 'Агеев написал';
     initWorkspace();
   }
 
@@ -135,7 +135,10 @@
     // Раунд 4 не переписка: под репликой идёт рабочая форма (состояния, этапы,
     // барьеры). Пузырь нужен только чтобы речь везде выглядела одинаково.
     function speechOf(t) {
-      return String(t || '').trim().replace(/^«/, '').replace(/»([.!?…]?)$/, '$1');
+      // Внешние кавычки у реплик не пишем (нормализация 2026-07-31), и снимать
+      // их нельзя: реплика может НАЧИНАТЬСЯ с названия в «ёлочках» — прежний
+      // strip съедал у него открывающую кавычку.
+      return String(t || '').trim();
     }
     function them(name, o) {
       o = o || {};
@@ -154,10 +157,6 @@
     // своя позиция без названия (длинное описание) в реплику Штерна не влезает —
     // тогда говорим о «курсе»; названную позицию подставляем как обычно
     var stancePhrase = (stance && (!stance.isOwn || stance.named)) ? stance.label : 'выбранный вами курс';
-    // stanceInner (лапки вместо «ёлочек») нужен был, пока реплика целиком стояла
-    // в кавычках. В пузыре внешних кавычек нет, поэтому подставляем stancePhrase
-    // как есть — «Крепость» в «ёлочках». Переменная ниже осталась для раунда 2.
-    var stanceInner = stancePhrase.replace(/^«/, '„').replace(/»$/, '“');
     // Собственное решение со встречи с Агеевым — подставляем как опору, чтобы путь
     // не начинался с чистого листа. В новом разговоре это ownMove (ход, названный
     // до того, как прозвучали позиции правления); у прежних прогонов — firstAction.
@@ -198,7 +197,7 @@
       block.className = 's2-block';
       block.innerHTML =
         them('Григорий Штерн', { note: 'финансовый директор', act: 'ставит чашку',
-          speech: '«' + escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не название. Покажите его по-честному: где мы сейчас — и какими шагами дойдём до цели?»' }) +
+          speech: escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не название. Покажите по-честному: где мы сейчас и какими шагами дойдём.' }) +
         (firstMove ? '<div class="pp-firstmove">Ваш первый ход из раунда 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
         '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
           '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" aria-label="Текущее состояние — где мы сейчас" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
@@ -206,8 +205,10 @@
         '</div>' +
         '<div class="pp-stages" data-list="stages"></div>' +
         (locked ? '' : '<button class="btn btn-ghost" id="addStageBtn" style="margin-top:10px;">+ добавить этап</button>') +
-        '<div class="field pp-contingency-field" style="margin-top:16px;"><label>Что меняет маршрут</label>' +
-          '<textarea class="pp-contingency" aria-label="Что может заставить перестроить маршрут" rows="2" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.contingency) + '</textarea></div>' +
+        them('', { act: 'ведёт пальцем по этапам',
+          speech: 'И вот что мне правда интересно. Люди у нас одни и те же, денег ровно столько, сколько есть. Где эти ваши этапы дерутся между собой за одних и тех же людей — и что вы двигаете?' }) +
+        '<div class="field pp-contingency-field" style="margin-top:16px;"><label>Где этапы конкурируют — и что двигаете</label>' +
+          '<textarea class="pp-contingency" aria-label="Где этапы конкурируют за одних и тех же людей и что вы двигаете" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.contingency) + '</textarea></div>' +
         (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
 
       var stagesList = block.querySelector('[data-list="stages"]');
@@ -274,13 +275,13 @@
       block.className = 's2-block';
       var pathLaidOut = (state.targetState || '').trim() || (state.stages || []).some(function (s) { return (s.description || '').trim(); });
       var react = pathLaidOut
-        ? { act: 'кивает на этапы', speech: '«Уже похоже на план. Хорошо».' }
-        : { act: 'поднимает бровь', speech: '«Для меня это пока набросок — и тогда у меня к вам ещё один вопрос».' };
+        ? { act: 'кивает на этапы', speech: 'Уже похоже на план. Хорошо.' }
+        : { act: 'поднимает бровь', speech: 'Для меня это пока набросок — и тогда у меня к вам ещё один вопрос.' };
       block.innerHTML =
         them('Григорий Штерн', react) +
         // подпись не повторяем: предыдущий пузырь тоже его — как в раундах 3 и 5
         them('', { act: 'проходится по вашим этапам глазами',
-          speech: '«Хорошо. Теперь — где это сломается. Мне не «рынок изменится», мне конкретно: что помешает и на что опираемся. И сразу отметьте, где глухая стена и не пройти, а где всё-таки можно найти лазейку и обойти. Вы же понимаете, что это ещё и разные деньги.»' }) +
+          speech: 'Хорошо. Теперь — где это сломается. Мне не «рынок изменится», мне конкретно: что помешает и на что опираемся. И по каждому помеха скажите прямо: этот барьер вы принимаете как данность и строите план вокруг него — или снимаете? Если снимаете, то чем именно за это платите.' }) +
         '<div class="pp-columns">' +
           '<div class="pp-column"><h4>Барьеры</h4><div class="pp-list" data-list="barriers"></div>' +
             (locked ? '' : '<button class="btn btn-ghost" data-add="barriers" style="margin-top:8px;">+ добавить барьер</button>') +
@@ -307,10 +308,17 @@
               (locked ? '' : '<button class="pp-item-remove" title="Убрать">✕</button>') +
             '</div>' +
             '<div class="pp-type">' +
-              '<button type="button" class="pp-type-btn' + (it.type === 'fixed' ? ' is-on' : '') + '" data-type="fixed"' + (locked ? ' disabled' : '') + '>стена</button>' +
-              '<button type="button" class="pp-type-btn' + (it.type === 'surmountable' ? ' is-on' : '') + '" data-type="surmountable"' + (locked ? ' disabled' : '') + '>можно обойти</button>' +
+              '<button type="button" class="pp-type-btn' + (it.type === 'fixed' ? ' is-on' : '') + '" data-type="fixed"' + (locked ? ' disabled' : '') + '>принимаю как данность</button>' +
+              '<button type="button" class="pp-type-btn' + (it.type === 'surmountable' ? ' is-on' : '') + '" data-type="surmountable"' + (locked ? ' disabled' : '') + '>снимаю</button>' +
             '</div>' +
-            '<textarea rows="2" class="pp-barrier-counter" aria-label="Что с этим делать" placeholder="что с этим делать — если есть ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.counter) + '</textarea>';
+            // Подпись поля зависит от выбора: у данности спрашиваем, как план
+            // перестроен вокруг неё, у снятого — чем за снятие заплатили.
+            // Прежнее «что с этим делать» одинаково подходило к обоим и потому
+            // не различало их — а §10 ПП-2 разводит именно эти два ответа.
+            '<textarea rows="2" class="pp-barrier-counter" aria-label="' +
+              (it.type === 'fixed' ? 'Как план перестроен вокруг этого барьера' : 'Чем платите за снятие барьера') + '" placeholder="' +
+              (it.type === 'fixed' ? 'как план перестроен вокруг него' : it.type === 'surmountable' ? 'чем именно платите за снятие' : 'сначала выберите: принимаю или снимаю') +
+              '"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.counter) + '</textarea>';
           if (!locked) {
             item.querySelector('.pp-barrier-text').addEventListener('input', function (e) { it.text = e.target.value; saveState(); });
             item.querySelector('.pp-barrier-counter').addEventListener('input', function (e) { it.counter = e.target.value; saveState(); });

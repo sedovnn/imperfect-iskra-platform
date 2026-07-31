@@ -51,11 +51,18 @@
         // (добавлен q2-горизонт перед разворотами) для незавершённых прогонов
         // даёт максимум один повторный проход шага, без потери answer2.
         if (parsed.vision === undefined) parsed.vision = parsed.answer1 || '';
+        // вопрос про параметры добавлен 2026-07-31 (минутки: четыре вопроса вместо
+        // трёх). Незавершённые сессии, ушедшие дальше, вернём на него один раз —
+        // иначе вставленный посреди цепочки шаг рендерился бы запертым и пустым.
+        if (parsed.metrics === undefined) {
+          parsed.metrics = '';
+          if (!parsed.finished && (parsed.step === 'q3' || parsed.step === 'done')) parsed.step = 'q3metrics';
+        }
         if (parsed.horizon === undefined) parsed.horizon = '';
         return parsed;
       }
     } catch (e) {}
-    return { vision: '', horizon: '', answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
+    return { vision: '', horizon: '', metrics: '', answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
   }
 
   // answer1 (то, что видит судья) — склейка картинки и горизонта+амбиции.
@@ -65,7 +72,10 @@
   function syncAnswer1() {
     var v = (state.vision || '').trim();
     var h = (state.horizon || '').trim();
-    state.answer1 = h ? (v + '\n\n[горизонт и амбиция цели] ' + h) : v;
+    var m = String(state.metrics || '').trim();
+    state.answer1 = v +
+      (h ? '\n\n[горизонт и амбиция цели] ' + h : '') +
+      (m ? '\n\n[по каким параметрам поймём, что дошли] ' + m : '');
   }
 
   function escapeHtml(s) {
@@ -177,7 +187,7 @@
     });
 
     var body = document.getElementById('roomBody');
-    var STEPS = ['q1', 'q2', 'q3', 'done'];
+    var STEPS = ['q1', 'q2', 'q3metrics', 'q3', 'done'];
     function stepIndex(s) { return STEPS.indexOf(s); }
     function stepLocked(s) { return state.finished || stepIndex(s) < stepIndex(state.step); }
 
@@ -188,7 +198,10 @@
     // Пузырь сам обозначает прямую речь — внешние «ёлочки» в нём лишние.
     // Внутренние лапки («на кофе») не трогаем, точку в конце сохраняем.
     function speechOf(t) {
-      return String(t || '').trim().replace(/^«/, '').replace(/»([.!?…]?)$/, '$1');
+      // Внешние кавычки у реплик не пишем (нормализация 2026-07-31), и снимать
+      // их нельзя: реплика может НАЧИНАТЬСЯ с названия в «ёлочках» — прежний
+      // strip съедал у него открывающую кавычку.
+      return String(t || '').trim();
     }
 
     function them(name, o) {
@@ -219,7 +232,7 @@
       var block = document.createElement('div');
       block.className = 'chat';
       block.innerHTML =
-        them('Виктор Лемех', { note: 'вице-президент «Меридиана» по спецпроектам', speech: '«' + (pname() ? escapeHtml(pname()) + ', мне' : 'Мне') + ' ' + stanceSubject + ' через полгода нести на совет Меридиана — а я пока не вижу, к чему она в итоге ведёт. Расскажите, своими словами: если пойдём по-вашему пути, где «Искра» окажется?»' }) +
+        them('Виктор Лемех', { note: 'вице-президент «Меридиана» по спецпроектам', speech: (pname() ? escapeHtml(pname()) + ', мне' : 'Мне') + ' ' + stanceSubject + ' через полгода нести на совет Меридиана — а я пока не вижу, к чему она в итоге ведёт. Расскажите, своими словами: если пойдём по-вашему пути, где «Искра» окажется?' }) +
         (locked ? me(state.vision)
                 : inputBox('s2-rationale', 'Куда придёт «Искра», если пойти по-вашему', state.vision, 'ваш ответ Лемеху', 'commitQ1Btn', 'Ответить'));
       if (!locked) {
@@ -246,7 +259,7 @@
       var block = document.createElement('div');
       block.className = 'chat';
       block.innerHTML =
-        them('Виктор Лемех', { act: 'кивает', speech: '«Ясно, картинку вижу. И на какой результат вы нас толкаете — и почему туда, а не куда попроще или наоборот ещё сложнее?»' }) +
+        them('Виктор Лемех', { act: 'кивает', speech: 'Ясно, картинку вижу. И на какой результат вы нас толкаете — и почему туда, а не куда попроще или наоборот ещё сложнее?' }) +
         (locked ? me(state.horizon)
                 : (inputBox('ga-horizon', 'На какой результат работаете и почему туда', state.horizon, 'ваш ответ Лемеху', 'commitQ2Btn', 'Ответить') +
                    '<div class="conn-note" style="font-size:12px; color:var(--muted-soft); margin:6px 0 0; line-height:1.45;">Здесь — про куда и зачем, а не про как: направление и результат, без пошагового плана.</div>'));
@@ -263,6 +276,33 @@
       return block;
     }
 
+    // Параметры результата (минутки 30.07: четвёртый вопрос про метрики).
+    // Сами метрики НЕ подсказываем — это прямо отклонено: «не наводить
+    // участника на метрики в вопросах». Лемех спрашивает, ПО ЧЕМУ поймём,
+    // что дошли, но ни одного параметра не называет: на L5 человек оперирует
+    // ими сам, и подсказка убила бы этот признак.
+    function buildMetricsBlock() {
+      var locked = stepLocked('q3metrics');
+      var block = document.createElement('div');
+      block.className = 'chat';
+      block.innerHTML =
+        them('Виктор Лемех', { act: 'записывает что-то на салфетке',
+          speech: 'Допустим. А как мы поймём, что дошли — по каким параметрам? Мне на совете скажут: покажи, где мы будем считать, что получилось.' }) +
+        (locked ? me(state.metrics)
+                : inputBox('mk-metrics', 'По каким параметрам поймёте, что дошли', state.metrics, 'ваш ответ Лемеху', 'commitMetricsBtn', 'Ответить'));
+      if (!locked) {
+        block.querySelector('.mk-metrics').addEventListener('input', function (e) {
+          state.metrics = e.target.value; syncAnswer1(); saveState();
+        });
+        block.querySelector('#commitMetricsBtn').addEventListener('click', function () {
+          state.step = 'q3';
+          saveState();
+          render();
+        });
+      }
+      return block;
+    }
+
     // q3 — развороты будущего (МК-2, сценарии + сигналы). Смысл прежний,
     // формулировка вопроса — читаемее.
     function buildQ3Block() {
@@ -270,12 +310,12 @@
       var block = document.createElement('div');
       var deep = (state.horizon || '').trim().length >= 40;
       var react = deep
-        ? { act: 'слушает, не перебивая, потом медленно', speech: '«Хм. Дальше вы заглянули, чем половина моего комитета».' }
-        : { act: 'ждёт секунду, будто надеясь на продолжение', speech: '«Коротко. Ну ладно, зайдём с другой стороны».' };
+        ? { act: 'слушает, не перебивая, потом медленно', speech: 'Хм. Дальше вы заглянули, чем половина моего комитета.' }
+        : { act: 'ждёт секунду, будто надеясь на продолжение', speech: 'Коротко. Ну ладно, зайдём с другой стороны.' };
       block.className = 'chat';
       block.innerHTML =
         them('Виктор Лемех', react) +
-        them('Виктор Лемех', { act: 'щурится', speech: '«Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт окажется неверным. И что тогда — как нам понять, что пора менять курс?»' }) +
+        them('Виктор Лемех', { act: 'щурится', speech: 'Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт окажется неверным. И что тогда — как нам понять, что пора менять курс?' }) +
         (locked ? me(state.answer2)
                 : inputBox('s2-rationale', 'Что если будущее пойдёт иначе и как поймёте, что пора менять курс', state.answer2, 'ваш ответ', 'finishBtn', 'Ответить и закончить'));
       if (!locked) {
@@ -292,7 +332,8 @@
       var upTo = state.finished ? STEPS.length - 1 : stepIndex(state.step);
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
-      if (upTo >= 2) body.appendChild(buildQ3Block());
+      if (upTo >= 2) body.appendChild(buildMetricsBlock());
+      if (upTo >= 3) body.appendChild(buildQ3Block());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
       // короткое появление только у реплик текущего шага: перечитывая переписку,
