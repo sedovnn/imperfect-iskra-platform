@@ -565,7 +565,9 @@
     var row = el.querySelector('.card-actions');
     var usedBy = propUsedBy(h.id);
     el.classList.toggle('is-prop', !!usedBy);
-    var show = !state.finished && !!(h.problem || '').trim();
+    // Кнопка нужна только тому, кто взялся за главную проблему: иначе она висела
+    // у каждого наблюдения и предлагала действие, которому некуда вести.
+    var show = !state.finished && !!(h.problem || '').trim() && deepList().length > 0;
     if (!show) { if (row) row.remove(); return; }
     if (!row) {
       row = document.createElement('div');
@@ -594,15 +596,16 @@
         : '<div class="problem-quote-none" style="font-size:12.5px; color:var(--muted-soft); font-style:italic; margin:0 0 6px;">вывод из прочитанного — прямой цитаты нет</div>';
       el.innerHTML =
         head +
-        '<label>Опишите проблему своими словами</label>' +
+        // Подписи у первого поля нет: плейсхолдер объясняет то же самое, а строка
+        // занимала место в и без того тесной колонке.
         '<textarea rows="2" data-field="problem"' + (state.finished ? ' disabled' : '') +
           ' placeholder="в чём здесь проблема для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>' +
-        // пометка и влияние переехали со второго экрана: раньше участник описывал
-        // проблему здесь, а что она означает — на следующем экране, забыв половину
-        '<div class="tag-pills">' +
-          '<button type="button" class="tag-pill' + (h.tag === 'threat' ? ' is-active' : '') + '" data-tag="threat"' + (state.finished ? ' disabled' : '') + '>угроза</button>' +
-          '<button type="button" class="tag-pill' + (h.tag === 'opportunity' ? ' is-active' : '') + '" data-tag="opportunity"' + (state.finished ? ' disabled' : '') + '>возможность</button>' +
-        '</div>' +
+        // Пометка «угроза/возможность» убрана 2026-07-31. Ни один маркер АК-2 её не
+        // использует, а методология называет ярлык сквозным дисквалификатором:
+        // «ярлык („угроза“/„возможность“) — это не анализ». Техническая роль у неё
+        // тоже кончилась: поле влияния раньше открывалось только после пометки,
+        // теперь оно обязательное и видно сразу. Поле h.tag в записях остаётся —
+        // в старых прогонах оно заполнено, и терять его незачем.
         '<label>Что это означает для компании</label>' +
         '<textarea rows="2" data-field="influence"' + (state.finished ? ' disabled' : '') +
           ' placeholder="к чему это ведёт — следствие, а не повтор проблемы другими словами">' + escapeHtml(h.influence || '') + '</textarea>';
@@ -615,17 +618,6 @@
         rm.addEventListener('click', function () { removeHighlight(h.id); });
         el.appendChild(rm);
       }
-      el.querySelectorAll('.tag-pill').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          if (state.finished) return;
-          var tag = btn.getAttribute('data-tag');
-          h.tag = h.tag === tag ? '' : tag;
-          saveState();
-          el.querySelectorAll('.tag-pill').forEach(function (b) {
-            b.classList.toggle('is-active', b.getAttribute('data-tag') === h.tag);
-          });
-        });
-      });
       var infl = el.querySelector('[data-field="influence"]');
       infl.addEventListener('input', function (e) { h.influence = e.target.value; saveState(); updateGate(); });
       var ta = el.querySelector('[data-field="problem"]');
