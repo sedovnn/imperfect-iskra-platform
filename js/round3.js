@@ -268,7 +268,7 @@
           state.horizon = e.target.value; syncAnswer1(); saveState();
         });
         block.querySelector('#commitQ2Btn').addEventListener('click', function () {
-          state.step = 'q3';
+          state.step = 'q3metrics';
           saveState();
           render();
         });
@@ -295,9 +295,13 @@
           state.metrics = e.target.value; syncAnswer1(); saveState();
         });
         block.querySelector('#commitMetricsBtn').addEventListener('click', function () {
-          state.step = 'q3';
-          saveState();
-          render();
+          var go = function () { state.step = 'q3'; saveState(); render(); };
+          if (!state.metrics.trim()) {
+            window.imp.confirm('Ничего не ответить Лемеху — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
+              .then(function (ok) { if (ok) go(); });
+            return;
+          }
+          go();
         });
       }
       return block;
