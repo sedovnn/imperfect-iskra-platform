@@ -373,7 +373,8 @@
 
     function allItems() {
       return (window.imp.backlog || []).concat(state.ownItems.map(function (o) {
-        return { id: o.id, title: o.title, who: 'ваше предложение', people: o.people, money: o.money, argument: '', own: true };
+        return { id: o.id, title: o.title, who: 'ваше предложение', people: o.people || 0, money: o.money || 0,
+                 argument: o.trade ? 'За счёт чего: ' + o.trade : '', own: true };
       }));
     }
 
@@ -415,36 +416,77 @@
         '</div>';
     }
 
+    // Полотно из двадцати карточек с аргументом в три строки — шесть экранов, и
+    // читать его невозможно. Поэтому разбор идёт в два прохода внутри ОДНОГО шага:
+    //   1) раскладываем: в списке только НЕРЕШЁННОЕ, решённое уезжает наверх
+    //      в две компактные сводки — полотно тает по мере работы;
+    //   2) когда нерешённого не осталось, открывается блок причин по отказам.
+    // Так сравнение (это и есть приоритизация) не мешается с писаниной, а причину
+    // человек пишет, уже видя всю картину целиком.
+    // Аргумент автора виден у нерешённых и складывается у решённых: в аргументах
+    // сидят ловушки (№16 «денег не требует» при 320 человеках, №18 «наймём столько
+    // же»), и спрятать их за раскрытие значит выключить их.
     function renderBacklog() {
       if (!backlogHost) return;
       var locked = stepLocked('backlog');
       var sum = backlogHost.querySelector('.bl-sum-host');
       if (sum) sum.innerHTML = backlogSummaryHtml();
-      var list = backlogHost.querySelector('.bl-list');
-      if (!list) return;
-      list.innerHTML = '';
 
-      allItems().forEach(function (it) {
+      var decidedHost = backlogHost.querySelector('.bl-decided');
+      var list = backlogHost.querySelector('.bl-list');
+      var reasonsHost = backlogHost.querySelector('.bl-reasons');
+      if (!list) return;
+
+      var items = allItems();
+      var taken = [], dropped = [], undecided = [];
+      items.forEach(function (it) {
         var p = pickOf(it.id);
+        if (!p) undecided.push(it);
+        else if (p.take) taken.push(it);
+        else dropped.push(it);
+      });
+
+      // ── решённое: по одной строке, с возможностью передумать ──
+      decidedHost.innerHTML = '';
+      function miniGroup(title, arr, kind) {
+        if (!arr.length) return;
+        var g = document.createElement('div');
+        g.className = 'bl-group is-' + kind;
+        g.innerHTML = '<div class="bl-group-head">' + title + ' · ' + arr.length + '</div>';
+        arr.forEach(function (it) {
+          var row = document.createElement('div');
+          row.className = 'bl-mini';
+          row.innerHTML =
+            '<span class="bl-mini-title">' + escapeHtml(it.title) + '</span>' +
+            '<span class="bl-mini-cost">' + it.people + ' чел. · ' + num(it.money) + ' млрд</span>' +
+            (locked ? '' : '<button type="button" class="s2-act" data-flip="1">' + (kind === 'taken' ? 'отложить' : 'взять') + '</button>');
+          if (!locked) {
+            row.querySelector('[data-flip]').addEventListener('click', function () { setPick(it.id, kind !== 'taken'); });
+          }
+          g.appendChild(row);
+        });
+        decidedHost.appendChild(g);
+      }
+      miniGroup('Беру', taken, 'taken');
+      miniGroup('Откладываю', dropped, 'dropped');
+
+      // ── нерешённое: полная карточка с аргументом автора ──
+      list.innerHTML = '';
+      undecided.forEach(function (it) {
         var row = document.createElement('div');
-        row.className = 'bl-item' + (p && p.take ? ' is-taken' : '') + (p && !p.take ? ' is-dropped' : '');
+        row.className = 'bl-item';
         row.innerHTML =
-          '<div class="bl-head">' +
+          '<div class="bl-body">' +
             '<p class="bl-title">' + escapeHtml(it.title) + '</p>' +
-            '<div class="bl-cost"><span>' + it.people + ' чел.</span><span>' + num(it.money) + ' млрд</span></div>' +
+            '<p class="bl-meta">' + escapeHtml(it.who) + ' <span>' + it.people + ' чел.</span> <span>' + num(it.money) + ' млрд</span></p>' +
+            (it.argument ? '<p class="bl-arg">' + escapeHtml(it.argument) + '</p>' : '') +
           '</div>' +
-          '<p class="bl-who">' + escapeHtml(it.who) + '</p>' +
-          (it.argument ? '<p class="bl-arg">' + escapeHtml(it.argument) + '</p>' : '') +
           (locked ? '' :
             '<div class="bl-actions">' +
-              '<button type="button" class="s2-act' + (p && p.take ? ' is-on' : '') + '" data-take="1">берём</button>' +
-              '<button type="button" class="s2-act' + (p && !p.take ? ' is-on' : '') + '" data-take="0">не сейчас</button>' +
+              '<button type="button" class="s2-act" data-take="1">берём</button>' +
+              '<button type="button" class="s2-act" data-take="0">не сейчас</button>' +
               (it.own ? '<button type="button" class="s2-act" data-own-remove="1">убрать</button>' : '') +
-            '</div>') +
-          (p && !p.take ?
-            '<input type="text" class="bl-reason" aria-label="Почему откладываете" placeholder="почему откладываете именно это"' +
-              (locked ? ' disabled' : '') + ' value="' + escapeHtml(p.reason || '') + '" />' : '');
-
+            '</div>');
         if (!locked) {
           row.querySelector('[data-take="1"]').addEventListener('click', function () { setPick(it.id, true); });
           row.querySelector('[data-take="0"]').addEventListener('click', function () { setPick(it.id, false); });
@@ -454,18 +496,40 @@
             delete state.picks[String(it.id)];
             saveState(); renderBacklog();
           });
-          var reason = row.querySelector('.bl-reason');
-          if (reason) reason.addEventListener('input', function (e) {
-            state.picks[String(it.id)].reason = e.target.value;
-            saveState();
-            // счётчик «осталось решить» причины не считает, полный ререндер не нужен —
-            // иначе поле теряло бы фокус на каждом символе
-          });
         }
         list.appendChild(row);
       });
 
-      if (window.imp && window.imp.typoDom) window.imp.typoDom(list);
+      // ── причины по отказам: только когда всё разложено ──
+      reasonsHost.innerHTML = '';
+      if (!undecided.length && dropped.length) {
+        var head = document.createElement('p');
+        head.className = 'bl-reasons-head';
+        head.textContent = 'Агеев просил по каждому отказу сказать почему. Список разложен — теперь по причинам.';
+        reasonsHost.appendChild(head);
+        dropped.forEach(function (it) {
+          var p2 = pickOf(it.id) || {};
+          var row = document.createElement('div');
+          row.className = 'bl-reason-row';
+          row.innerHTML =
+            '<p class="bl-reason-title">' + escapeHtml(it.title) + '</p>' +
+            '<input type="text" class="bl-reason" aria-label="Почему откладываете: ' + escapeHtml(it.title) + '" placeholder="почему откладываете именно это"' +
+              (locked ? ' disabled' : '') + ' value="' + escapeHtml(p2.reason || '') + '" />';
+          if (!locked) {
+            row.querySelector('.bl-reason').addEventListener('input', function (e) {
+              state.picks[String(it.id)].reason = e.target.value;
+              saveState();
+              // без ререндера: полный перерисовал бы поле и сбросил каретку
+            });
+          }
+          reasonsHost.appendChild(row);
+        });
+      }
+
+      if (window.imp && window.imp.typoDom) {
+        window.imp.typoDom(list);
+        window.imp.typoDom(decidedHost);
+      }
     }
 
     function buildBacklogBlock() {
@@ -481,7 +545,9 @@
         (isLegacyRun()
           ? '<p class="links-hint">Разбор бэклога появился в разговоре позже — в этом прогоне его не было.</p>'
           : '<div class="bl-sum-host"></div>' +
+            '<div class="bl-decided"></div>' +
             '<div class="bl-list"></div>' +
+            '<div class="bl-reasons"></div>' +
             (locked ? '' :
               '<button type="button" class="btn btn-ghost btn-small" id="addOwnItemBtn" style="margin-top:12px;">+ своё решение</button>' +
               '<button class="btn btn-primary" id="commitBacklogBtn" style="margin-top:12px; margin-left:10px;">Зафиксировать разбор →</button>'));
@@ -516,9 +582,16 @@
       return block;
     }
 
-    // «своё решение»: участник может добавить то, чего в списке менеджеров нет.
-    // Цена обязательна — иначе своя позиция ничего не стоит и обходит ограничение,
-    // на котором держится весь шаг.
+    // «Своё решение»: участник может добавить то, чего в списке менеджеров нет.
+    // Смету НЕ требуем — её взять негде: в кейсе нет ни ставок, ни нормативов,
+    // и обязательное поле «сколько человек» заставляло бы выдумывать число
+    // (так и было до 2026-07-31, это была моя ошибка).
+    // Требуем другое — за счёт чего. Это и по силам (двадцать решений с ценами
+    // прямо перед глазами, размен считается по ним), и методологически сильнее:
+    // freedResourceReal — про размен, а не про смету.
+    // Прикидка цены остаётся необязательной: указал — попадает в счётчик, не
+    // указал — в счётчике ноль, но в записи и у судьи видно и предложение,
+    // и размен, так что бесплатным своё решение не выглядит.
     function addOwnItem(block) {
       var form = block.querySelector('.bl-own-form');
       if (form) { form.querySelector('input').focus(); return; }
@@ -526,23 +599,23 @@
       form.className = 'bl-own-form';
       form.innerHTML =
         '<input type="text" class="bl-own-title" placeholder="что предлагаете" aria-label="Что предлагаете" />' +
+        '<input type="text" class="bl-own-trade" placeholder="за счёт чего — что уходит, чтобы это влезло" aria-label="За счёт чего" />' +
+        '<p class="bl-own-hint">Смету не спрашиваем — её негде взять. Если хотите прикинуть масштаб, ориентируйтесь на похожие по размаху решения из списка; поля необязательные.</p>' +
         '<div class="bl-own-cost">' +
-          '<input type="number" class="bl-own-people" min="0" step="5" placeholder="человек" aria-label="Сколько человек" />' +
-          '<input type="number" class="bl-own-money" min="0" step="0.1" placeholder="млрд ₽" aria-label="Сколько млрд рублей" />' +
+          '<input type="number" class="bl-own-people" min="0" step="5" placeholder="человек (если прикинете)" aria-label="Сколько человек, необязательно" />' +
+          '<input type="number" class="bl-own-money" min="0" step="0.1" placeholder="млрд ₽ (если прикинете)" aria-label="Сколько млрд рублей, необязательно" />' +
         '</div>' +
         '<button type="button" class="btn btn-ghost btn-xs bl-own-add">Добавить в список</button>';
       block.querySelector('#addOwnItemBtn').before(form);
       form.querySelector('.bl-own-add').addEventListener('click', function () {
         var title = form.querySelector('.bl-own-title').value.trim();
-        var people = Number(form.querySelector('.bl-own-people').value);
-        var money = Number(form.querySelector('.bl-own-money').value);
+        var trade = form.querySelector('.bl-own-trade').value.trim();
+        var people = Number(form.querySelector('.bl-own-people').value) || 0;
+        var money = Number(form.querySelector('.bl-own-money').value) || 0;
         if (!title) { window.imp.alert('Напишите, что предлагаете.'); return; }
-        if (!(people >= 0) || !(money >= 0) || (!people && !money)) {
-          window.imp.alert('Своё решение тоже чего-то стоит — укажите людей и деньги.');
-          return;
-        }
+        if (!trade) { window.imp.alert('Агеев спросит, за счёт чего. Ресурс уже расписан — что уходит, чтобы это влезло?'); return; }
         var id = 'own_' + uid();
-        state.ownItems.push({ id: id, title: title, people: people, money: money });
+        state.ownItems.push({ id: id, title: title, trade: trade, people: people, money: money });
         state.picks[id] = { take: true, reason: '' };
         saveState();
         form.remove();

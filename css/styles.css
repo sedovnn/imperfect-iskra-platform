@@ -1160,49 +1160,95 @@ footer {
 .bl-sum-left { margin-left: auto; color: var(--muted-soft); }
 .bl-sum.is-over { border-bottom-color: var(--accent); }
 
+/* Нерешённая карточка: заголовок, одна строка мета (автор · люди · деньги),
+   аргумент автора, кнопки справа. Мета и кнопки собраны в одну строку каждая —
+   на двадцати позициях это экономит два экрана против прежней раскладки. */
 .bl-item {
   border-top: 1px solid var(--hairline);
-  padding: 16px 0;
+  padding: 14px 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
 }
 .bl-item:last-child { border-bottom: 1px solid var(--hairline); }
-/* Взятое и отложенное различаются краской слева, а не рамкой вокруг:
-   двадцать обведённых карточек читались бы сеткой. */
-.bl-item.is-taken { box-shadow: inset 3px 0 0 var(--accent); padding-left: 14px; }
-.bl-item.is-dropped { opacity: .55; }
-
-.bl-head { display: flex; gap: 16px; align-items: baseline; justify-content: space-between; }
-.bl-title { margin: 0; font-size: 15px; line-height: 1.45; font-weight: 600; max-width: 62ch; }
-.bl-cost {
-  flex: none;
-  display: flex;
-  gap: 12px;
-  font-size: 12px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+.bl-body { min-width: 0; }
+.bl-title { margin: 0; font-size: 15px; line-height: 1.4; font-weight: 600; max-width: 62ch; }
+.bl-meta {
+  margin: 3px 0 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted-soft);
 }
-.bl-who {
-  margin: 4px 0 0;
+/* Цена — тем же кеглем, но не капсом и цифрами в моноширинных ячейках:
+   двадцать строк надо сравнивать глазом по вертикали. */
+.bl-meta span {
+  text-transform: none;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  margin-left: 10px;
+}
+.bl-arg {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  max-width: var(--w-read);
+}
+.bl-actions { display: flex; flex-direction: column; gap: 6px; flex: none; }
+
+/* Решённое уезжает наверх в две сводки по одной строке на позицию — полотно
+   тает по мере работы, к концу разбора нерешённого списка нет вообще.
+   Передумать можно тут же: кнопка возвращает позицию в противоположную группу. */
+.bl-group { margin-top: 16px; }
+.bl-group-head {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .07em;
   text-transform: uppercase;
-  color: var(--muted-soft);
+  color: var(--ink);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--hairline);
 }
-.bl-arg {
-  margin: 8px 0 0;
+.bl-group.is-taken .bl-group-head { color: var(--accent-ink); border-bottom-color: var(--accent); }
+.bl-mini {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--hairline);
   font-size: 13px;
-  line-height: 1.55;
+}
+.bl-mini-title { min-width: 0; line-height: 1.4; }
+.bl-group.is-dropped .bl-mini-title { color: var(--muted); }
+.bl-mini-cost {
+  font-size: 11px;
+  color: var(--muted-soft);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Причины спрашиваются, когда весь список уже разложен: сравнение и писанина —
+   разные работы, и мешать их значит получить отписки вместо разменов. */
+.bl-reasons { margin-top: 26px; }
+.bl-reasons-head {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--muted);
   max-width: var(--w-read);
 }
-.bl-actions { display: flex; gap: 8px; margin-top: 10px; }
-.s2-act.is-on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); font-weight: 600; }
+.bl-reason-row { padding: 10px 0; border-top: 1px solid var(--hairline); }
+.bl-reason-row:last-child { border-bottom: 1px solid var(--hairline); }
+.bl-reason-title { margin: 0 0 6px; font-size: 13.5px; line-height: 1.4; font-weight: 600; max-width: 62ch; }
 .bl-reason {
   display: block;
   width: 100%;
   max-width: var(--w-form);
-  margin-top: 10px;
   border: 1px solid #e3e3e0;
   border-radius: var(--radius);
   padding: 8px 10px;
@@ -1227,11 +1273,21 @@ footer {
   font-family: inherit;
   background: var(--paper);
 }
+.bl-own-form input + input { margin-top: 8px; }
+.bl-own-hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
 .bl-own-cost { display: flex; gap: 10px; margin-top: 8px; }
 .bl-own-form .bl-own-add { margin-top: 10px; }
 
 @media (max-width: 700px) {
-  .bl-head { flex-direction: column; gap: 6px; }
+  .bl-item { grid-template-columns: 1fr; }
+  .bl-actions { flex-direction: row; }
+  .bl-mini { grid-template-columns: 1fr auto; }
+  .bl-mini-cost { grid-column: 1 / -1; }
   .bl-sum-left { margin-left: 0; width: 100%; }
 }
 
