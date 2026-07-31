@@ -185,7 +185,13 @@
 
   // ---------- appendix tracking (открыть + долистать до конца) ----------
 
-  var countableAppxIds = ['1', '2', '3', '4', '5', '6', '7', '8'];
+  // Список НЕ зашиваем: приложения меняются вместе с версией кейса (в v4 их стало
+  // одиннадцать вместо восьми), и жёсткий перечень тихо оставлял новые без счётчика
+  // «прочитано» — участник видел «не открыто» у уже прочитанного приложения.
+  var countableAppxIds = Array.prototype.slice
+    .call(document.querySelectorAll('.case-nav-link[data-appx]'))
+    .map(function (a) { return a.dataset.appx; })
+    .filter(function (id) { return id !== 'terms'; });
   var trackedAppxIds = ['terms'].concat(countableAppxIds);
 
   var appxLinks = {};
