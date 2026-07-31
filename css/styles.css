@@ -1245,6 +1245,47 @@ footer {
   font-size: 13px;
   font-family: inherit;
 }
+/* «Моя» сторона разговора в раунде 2: пока шаг открыт — поля справа, той же
+   ширины и в том же акценте, что и будущий пузырь ответа. Зафиксированный ответ
+   рендерится обычным .chat-msg.me, поэтому переход «печатал → сказал» не меняет
+   ни положение, ни цвет — меняется только рамка ввода на пузырь. */
+.s2-mine {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.s2-mine > * { width: 76%; max-width: 76%; }
+.s2-mine textarea {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+}
+.s2-mine .s2-radio {
+  justify-content: flex-start;
+  margin: 0;
+  padding: 9px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--paper);
+}
+.s2-mine .s2-radio:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-tint);
+  font-weight: 600;
+}
+.s2-mine-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--muted-soft);
+  margin-top: 6px;
+}
+@media (max-width: 700px) {
+  .s2-mine > * { width: 100%; max-width: 100%; }
+}
+
 .bl-hint {
   margin: 16px 0 0;
   font-size: 13px;

@@ -216,6 +216,22 @@
         '</div></div>';
     }
 
+    // Ответ участника — правая сторона разговора, как в любом чате. Пока шаг открыт,
+    // это поле ввода справа в акцентной рамке; как только шаг зафиксирован, ответ
+    // становится таким же пузырём, как реплики Агеева, только своим. Раньше на
+    // залоченных шагах стояла отключённая текстареа — разговор выглядел как чат,
+    // в котором говорит один, а второй заполняет анкету.
+    function me(text) {
+      var t = String(text == null ? '' : text).trim();
+      if (!t) return '';
+      return '<div class="chat"><div class="chat-msg me"><div class="chat-bubble">' +
+        escapeHtml(t).replace(/\n/g, '<br />') + '</div></div></div>';
+    }
+    // поле ввода на «моей» стороне
+    function mine(inner) {
+      return '<div class="s2-mine">' + inner + '</div>';
+    }
+
     function stepIndex(step) { return STEPS.indexOf(step); }
     function stepLocked(step) {
       // шаг залочен, если разговор уже ушёл дальше него (или раунд завершён)
@@ -238,9 +254,10 @@
       block.className = 's2-block';
       block.innerHTML =
         them('Кирилл Агеев', { note: 'гендиректор «Поиска и рекламы»', act: 'пожимает руку, кладёт распечатку на стол',
-          speech: '«Спасибо, что приехали. Я прочитал. Спорить с формулировками не буду — на это нужен день, а его у нас нет.' }) +
-        them('', { speech: '«Давайте сразу. Если бы решали вы — что делаем? Одним ходом, без списка. И обязательно скажите зачем. „Что“ я и сам придумаю, а вот „зачем“ у меня внутри никто не проговаривает».' }) +
-        '<textarea class="s2-own-move" aria-label="Ваш ход и зачем вы его делаете" rows="4" placeholder="ваш ход — и зачем вы его делаете"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.ownMove) + '</textarea>' +
+          speech: '«Спасибо, что приехали. Ваши тезисы я прочитал. Спорить с формулировками не буду — на это нужен день, а его у нас нет.' }) +
+        them('', { speech: '«Давайте сразу. Если бы решали вы — что компания делает дальше? Одним ходом, без списка. И обязательно скажите зачем. „Что“ я и сам придумаю, а вот „зачем“ у меня внутри никто не проговаривает».' }) +
+        (locked ? me(state.ownMove)
+          : mine('<textarea class="s2-own-move" aria-label="Ваш ход и зачем вы его делаете" rows="4" placeholder="ваш ход — и зачем вы его делаете">' + escapeHtml(state.ownMove) + '</textarea>')) +
         (locked ? '' : '<button class="btn btn-primary" id="commitOwnMoveBtn" style="margin-top:12px;">Ответить →</button>');
 
       if (!locked) {
@@ -271,21 +288,22 @@
       block.className = 's2-block';
       block.innerHTML =
         them('Кирилл Агеев', { act: 'убирает распечатку',
-          speech: '«Теперь то, ради чего я вас звал. В правлении оформились две позиции, у каждой сильные сторонники. Обычно в таких историях побеждает компромисс — вложиться и туда, и туда. У нас такой возможности нет, и вот почему.' }) +
+          speech: '«Теперь второе, о чём я писал. В правлении оформились две позиции, у каждой сильные сторонники. Обычно в таких историях побеждает компромисс — вложиться и туда, и туда. У нас такой возможности нет, и вот почему.' }) +
         them('', { speech: '«„Меридиан“ зафиксировал инвестиционную рамку до 2029 года. После программы дата-центров, обязательств по „Маяку“ и дивидендов консорциума свободного капитала на стратегические программы остаётся около 250 миллиардов на три года. Привлекать долг под новые направления консорциум не будет — нам это сказали прямо и довольно откровенно».' }) +
         them('', { speech: '«Первую позицию называют „Крепость“. Это ставка на то, что кормит сегодня: перестроить выдачу под монетизацию „Ответа“, встроить рекламу в ИИ-ответ, дожать точность в цифровых каналах. Часть правления не хочет отказываться от бизнеса, который двадцать лет всех нас кормил. Обойдётся в 180 миллиардов.' }) +
         them('', { speech: '«Вторая — „Вторая кривая“. Ставка на следующее поколение устройств: восстановить локальные модели, довести „Миру“ до проактивного помощника, который живёт на любом устройстве, а дальше, возможно, и своё производство. Порядка 230 миллиардов.' }) +
         them('', { speech: '«Штерн оценил обе и сказал коротко: профинансировать обе на половину — способ гарантированно похоронить обе».' }) +
         them('', { act: 'делает паузу', speech: '«И ещё одно, что стоит держать в голове. В обеих программах работают одни и те же люди — инженеры, разработчики, ML-специалисты. Кандидатов нужного уровня на рынке единицы, и дерёмся мы за них не только со своей индустрией.' }) +
-        them('', { speech: '«Что выбираете? Может быть, есть третий вариант, которого мы не видим, — тогда говорите его. И назовите два критерия, на которых стоит ваш ответ».' }) +
-        '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Крепость» — 180 млрд</label>' +
-        '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> «Вторая кривая» — 230 млрд</label>' +
-        '<label class="s2-radio"><input type="radio" name="stance" value="other"' + (state.stance === 'other' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Третий вариант — свой</label>' +
-        '<textarea class="s2-stance-other" aria-label="Опишите вашу позицию" rows="2" placeholder="опишите вашу позицию" style="display:' + (state.stance === 'other' ? '' : 'none') + ';"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceOther) + '</textarea>' +
-        '<div class="rationale-block" style="margin-top:14px;">' +
-          '<label>Два критерия, на которых стоит ваш ответ</label>' +
-          '<textarea class="s2-stance-criteria" aria-label="Два критерия, на которых стоит ваш ответ" rows="3" placeholder="два критерия"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stanceCriteria) + '</textarea>' +
-        '</div>' +
+        them('', { speech: '«Что выбираете — или что предлагаете вместо? И назовите два критерия, на которых стоит ваш ответ».' }) +
+        (locked
+          ? me(stanceSaid() + (String(state.stanceCriteria || '').trim() ? '\n\n' + state.stanceCriteria : ''))
+          : mine(
+            '<label class="s2-radio"><input type="radio" name="stance" value="fortress"' + (state.stance === 'fortress' ? ' checked' : '') + ' /> «Крепость» — 180 млрд</label>' +
+            '<label class="s2-radio"><input type="radio" name="stance" value="secondCurve"' + (state.stance === 'secondCurve' ? ' checked' : '') + ' /> «Вторая кривая» — 230 млрд</label>' +
+            '<label class="s2-radio"><input type="radio" name="stance" value="other"' + (state.stance === 'other' ? ' checked' : '') + ' /> Третий вариант — свой</label>' +
+            '<textarea class="s2-stance-other" aria-label="Опишите вашу позицию" rows="2" placeholder="опишите вашу позицию" style="display:' + (state.stance === 'other' ? '' : 'none') + ';">' + escapeHtml(state.stanceOther) + '</textarea>' +
+            '<label class="s2-mine-label">Два критерия, на которых стоит ваш ответ</label>' +
+            '<textarea class="s2-stance-criteria" aria-label="Два критерия, на которых стоит ваш ответ" rows="3" placeholder="два критерия">' + escapeHtml(state.stanceCriteria) + '</textarea>')) +
         (locked ? '' : '<button class="btn btn-primary" id="commitStanceBtn" style="margin-top:12px;">Дать рекомендацию →</button>');
 
       if (!locked) {
@@ -319,6 +337,19 @@
         });
       }
       return block;
+    }
+
+    function stanceSaid() {
+      if (state.stance === 'fortress') return '«Крепость».';
+      if (state.stance === 'secondCurve') return '«Вторая кривая».';
+      if (state.stance === 'other') return String(state.stanceOther || '').trim() || 'Свой вариант.';
+      return '';
+    }
+    function stressSaid() {
+      if (state.stressChoice === 'hold') return 'Держу своё — целиком.';
+      if (state.stressChoice === 'calibrate') return 'Урезать можно, но не всё.';
+      if (state.stressChoice === 'change') return 'Согласен, пусть делят пополам.';
+      return '';
     }
 
     // ---------- шаг 3: стресс-тест ----------
@@ -358,6 +389,15 @@
       // защищает. Один уходил подкреплённым, другой засомневавшимся, и это смещало
       // замер удержания. Схема одна на три: назвал → следствие → та же концовка.
       var st = window.imp.stanceOf && window.imp.stanceOf(state);
+      // Компромисс бьёт по-разному. По «Крепости» и «Второй кривой» ставку режут
+      // вдвое; своего варианта в раскладе правления нет вообще — деньги делят
+      // между их двумя. Прежняя реплика говорила «ваша ставка получает половину»
+      // всем троим, и для выбравшего третий вариант это было бессмыслицей.
+      function halfHitsYou() {
+        return (st && st.code === 'other')
+          ? 'В этом раскладе вашего варианта нет вообще — делят между их двумя.'
+          : 'В этом раскладе ваша ставка получает половину.';
+      }
       var stanceReact = st && st.code === 'fortress'
         ? { speech: '«Крепость. Значит, держим то, что кормит, а на устройства в этот цикл не ставим. Записал».' }
         : (st && st.code === 'secondCurve'
@@ -369,15 +409,17 @@
       block.className = 's2-block';
       block.innerHTML =
         (stanceReact ? them('Кирилл Агеев', stanceReact) : '') +
-        them(stanceReact ? '' : 'Кирилл Агеев', { act: 'откидывается в кресле',
-          speech: '«Теперь плохая новость. Помните, я сказал, что компромисса быть не может? На обе целиком его и нет. А вот половина есть — и правление на неё смотрит.' }) +
-        them('', { speech: '«Я с ними поговорил. Проигрывать никто не хочет, поэтому все тянут к одному: дать обеим программам по половине и через год посмотреть, что вышло. Денег на это хватает, ещё и резерв остаётся. Поэтому им и нравится.' }) +
-        them('', { speech: '«Штерн против — говорит, так мы похороним обе. Но он один, а остальные за».' }) +
-        them('', { speech: '«В этом варианте ваша ставка получает половину. Держите её целиком или согласны? Если держите — дайте мне аргумент, с которым я к ним выйду».' }) +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Только целиком</label>' +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Урезать можно, но вот это — нет</label>' +
-        '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + (locked ? ' disabled' : '') + ' /> Согласен на половину</label>' +
-        '<textarea class="s2-stress-comment" aria-label="Аргумент для правления" rows="4" placeholder="с чем Агеев выйдет к правлению"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.stressComment) + '</textarea>' +
+        them(stanceReact ? '' : 'Кирилл Агеев', { act: 'смотрит в телефон',
+          speech: '«Так. Пока мы тут говорим, в чате правления, кажется, нашли компромисс: дать обеим программам по половине и через год посмотреть, что вышло. Денег на это хватает, ещё и резерв остаётся. Проигрывать никто не хочет — вот и нравится.' }) +
+        them('', { act: 'кладёт телефон', speech: '«Штерн один. Остальные за».' }) +
+        them('', { speech: '«' + halfHitsYou() + ' Держите своё или соглашаетесь? Если держите — дайте мне аргумент, с которым я к ним выйду».' }) +
+        (locked
+          ? me(stressSaid() + (String(state.stressComment || '').trim() ? '\n\n' + state.stressComment : ''))
+          : mine(
+            '<label class="s2-radio"><input type="radio" name="stressChoice" value="hold"' + (state.stressChoice === 'hold' ? ' checked' : '') + ' /> Держу своё — целиком</label>' +
+            '<label class="s2-radio"><input type="radio" name="stressChoice" value="calibrate"' + (state.stressChoice === 'calibrate' ? ' checked' : '') + ' /> Урезать можно, но вот это — нет</label>' +
+            '<label class="s2-radio"><input type="radio" name="stressChoice" value="change"' + (state.stressChoice === 'change' ? ' checked' : '') + ' /> Согласен, пусть делят пополам</label>' +
+            '<textarea class="s2-stress-comment" aria-label="Аргумент для правления" rows="4" placeholder="с чем Агеев выйдет к правлению">' + escapeHtml(state.stressComment) + '</textarea>')) +
         (locked ? '' : '<button class="btn btn-primary" id="commitStressBtn" style="margin-top:12px;">Ответить →</button>');
 
       if (!locked) {
@@ -472,11 +514,22 @@
       var host = backlogHost.querySelector('.bl-hint');
       if (!host) return;
       var t = takenTotals();
-      var show = !stepLocked('backlog') && !t.undecided && t.dropped && !t.reasoned;
-      host.innerHTML = show
-        ? 'Вы не сказали почему ни по одному отказу. Агеев просил сказать хотя бы там, где отказ сам по себе решение, — кнопка «почему» в строке.'
-        : '';
-      host.style.display = show ? '' : 'none';
+      var lim = window.imp.backlogLimits;
+      var lines = [];
+      // Превышение НЕ блокируем: Агеев вслух разрешил выйти за рамку. Но раз он
+      // обещал спросить, чем платите, — предупреждаем здесь, а спрашиваем в финале.
+      // Молчаливое превышение и есть подпись «ничем не пожертвовал»: приоритизация
+      // без явного отказа не существует, а взять на 900 человек при 500 свободных
+      // — это объявить приоритетом всё.
+      if (t.people > lim.people || t.money > lim.money) {
+        lines.push('Набрано ' + t.people + ' человек при ' + lim.people + ' и ' + num(t.money) +
+          ' млрд при ' + lim.money + '. Выйти за рамку можно — Агеев в конце спросит, чем платите.');
+      }
+      if (!stepLocked('backlog') && !t.undecided && t.dropped && !t.reasoned) {
+        lines.push('Вы не сказали почему ни по одному отказу. Агеев просил сказать хотя бы там, где отказ сам по себе решение, — кнопка «почему» в строке.');
+      }
+      host.innerHTML = lines.join('<br />');
+      host.style.display = lines.length ? '' : 'none';
     }
 
     function renderBacklog() {
@@ -609,8 +662,8 @@
           blindHost.innerHTML =
             them('Кирилл Агеев', { act: 'откладывает распечатку',
               speech: '«И ещё одно, это уже для меня, не для правления. Все двадцать писали мои же менеджеры — каждый про свой участок. Чего никто из них со своего места не видит?»' }) +
-            '<textarea class="s2-blind" aria-label="Чего менеджеры не могут увидеть по своему положению" rows="4" placeholder="ваш ответ"' +
-              (locked ? ' disabled' : '') + '>' + escapeHtml(state.blindSpot || '') + '</textarea>';
+            (locked ? me(state.blindSpot)
+              : mine('<textarea class="s2-blind" aria-label="Чего менеджеры не могут увидеть по своему положению" rows="4" placeholder="ваш ответ">' + escapeHtml(state.blindSpot || '') + '</textarea>'));
           if (!locked) {
             blindHost.querySelector('.s2-blind').addEventListener('input', function (e) {
               state.blindSpot = e.target.value; saveState();
@@ -632,11 +685,11 @@
       block.className = 's2-block';
       block.innerHTML =
         them('Кирилл Агеев', { act: 'достаёт другую распечатку',
-          speech: '«Хорошо, надеюсь, что вы знаете, о чём говорите, и это решение действительно подкрепляют какие-то данные.' }) +
+          speech: '«Хорошо. С этим я к ним и выйду.' }) +
         them('', { speech: '«Но это ещё не всё. Помимо долгосрочных планов у меня на столе двадцать решений от моих менеджеров. Часть из них, возможно, подходят под вашу стратегию, часть, наверное, придётся делать при любой — но это вам и решать. В общем и целом, мы ждём от вас рекомендации по поводу того, что нам приоритизировать на ближайший год.' }) +
         them('', { speech: '«И не путайте с той рамкой. Двести пятьдесят — это три года под ставку, их открывает консорциум. А то, о чём сейчас, — наш операционный год, портфель изменений. Один в другой не переливается.' }) +
         them('', { speech: '«Что вам стоит знать: у нас есть ресурсные ограничения, именно поэтому мы не можем сделать всё. Речь и о деньгах, и о людях. Финансирование сжимается сверху, и я бы не рассчитывал больше чем на 22 миллиарда. С точки зрения людей — перебросить между направлениями в принципе не сложно, свободных рук на год у нас около пятисот, но вот с наймом есть сложности: вакансия закрывается почти полгода, а офферы принимает меньше половины.' }) +
-        them('', { speech: '«Если захотите выйти за рамки этих ограничений, у вас должны быть очень веские причины, иначе мы это даже не будем рассматривать. Помогите разобраться: что берём, от чего отказываемся и почему».' }) +
+        them('', { speech: '«Выйти за эти рамки можно — но тогда в конце скажете, чем платите. Помогите разобраться: что берём, от чего отказываемся и почему».' }) +
         them('', { speech: '«И не по каждому — я не аудит заказываю. Скажите почему там, где отказ сам по себе решение. По остальным поверю, что всё очевидно».' }) +
         (isLegacyRun()
           ? '<p class="links-hint">Разбор бэклога появился в разговоре позже — в этом прогоне его не было.</p>'
@@ -691,19 +744,29 @@
       var locked = state.finished;
       var block = document.createElement('div');
       block.className = 's2-block';
+      // Обещание «в конце скажете, чем платите» выполняется только если человек
+      // реально вышел за рамку — иначе это вопрос ни о чём.
+      var over = takenTotals();
+      var lim = window.imp.backlogLimits;
+      var overText = (over.people > lim.people || over.money > lim.money)
+        ? them('Кирилл Агеев', { act: 'считает в столбик',
+            speech: '«У вас вышло ' + over.people + ' человек при ' + lim.people + ' и ' + num(over.money) +
+              ' млрд при ' + lim.money + '. Я обещал спросить — чем платим за перебор?»' })
+        : '';
       block.innerHTML =
-        them('Кирилл Агеев', { act: 'просматривает разбор',
+        overText +
+        them(overText ? '' : 'Кирилл Агеев', { act: overText ? '' : 'просматривает разбор',
           speech: '«И последнее. Ко мне с новой идеей приходят каждую неделю. Как мне понять, что она попадает в то, что вы сейчас разложили, — не дёргая вас каждый раз?»' }) +
-        '<div class="rationale-block">' +
-          '<label>Почему выбраны именно эти приоритеты</label>' +
-          '<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="4" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rationale) + '</textarea>' +
-        '</div>' +
-        '<div class="rationale-block">' +
-          '<label>Как проверить новую идею на попадание</label>' +
-          '<textarea class="s2-rule" aria-label="Как проверить новую идею на попадание в приоритеты" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.rejectionRule) + '</textarea>' +
-        '</div>' +
+        (locked
+          ? me(state.rationale) + me(state.rejectionRule)
+          : mine(
+            '<label class="s2-mine-label">Почему выбраны именно эти приоритеты</label>' +
+            '<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="4" placeholder="ваш ответ">' + escapeHtml(state.rationale) + '</textarea>' +
+            '<label class="s2-mine-label">Как проверить новую идею на попадание</label>' +
+            '<textarea class="s2-rule" aria-label="Как проверить новую идею на попадание в приоритеты" rows="3" placeholder="ваш ответ">' + escapeHtml(state.rejectionRule) + '</textarea>')) +
         them('', { act: 'уже стоя', speech: '«И обратное. Что должно случиться, чтобы вы сами пришли ко мне и сказали: пора пересматривать?»' }) +
-        '<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.proactiveText) + '</textarea>' +
+        (locked ? me(state.proactiveText)
+          : mine('<textarea class="s2-proactive" aria-label="При каких условиях этот выбор устареет" rows="3" placeholder="ваш ответ">' + escapeHtml(state.proactiveText) + '</textarea>')) +
         (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:14px;">Завершить встречу →</button>');
 
       if (!locked) {
