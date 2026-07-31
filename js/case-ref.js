@@ -120,6 +120,14 @@
       .then(function (html) {
         var doc = new DOMParser().parseFromString(html, 'text/html');
         var content = doc.getElementById('caseContent');
+        // «Перед чтением» — обращение к участнику перед первым чтением, а не
+        // справочный материал: кто его позвал и когда встреча, он уже знает.
+        // В панели, куда заглядывают, чтобы свериться с фактом, этот блок только
+        // отодвигает пакет вниз. В раунде 1 он остаётся на месте — там он и работает.
+        if (content) {
+          var before = content.querySelector('#sec-intro');
+          if (before) before.remove();
+        }
         cache = content ? content.innerHTML : '<p class="fac-detail-text">Не удалось найти текст кейса.</p>';
         contentEl.innerHTML = cache;
         contentEl.scrollTop = 0;
