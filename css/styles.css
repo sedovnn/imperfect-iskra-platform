@@ -4045,3 +4045,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    главная проблема с обоснованиями иначе выдавливает наблюдения за экран. */
 .deep-summary { font-size: 14px; line-height: 1.45; margin: 8px 0 0; }
 .deep-summary i { color: var(--muted-soft); font-style: normal; }
+
+/* Заголовок рабочей области упирался в общее ограничение h2 { max-width: 20ch }:
+   «Подготовка к встрече с Агеевым» — 29 знаков, и он ломался на две строки при
+   свободных 417px в колонке. Ограничение снято, перенос запрещён. */
+.work-title { max-width: none; text-wrap: nowrap; white-space: nowrap; }
