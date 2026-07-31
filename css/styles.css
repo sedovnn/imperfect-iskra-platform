@@ -1242,9 +1242,14 @@ footer {
   color: var(--muted);
   max-width: var(--w-read);
 }
-.bl-reason-row { padding: 10px 0; border-top: 1px solid var(--hairline); }
+/* Свёрнутая строка отказа — одна линия: название и «пояснить». Поле появляется
+   только там, где участник сам решил объяснить. */
+.bl-reason-row { padding: 9px 0; border-top: 1px solid var(--hairline); }
 .bl-reason-row:last-child { border-bottom: 1px solid var(--hairline); }
-.bl-reason-title { margin: 0 0 6px; font-size: 13.5px; line-height: 1.4; font-weight: 600; max-width: 62ch; }
+.bl-reason-head { display: flex; gap: 14px; align-items: baseline; justify-content: space-between; }
+.bl-reason-title { margin: 0; font-size: 13.5px; line-height: 1.4; max-width: 62ch; color: var(--muted); }
+.bl-reason-row.is-open .bl-reason-title { color: var(--ink); font-weight: 600; }
+.bl-reason-row .bl-reason { margin-top: 8px; }
 .bl-reason {
   display: block;
   width: 100%;
@@ -1256,32 +1261,7 @@ footer {
   font-family: inherit;
 }
 
-.bl-own-form {
-  border: 1px solid var(--accent-line);
-  background: var(--accent-tint);
-  border-radius: var(--radius);
-  padding: 14px;
-  margin-top: 14px;
-  max-width: var(--w-form);
-}
-.bl-own-form input {
-  width: 100%;
-  border: 1px solid #e3e3e0;
-  border-radius: var(--radius);
-  padding: 8px 10px;
-  font-size: 13px;
-  font-family: inherit;
-  background: var(--paper);
-}
-.bl-own-form input + input { margin-top: 8px; }
-.bl-own-hint {
-  margin: 10px 0 0;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--muted);
-}
-.bl-own-cost { display: flex; gap: 10px; margin-top: 8px; }
-.bl-own-form .bl-own-add { margin-top: 10px; }
+.bl-blind { margin-top: 30px; }
 
 @media (max-width: 700px) {
   .bl-item { grid-template-columns: 1fr; }
