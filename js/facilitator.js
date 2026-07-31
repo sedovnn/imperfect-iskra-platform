@@ -159,14 +159,22 @@
 
   function attemptLogin(password) {
     authError.classList.remove('show');
+    // Волны тянем ПАРАЛЛЕЛЬНО со списком и ждём обоих перед первой отрисовкой.
+    // Раньше loadWaves() запускался следом за renderParticipants и не ожидался:
+    // таблица успевала нарисоваться с пустой картой названий, и в колонке
+    // «Волна» на секунду появлялся технический id (w1784821849704) — фасилитатору
+    // он не говорит ничего. Задержки это не добавляет: listWaves легче списка
+    // участников и идёт в то же время, ждём максимум из двух, а не сумму.
+    var wavesReady = loadWaves().catch(function () {});
     return window.imp.callApi('facilitatorList', { password: password }).then(function (res) {
       if (res && res.ok) {
         sessionStorage.setItem(PASSWORD_KEY, password);
         gate.style.display = 'none';
         facRoot.style.display = '';
-        renderParticipants(res.participants);
-        loadWaves();
-        return true;
+        return wavesReady.then(function () {
+          renderParticipants(res.participants);
+          return true;
+        });
       }
       var msg = !window.imp.isApiConfigured()
         ? 'Бэкенд не настроен — см. подсказку ниже.'
