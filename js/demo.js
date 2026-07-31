@@ -233,6 +233,7 @@
 
     // размеченный HTML кейса пере-создаётся под новый профиль (см. injectDemoMarks)
     localStorage.removeItem('imp_round1_html_' + bib);
+    localStorage.removeItem('imp_round1_html_' + bib + '_v');
 
     // сессия демо — в sessionStorage (per-tab), чтобы не перезаписать общую
     // реальную сессию в других вкладках. Читатели берут её через window.imp.loadSession.
@@ -487,7 +488,7 @@
     ['imp_current_session', DEMO_KEY].forEach(function (k) { sessionStorage.removeItem(k); });
     // засеянные данные экскурсии и служебные флаги — в localStorage (+ DEMO_KEY на случай legacy)
     ['imp_current_session', DEMO_KEY, 'imp_demo_note_collapsed',
-     'imp_round1_' + bib, 'imp_round1_html_' + bib, 'imp_round2_' + bib,
+     'imp_round1_' + bib, 'imp_round1_html_' + bib, 'imp_round1_html_' + bib + '_v', 'imp_round2_' + bib,
      'imp_map_' + bib, 'imp_round3_' + bib, 'imp_round5_' + bib,
      'imp_round4_' + bib].forEach(function (k) { localStorage.removeItem(k); });
     ['station1', 'station2', 'station3', 'room_future', 'room_alternatives', 'room_path'].forEach(function (k) {
@@ -648,7 +649,13 @@
       }
     });
     if (changed) {
-      try { localStorage.setItem('imp_round1_html_' + DEMO_BIB, cc.innerHTML); } catch (e) {}
+      try {
+        localStorage.setItem('imp_round1_html_' + DEMO_BIB, cc.innerHTML);
+        // штамп версии кейса — иначе round1.js на следующей загрузке считает снимок
+        // устаревшим и пересобирает его заново каждый раз
+        localStorage.setItem('imp_round1_html_' + DEMO_BIB + '_v',
+          cc.getAttribute('data-case-version') || '');
+      } catch (e) {}
     }
   }
 
