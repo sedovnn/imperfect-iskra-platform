@@ -9,7 +9,9 @@
 // участнику не показывается.
 
 (function () {
-  var APPX_TOTAL = 8;
+  // Число приложений берём из разметки: оно менялось с версией кейса (8 → 11 → 10),
+  // а зашитая восьмёрка тихо врала участнику в счётчике «изучено».
+  var APPX_TOTAL = document.querySelectorAll('.case-nav-link[data-appx]:not([data-appx="terms"])').length;
   var session = null;
   var state = null;
 
@@ -82,8 +84,18 @@
     return window.imp.callApiConfirmed('saveStation1', { bib: session.bib, state: state, name: session.name || '' });
   }
 
+  // Снимок кейса храним вместе с версией текста. Без неё правка кейса не доезжала
+  // до тех, кто уже начал: платформа восстанавливала старый снимок, и участник читал
+  // одну редакцию, а судья оценивал по ключу от другой. Ловилось только глазами.
+  function caseVersion() {
+    var el = document.getElementById('caseContent');
+    return (el && el.getAttribute('data-case-version')) || '';
+  }
+
   function saveCaseHtml() {
-    localStorage.setItem(htmlKey(session.bib), document.getElementById('caseContent').innerHTML);
+    var el = document.getElementById('caseContent');
+    localStorage.setItem(htmlKey(session.bib), el.innerHTML);
+    localStorage.setItem(htmlKey(session.bib) + '_v', caseVersion());
   }
 
   function uid() { return 'id_' + Math.random().toString(36).slice(2, 10); }
@@ -116,8 +128,52 @@
   // restore reading panel (marks survive reload)
   (function restoreCaseHtml() {
     var saved = localStorage.getItem(htmlKey(session.bib));
-    if (saved) caseContent.innerHTML = saved;
+    if (!saved) return;
+    var savedV = localStorage.getItem(htmlKey(session.bib) + '_v') || '';
+    if (savedV === caseVersion()) { caseContent.innerHTML = saved; return; }
+
+    // Текст кейса сменился, пока участник был в раунде. Старый снимок не
+    // восстанавливаем — он показывал бы редакцию, которой уже нет. Отметки
+    // переносим по тексту цитаты: где фраза сохранилась, подсветка встаёт на
+    // место, где текст переписан — карточка остаётся, просто без подсветки.
+    localStorage.removeItem(htmlKey(session.bib));
+    localStorage.removeItem(htmlKey(session.bib) + '_v');
+    // Переносим после того, как типограф пройдётся по тексту: он заменяет часть
+    // пробелов на неразрывные, и цитата, снятая раньше, посимвольно не совпала бы.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function () { setTimeout(reanchorHighlights, 0); });
+    } else {
+      setTimeout(reanchorHighlights, 0);
+    }
   })();
+
+  // Перенос отметок на новый текст: ищем точное совпадение цитаты в неразмеченных
+  // узлах. Не нашли — молча пропускаем, ответ участника от этого не страдает.
+  // Неразрывный пробел и обычный — разные символы, но одной длины: сравниваем
+  // нормализованные строки, а вырезаем по индексу из исходного узла.
+  function plain(t) { return String(t == null ? '' : t).replace(/\u00A0/g, ' '); }
+
+  function reanchorHighlights() {
+    var moved = 0;
+    (state.highlights || []).forEach(function (h) {
+      var q = plain(h.snippet).trim();
+      if (!q || q.length < 12) return;
+      if (caseContent.querySelector('mark[data-hl-id="' + h.id + '"]')) return;
+      var walker = document.createTreeWalker(caseContent, NodeFilter.SHOW_TEXT, null);
+      while (walker.nextNode()) {
+        var node = walker.currentNode;
+        if (node.parentElement && node.parentElement.closest('mark.hl')) continue;
+        var idx = plain(node.nodeValue).indexOf(q);
+        if (idx === -1) continue;
+        var range = document.createRange();
+        range.setStart(node, idx);
+        range.setEnd(node, idx + q.length);
+        try { wrapRange(range, h.id); moved++; } catch (e) {}
+        break;
+      }
+    });
+    if (moved) saveCaseHtml();
+  }
 
   // rebuild state.highlights from marks already in the DOM if a mark and its record drift apart
   (function reconcileHighlights() {
@@ -567,7 +623,11 @@
     el.classList.toggle('is-prop', !!usedBy);
     // Кнопка нужна только тому, кто взялся за главную проблему: иначе она висела
     // у каждого наблюдения и предлагала действие, которому некуда вести.
-    var show = !state.finished && !!(h.problem || '').trim() && deepList().length > 0;
+    // Кнопка появляется, только когда главная проблема действительно
+    // СФОРМУЛИРОВАНА. Раньше хватало нажать «Сформулировать» — пустая карточка
+    // оставалась в состоянии, и кнопка висела у каждого наблюдения навсегда.
+    var hasFormulated = deepList().some(function (d) { return (d.text || '').trim(); });
+    var show = !state.finished && !!(h.problem || '').trim() && hasFormulated;
     if (!show) { if (row) row.remove(); return; }
     if (!row) {
       row = document.createElement('div');
@@ -809,7 +869,13 @@
     if (!deepEl) return;
     var d = deepList().filter(function (x) { return x.id === deepEl.dataset.deepId; })[0];
     if (!d) return;
-    if (t.hasAttribute('data-deep-text')) { d.text = t.value; saveState(); return; }
+    if (t.hasAttribute('data-deep-text')) {
+      var wasEmpty = !deepList().some(function (x) { return (x.text || '').trim(); });
+      d.text = t.value; saveState();
+      // первая написанная буква открывает кнопки «в обоснование» у наблюдений
+      if (wasEmpty && d.text.trim()) renderProblems();
+      return;
+    }
     var mech = t.getAttribute('data-mech');
     if (mech) {
       (d.props || []).forEach(function (p) { if (p.hlId === mech) p.mechanism = t.value; });
@@ -831,6 +897,19 @@
     // клик по карточке глубинной делает её целевой для следующего «подпереть»
     var deepEl = t.closest && t.closest('.deep');
     if (deepEl) window.__deepTarget = deepEl.dataset.deepId;
+  });
+
+  // Сворачивание любого блока рабочей области: колонка узкая, а ходить между
+  // тремя работами приходится постоянно — свёрнутое остаётся видимым заголовком
+  // со счётчиком, а не исчезает из поля зрения.
+  document.addEventListener('click', function (e) {
+    var btn = e.target;
+    if (!btn || !btn.getAttribute || !btn.getAttribute('data-collapse')) return;
+    var body = document.getElementById(btn.getAttribute('data-collapse'));
+    if (!body) return;
+    var hide = body.style.display !== 'none';
+    body.style.display = hide ? 'none' : '';
+    btn.textContent = hide ? 'развернуть' : 'свернуть';
   });
 
   // Свёрнутое состояние. Собранная главная проблема с двумя-тремя обоснованиями
