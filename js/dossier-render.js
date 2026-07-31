@@ -173,7 +173,11 @@
       if (rf.answer2) textB('Если пойдёт не так:', rf.answer2);
     }
 
-    if (rp && (rp.currentState || rp.targetState || (rp.stages || []).length)) {
+    if (rp && (rp.pathText || rp.barriersText)) {
+      section('Раунд 4 · Черновик к мартовскому комитету');
+      if (rp.pathText) textB('Как придём к цели:', rp.pathText);
+      if (rp.barriersText) textB('Что остановит и на что опираемся:', rp.barriersText);
+    } else if (rp && (rp.currentState || rp.targetState || (rp.stages || []).length)) {
       section('Раунд 4 · Черновик к мартовскому комитету');
       if (rp.currentState || rp.targetState) textB('Текущее → целевое:', (rp.currentState || '—') + ' → ' + (rp.targetState || '—'));
       var stages = (rp.stages || []).filter(function (s) { return s.description; });

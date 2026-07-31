@@ -1,14 +1,32 @@
 // i(m)perfect — «Черновик к мартовскому комитету» (кейс «Искра»). Навык ПП
 // целиком: декомпозиция цели и маршрута (ПП-1) + работа с барьерами и
-// ресурсами (ПП-2). В отличие от ГА/МК, граничные тесты ПП — про структуру
-// и содержание ответа, а не про спонтанность (ни один из них не требует
-// «не потому, что вопрос попросил») — поэтому здесь безопасно дать реальный
-// структурный каркас: поля текущее/целевое + список этапов (стартует пустым,
-// участник сам решает, сколько добавить) для ПП-1, и два раздельных списка
-// барьеры/ресурсы для ПП-2. Каркас организует собственный текст участника,
-// не подсказывает содержание — связность этапов и качество барьер→ресурс
-// по-прежнему решает ИИ.
-
+// ресурсами (ПП-2).
+//
+// ДВА СВОБОДНЫХ ОКНА, без слотов и кнопок (принятый формат, минутки 30.07;
+// реализовано 2026-07-31). Прежний структурный конструктор — поля текущее/
+// целевое, список этапов с обоснованиями, карточки барьеров с типами — снят,
+// и это не упрощение, а починка замера. Сверка каждого маркера с формой:
+//   pp1_1to2 «сформулировал конечную точку» — слот «Целевое состояние» выдавал
+//     маркер за заполнение поля;
+//   pp1_2to3 «цель задана первой, путь строится назад от неё» — форма ставила
+//     «текущее» первым, и судье приходилось дописывать в промпт оговорку
+//     «порядок граф задан платформой, не считай его сигналом направления»:
+//     мы латали словами то, что сломали формой;
+//   pp1_3to4 «порядок следует из предпосылок» — поле «почему на этом месте»
+//     подсказывало, что место надо обосновать;
+//   pp1_4to5 «граф зависимых и независимых треков» — линейный список этапов
+//     структурно этого не позволял: чтобы показать граф, надо было сломать форму;
+//   pp2_1to2 / pp2_2to3 — слоты «Барьеры» и «Опора» выдавали маркеры за наличие
+//     заполненных списков;
+//   pp2_3to4 «функциональная классификация ВМЕСТЕ с механизмом» — кнопки
+//     «стена / можно обойти» дарили классификацию за нажатие.
+// Итог по данным первого потока: у ИИ по ПП-1 ровно пятёрка без дисперсии
+// (заполнить слоты — его дефолт), у людей полный разброс, а этапы пусты
+// у пятерых из семи. Задание ловило поведение модели, а не мышление.
+//
+// Поэтому вопросы теперь ничего не подсказывают про структуру ответа: ни что
+// нужна цель, ни что нужны этапы, ни что порядок надо обосновать. Всё это
+// приносит участник — и ровно это меряют маркеры.
 (function () {
   var session = null;
   // имя из окна Агеева (может быть пустым) — для обращения Штерна; textContent сам экранирует
@@ -23,27 +41,38 @@
     try { return window.imp.loadSession(); } catch (e) { return null; }
   }
 
+  function freshState(startedAt) {
+    return {
+      v: 2,
+      pathText: '', barriersText: '',
+      step: 'q1', finished: false, startedAt: startedAt || new Date().toISOString()
+    };
+  }
+
+  // Запись структурного формата: у неё нет v, зато есть этапы/барьеры/состояния.
+  function isLegacyRecord(o) {
+    return o && o.v !== 2;
+  }
+
   function loadState(bib) {
     try {
       var raw = localStorage.getItem(storageKey(bib));
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (parsed.currentState === undefined) parsed.currentState = '';
-        if (parsed.targetState === undefined) parsed.targetState = '';
-        if (parsed.contingency === undefined) parsed.contingency = '';
-        if (!parsed.stages) parsed.stages = [];
-        if (!parsed.barriers) parsed.barriers = [];
-        if (!parsed.enablers) parsed.enablers = [];
-        // миграция: новые поля этапов/барьеров у старых сессий
-        parsed.stages.forEach(function (st) { if (st.doneWhen === undefined) st.doneWhen = ''; });
-        parsed.barriers.forEach(function (b) { if (b.type === undefined) b.type = ''; if (b.counter === undefined) b.counter = ''; });
+        if (isLegacyRecord(parsed)) {
+          // Завершённый прогон структурного формата оставляем как есть — он
+          // историческая запись, судья читает его прежними правилами. Незавершённый
+          // начинаем заново: его поля отвечали на другие вопросы, и под новыми
+          // они исказили бы оценку (та же логика, что в раунде 5).
+          if (parsed.finished) return parsed;
+          return freshState(parsed.startedAt);
+        }
+        if (parsed.pathText === undefined) parsed.pathText = '';
+        if (parsed.barriersText === undefined) parsed.barriersText = '';
         return parsed;
       }
     } catch (e) {}
-    return {
-      currentState: '', targetState: '', contingency: '', stages: [], barriers: [], enablers: [],
-      step: 'q1', finished: false, startedAt: new Date().toISOString()
-    };
+    return freshState();
   }
 
   function escapeHtml(s) {
@@ -140,11 +169,19 @@
       // strip съедал у него открывающую кавычку.
       return String(t || '').trim();
     }
+    // «Моя» сторона — как в раунде 2: пока шаг открыт, поле справа; зафиксированный
+    // ответ становится своим пузырём.
+    function me(text) {
+      var t = String(text == null ? '' : text).trim();
+      return '<div class="chat"><div class="chat-msg me"><span class="chat-name">Вы</span>' +
+        '<div class="chat-bubble">' + (t ? escapeHtml(t).replace(/\n/g, '<br />') : '<i>промолчали</i>') + '</div>' +
+        '</div></div>';
+    }
     function them(name, o) {
       o = o || {};
       return '<div class="chat"><div class="chat-msg them" data-who="' + name + '">' +
-        '<span class="chat-name">' + name +
-        (o.note ? ' <span class="chat-note">(' + o.note + ')</span>' : '') + '</span>' +
+        (name ? '<span class="chat-name">' + name +
+          (o.note ? ' <span class="chat-note">(' + o.note + ')</span>' : '') + '</span>' : '') +
         (o.act ? '<div class="chat-act">' + o.act + '</div>' : '') +
         '<div class="chat-bubble">' + speechOf(o.speech) + '</div>' +
         '</div></div>';
@@ -162,16 +199,10 @@
     // до того, как прозвучали позиции правления); у прежних прогонов — firstAction.
     var firstMove = (s2 && (s2.ownMove || s2.firstAction) ? String(s2.ownMove || s2.firstAction).trim() : '');
 
-    // ПРЕДЗАПОЛНЕНИЕ (relocate декомпозиции в дом): первый ход = первый этап пути.
-    // Данные 7 живых: этапы «Пути» пусты у 5/7, т.к. комната последняя и с чистого
-    // листа на усталости. Сеем первый этап из «первого хода» Станции 2, чтобы
-    // участник ДОРАБАТЫВАЛ, а не начинал с нуля. Один раз (флаг pathPrefilled);
-    // если удалит — не пересеваем.
-    if (!state.pathPrefilled && !state.finished && !(state.stages || []).length && firstMove) {
-      state.stages.push({ id: uid(), description: firstMove, rationale: '', doneWhen: '' });
-      state.pathPrefilled = true;
-      saveState();
-    }
+    // Предзаполнение первым ходом снято вместе с конструктором этапов: сеять
+    // текст в окно значило бы диктовать форму ответа. Ход остаётся НАПОМИНАНИЕМ
+    // над окном (см. .pp-firstmove ниже) — это своё же решение участника, которое
+    // он не обязан держать в голове, а не подсказка структуры.
 
     var introKey = 'imp_round4_intro_seen_' + session.bib;
     var introEl = document.getElementById('stationIntro');
@@ -189,7 +220,11 @@
     function stepIndex(s) { return STEPS.indexOf(s); }
     function stepLocked(s) { return state.finished || stepIndex(s) < stepIndex(state.step); }
 
-    // ---------- блок 1: путь к цели (ПП-1) ----------
+    // ---------- окно 1: путь (ПП-1) ----------
+    // Вопрос называет ограничение (люди и деньги одни и те же) и НЕ называет
+    // ни цели, ни этапов, ни необходимости обосновать порядок. Ограничение здесь
+    // не подсказка, а условие задачи: без него «путь» можно описать как список
+    // желаемого, и тогда мерить нечего.
 
     function buildQ1Block() {
       var locked = stepLocked('q1');
@@ -197,67 +232,23 @@
       block.className = 's2-block';
       block.innerHTML =
         them('Григорий Штерн', { note: 'финансовый директор', act: 'ставит чашку',
-          speech: escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не название. Покажите по-честному: где мы сейчас и какими шагами дойдём.' }) +
-        (firstMove ? '<div class="pp-firstmove">Ваш первый ход из раунда 2: «' + escapeHtml(firstMove) + '». С него и начните раскладывать путь — не с чистого листа.</div>' : '') +
-        '<div class="field-row" style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">' +
-          '<div class="field"><label>Текущее состояние</label><input type="text" class="pp-current" aria-label="Текущее состояние — где мы сейчас" placeholder="где мы сейчас"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.currentState) + '" /></div>' +
-          '<div class="field"><label>Целевое состояние</label><input type="text" class="pp-target" aria-label="Целевое состояние — куда должны прийти" placeholder="куда должны прийти"' + (locked ? ' disabled' : '') + ' value="' + escapeHtml(state.targetState) + '" /></div>' +
-        '</div>' +
-        '<div class="pp-stages" data-list="stages"></div>' +
-        (locked ? '' : '<button class="btn btn-ghost" id="addStageBtn" style="margin-top:10px;">+ добавить этап</button>') +
-        them('', { act: 'ведёт пальцем по этапам',
-          speech: 'И вот что мне правда интересно. Люди у нас одни и те же, денег ровно столько, сколько есть. Где эти ваши этапы дерутся между собой за одних и тех же людей — и что вы двигаете?' }) +
-        '<div class="field pp-contingency-field" style="margin-top:16px;"><label>Где этапы конкурируют — и что двигаете</label>' +
-          '<textarea class="pp-contingency" aria-label="Где этапы конкурируют за одних и тех же людей и что вы двигаете" rows="3" placeholder="ваш ответ"' + (locked ? ' disabled' : '') + '>' + escapeHtml(state.contingency) + '</textarea></div>' +
-        (locked ? '' : '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
-
-      var stagesList = block.querySelector('[data-list="stages"]');
-
-      function renderStages() {
-        stagesList.innerHTML = '';
-        state.stages.forEach(function (st, i) {
-          var item = document.createElement('div');
-          item.className = 'pp-stage-item';
-          item.innerHTML =
-            '<div class="pp-stage-head"><span>Этап ' + (i + 1) + '</span>' +
-              (locked ? '' : '<button class="pp-stage-remove" title="Убрать этап">✕</button>') +
-            '</div>' +
-            '<textarea class="pp-stage-desc" aria-label="Что происходит на этом этапе" rows="2" placeholder="что происходит на этом этапе"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.description) + '</textarea>' +
-            // Поле «этап завершён, когда… — индикатор перехода» убрано (аудит 2026-07-27):
-            // оно реализовывало признак верхнего уровня ПП-1 («критерии перехода по
-            // результату») обязательной графой — его проходили все. Кто мыслит критериями,
-            // напишет их в описании этапа сам. st.doneWhen в стейте/бэкенде остаётся
-            // (легаси-данные читаются судьёй как раньше).
-            '<details class="pp-stage-more"' + (st.rationale ? ' open' : '') + '><summary>детали этапа: почему здесь</summary>' +
-              '<textarea class="pp-stage-rationale" aria-label="Почему этап на этом месте" rows="2" placeholder="почему на этом месте"' + (locked ? ' disabled' : '') + '>' + escapeHtml(st.rationale) + '</textarea>' +
-            '</details>';
-          if (!locked) {
-            item.querySelector('.pp-stage-desc').addEventListener('input', function (e) { st.description = e.target.value; saveState(); });
-            item.querySelector('.pp-stage-rationale').addEventListener('input', function (e) { st.rationale = e.target.value; saveState(); });
-            item.querySelector('.pp-stage-remove').addEventListener('click', function () {
-              state.stages = state.stages.filter(function (s) { return s.id !== st.id; });
-              saveState();
-              renderStages();
-            });
-          }
-          stagesList.appendChild(item);
-        });
-      }
-      renderStages();
+          speech: escapeHtml(stancePhrase) + ' — на словах красиво. Но я финансист, мне нужен путь, а не название.' }) +
+        them('', { speech: 'Как мы туда придём? Только сразу учтите: люди у нас одни и те же, денег ровно столько, сколько есть. Значит всё сразу не поедет — и вот что за чем и почему, мне и надо понять.' }) +
+        (firstMove ? '<div class="pp-firstmove">Ваш ход из разговора с Агеевым: «' + escapeHtml(firstMove) + '». Держите его в виду — переписывать не обязательно.</div>' : '') +
+        (locked ? me(state.pathText)
+                : '<div class="s2-mine"><span class="chat-name">Вы</span>' +
+                    '<textarea class="pp-path" aria-label="Как придём к цели" rows="10" placeholder="ваш ответ Штерну">' + escapeHtml(state.pathText) + '</textarea>' +
+                  '</div>' +
+                  '<button class="btn btn-primary" id="commitQ1Btn" style="margin-top:12px;">Ответить →</button>');
 
       if (!locked) {
-        block.querySelector('.pp-current').addEventListener('input', function (e) { state.currentState = e.target.value; saveState(); });
-        block.querySelector('.pp-target').addEventListener('input', function (e) { state.targetState = e.target.value; saveState(); });
-        block.querySelector('.pp-contingency').addEventListener('input', function (e) { state.contingency = e.target.value; saveState(); });
-        block.querySelector('#addStageBtn').addEventListener('click', function () {
-          state.stages.push({ id: uid(), description: '', rationale: '', doneWhen: '' });
-          saveState();
-          renderStages();
+        block.querySelector('.pp-path').addEventListener('input', function (e) {
+          state.pathText = e.target.value; saveState();
         });
         block.querySelector('#commitQ1Btn').addEventListener('click', function () {
           var go = function () { state.step = 'q2'; saveState(); render(); };
-          if (!state.targetState.trim() && !state.stages.length) {
-            window.imp.confirm('Ничего не ответить Штерну — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
+          if (!state.pathText.trim()) {
+            window.imp.confirm('Штерн ждёт путь — промолчать?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
               .then(function (ok) { if (ok) go(); });
             return;
           }
@@ -267,120 +258,36 @@
       return block;
     }
 
-    // ---------- блок 2: барьеры и ресурсы (ПП-2) ----------
+    // ---------- окно 2: барьеры и опора (ПП-2) ----------
+    // Ни кнопок «данность / снимаю», ни отдельных списков: функциональная
+    // классификация — это маркер pp2_3to4, и она обязана прийти из текста.
+    // Кнопкой она выдавалась за нажатие, а подпись поля («чем платите за снятие»)
+    // была дословной формулировкой маркера, то есть прямой утечкой рубрики.
 
     function buildQ2Block() {
-      var locked = stepLocked('q2');
+      var locked = state.finished;
+      var laid = String(state.pathText || '').trim().length;
+      var react = laid >= 200
+        ? { act: 'дочитывает', speech: 'Ясно. Уже похоже на путь, а не на список желаний.' }
+        : { act: 'поднимает бровь', speech: 'Коротко. Ну ладно, тогда второй вопрос.' };
       var block = document.createElement('div');
       block.className = 's2-block';
-      var pathLaidOut = (state.targetState || '').trim() || (state.stages || []).some(function (s) { return (s.description || '').trim(); });
-      var react = pathLaidOut
-        ? { act: 'кивает на этапы', speech: 'Уже похоже на план. Хорошо.' }
-        : { act: 'поднимает бровь', speech: 'Для меня это пока набросок — и тогда у меня к вам ещё один вопрос.' };
       block.innerHTML =
         them('Григорий Штерн', react) +
-        // подпись не повторяем: предыдущий пузырь тоже его — как в раундах 3 и 5
-        them('', { act: 'проходится по вашим этапам глазами',
-          speech: 'Хорошо. Теперь — где это сломается. Мне не «рынок изменится», мне конкретно: что помешает и на что опираемся. И по каждому помеха скажите прямо: этот барьер вы принимаете как данность и строите план вокруг него — или снимаете? Если снимаете, то чем именно за это платите.' }) +
-        '<div class="pp-columns">' +
-          '<div class="pp-column"><h4>Барьеры</h4><div class="pp-list" data-list="barriers"></div>' +
-            (locked ? '' : '<button class="btn btn-ghost" data-add="barriers" style="margin-top:8px;">+ добавить барьер</button>') +
-          '</div>' +
-          '<div class="pp-column"><h4>Опора / ресурсы</h4><div class="pp-list" data-list="enablers"></div>' +
-            (locked ? '' : '<button class="btn btn-ghost" data-add="enablers" style="margin-top:8px;">+ добавить ресурс</button>') +
-          '</div>' +
-        '</div>' +
-        // диегетическое закрытие вместо механического «Завершить разговор»:
-        // раунд заканчивается действием в истории (комментарий Егора про «обрыв
-        // таблицей»; глубокий закрывающий вопрос отвергнут — не перегружаем мышление)
-        (locked ? '' : '<button class="btn btn-primary" id="finishBtn" style="margin-top:16px;">Отдать наброски Штерну →</button>');
-
-      // Барьеры (ПП-2): карточка = что мешает + тип «стена/можно обойти» + чем закрываем.
-      function renderBarriers() {
-        var listEl = block.querySelector('[data-list="barriers"]');
-        listEl.innerHTML = '';
-        state.barriers.forEach(function (it) {
-          var item = document.createElement('div');
-          item.className = 'pp-barrier-card';
-          item.innerHTML =
-            '<div class="pp-barrier-top">' +
-              '<textarea rows="2" class="pp-barrier-text" aria-label="Что мешает на пути к цели" placeholder="что мешает на пути к цели"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.text) + '</textarea>' +
-              (locked ? '' : '<button class="pp-item-remove" title="Убрать">✕</button>') +
-            '</div>' +
-            '<div class="pp-type">' +
-              '<button type="button" class="pp-type-btn' + (it.type === 'fixed' ? ' is-on' : '') + '" data-type="fixed"' + (locked ? ' disabled' : '') + '>принимаю как данность</button>' +
-              '<button type="button" class="pp-type-btn' + (it.type === 'surmountable' ? ' is-on' : '') + '" data-type="surmountable"' + (locked ? ' disabled' : '') + '>снимаю</button>' +
-            '</div>' +
-            // Подпись поля зависит от выбора: у данности спрашиваем, как план
-            // перестроен вокруг неё, у снятого — чем за снятие заплатили.
-            // Прежнее «что с этим делать» одинаково подходило к обоим и потому
-            // не различало их — а §10 ПП-2 разводит именно эти два ответа.
-            '<textarea rows="2" class="pp-barrier-counter" aria-label="' +
-              (it.type === 'fixed' ? 'Как план перестроен вокруг этого барьера' : 'Чем платите за снятие барьера') + '" placeholder="' +
-              (it.type === 'fixed' ? 'как план перестроен вокруг него' : it.type === 'surmountable' ? 'чем именно платите за снятие' : 'сначала выберите: принимаю или снимаю') +
-              '"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.counter) + '</textarea>';
-          if (!locked) {
-            item.querySelector('.pp-barrier-text').addEventListener('input', function (e) { it.text = e.target.value; saveState(); });
-            item.querySelector('.pp-barrier-counter').addEventListener('input', function (e) { it.counter = e.target.value; saveState(); });
-            item.querySelectorAll('.pp-type-btn').forEach(function (b) {
-              b.addEventListener('click', function () {
-                var t = b.getAttribute('data-type');
-                it.type = (it.type === t) ? '' : t;  // повторный клик снимает
-                saveState();
-                renderBarriers();
-              });
-            });
-            item.querySelector('.pp-item-remove').addEventListener('click', function () {
-              state.barriers = state.barriers.filter(function (x) { return x.id !== it.id; });
-              saveState();
-              renderBarriers();
-            });
-          }
-          listEl.appendChild(item);
-        });
-      }
-
-      function renderEnablers() {
-        var listEl = block.querySelector('[data-list="enablers"]');
-        listEl.innerHTML = '';
-        state.enablers.forEach(function (it) {
-          var item = document.createElement('div');
-          item.className = 'pp-list-item';
-          item.innerHTML =
-            '<textarea rows="2" aria-label="Опора или ресурс" placeholder="на что можно опереться"' + (locked ? ' disabled' : '') + '>' + escapeHtml(it.text) + '</textarea>' +
-            (locked ? '' : '<button class="pp-item-remove" title="Убрать">✕</button>');
-          if (!locked) {
-            item.querySelector('textarea').addEventListener('input', function (e) { it.text = e.target.value; saveState(); });
-            item.querySelector('.pp-item-remove').addEventListener('click', function () {
-              state.enablers = state.enablers.filter(function (x) { return x.id !== it.id; });
-              saveState();
-              renderEnablers();
-            });
-          }
-          listEl.appendChild(item);
-        });
-      }
-      renderBarriers();
-      renderEnablers();
+        them('', { act: 'откладывает чашку', speech: 'И где это сломается. Что вас остановит — и на что вы тут опираетесь. Мне не «рынок изменится», мне конкретно.' }) +
+        (locked ? me(state.barriersText)
+                : '<div class="s2-mine"><span class="chat-name">Вы</span>' +
+                    '<textarea class="pp-barriers" aria-label="Что остановит и на что опираетесь" rows="9" placeholder="ваш ответ Штерну">' + escapeHtml(state.barriersText) + '</textarea>' +
+                  '</div>' +
+                  '<button class="btn btn-primary" id="finishBtn" style="margin-top:12px;">Отдать наброски Штерну →</button>');
 
       if (!locked) {
-        block.querySelectorAll('[data-add]').forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            var key = btn.getAttribute('data-add');
-            if (key === 'barriers') {
-              state.barriers.push({ id: uid(), text: '', type: '', counter: '' });
-              saveState();
-              renderBarriers();
-            } else {
-              state.enablers.push({ id: uid(), text: '' });
-              saveState();
-              renderEnablers();
-            }
-          });
+        block.querySelector('.pp-barriers').addEventListener('input', function (e) {
+          state.barriersText = e.target.value; saveState();
         });
         block.querySelector('#finishBtn').addEventListener('click', function () {
-          if (!state.barriers.length && !state.enablers.length) {
-            window.imp.confirm('Ничего не ответить Штерну — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
+          if (!state.barriersText.trim()) {
+            window.imp.confirm('Отдать наброски без ответа на второй вопрос?', { confirmLabel: 'Отдать', cancelLabel: 'Вернуться к ответу' })
               .then(function (ok) { if (ok) finishRoom(); });
             return;
           }

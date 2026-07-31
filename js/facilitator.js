@@ -1381,6 +1381,12 @@
 
   function roomAnswersPath(state) {
     var html = '';
+    // Два свободных окна (31.07) — читаем их первыми; структурные поля ниже
+    // остались для прогонов прежнего формата.
+    if (state.pathText || state.barriersText) {
+      if (state.pathText) mat += dataSection('Как придём к цели', '<p class="fac-detail-text">' + escapeHtml(state.pathText).replace(/\n/g, '<br />') + '</p>');
+      if (state.barriersText) mat += dataSection('Что остановит и на что опираемся', '<p class="fac-detail-text">' + escapeHtml(state.barriersText).replace(/\n/g, '<br />') + '</p>');
+    }
     if (state.currentState || state.targetState) {
       html += '<p class="fac-detail-text"><span class="fac-k">Текущее → целевое:</span> ' +
         escapeHtml(state.currentState || '—') + ' → ' + escapeHtml(state.targetState || '—') + '</p>';

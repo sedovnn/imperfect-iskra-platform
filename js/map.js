@@ -270,7 +270,7 @@
       { key: 'decomp', label: 'Декомпозиция на метрики', rows: 4,
         hint: 'по направлениям ССП: финансы · клиенты/рынок · продукт/процессы · люди/технологии',
         ph: 'метрика · порог · владелец — по каждому направлению',
-        seed: function (s) { var p = []; if (s.rp && strVal(s.rp.targetState)) p.push('Цель: ' + strVal(s.rp.targetState)); if (s.s2 && strVal(s.s2.rationale)) p.push('Из разбора приоритетов года (черновик — добавьте числа и владельцев): ' + strVal(s.s2.rationale)); var t = (((s.s2 && s.s2.priorities) || []).map(function (x) { return strVal(x.target); }).filter(Boolean)); if (t.length) p.push('Метрики приоритетов: ' + t.join('; ')); return p.join('\n'); } },
+        seed: function (s) { var p = []; if (s.rp && strVal(s.rp.targetState)) p.push('Цель: ' + strVal(s.rp.targetState)); else if (s.rp && strVal(s.rp.pathText)) p.push('Из ответа Штерну про путь: ' + strVal(s.rp.pathText)); if (s.s2 && strVal(s.s2.rationale)) p.push('Из разбора приоритетов года (черновик — добавьте числа и владельцев): ' + strVal(s.s2.rationale)); var t = (((s.s2 && s.s2.priorities) || []).map(function (x) { return strVal(x.target); }).filter(Boolean)); if (t.length) p.push('Метрики приоритетов: ' + t.join('; ')); return p.join('\n'); } },
       // Отбор по смыслу, а не «первые восемь»: сначала та проблема, которую
       // участник назвал корневой, затем помеченные как угроза, и только потом
       // остальные до лимита. У живого участника карточек было 37 — «первые
@@ -281,7 +281,7 @@
         seed: function (s) { return weakSeed(s); } },
       { key: 'currentStrong', label: 'Текущее состояние — сильные стороны и ресурсы', rows: 3,
         ph: 'на что опираемся: люди, деньги, продукты, данные',
-        seed: function (s) { return (((s.rp && s.rp.enablers) || []).map(function (e) { return strVal(typeof e === 'string' ? e : (e && e.text)); }).filter(Boolean).map(function (x) { return '• ' + x; }).join('\n')); } },
+        seed: function (s) { var e = (((s.rp && s.rp.enablers) || []).map(function (x) { return strVal(typeof x === 'string' ? x : (x && x.text)); }).filter(Boolean).map(function (x) { return '• ' + x; }).join('\n')); return e || strVal(s.rp && s.rp.barriersText); } },
       // Первый ход и первый этап — «Проекты / дорожная карта» ниже держит ВСЕ
       // этапы. Раньше оба поля получали один и тот же список: у 005001 5089 и
       // 4215 знаков одного содержания подряд в одном документе.
@@ -304,10 +304,10 @@
         seed: function (s) { var st = s.stance ? s.stance.full : ''; var cr = strVal(s.s2 && s.s2.stanceCriteria); return st + (cr ? '\nКритерии: ' + cr : ''); } },
       { key: 'projects', label: 'Проекты / дорожная карта', rows: 3,
         ph: 'этапы по порядку: что и когда готово',
-        seed: function (s) { return (((s.rp && s.rp.stages) || []).filter(function (x) { return strVal(x.description); }).map(function (x, i) { return (i + 1) + ') ' + strVal(x.description) + (strVal(x.doneWhen) ? ' — готово когда: ' + strVal(x.doneWhen) : ''); }).join('\n')); } },
+        seed: function (s) { var st = (((s.rp && s.rp.stages) || []).filter(function (x) { return strVal(x.description); }).map(function (x, i) { return (i + 1) + ') ' + strVal(x.description) + (strVal(x.doneWhen) ? ' — готово когда: ' + strVal(x.doneWhen) : ''); }).join('\n')); return st || strVal(s.rp && s.rp.pathText); } },
       { key: 'risks', label: 'Развороты и риски', rows: 3,
         ph: 'что может пойти не так и что тогда меняем',
-        seed: function (s) { var out = []; if (strVal(s.rf && s.rf.answer2)) out.push('Развороты: ' + strVal(s.rf.answer2)); var b = (((s.rp && s.rp.barriers) || []).map(function (x) { return strVal(typeof x === 'string' ? x : (x && x.text)); }).filter(Boolean)); if (b.length) out.push('Барьеры: ' + b.join('; ')); return out.join('\n'); } }
+        seed: function (s) { var out = []; if (strVal(s.rf && s.rf.answer2)) out.push('Развороты: ' + strVal(s.rf.answer2)); var b = (((s.rp && s.rp.barriers) || []).map(function (x) { return strVal(typeof x === 'string' ? x : (x && x.text)); }).filter(Boolean)); if (b.length) out.push('Барьеры: ' + b.join('; ')); else if (strVal(s.rp && s.rp.barriersText)) out.push('Барьеры и опора: ' + strVal(s.rp.barriersText)); return out.join('\n'); } }
     ];
 
     // Слабые места: корневая проблема → помеченные угрозой → остальные, до лимита.
