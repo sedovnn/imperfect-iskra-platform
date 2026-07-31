@@ -169,6 +169,7 @@
         if (s2.firstAction) textB('Первый ход по приоритету №1:', s2.firstAction);
       }
       if (s2.blindSpot) textB('Чего менеджеры не видят:', s2.blindSpot);
+      if (s2.overspendReason) textB('Чем платим за перебор:', s2.overspendReason);
       if (s2.rationale) textB('Почему именно эти приоритеты:', s2.rationale);
       if (s2.rejectionRule) textB('Как проверить новую идею:', s2.rejectionRule);
       if (s2.proactiveText) textB('Что заставит меня пересматривать:', s2.proactiveText);

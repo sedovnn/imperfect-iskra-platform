@@ -24,7 +24,7 @@
     try { return window.imp.loadSession(); } catch (e) { return null; }
   }
 
-  var STEPS = ['ownMove', 'stance', 'stress', 'backlog', 'rationale', 'rule', 'proactive', 'done'];
+  var STEPS = ['ownMove', 'stance', 'stress', 'backlog', 'overspend', 'rationale', 'rule', 'proactive', 'done'];
 
   function blankState() {
     return {
@@ -50,7 +50,12 @@
       // не годится, потому что список сам раздаёт карту тем и второй замер выходит
       // легче первого — флаг §7-8 срабатывал бы у всех по построению.
       blindSpot: '',
-      rationale: '',       // шаг 5: почему именно эти приоритеты
+      // Отдельный ответ про выход за названные ограничения. Это НЕ то же, что
+      // «почему именно эти»: там логика отбора, здесь — чем вы платите за перебор,
+      // и на первый можно ответить, не сказав про второй ни слова. Такт условный:
+      // спрашивается только у тех, кто вышел за рамку.
+      overspendReason: '',
+      rationale: '',       // почему именно эти приоритеты
       rejectionRule: '',   // шаг 5: правило, по которому проверяется новая инициатива
       proactiveText: '',   // шаг 5: что должно случиться, чтобы вы сами пришли пересматривать
       step: 'ownMove',
@@ -721,7 +726,11 @@
             window.imp.confirm(
               'Разбор зафиксируется, и разговор пойдёт дальше — вернуться и пересобрать список будет нельзя.',
               { confirmLabel: 'Зафиксировать', cancelLabel: 'Ещё подумаю' }
-            ).then(function (ok) { if (ok) advance('rationale'); });
+            ).then(function (ok) {
+            if (!ok) return;
+            var lim = window.imp.backlogLimits;
+            advance((t.people > lim.people || t.money > lim.money) ? 'overspend' : 'rationale');
+          });
           };
           lock();
         });
@@ -737,6 +746,42 @@
     // остальной разговор. Раньше все три вопроса и все три поля выпадали на экран
     // одновременно: получалась анкета в конце беседы, а не беседа.
 
+    // Такт 0, условный: чем платите за перебор. Обещание из шага с бэклогом
+    // («выйти за рамки можно — но тогда в конце скажете, чем платите») выполняется
+    // здесь и отдельным вопросом, потому что это не то же самое, что «почему эти»:
+    // там логика отбора, здесь размен за выход из рамки.
+    // Блок рисуется, только если ответ есть ИЛИ шаг ровно на нём: иначе у тех,
+    // кого не спрашивали, он отрисовался бы запертым и пустым, то есть с
+    // «промолчали» на месте незаданного вопроса.
+    function overspendAsked() {
+      return String(state.overspendReason || '').trim() || state.step === 'overspend';
+    }
+
+    function buildOverspendBlock() {
+      var locked = stepLocked('overspend');
+      var t = takenTotals();
+      var lim = window.imp.backlogLimits;
+      var block = document.createElement('div');
+      block.className = 's2-block';
+      block.innerHTML =
+        them('Кирилл Агеев', { act: 'считает в столбик',
+          speech: 'Так. У вас вышло ' + t.people + ' человек при ' + lim.people + ' и ' + num(t.money) +
+            ' млрд при ' + lim.money + '. Я обещал спросить — чем платим за перебор?' }) +
+        (locked ? me(state.overspendReason)
+          : mine('<textarea class="s2-overspend" aria-label="Чем платите за выход за ограничения" rows="4" placeholder="ваш ответ">' + escapeHtml(state.overspendReason) + '</textarea>')) +
+        (locked ? '' : '<button class="btn btn-primary" id="commitOverspendBtn" style="margin-top:12px;">Ответить</button>');
+
+      if (!locked) {
+        block.querySelector('.s2-overspend').addEventListener('input', function (e) {
+          state.overspendReason = e.target.value; saveState();
+        });
+        block.querySelector('#commitOverspendBtn').addEventListener('click', function () {
+          advance('rationale');
+        });
+      }
+      return block;
+    }
+
     // Такт 1: почему именно эти приоритеты. Если человек вышел за названные
     // ограничения, Агеев сначала спрашивает про перебор — обещание из шага
     // с бэклогом («в конце скажете, чем платите») выполняется здесь, и ответ
@@ -745,24 +790,11 @@
       var locked = stepLocked('rationale');
       var block = document.createElement('div');
       block.className = 's2-block';
-      // Перебор — не отдельный вопрос с отдельным полем, а часть этого же: «почему
-      // эти» и «чем платите за перебор» — про одно, про размен. Отдельное поле
-      // означало бы новую колонку и условный шаг в цепочке ради случая, который
-      // срабатывает только у вышедших за рамку; а два вопроса на одно поле — ровно
-      // то, что мы отсюда и убирали. Поэтому одна реплика и один ответ.
-      var over = takenTotals();
-      var lim = window.imp.backlogLimits;
-      var isOver = over.people > lim.people || over.money > lim.money;
       block.innerHTML =
-        them('Кирилл Агеев', isOver
-          ? { act: 'считает в столбик',
-              speech: 'У вас вышло ' + over.people + ' человек при ' + lim.people + ' и ' + num(over.money) +
-                ' млрд при ' + lim.money + '. Объясните мне главное: почему именно эти — и чем платим за перебор?' }
-          : { act: 'просматривает разбор',
-              speech: 'Хорошо. Тогда объясните мне главное: почему именно эти, а не другие?' }) +
+        them('Кирилл Агеев', { act: 'просматривает разбор',
+          speech: 'Хорошо. Тогда объясните мне главное: почему именно эти, а не другие?' }) +
         (locked ? me(state.rationale)
-          : mine('<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="5" placeholder="' +
-              (isOver ? 'почему эти — и чем платите за перебор' : 'ваш ответ') + '">' + escapeHtml(state.rationale) + '</textarea>')) +
+          : mine('<textarea class="s2-rationale" aria-label="Почему выбраны именно эти приоритеты" rows="5" placeholder="ваш ответ">' + escapeHtml(state.rationale) + '</textarea>')) +
         (locked ? '' : '<button class="btn btn-primary" id="commitRationaleBtn" style="margin-top:12px;">Ответить</button>');
 
       if (!locked) {
@@ -846,9 +878,10 @@
       if (upTo >= 1) body.appendChild(buildStanceBlock());
       if (upTo >= 2) body.appendChild(buildStressBlock());
       if (upTo >= 3) body.appendChild(buildBacklogBlock());
-      if (upTo >= 4) body.appendChild(buildRationaleBlock());
-      if (upTo >= 5) body.appendChild(buildRuleBlock());
-      if (upTo >= 6) body.appendChild(buildProactiveBlock());
+      if (upTo >= 4 && overspendAsked()) body.appendChild(buildOverspendBlock());
+      if (upTo >= 5) body.appendChild(buildRationaleBlock());
+      if (upTo >= 6) body.appendChild(buildRuleBlock());
+      if (upTo >= 7) body.appendChild(buildProactiveBlock());
       if (state.step === 'done' && !state.finished) body.appendChild(buildDoneBlock());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);

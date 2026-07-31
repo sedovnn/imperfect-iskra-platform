@@ -1321,6 +1321,7 @@
     // прежде чем решать, годится ли он в контроль АК-1.
     if (s2.blindSpot) defend += '<p class="fac-detail-text"><span class="fac-k">Чего менеджеры не видят (не оценивается):</span> ' + escapeHtml(s2.blindSpot) + '</p>';
     if (s2.firstAction) defend += '<p class="fac-detail-text"><span class="fac-k">Первый ход по приоритету №1:</span> ' + escapeHtml(s2.firstAction) + '</p>';
+    if (s2.overspendReason) defend += '<p class="fac-detail-text"><span class="fac-k">Чем платит за перебор:</span> ' + escapeHtml(s2.overspendReason) + '</p>';
     if (s2.rationale) defend += '<p class="fac-detail-text"><span class="fac-k">Почему именно эти приоритеты:</span> ' + escapeHtml(s2.rationale) + '</p>';
     if (s2.stressChoice) {
       defend += '<p class="fac-detail-text"><span class="fac-k">Стресс-тест «отложим на полгода»:</span> <span class="fac-pill ' +
