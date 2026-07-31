@@ -38,6 +38,7 @@
         if (!parsed.appxOpened) parsed.appxOpened = {};
         if (!parsed.appxReviewed) parsed.appxReviewed = {};
         if (!parsed.connections) parsed.connections = [];
+        if (!Array.isArray(parsed.deepProblems)) parsed.deepProblems = [];
         if (parsed.mainProblemId === undefined) parsed.mainProblemId = '';
         if (parsed.mainProblemWhy === undefined) parsed.mainProblemWhy = '';
         if (!parsed.phase) parsed.phase = 'map';
@@ -48,8 +49,9 @@
       cards: [],          // ПРОИЗВОДНОЕ от highlights (для бэкенда/связок) — см. deriveCards
       highlights: [],     // источник правды: { id, sectionId, domains, snippet, problem, tag, influence }
       connections: [],    // корневые связки (АК-2): { id, cardIds, mechanism, conclusion, isLoop }
-      mainProblemId: '',  // рефлексивный выбор «основной» проблемы (не в балл)
+      mainProblemId: '',  // legacy: прежний выбор «основной» проблемы, больше не спрашивается
       mainProblemWhy: '',
+      deepProblems: [], // [{id, text, props:[{hlId, mechanism}]}] — формулируется участником
       appxOpened: {},
       appxReviewed: {},
       phase: 'map',       // 'map' | 'links'
@@ -469,7 +471,7 @@
       parent.normalize();
     });
     state.highlights = state.highlights.filter(function (x) { return x.id !== id; });
-    if (state.mainProblemId === id) state.mainProblemId = '';
+    detachPropSilent(id);
     saveState();
     saveCaseHtml();
     renderProblems();
@@ -551,6 +553,27 @@
     if (t && t.tagName === 'TEXTAREA' && t.closest && t.closest('.card')) growTextarea(t);
   });
 
+  // Ряд действий карточки обновляем ТОЧЕЧНО, без перерисовки списка: кнопка
+  // «подпереть» должна появиться сразу, как участник описал наблюдение, а полный
+  // ре-рендер на каждый ввод отнимал бы фокус прямо во время набора.
+  function syncCardActions(el, h) {
+    var row = el.querySelector('.card-actions');
+    var usedBy = propUsedBy(h.id);
+    el.classList.toggle('is-prop', !!usedBy);
+    var show = !state.finished && !!(h.problem || '').trim();
+    if (!show) { if (row) row.remove(); return; }
+    if (!row) {
+      row = document.createElement('div');
+      row.className = 'card-actions';
+      row.style.cssText = 'display:flex; justify-content:flex-end; margin-top:6px;';
+      el.appendChild(row);
+    }
+    var want = usedBy
+      ? '<span class="prop-mark">опора ✓</span>'
+      : '<button type="button" class="btn btn-ghost btn-xs" data-prop="' + h.id + '">↑ подпереть</button>';
+    if (row.innerHTML !== want) row.innerHTML = want;
+  }
+
   function renderProblems() {
     var list = document.getElementById('cardsList');
     list.innerHTML = '';
@@ -569,6 +592,7 @@
         '<label>Опишите проблему своими словами</label>' +
         '<textarea rows="2" data-field="problem"' + (state.finished ? ' disabled' : '') +
           ' placeholder="в чём здесь проблема для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>';
+      syncCardActions(el, h);
       if (!state.finished) {
         var rm = document.createElement('button');
         rm.className = 'card-remove';
@@ -578,8 +602,10 @@
         el.appendChild(rm);
       }
       var ta = el.querySelector('[data-field="problem"]');
-      ta.addEventListener('input', function (e) { h.problem = e.target.value; saveState(); updateGate(); updateProblemCount(); });
-      ta.addEventListener('blur', renderMainProblem); // обновить подписи/состав в выборе основной
+      ta.addEventListener('input', function (e) {
+        h.problem = e.target.value; saveState(); updateGate(); updateProblemCount();
+        syncCardActions(el, h);
+      });
       if (h.snippet) el.querySelector('.problem-quote').addEventListener('click', function () { scrollToMark(h.id); });
       list.appendChild(el);
     });
@@ -587,7 +613,7 @@
     if (addBtn) addBtn.style.display = state.finished ? 'none' : '';
     growCardTextareas(list);
     updateProblemCount();
-    renderMainProblem();
+    renderDeep();
     updateGate();
   }
 
@@ -617,36 +643,169 @@
     });
   })();
 
-  // ---------- рефлексивный шаг: какая проблема основная (не в балл) ----------
+  // ---------- глубинная проблема ----------
+  //
+  // Заменила прежний рефлексивный шаг «выберите одну из своих проблем как главную».
+  // Разница принципиальная: там участник ВЫБИРАЛ из уже написанного, здесь —
+  // ФОРМУЛИРУЕТ сам то, чего в его списке может не быть вовсе. Замер показал, зачем
+  // это нужно: из 21 прогона на слой предпосылок вышла одна участница, и её балл
+  // оказался в хвосте — оси, на которой она работала, в оценке просто не было.
+  //
+  // Три решения 2026-07-31, все видны здесь:
+  //   * необязательна — не сформулировал, и это не штраф, а сигнал сам по себе;
+  //   * их может быть несколько (в кейсе v4 зашито три);
+  //   * связка засчитывается от ДВУХ опор — одна опора это не обоснование.
+  //
+  // Опора — наблюдение из списка ниже плюс объяснение, как одно следует из другого.
+  // Это та же конструкция, что просит АК-2 (влияние → цепочка → вывод), только
+  // собранная сверху вниз, без отдельного экрана и лишних механических действий.
 
-  function renderMainProblem() {
-    var block = document.getElementById('mainProblemBlock');
-    var sel = document.getElementById('mainProblemSelect');
-    var why = document.getElementById('mainProblemWhy');
-    if (!block || !sel || !why) return;
-    var ps = problemsWithText();
-    if (!ps.length) { block.style.display = 'none'; return; }
-    block.style.display = '';
-    if (state.mainProblemId && !ps.some(function (h) { return h.id === state.mainProblemId; })) {
-      state.mainProblemId = '';
-    }
-    sel.innerHTML = '<option value="">— выберите —</option>' + ps.map(function (h) {
-      var label = (h.problem || '').trim();
-      if (label.length > 80) label = label.slice(0, 80) + '…';
-      return '<option value="' + h.id + '"' + (state.mainProblemId === h.id ? ' selected' : '') + '>' + escapeHtml(label) + '</option>';
-    }).join('');
-    sel.value = state.mainProblemId || '';
-    sel.disabled = !!state.finished;
-    why.value = state.mainProblemWhy || '';
-    why.disabled = !!state.finished;
+  var MIN_PROPS = 2;
+
+  function deepList() {
+    if (!Array.isArray(state.deepProblems)) state.deepProblems = [];
+    return state.deepProblems;
   }
 
-  document.getElementById('mainProblemSelect').addEventListener('change', function (e) {
-    state.mainProblemId = e.target.value; saveState();
+  function propUsedBy(hlId) {
+    var found = null;
+    deepList().forEach(function (d) {
+      (d.props || []).forEach(function (p) { if (p.hlId === hlId) found = d; });
+    });
+    return found;
+  }
+
+  function addDeep() {
+    deepList().push({ id: uid(), text: '', props: [] });
+    saveState(); renderDeep(); renderProblems();
+  }
+
+  function attachProp(hlId) {
+    var list = deepList();
+    if (!list.length) list.push({ id: uid(), text: '', props: [] });
+    // при нескольких глубинных подпираем последнюю открытую — выбор целевой
+    // проблемы делается кликом по ней (см. data-deep-target ниже)
+    var target = list[list.length - 1];
+    if (window.__deepTarget) {
+      var t = list.filter(function (d) { return d.id === window.__deepTarget; })[0];
+      if (t) target = t;
+    }
+    if (!target.props) target.props = [];
+    if (!target.props.some(function (p) { return p.hlId === hlId; })) {
+      target.props.push({ hlId: hlId, mechanism: '' });
+    }
+    saveState(); renderDeep(); renderProblems();
+  }
+
+  // тихий вариант: наблюдение удаляют, ре-рендер сделает вызывающий
+  function detachPropSilent(hlId) {
+    deepList().forEach(function (d) {
+      d.props = (d.props || []).filter(function (p) { return p.hlId !== hlId; });
+    });
+  }
+
+  function detachProp(hlId) {
+    deepList().forEach(function (d) {
+      d.props = (d.props || []).filter(function (p) { return p.hlId !== hlId; });
+    });
+    saveState(); renderDeep(); renderProblems();
+  }
+
+  function problemTextById(hlId) {
+    var h = (state.highlights || []).filter(function (x) { return x.id === hlId; })[0];
+    return h ? (h.problem || '').trim() : '';
+  }
+
+  function renderDeep() {
+    var wrap = document.getElementById('deepList');
+    var empty = document.getElementById('deepEmpty');
+    var addBtn = document.getElementById('deepAdd');
+    var chip = document.getElementById('deepChip');
+    if (!wrap) return;
+    var list = deepList();
+    var locked = !!state.finished;
+
+    if (empty) empty.style.display = list.length ? 'none' : '';
+    if (addBtn) addBtn.style.display = (list.length && !locked) ? '' : 'none';
+
+    wrap.innerHTML = '';
+    list.forEach(function (d, idx) {
+      var el = document.createElement('div');
+      el.className = 'deep';
+      el.dataset.deepId = d.id;
+      var props = d.props || [];
+      var left = Math.max(0, MIN_PROPS - props.length);
+
+      el.innerHTML =
+        '<textarea data-deep-text rows="3"' + (locked ? ' disabled' : '') +
+          ' placeholder="одним предложением: на чём здесь всё держится">' + escapeHtml(d.text || '') + '</textarea>' +
+        '<div class="deep-sub"><span>Опоры</span>' +
+          '<span class="deep-need' + (left ? '' : ' is-ok') + '">' +
+          (left ? ('нужно ещё ' + left) : 'связка собрана') + '</span></div>' +
+        props.map(function (p) {
+          return '<div class="deep-prop">' +
+            '<div class="deep-prop-top">' +
+              '<div class="deep-prop-text">' + escapeHtml(problemTextById(p.hlId) || '(наблюдение без текста)') + '</div>' +
+              (locked ? '' : '<button type="button" class="btn btn-ghost btn-xs" data-unprop="' + p.hlId + '">убрать</button>') +
+            '</div>' +
+            '<textarea data-mech="' + p.hlId + '" rows="2"' + (locked ? ' disabled' : '') +
+              ' placeholder="как одно следует из другого — механизм, а не повтор">' + escapeHtml(p.mechanism || '') + '</textarea>' +
+          '</div>';
+        }).join('') +
+        (props.length >= MIN_PROPS || locked ? '' :
+          '<div class="deep-slot">Нажмите «↑ подпереть» у наблюдения ниже — оно встанет сюда, и вы объясните связь.</div>') +
+        (locked || list.length < 2 ? '' :
+          '<button type="button" class="btn btn-ghost btn-xs deep-remove" data-deep-remove="' + d.id + '">убрать эту формулировку</button>');
+
+      wrap.appendChild(el);
+    });
+
+    // чип состояния: сколько связок собрано
+    if (chip) {
+      var ready = list.filter(function (d) { return (d.props || []).length >= MIN_PROPS && (d.text || '').trim(); }).length;
+      chip.textContent = list.length ? (ready ? ('связок собрано: ' + ready) : 'нужны опоры') : 'необязательно';
+      chip.className = 'wchip' + (ready ? ' is-ok' : '');
+    }
+    growCardTextareas(wrap);
+    wrap.querySelectorAll('textarea').forEach(growTextarea);
+  }
+
+  // ввод в полях глубинной
+  document.addEventListener('input', function (e) {
+    var t = e.target;
+    if (!t || t.tagName !== 'TEXTAREA') return;
+    var deepEl = t.closest && t.closest('.deep');
+    if (!deepEl) return;
+    var d = deepList().filter(function (x) { return x.id === deepEl.dataset.deepId; })[0];
+    if (!d) return;
+    if (t.hasAttribute('data-deep-text')) { d.text = t.value; saveState(); return; }
+    var mech = t.getAttribute('data-mech');
+    if (mech) {
+      (d.props || []).forEach(function (p) { if (p.hlId === mech) p.mechanism = t.value; });
+      saveState();
+    }
   });
-  document.getElementById('mainProblemWhy').addEventListener('input', function (e) {
-    state.mainProblemWhy = e.target.value; saveState();
+
+  // клики: подпереть / убрать опору / убрать формулировку / выбрать целевую
+  document.addEventListener('click', function (e) {
+    var t = e.target;
+    if (!t || !t.getAttribute) return;
+    if (t.hasAttribute('data-prop')) { attachProp(t.getAttribute('data-prop')); return; }
+    if (t.hasAttribute('data-unprop')) { detachProp(t.getAttribute('data-unprop')); return; }
+    if (t.hasAttribute('data-deep-remove')) {
+      var rid = t.getAttribute('data-deep-remove');
+      state.deepProblems = deepList().filter(function (d) { return d.id !== rid; });
+      saveState(); renderDeep(); renderProblems(); return;
+    }
+    // клик по карточке глубинной делает её целевой для следующего «подпереть»
+    var deepEl = t.closest && t.closest('.deep');
+    if (deepEl) window.__deepTarget = deepEl.dataset.deepId;
   });
+
+  var deepStartBtn = document.getElementById('deepStart');
+  if (deepStartBtn) deepStartBtn.addEventListener('click', addDeep);
+  var deepAddBtn = document.getElementById('deepAdd');
+  if (deepAddBtn) deepAddBtn.addEventListener('click', addDeep);
 
   // ---------- фаза 2: связки (АК-2) ----------
 

@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=68" />
+<link rel="stylesheet" href="css/styles.css?v=69" />
 <style>
   /* ссылки на приложения прямо в тексте кейса — клик открывает приложение */
   .appx-ref { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; text-decoration-thickness: 1px; cursor: pointer; font-weight: 600; white-space: nowrap; }
@@ -436,30 +436,43 @@
             <div class="kicker" style="margin-bottom:4px;">Ваша рабочая область</div>
             <h2 class="work-title">Мои размышления</h2>
           </div>
-          <div class="work-counters">
-            <span id="cardCount">0 проблем</span>
-          </div>
         </div>
 
         <div class="work-scroll" id="workScroll">
 
-          <p class="work-hint" style="margin:0 0 12px; font-size:13px; color:var(--muted); line-height:1.5;"><b>Два шага:</b> 1) выпишите проблемы — выделите фразу в тексте слева и нажмите «отметить»; 2) свяжите их — кнопка «Дальше: связки →» здесь же, под карточками. Не нужно дочитывать кейс до конца перед тем, как начать: выделяйте по ходу чтения.</p>
+          <p class="work-hint" style="margin:0 0 14px; font-size:13px; color:var(--muted); line-height:1.5;">Выделяйте по ходу чтения, не дожидаясь конца кейса: отметили фразу слева — она появится в наблюдениях справа.</p>
 
-          <p class="links-hint" id="problemsEmpty" style="margin:0 0 4px;">Пока пусто — выделите первую проблему в тексте слева, и она появится здесь, не дожидаясь, пока дочитаете кейс. Если в тексте нет прямой ссылки на проблему — можете добавить кнопкой ниже.</p>
+          <!-- Блок 1 из двух равноценных. Стоит первым, но ничего не блокирует:
+               собирать наблюдения можно, ни разу его не открыв. Необязательность
+               проговорена в тексте — по решению 2026-07-31 отсутствие глубинной
+               проблемы это не штраф, а сигнал сам по себе. -->
+          <div class="wblock" id="deepBlock">
+            <div class="wblock-head">
+              <div class="kicker" style="margin:0;">Глубинная проблема</div>
+              <span class="wchip" id="deepChip">необязательно</span>
+            </div>
 
-          <div class="cards-list" id="cardsList"></div>
+            <div id="deepEmpty">
+              <p class="wblock-lead">То, на чём держится остальное. Если увидите такое — сформулируйте; не увидите — идите дальше, это не штраф.</p>
+              <button class="btn btn-ghost btn-small" id="deepStart" style="margin-top:10px;">Сформулировать →</button>
+            </div>
 
-          <button class="btn btn-ghost btn-small" id="addNoQuoteBtn" style="margin-top:10px;">+ вывод без цитаты</button>
+            <div id="deepList"></div>
+            <button class="btn btn-ghost btn-small" id="deepAdd" style="display:none; margin-top:10px;">+ ещё одна</button>
+          </div>
 
-          <div class="rationale-block" id="mainProblemBlock" style="display:none; margin-top:22px; padding-top:18px; border-top:1px solid #ececec;">
-            <!-- Письмо Агеева просит ДВЕ-ТРИ корневые проблемы, а шаг даёт выбрать
-                 одну: участник читал это как противоречие задания и интерфейса
-                 (репорт прогона 005001 — выбрал одну и в «почему» оговорил, что
-                 корневых у него три). Шаг рефлексивный, в балл не идёт, поэтому
-                 снимаем конфликт формулировкой, а не переделкой механики. -->
-            <label for="mainProblemSelect">Если бы пришлось выбрать одну — какая из них корень остальных?</label>
-            <select id="mainProblemSelect" style="width:100%; margin-bottom:10px; padding:10px; border:1px solid #cfd6dd; border-radius:8px; font:inherit; background:#fff;"></select>
-            <textarea id="mainProblemWhy" rows="2" placeholder="почему именно она"></textarea>
+          <!-- Блок 2: та же метка, тот же вес. -->
+          <div class="wblock">
+            <div class="wblock-head">
+              <div class="kicker" style="margin:0;">Наблюдения из текста</div>
+              <span class="wchip" id="cardCount">0 проблем</span>
+            </div>
+
+            <p class="links-hint" id="problemsEmpty" style="margin:8px 0 4px;">Пока пусто — выделите первую проблему в тексте слева. Если прямой цитаты нет, добавьте вывод кнопкой ниже.</p>
+
+            <div class="cards-list" id="cardsList"></div>
+
+            <button class="btn btn-ghost btn-small" id="addNoQuoteBtn" style="margin-top:10px;">+ вывод без цитаты</button>
           </div>
 
           <!-- Продвижение — в потоке рабочей области, как во всех раундах
@@ -560,7 +573,7 @@
 <script src="js/dossier-render.js?v=5"></script>
 <script src="js/dossier-panel.js?v=6"></script>
 <script src="js/case-ref.js?v=7"></script>
-<script src="js/round1.js?v=14"></script>
+<script src="js/round1.js?v=30"></script>
 <script src="js/progress.js?v=7"></script>
 <script src="js/save-status.js?v=1"></script>
 </body>

@@ -3976,3 +3976,42 @@ p, li, .section-lead, .chat-bubble, .chat-act, .chat-after, label {
 textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .appx-doc li {
   text-wrap: wrap;
 }
+
+/* ---------- раунд 1: два равноценных блока рабочей области ---------- */
+/* Глубинная проблема и наблюдения — один вес: одинаковая метка, одинаковый
+   отступ, разделены волоском. Глубинная стоит первой, но ничего не блокирует:
+   собирать наблюдения можно, ни разу её не открыв (решение 2026-07-31 —
+   необязательна, отсутствие не штраф). */
+.wblock { padding-bottom: 20px; }
+.wblock + .wblock { border-top: 1px solid var(--hairline); padding-top: 18px; }
+.wblock-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.wchip {
+  font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted-soft); border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 2px 7px; white-space: nowrap;
+}
+.wchip.is-ok { color: var(--accent); border-color: var(--accent); }
+.wblock-lead { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
+
+.deep { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 12px 14px; margin-top: 10px; }
+.deep textarea { width: 100%; min-height: 68px; }
+.deep-sub {
+  font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted-soft); display: flex; justify-content: space-between; align-items: center;
+  margin-top: 12px;
+}
+.deep-need { font-weight: 600; letter-spacing: 0; text-transform: none; font-size: 12px; }
+.deep-need.is-ok { color: var(--accent); }
+.deep-prop { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 9px 11px; margin-top: 8px; }
+.deep-prop-top { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
+.deep-prop-text { font-size: 14px; line-height: 1.45; }
+.deep-prop textarea { width: 100%; margin-top: 8px; min-height: 50px; font-size: 14px; }
+.deep-slot {
+  border: 1px dashed var(--hairline); border-radius: var(--radius);
+  padding: 11px; margin-top: 8px; font-size: 13px; color: var(--muted-soft);
+}
+.deep-remove { margin-top: 10px; }
+/* наблюдение, ставшее опорой: остаётся в списке приглушённым — так видно, сколько
+   собрано всего, и его можно вернуть обратно одним кликом */
+.problem-card.is-prop { opacity: .55; }
+.prop-mark { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
