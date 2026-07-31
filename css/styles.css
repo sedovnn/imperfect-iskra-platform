@@ -4001,6 +4001,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .wchip-num { letter-spacing: 0; min-width: 24px; text-align: center; }
 .wchip-num.is-active { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-tint); }
 .wblock-lead { font-size: 13px; line-height: 1.5; color: var(--muted); margin: 8px 0 0; }
+/* Содержимое блока всегда отбито от его заголовка. Без этого, когда подсказка
+   «пока пусто» скрывалась, первая карточка вставала вплотную и её рамка шла
+   прямо по буквам заголовка. В свёрнутом виде отступ не считается — тело
+   display:none. */
+.wblock-head + div, .wblock-head + p { margin-top: 12px; }
 
 .deep { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 12px 14px; margin-top: 10px; }
 .deep textarea { width: 100%; min-height: 68px; }
