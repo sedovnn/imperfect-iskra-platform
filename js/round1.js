@@ -108,7 +108,6 @@
   document.getElementById('gate').style.display = 'none';
   document.getElementById('stationRoot').style.display = '';
   document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(6, '0');
-  document.getElementById('hdrBib2').textContent = '№ ' + String(session.bib).padStart(6, '0');
 
   state = loadState(session.bib);
 
@@ -576,7 +575,7 @@
     }
     var want = usedBy
       ? '<span class="prop-mark">опора ✓</span>'
-      : '<button type="button" class="btn btn-ghost btn-xs" data-prop="' + h.id + '">↑ подпереть</button>';
+      : '<button type="button" class="btn btn-ghost btn-xs" data-prop="' + h.id + '">↑ в обоснование</button>';
     if (row.innerHTML !== want) row.innerHTML = want;
   }
 
@@ -597,7 +596,16 @@
         head +
         '<label>Опишите проблему своими словами</label>' +
         '<textarea rows="2" data-field="problem"' + (state.finished ? ' disabled' : '') +
-          ' placeholder="в чём здесь проблема для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>';
+          ' placeholder="в чём здесь проблема для компании — одним предложением">' + escapeHtml(h.problem || '') + '</textarea>' +
+        // пометка и влияние переехали со второго экрана: раньше участник описывал
+        // проблему здесь, а что она означает — на следующем экране, забыв половину
+        '<div class="tag-pills">' +
+          '<button type="button" class="tag-pill' + (h.tag === 'threat' ? ' is-active' : '') + '" data-tag="threat"' + (state.finished ? ' disabled' : '') + '>угроза</button>' +
+          '<button type="button" class="tag-pill' + (h.tag === 'opportunity' ? ' is-active' : '') + '" data-tag="opportunity"' + (state.finished ? ' disabled' : '') + '>возможность</button>' +
+        '</div>' +
+        '<label>Что это означает для компании</label>' +
+        '<textarea rows="2" data-field="influence"' + (state.finished ? ' disabled' : '') +
+          ' placeholder="к чему это ведёт — следствие, а не повтор проблемы другими словами">' + escapeHtml(h.influence || '') + '</textarea>';
       syncCardActions(el, h);
       if (!state.finished) {
         var rm = document.createElement('button');
@@ -607,6 +615,19 @@
         rm.addEventListener('click', function () { removeHighlight(h.id); });
         el.appendChild(rm);
       }
+      el.querySelectorAll('.tag-pill').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (state.finished) return;
+          var tag = btn.getAttribute('data-tag');
+          h.tag = h.tag === tag ? '' : tag;
+          saveState();
+          el.querySelectorAll('.tag-pill').forEach(function (b) {
+            b.classList.toggle('is-active', b.getAttribute('data-tag') === h.tag);
+          });
+        });
+      });
+      var infl = el.querySelector('[data-field="influence"]');
+      infl.addEventListener('input', function (e) { h.influence = e.target.value; saveState(); updateGate(); });
       var ta = el.querySelector('[data-field="problem"]');
       ta.addEventListener('input', function (e) {
         h.problem = e.target.value; saveState(); updateGate(); updateProblemCount();
@@ -628,9 +649,16 @@
   function updateGate() {
     var btn = document.getElementById('finishBtn');
     if (!btn || state.finished) return;
-    var has = problemsWithText().length > 0;
-    btn.disabled = !has;
-    btn.title = has ? '' : 'Опишите хотя бы одну проблему, чтобы перейти к связкам';
+    // По решению 31.07 поле «что это означает» обязательно хотя бы у одного
+    // наблюдения: это первый маркер АК-2 (influenceReal), и раньше он был
+    // необязательным — его почти не заполняли, отсюда часть низких оценок глубины.
+    var ps = problemsWithText();
+    var hasInfluence = ps.some(function (h) { return (h.influence || '').trim(); });
+    var ok = ps.length > 0 && hasInfluence;
+    btn.disabled = !ok;
+    btn.title = ps.length === 0
+      ? 'Опишите хотя бы одну проблему'
+      : (hasInfluence ? '' : 'Раскройте хотя бы у одной проблемы, что это означает для компании');
   }
 
   // «+ проблема без прямой цитаты» (п.7): для вывода, которого в тексте нет
@@ -744,8 +772,8 @@
 
       el.innerHTML =
         '<textarea data-deep-text rows="3"' + (locked ? ' disabled' : '') +
-          ' placeholder="одним предложением: на чём здесь всё держится">' + escapeHtml(d.text || '') + '</textarea>' +
-        '<div class="deep-sub"><span>Опоры</span>' +
+          ' placeholder="одним предложением">' + escapeHtml(d.text || '') + '</textarea>' +
+        '<div class="deep-sub"><span>На чём основано</span>' +
           '<span class="deep-need' + (left ? '' : ' is-ok') + '">' +
           (left ? ('нужно ещё ' + left) : 'связка собрана') + '</span></div>' +
         props.map(function (p) {
@@ -759,17 +787,19 @@
           '</div>';
         }).join('') +
         (props.length >= MIN_PROPS || locked ? '' :
-          '<div class="deep-slot">Нажмите «↑ подпереть» у наблюдения ниже — оно встанет сюда, и вы объясните связь.</div>') +
+          '<div class="deep-slot">Нажмите «↑ в обоснование» у наблюдения ниже — оно встанет сюда, и вы объясните связь.</div>') +
         (locked || list.length < 2 ? '' :
-          '<button type="button" class="btn btn-ghost btn-xs deep-remove" data-deep-remove="' + d.id + '">убрать эту формулировку</button>');
+          '<button type="button" class="btn btn-ghost btn-xs deep-remove" data-deep-remove="' + d.id + '">убрать</button>');
 
       wrap.appendChild(el);
     });
 
     // чип состояния: сколько связок собрано
     if (chip) {
+      // «связок» в чипе больше нет: связки — соседний блок, и слово путало
       var ready = list.filter(function (d) { return (d.props || []).length >= MIN_PROPS && (d.text || '').trim(); }).length;
-      chip.textContent = list.length ? (ready ? ('связок собрано: ' + ready) : 'нужны опоры') : 'необязательно';
+      chip.textContent = !list.length ? 'необязательно'
+        : (ready === list.length ? 'обосновано' : 'нужно обоснование');
       chip.className = 'wchip' + (ready ? ' is-ok' : '');
     }
     growCardTextareas(wrap);
@@ -824,47 +854,15 @@
 
   // Оценка проблем: необязательный тег угроза/возможность (+ поле влияния).
   // Необязательность принципиальна — иначе L1/L2 АК-2 стали бы ненаблюдаемыми.
-  function renderTagCards() {
-    var list = document.getElementById('tagCardsList');
-    list.innerHTML = '';
-    var ps = problemsWithText();
-    ps.forEach(function (h) {
-      var el = document.createElement('div');
-      el.className = 'card' + (state.finished ? ' is-locked' : '');
-      el.innerHTML =
-        '<p style="margin:0 0 4px; font-size:14px; line-height:1.55;">' + escapeHtml(h.problem) + '</p>' +
-        '<div class="tag-pills">' +
-          '<button class="tag-pill' + (h.tag === 'threat' ? ' is-active' : '') + '" data-tag="threat">угроза</button>' +
-          '<button class="tag-pill' + (h.tag === 'opportunity' ? ' is-active' : '') + '" data-tag="opportunity">возможность</button>' +
-        '</div>' +
-        '<textarea class="card-influence" rows="2" placeholder="что это означает для компании — если хотите раскрыть" style="display:' + (h.tag ? '' : 'none') + ';">' + escapeHtml(h.influence || '') + '</textarea>' +
-        (h.snippet ? '<div class="card-anchor" title="' + escapeHtml(h.snippet) + '">из кейса: «' + escapeHtml(h.snippet) + '»</div>' : '');
-
-      el.querySelectorAll('.tag-pill').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          if (state.finished) return;
-          var tag = btn.getAttribute('data-tag');
-          h.tag = h.tag === tag ? '' : tag;
-          saveState();
-          renderTagCards();
-        });
-      });
-      el.querySelector('.card-influence').addEventListener('input', function (e) {
-        h.influence = e.target.value; saveState();
-      });
-      if (state.finished) el.querySelectorAll('textarea, input, .tag-pill').forEach(function (x) {
-        x.setAttribute('disabled', 'disabled');
-      });
-      list.appendChild(el);
-    });
-    if (!ps.length) {
-      list.innerHTML = '<p class="links-hint">Описанных проблем нет — вернитесь к разбору.</p>';
-    }
-    growCardTextareas(list);
-  }
 
   // Связки: проблемы выбираются кликом по чипам (не печатаются).
+  function updateConnCount() {
+    var el = document.getElementById('connCount');
+    if (el) el.textContent = (state.connections || []).length;
+  }
+
   function renderConnections() {
+    updateConnCount();
     var list = document.getElementById('connectionsList');
     var addBtn = document.getElementById('addConnectionBtn');
     list.innerHTML = '';
@@ -880,9 +878,9 @@
         '<div class="conn-chips">' + chipsHtml + '</div>' +
         '<label>В чём механизм: почему одно порождает другое</label>' +
         '<textarea class="conn-mechanism" rows="2">' + escapeHtml(conn.mechanism || '') + '</textarea>' +
-        '<label>В чём корневая проблема, к которой сходится эта связка</label>' +
-        '<textarea class="conn-conclusion" rows="2" placeholder="только диагноз — какую корневую проблему обнажает эта цепочка (что с ней делать, спросим дальше)">' + escapeHtml(conn.conclusion || '') + '</textarea>' +
-        // Галочка «цепочка замыкается обратно» убрана (аудит 2026-07-27): судья АК-2
+        // поле «корневая проблема» убрано при слиянии экранов: его роль забрал
+        // блок «Главная проблема» наверху рабочей области — там же и обоснование
+                // Галочка «цепочка замыкается обратно» убрана (аудит 2026-07-27): судья АК-2
         // её и так игнорирует (петли ищутся в тексте механизмов), а подпись преподавала
         // понятие петли за секунду до ответа. conn.isLoop в стейте/бэкенде остаётся
         // (легаси-данные старых участников).
@@ -915,9 +913,6 @@
       el.querySelector('.conn-mechanism').addEventListener('input', function (e) {
         conn.mechanism = e.target.value; saveState();
       });
-      el.querySelector('.conn-conclusion').addEventListener('input', function (e) {
-        conn.conclusion = e.target.value; saveState();
-      });
       if (state.finished) el.querySelectorAll('textarea, input, .conn-chip').forEach(function (x) {
         x.setAttribute('disabled', 'disabled');
       });
@@ -934,21 +929,8 @@
     renderConnections();
   });
 
-  function showMapPhase() {
-    linksRoot.style.display = 'none';
-    document.getElementById('stationRoot').style.display = '';
-    if (!state.finished) { state.phase = 'map'; saveState(); }
-  }
 
-  function showLinksPhase() {
-    renderTagCards();
-    renderConnections();
-    document.getElementById('stationRoot').style.display = 'none';
-    linksRoot.style.display = '';
-    if (!state.finished) { state.phase = 'links'; saveState(); }
-  }
 
-  document.getElementById('backToMapBtn').addEventListener('click', showMapPhase);
 
   // ---------- finish ----------
 
@@ -958,17 +940,10 @@
     document.getElementById('finishOverlay').style.display = 'flex';
   }
 
-  function goToLinksPhase() {
-    // переход уже гейтится: кнопка «Дальше: связки →» неактивна без описанной
-    // проблемы (updateGate). Попап-обход убран — обходить нечего.
-    showLinksPhase();
-  }
 
   function lockEverything() {
     document.getElementById('finishBtn').setAttribute('disabled', 'disabled');
     document.getElementById('finishBtn').textContent = 'Раунд завершён';
-    document.getElementById('finishBtn2').setAttribute('disabled', 'disabled');
-    document.getElementById('finishBtn2').textContent = 'Раунд завершён';
     document.querySelectorAll('#workScroll textarea, #workScroll select, #workScroll input').forEach(function (el) {
       el.setAttribute('disabled', 'disabled');
     });
@@ -986,7 +961,6 @@
     saveState();
     clearTimeout(backendSyncTimer);
 
-    renderTagCards();
     renderConnections();
     lockEverything();
     // Финиш-оверлей ждёт подтверждения записи: раньше он показывался сразу,
@@ -997,20 +971,19 @@
     syncStateToBackend().then(showFinishOverlay, showFinishOverlay);
   }
 
-  document.getElementById('finishBtn').addEventListener('click', goToLinksPhase);
-  document.getElementById('finishBtn2').addEventListener('click', finishStation);
+  document.getElementById('finishBtn').addEventListener('click', finishStation);
 
   // ---------- init render ----------
 
   renderProblems();
+  renderConnections();
   saveState(); // сохранить реконсиленные отметки/производные карточки сразу
 
+  // Экрана связок больше нет (слияние 2026-07-31) — всё в одной рабочей области.
+  // Сессии, начатые до слияния и остановленные на втором экране, просто открываются
+  // здесь же: их наблюдения и связки на месте, терять нечего.
   if (state.finished) {
-    renderTagCards();
-    renderConnections();
     lockEverything();
     showFinishOverlay();
-  } else if (state.phase === 'links') {
-    showLinksPhase();
   }
 })();

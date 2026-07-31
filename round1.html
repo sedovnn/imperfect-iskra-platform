@@ -61,7 +61,7 @@
       <div class="station-intro-inner">
         <p class="kicker">Легенда</p>
         <p>Вы — независимый консультант по стратегии. Вас позвал Кирилл Агеев — гендиректор «Поиска и рекламы», ключевого бизнеса компании «Искра» (поиск, реклама, устройства «Мира», финтех «Пэй»). Он просит взгляд снаружи — прочитать материалы и назвать то, что он перестал видеть изнутри.</p>
-        <p>В следующем окне самого раунда: слева — оглавление и восемь приложений, в центре — сам кейс («Перед чтением» и дальше), справа — ваша рабочая область для размышлений.</p>
+        <p>В следующем окне самого раунда: слева — оглавление и одиннадцать приложений, в центре — сам кейс («Перед чтением» и дальше), справа — ваша рабочая область для размышлений.</p>
         <div class="case-rule">
           <span>✎</span>
           <span>
@@ -490,12 +490,12 @@
                проблемы это не штраф, а сигнал сам по себе. -->
           <div class="wblock" id="deepBlock">
             <div class="wblock-head">
-              <div class="kicker" style="margin:0;">Глубинная проблема</div>
+              <div class="kicker" style="margin:0;">Главная проблема</div>
               <span class="wchip" id="deepChip">необязательно</span>
             </div>
 
             <div id="deepEmpty">
-              <p class="wblock-lead">То, на чём держится остальное. Если увидите такое — сформулируйте; не увидите — идите дальше, это не штраф.</p>
+              <p class="wblock-lead">Агеев пишет: «решив эту задачку, нам, возможно, не нужно будет решать все остальные». Если видите такую — сформулируйте. Не видите — идите дальше, это не штраф.</p>
               <button class="btn btn-ghost btn-small" id="deepStart" style="margin-top:10px;">Сформулировать →</button>
             </div>
 
@@ -517,11 +517,24 @@
             <button class="btn btn-ghost btn-small" id="addNoQuoteBtn" style="margin-top:10px;">+ вывод без цитаты</button>
           </div>
 
+          <!-- Блок 3: связки. Переехали со второго экрана (слияние 2026-07-31):
+               «влияние» и механизм жили там, а формулировка главной проблемы —
+               здесь, и участник описывал одно и то же дважды на разных экранах. -->
+          <div class="wblock">
+            <div class="wblock-head">
+              <div class="kicker" style="margin:0;">Связки</div>
+              <span class="wchip" id="connCount">0</span>
+            </div>
+            <p class="links-hint" style="margin:8px 0 10px;">Если какие-то наблюдения связаны между собой — соберите связку и объясните механизм: почему одно порождает другое.</p>
+            <div class="cards-list" id="connectionsList"></div>
+            <button class="btn btn-ghost btn-small" id="addConnectionBtn" style="margin-top:10px;">+ связка</button>
+          </div>
+
           <!-- Продвижение — в потоке рабочей области, как во всех раундах
                (ревизия 2026-07-27: плавающая кнопка в углу была последним местом,
                где механика отличалась от остальных экранов). -->
           <div style="margin-top:28px; padding-top:20px; border-top:1px solid var(--hairline);">
-            <button class="btn btn-primary" id="finishBtn">Дальше: связки →</button>
+            <button class="btn btn-primary btn-advance" id="finishBtn">Завершить раунд →</button>
           </div>
 
         </div>
@@ -533,56 +546,6 @@
 
 <!-- Фаза 2 (АК-2): режим фокусировки — кейс и панели убраны, на экране только
      собственные карточки участника. Один финиш на всю станцию — здесь. -->
-<div class="frame station-frame" id="linksRoot" style="display:none;">
-  <div class="station-shell">
-
-    <header class="station-header">
-      <div class="station-header-left">
-        <a class="logo" href="map.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
-        <span class="station-sep">/</span>
-        <h1 class="station-name">Раунд 1 · Связки: что порождает что</h1>
-      </div>
-      <div class="station-header-right">
-        <a class="btn btn-ghost btn-xs" href="intro.html" title="Как проходить — вернуться к установке" aria-label="Как проходить — вернуться к установке">ⓘ</a>
-        <span class="bib" id="hdrBib2">№ 000</span>
-        <button class="btn btn-ghost btn-sm" id="backToMapBtn">← К карте</button>
-      </div>
-    </header>
-
-    <!-- Плавающей кнопки здесь больше нет (ревизия 2026-07-27): фаза связок —
-         обычный вертикальный поток, и продвижение стоит как во всех раундах,
-         inline слева после последнего действия (см. конец .links-body).
-         Плавающая кнопка остаётся только в фазе чтения — там три панели
-         и линейного конца потока нет. -->
-
-    <div class="links-body">
-
-      <div class="links-intro">
-        <p class="kicker">Корневые проблемы</p>
-        <p>Проблемы собраны — материалы убраны, перед вами только ваши формулировки. Агеев просил второе: выделите две-три корневые проблемы и покажите связи. Оцените проблемы, если считаете нужным, и соберите связки.</p>
-      </div>
-
-      <div class="links-section">
-        <h2>Ваши проблемы</h2>
-        <p class="links-hint">Пометки необязательны — заполняйте только то, в чём уверены.</p>
-        <div class="cards-list" id="tagCardsList"></div>
-      </div>
-
-      <div class="links-section">
-        <h2>Корневые связки</h2>
-        <p class="links-hint">Выберите проблемы, которые связаны между собой, и объясните механизм — почему одно порождает другое.</p>
-        <div class="cards-list" id="connectionsList"></div>
-        <button class="btn btn-ghost btn-small" id="addConnectionBtn" style="margin-top:8px;">+ связка</button>
-        <div style="margin-top:28px;">
-          <button class="btn btn-primary btn-advance" id="finishBtn2">Завершить раунд →</button>
-        </div>
-      </div>
-
-    </div>
-
-  </div>
-</div>
-
 <div class="sel-toolbar" id="selToolbar">
   <button id="hlBtn" title="Отметить фрагмент как проблему">✎ отметить</button>
 </div>
@@ -615,7 +578,7 @@
 <script src="js/dossier-render.js?v=5"></script>
 <script src="js/dossier-panel.js?v=6"></script>
 <script src="js/case-ref.js?v=7"></script>
-<script src="js/round1.js?v=31"></script>
+<script src="js/round1.js?v=34"></script>
 <script src="js/progress.js?v=7"></script>
 <script src="js/save-status.js?v=1"></script>
 </body>
