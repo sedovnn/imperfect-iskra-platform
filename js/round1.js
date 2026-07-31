@@ -953,21 +953,28 @@
   function renderDeepSummary() {
     var sum = document.getElementById('deepSummary');
     if (!sum) return;
-    var parts = deepList().map(function (d) {
-      var t = (d.text || '').trim();
-      return (t ? escapeHtml(t) : '<i>без формулировки</i>') +
-             ' <i>· обоснований: ' + ((d.props || []).length) + '</i>';
-    });
+    // В свёрнутом виде показываем только то, что человек действительно написал.
+    // Строка «без формулировки · обоснований: 0» — служебная бухгалтерия, ради
+    // которой блок и сворачивают, чтобы её не видеть.
+    var parts = deepList()
+      .filter(function (d) { return (d.text || '').trim(); })
+      .map(function (d) {
+        var n = (d.props || []).length;
+        return escapeHtml(d.text.trim()) + (n ? ' <i>· обоснований: ' + n + '</i>' : '');
+      });
     sum.innerHTML = parts.join('<br />');
+    sum.style.display = parts.length ? '' : 'none';
   }
 
   var deepToggleBtn = document.getElementById('deepToggle');
   if (deepToggleBtn) deepToggleBtn.addEventListener('click', function () {
     collapsed = !collapsed;
     document.getElementById('deepList').style.display = collapsed ? 'none' : '';
+    var empty = document.getElementById('deepEmpty');
+    if (empty) empty.style.display = (collapsed || deepList().length) ? 'none' : '';
     var addB = document.getElementById('deepAdd');
     if (addB) addB.style.display = (collapsed || !deepList().length || state.finished) ? 'none' : '';
-    document.getElementById('deepSummary').style.display = collapsed ? '' : 'none';
+    if (!collapsed) document.getElementById('deepSummary').style.display = 'none';
     this.textContent = collapsed ? 'развернуть' : 'свернуть';
     if (collapsed) renderDeepSummary();
   });
