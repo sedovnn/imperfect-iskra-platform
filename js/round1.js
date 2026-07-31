@@ -210,7 +210,7 @@
     if (!introNameEl || !introNameEchoEl) return;
     var nm = (introNameEl.value || '').trim();
     if (nm) {
-      introNameEchoEl.innerHTML = '<b>Агеев</b>: «Приятно познакомиться, ' + escapeHtml(nm) + '. До встречи в понедельник».';
+      introNameEchoEl.innerHTML = '<b>Агеев</b>: «Записал: ' + escapeHtml(nm) + '. До встречи в понедельник».';
       introNameEchoEl.style.display = '';
     } else {
       introNameEchoEl.style.display = 'none';
