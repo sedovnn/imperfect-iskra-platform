@@ -4015,3 +4015,17 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    собрано всего, и его можно вернуть обратно одним кликом */
 .problem-card.is-prop { opacity: .55; }
 .prop-mark { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); white-space: nowrap; }
+
+/* ---------- рабочие панели раунда: снять лендинговый отступ ---------- */
+/* .case-pane и .work-pane — теги <section>, и на них падало общее правило
+   section { padding: 72px 0 } из лендинговой части системы. Станция такого
+   отступа не просила: у кейса свой padding (32px сверху), у рабочей области —
+   свой (20px), а 72px сверху добавлялись поверх и отжимали рабочую область вниз
+   на пустом месте. */
+.case-pane, .work-pane { padding: 0; }
+
+/* Правый отступ рабочей области был равен отступу рамки (56px), чтобы контент
+   сходился с контролами шапки над ним. Но колонка узкая — 452px на ноутбуке, —
+   и 32 лишних пикселя там дороже выравнивания с шапкой. Слева и справа теперь
+   одинаково по 24px, и весь выигрыш уходит содержимому. */
+.work-header, .work-scroll { padding-right: 24px; }
