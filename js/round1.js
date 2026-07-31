@@ -853,7 +853,7 @@
           ' placeholder="одним предложением">' + escapeHtml(d.text || '') + '</textarea>' +
         '<div class="deep-sub"><span>На чём основано</span>' +
           '<span class="deep-need' + (left ? '' : ' is-ok') + '">' +
-          (left ? ('нужно ещё ' + left) : 'связка собрана') + '</span></div>' +
+          (left ? ('нужно ещё ' + left) : 'обосновано') + '</span></div>' +
         props.map(function (p) {
           return '<div class="deep-prop">' +
             '<div class="deep-prop-top">' +
@@ -872,14 +872,13 @@
       wrap.appendChild(el);
     });
 
-    // чип состояния: сколько связок собрано
-    if (chip) {
-      // «связок» в чипе больше нет: связки — соседний блок, и слово путало
-      var ready = list.filter(function (d) { return (d.props || []).length >= MIN_PROPS && (d.text || '').trim(); }).length;
-      chip.textContent = !list.length ? 'необязательно'
-        : (ready === list.length ? 'обосновано' : 'нужно обоснование');
-      chip.className = 'wchip' + (ready ? ' is-ok' : '');
-    }
+    // Чип — счётчик, как у соседних блоков: сколько проблем сформулировано.
+    // Раньше он выдавал вердикты («необязательно» → «нужно обоснование»), и в
+    // одном и том же месте система сначала разрешала не отвечать, а потом
+    // требовала. Позиция одна: называть не обязательно, но если назвал —
+    // покажи, на чём держится. Разрешение живёт в тексте блока, требование —
+    // внутри карточки, рядом с полем, к которому относится.
+    setChip(chip, list.filter(function (d) { return (d.text || '').trim(); }).length);
     growCardTextareas(wrap);
     wrap.querySelectorAll('textarea').forEach(growTextarea);
 
