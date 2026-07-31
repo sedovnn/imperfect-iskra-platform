@@ -346,10 +346,27 @@
 
     function buildStressBlock() {
       var locked = stepLocked('stress');
+      // Реакция на выбранную позицию стоит ЗДЕСЬ, сразу за выбором, а не в финальном
+      // блоке (где она оказалась при переносе шагов 2026-07-31): позиция выбирается
+      // на шаге 2, и отзыв на неё через два шага читался как «откуда это вдруг».
+      // Реакции равны по валентности намеренно. «Смело» за одну ставку и «осторожно»
+      // за другую — это обратная связь о том, какой выбор нам нравится, а выбранная
+      // позиция живёт до конца прогона: раунды 3–5 раскрывают её грани, финал её
+      // защищает. Один уходил подкреплённым, другой засомневавшимся, и это смещало
+      // замер удержания. Схема одна на три: назвал → следствие → та же концовка.
+      var st = window.imp.stanceOf && window.imp.stanceOf(state);
+      var stanceReact = st && st.code === 'fortress'
+        ? { speech: '«Крепость. Значит, держим то, что кормит, а на устройства в этот цикл не ставим. Записал».' }
+        : (st && st.code === 'secondCurve'
+          ? { speech: '«Вторая кривая. Значит, ставим на устройства, а рекламное ядро дальше живёт как есть. Записал».' }
+          : (st && st.code === 'other'
+            ? { speech: '«Ваш вариант. Значит, к правлению я иду не с одним из двух, а с третьим. Записал».' }
+            : null));
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        them('Кирилл Агеев', { act: 'откидывается в кресле',
+        (stanceReact ? them('Кирилл Агеев', stanceReact) : '') +
+        them(stanceReact ? '' : 'Кирилл Агеев', { act: 'откидывается в кресле',
           speech: '«Теперь плохая новость. Помните, я сказал, что компромисса быть не может? На обе целиком его и нет. А вот половина есть — и правление на неё смотрит.' }) +
         them('', { speech: '«Я с ними поговорил. Проигрывать никто не хочет, поэтому все тянут к одному: дать обеим программам по половине и через год посмотреть, что вышло. Денег на это хватает, ещё и резерв остаётся. Поэтому им и нравится.' }) +
         them('', { speech: '«Штерн против — говорит, так мы похороним обе. Но он один, а остальные за».' }) +
@@ -444,6 +461,21 @@
     // Аргумент автора виден у нерешённых и складывается у решённых: в аргументах
     // сидят ловушки (№16 «денег не требует» при 320 человеках, №18 «наймём столько
     // же»), и спрятать их за раскрытие значит выключить их.
+    // Отдельного списка «теперь причины» больше нет (был до 2026-07-31 — вторая копия
+    // тех же семнадцати позиций, страница выходила бесконечной). Пояснение живёт
+    // внутри строки отказа, а напоминание — одной строкой у кнопки фиксации.
+    function syncReasonHint() {
+      if (!backlogHost) return;
+      var host = backlogHost.querySelector('.bl-hint');
+      if (!host) return;
+      var t = takenTotals();
+      var show = !stepLocked('backlog') && !t.undecided && t.dropped && !t.reasoned;
+      host.innerHTML = show
+        ? 'Ни один отказ не пояснён. Агеев просил объяснить те, что сами по себе решение, — хотя бы один: кнопка «пояснить» в строке.'
+        : '';
+      host.style.display = show ? '' : 'none';
+    }
+
     function renderBacklog() {
       if (!backlogHost) return;
       var locked = stepLocked('backlog');
@@ -452,7 +484,6 @@
 
       var decidedHost = backlogHost.querySelector('.bl-decided');
       var list = backlogHost.querySelector('.bl-list');
-      var reasonsHost = backlogHost.querySelector('.bl-reasons');
       if (!list) return;
 
       var items = allItems();
@@ -472,14 +503,54 @@
         g.className = 'bl-group is-' + kind;
         g.innerHTML = '<div class="bl-group-head">' + title + ' · ' + arr.length + '</div>';
         arr.forEach(function (it) {
+          var p2 = pickOf(it.id) || {};
+          var hasReason = kind === 'dropped' && !!String(p2.reason || '').trim();
           var row = document.createElement('div');
-          row.className = 'bl-mini';
+          row.className = 'bl-mini' + (hasReason ? ' is-open' : '');
           row.innerHTML =
             '<span class="bl-mini-title">' + escapeHtml(it.title) + '</span>' +
             '<span class="bl-mini-cost">' + it.people + ' чел. · ' + num(it.money) + ' млрд</span>' +
-            (locked ? '' : '<button type="button" class="s2-act" data-flip="1">' + (kind === 'taken' ? 'отложить' : 'взять') + '</button>');
+            (locked ? '' :
+              '<span class="bl-mini-acts">' +
+                (kind === 'dropped' ? '<button type="button" class="s2-act bl-why">' + (hasReason ? 'убрать' : 'пояснить') + '</button>' : '') +
+                '<button type="button" class="s2-act" data-flip="1">' + (kind === 'taken' ? 'отложить' : 'взять') + '</button>' +
+              '</span>') +
+            (hasReason ? '<input type="text" class="bl-reason" aria-label="Почему откладываете: ' + escapeHtml(it.title) + '" placeholder="почему откладываете именно это"' +
+              (locked ? ' disabled' : '') + ' value="' + escapeHtml(p2.reason || '') + '" />' : '');
+
+          function bindReason() {
+            var inp = row.querySelector('.bl-reason');
+            if (!inp || locked) return;
+            inp.addEventListener('input', function (e) {
+              state.picks[String(it.id)].reason = e.target.value;
+              saveState();
+              syncReasonHint();
+              // без полного ререндера: он бы перерисовал поле и сбросил каретку
+            });
+          }
+          bindReason();
+
           if (!locked) {
             row.querySelector('[data-flip]').addEventListener('click', function () { setPick(it.id, kind !== 'taken'); });
+            var why = row.querySelector('.bl-why');
+            if (why) why.addEventListener('click', function () {
+              var inp = row.querySelector('.bl-reason');
+              if (inp) {
+                inp.remove();
+                state.picks[String(it.id)].reason = '';
+                row.classList.remove('is-open');
+                this.textContent = 'пояснить';
+              } else {
+                row.classList.add('is-open');
+                row.insertAdjacentHTML('beforeend',
+                  '<input type="text" class="bl-reason" aria-label="Почему откладываете: ' + escapeHtml(it.title) + '" placeholder="почему откладываете именно это" value="" />');
+                bindReason();
+                row.querySelector('.bl-reason').focus();
+                this.textContent = 'убрать';
+              }
+              saveState();
+              syncReasonHint();
+            });
           }
           g.appendChild(row);
         });
@@ -518,75 +589,14 @@
         list.appendChild(row);
       });
 
-      // ── пояснения к отказам: выборочно, когда всё разложено ──
-      // Пояснять КАЖДЫЙ отказ не просим (до 2026-07-31 просили — это была ошибка).
-      // Маркер freedResourceReal требует реального размена ХОТЯ БЫ У ОДНОГО отказа,
-      // поэтому шестнадцать обязательных полей не добавляли ни одного маркера, зато
-      // производили шестнадцать отписок — и судья честно читал их как шаблон, то есть
-      // обязательность делала ложный минус тому, у кого было три настоящих размена
-      // и тринадцать очевидных отказов.
-      // Выбор, ЧТО пояснять, сам по себе сигнал: какие отказы человек считает
-      // спорными. Минимум один остаётся обязательным — иначе сильный участник
-      // упирается в потолок L3 по причине интерфейса, а не мышления.
-      reasonsHost.innerHTML = '';
-      if (!undecided.length && dropped.length) {
-        reasonsHost.innerHTML = them('Кирилл Агеев', { act: 'просматривает список',
-          speech: '«И не надо расписывать каждый — я не аудит заказываю. Выберите те отказы, которые сами по себе решение, и скажите, почему. По остальным поверю, что там всё очевидно».' });
-        dropped.forEach(function (it) {
-          var p2 = pickOf(it.id) || {};
-          var hasReason = !!String(p2.reason || '').trim();
-          var row = document.createElement('div');
-          row.className = 'bl-reason-row' + (hasReason ? ' is-open' : '');
-          row.innerHTML =
-            '<div class="bl-reason-head">' +
-              '<p class="bl-reason-title">' + escapeHtml(it.title) + '</p>' +
-              (locked ? '' : '<button type="button" class="s2-act bl-reason-open">' + (hasReason ? 'убрать пояснение' : 'пояснить') + '</button>') +
-            '</div>' +
-            // поле рисуем ТОЛЬКО там, где пояснение есть: в запертом виде пустые
-            // отключённые инпуты у четырнадцати очевидных отказов — чистый шум
-            (hasReason ? '<input type="text" class="bl-reason" aria-label="Почему откладываете: ' + escapeHtml(it.title) + '" placeholder="почему откладываете именно это"' +
-              (locked ? ' disabled' : '') + ' value="' + escapeHtml(p2.reason || '') + '" />' : '');
-
-          function bindInput() {
-            var inp = row.querySelector('.bl-reason');
-            if (!inp) return;
-            inp.addEventListener('input', function (e) {
-              state.picks[String(it.id)].reason = e.target.value;
-              saveState();
-              // без ререндера: полный перерисовал бы поле и сбросил каретку
-            });
-          }
-          bindInput();
-
-          if (!locked) {
-            row.querySelector('.bl-reason-open').addEventListener('click', function () {
-              var inp = row.querySelector('.bl-reason');
-              if (inp) {
-                inp.remove();
-                state.picks[String(it.id)].reason = '';
-                row.classList.remove('is-open');
-                this.textContent = 'пояснить';
-              } else {
-                row.classList.add('is-open');
-                row.insertAdjacentHTML('beforeend',
-                  '<input type="text" class="bl-reason" aria-label="Почему откладываете: ' + escapeHtml(it.title) + '" placeholder="почему откладываете именно это" value="" />');
-                bindInput();
-                row.querySelector('.bl-reason').focus();
-                this.textContent = 'убрать пояснение';
-              }
-              saveState();
-            });
-          }
-          reasonsHost.appendChild(row);
-        });
-      }
-
       // ── взгляд снаружи: только когда список разложен ──
       // Стоит здесь, а не в финальном блоке, потому что предмет вопроса — сам
       // список: спрашивать «чего они не видят» до того, как человек прочёл все
       // двадцать, бессмысленно. Формулировка намеренно НЕ «чего не хватает
       // в списке»: на такой вопрос ответ лежит в самом списке (он раздаёт карту
       // тем), и мы получили бы перечисление, а не наблюдение.
+      syncReasonHint();
+
       var blindHost = backlogHost.querySelector('.bl-blind');
       if (blindHost) {
         if (undecided.length) {
@@ -623,13 +633,14 @@
         them('', { speech: '«И не путайте с той рамкой. Двести пятьдесят — это три года под ставку, их открывает консорциум. А то, о чём сейчас, — наш операционный год, портфель изменений. Один в другой не переливается.' }) +
         them('', { speech: '«Что вам стоит знать: у нас есть ресурсные ограничения, именно поэтому мы не можем сделать всё. Речь и о деньгах, и о людях. Финансирование сжимается сверху, и я бы не рассчитывал больше чем на 22 миллиарда. С точки зрения людей — перебросить между направлениями в принципе не сложно, свободных рук на год у нас около пятисот, но вот с наймом есть сложности: вакансия закрывается почти полгода, а офферы принимает меньше половины.' }) +
         them('', { speech: '«Если захотите выйти за рамки этих ограничений, у вас должны быть очень веские причины, иначе мы это даже не будем рассматривать. Помогите разобраться: что берём, от чего отказываемся и почему».' }) +
+        them('', { speech: '«И не расписывайте каждый отказ — я не аудит заказываю. Поясните те, которые сами по себе решение. По остальным поверю, что там всё очевидно».' }) +
         (isLegacyRun()
           ? '<p class="links-hint">Разбор бэклога появился в разговоре позже — в этом прогоне его не было.</p>'
           : '<div class="bl-sum-host"></div>' +
             '<div class="bl-decided"></div>' +
             '<div class="bl-list"></div>' +
-            '<div class="bl-reasons"></div>' +
             '<div class="bl-blind"></div>' +
+            '<p class="bl-hint" style="display:none;"></p>' +
             (locked ? '' : '<button class="btn btn-primary" id="commitBacklogBtn" style="margin-top:16px;">Зафиксировать разбор →</button>'));
 
       backlogHost = block;
@@ -674,25 +685,10 @@
 
     function buildRuleBlock() {
       var locked = state.finished;
-      var st = window.imp.stanceOf && window.imp.stanceOf(state);
-      // Реакции равны по валентности намеренно. «Смело» за одну ставку и
-      // «осторожно» за другую — это обратная связь о том, какой выбор нам
-      // нравится, а выбранная позиция живёт до конца прогона: раунды 3–5
-      // раскрывают её грани, финал её защищает. Один участник уходил
-      // подкреплённым, другой — засомневавшимся, и это смещало замер
-      // удержания. Схема одна на три: назвал → следствие → та же концовка.
-      var stanceReact = st && st.code === 'fortress'
-        ? { speech: '«Крепость. Значит, держим то, что кормит, а на устройства в этот цикл не ставим. Записал».' }
-        : (st && st.code === 'secondCurve'
-          ? { speech: '«Вторая кривая. Значит, ставим на устройства, а рекламное ядро дальше живёт как есть. Записал».' }
-          : (st && st.code === 'other'
-            ? { speech: '«Ваш вариант. Значит, к правлению я иду не с одним из двух, а с третьим. Записал».' }
-            : null));
       var block = document.createElement('div');
       block.className = 's2-block';
       block.innerHTML =
-        (stanceReact ? them('Кирилл Агеев', stanceReact) : '') +
-        them(stanceReact ? '' : 'Кирилл Агеев', { act: 'просматривает разбор',
+        them('Кирилл Агеев', { act: 'просматривает разбор',
           speech: '«И последнее. Ко мне с новой идеей приходят каждую неделю. Как мне понять, что она попадает в то, что вы сейчас разложили, — не дёргая вас каждый раз?»' }) +
         '<div class="rationale-block">' +
           '<label>Почему выбраны именно эти приоритеты</label>' +

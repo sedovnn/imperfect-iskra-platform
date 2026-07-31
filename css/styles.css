@@ -1217,7 +1217,7 @@ footer {
 .bl-mini {
   display: grid;
   grid-template-columns: 1fr auto auto;
-  gap: 12px;
+  gap: 6px 12px;
   align-items: baseline;
   padding: 7px 0;
   border-bottom: 1px solid var(--hairline);
@@ -1225,31 +1225,16 @@ footer {
 }
 .bl-mini-title { min-width: 0; line-height: 1.4; }
 .bl-group.is-dropped .bl-mini-title { color: var(--muted); }
+.bl-mini.is-open .bl-mini-title { color: var(--ink); font-weight: 600; }
 .bl-mini-cost {
   font-size: 11px;
   color: var(--muted-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-
-/* Причины спрашиваются, когда весь список уже разложен: сравнение и писанина —
-   разные работы, и мешать их значит получить отписки вместо разменов. */
-.bl-reasons { margin-top: 26px; }
-.bl-reasons-head {
-  margin: 0 0 12px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--muted);
-  max-width: var(--w-read);
-}
-/* Свёрнутая строка отказа — одна линия: название и «пояснить». Поле появляется
-   только там, где участник сам решил объяснить. */
-.bl-reason-row { padding: 9px 0; border-top: 1px solid var(--hairline); }
-.bl-reason-row:last-child { border-bottom: 1px solid var(--hairline); }
-.bl-reason-head { display: flex; gap: 14px; align-items: baseline; justify-content: space-between; }
-.bl-reason-title { margin: 0; font-size: 13.5px; line-height: 1.4; max-width: 62ch; color: var(--muted); }
-.bl-reason-row.is-open .bl-reason-title { color: var(--ink); font-weight: 600; }
-.bl-reason-row .bl-reason { margin-top: 8px; }
+.bl-mini-acts { display: flex; gap: 6px; }
+/* Пояснение живёт внутри строки отказа — второй копии списка нет. */
+.bl-mini .bl-reason { grid-column: 1 / -1; margin-top: 2px; }
 .bl-reason {
   display: block;
   width: 100%;
@@ -1259,6 +1244,13 @@ footer {
   padding: 8px 10px;
   font-size: 13px;
   font-family: inherit;
+}
+.bl-hint {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--accent-ink);
+  max-width: var(--w-read);
 }
 
 .bl-blind { margin-top: 30px; }
