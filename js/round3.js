@@ -50,6 +50,19 @@
         // Старый answer1 становится картинкой; горизонт пуст. Смена шага-цепочки
         // (добавлен q2-горизонт перед разворотами) для незавершённых прогонов
         // даёт максимум один повторный проход шага, без потери answer2.
+        // Сессия, восстановленная с другого устройства, приходит с бэкенда. До
+        // 01.08 там не было колонки metrics, а vision/horizon не возвращались
+        // вовсе — поля открывались пустыми, и первая же правка пересобирала
+        // answer1 из пустого, СТИРАЯ уже данные ответы из судимого поля.
+        // Разбираем склейку обратно: текст в ней есть всегда, метки известны.
+        var parts = splitAnswer1(parsed.answer1);
+        if (parts) {
+          if (!String(parsed.vision || '').trim()) parsed.vision = parts.vision;
+          if (!String(parsed.horizon || '').trim()) parsed.horizon = parts.horizon;
+          if (!String(parsed.metrics || '').trim()) parsed.metrics = parts.metrics;
+        }
+        // миграция: прежде answer1 = один ответ (образ будущего) без меток —
+        // тогда разбирать нечего, весь текст становится картинкой.
         if (parsed.vision === undefined) parsed.vision = parsed.answer1 || '';
         // вопрос про параметры добавлен 2026-07-31 (минутки: четыре вопроса вместо
         // трёх). Незавершённые сессии, ушедшие дальше, вернём на него один раз —
@@ -63,6 +76,23 @@
       }
     } catch (e) {}
     return { vision: '', horizon: '', metrics: '', answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
+  }
+
+  var H_MARK = '\n\n[горизонт и амбиция цели] ';
+  var M_MARK = '\n\n[по каким параметрам поймём, что дошли] ';
+
+  // Обратная операция к syncAnswer1: достаёт части из склейки. Нужна там, где
+  // части потерялись, а склейка цела (восстановление сессии с бэкенда).
+  // Возвращает null, если меток нет — значит склейки не было и разбирать нечего.
+  function splitAnswer1(a1) {
+    var s = String(a1 || '');
+    var iH = s.indexOf(H_MARK), iM = s.indexOf(M_MARK);
+    if (iH < 0 && iM < 0) return null;
+    var bounds = [iH, iM].filter(function (x) { return x >= 0; });
+    var out = { vision: s.slice(0, Math.min.apply(null, bounds)).trim(), horizon: '', metrics: '' };
+    if (iH >= 0) out.horizon = s.slice(iH + H_MARK.length, (iM > iH) ? iM : s.length).trim();
+    if (iM >= 0) out.metrics = s.slice(iM + M_MARK.length, (iH > iM) ? iH : s.length).trim();
+    return out;
   }
 
   // answer1 (то, что видит судья) — склейка картинки и горизонта+амбиции.
