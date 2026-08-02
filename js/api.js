@@ -91,7 +91,11 @@
     flushing = true;
     var item = q[0];
     return post(item.action, item.payload)
-      .then(function () {
+      .then(function (json) {
+        // Как и в sendSave: из очереди вынимаем только подтверждённое. Отказ
+        // бэкенда оставляет снимок в очереди — иначе неотправленный ответ
+        // исчезал бы из очереди и из статуса одновременно.
+        if (!(json && json.ok)) { flushing = false; notify(); return; }
         var rest = readQueue().filter(function (it) {
           return !(it.action === item.action && it.at === item.at);
         });
@@ -141,6 +145,19 @@
     return post(action, payload)
       .then(function (json) {
         state.pending--;
+        // ⚠ Доехавший запрос — ещё не записанный ответ. Раньше здесь стояло
+        // state.lastOkAt = Date.now() сразу после fetch, и статус показывал
+        // «сохранено» даже когда бэкенд ответил {ok:false} — неизвестное
+        // действие, отказ по паролю, ошибка листа. Это ровно тот запрещённый
+        // исход «тихо сохранить и пойти дальше»: участник видит подтверждение,
+        // а в листе ничего нет. Теперь отказ бэкенда = сбой: снимок уходит в
+        // очередь, статус показывает «не сохранено», callApiConfirmed возвращает
+        // false и финиш-оверлей знает правду.
+        if (!(json && json.ok)) {
+          enqueue(action, payload);
+          notify();
+          return json;
+        }
         state.lastOkAt = Date.now();
         state.offline = false;
         notify();

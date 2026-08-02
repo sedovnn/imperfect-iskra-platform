@@ -4424,3 +4424,118 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Полоса «Завершить раунд» опирается на отступ последнего блока и не добавляет
    свой: иначе под свёрнутыми «Связками» зияло полсотни пикселей пустоты. */
 .work-advance { padding-top: 20px; border-top: 1px solid var(--hairline); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ПЛАТФОРМА v2 — «шесть открытых вопросов» (assessment.html + js/engine.js)
+   Оформление берём от текущей платформы: пузыри разговора (.chat*), блоки
+   (.s2-block), портфель (.bl-*), гейты (.gate) переиспользуются как есть.
+   Ниже — только то, чего в v1 не было: шапка сцены, подпись окна, свод дня,
+   установка дня и статус записи в шапке.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Шапка сцены: где мы и который это разговор из шести. Маршрут линейный, карты-
+   хаба нет, поэтому счётчик здесь — единственная навигация, и она честная:
+   вперёд, назад нельзя. */
+.sc-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin: 38px 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hairline);
+}
+.s2-body > .sc-head:first-child { margin-top: 8px; }
+.sc-head-count {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+.sc-head-name {
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--ink);
+}
+.sc-head-where { font-size: 12.5px; color: var(--muted-soft); margin-left: auto; }
+
+/* Подпись окна ответа. В v1 подписи полей жили в разметке пяти страниц; здесь
+   она приходит из scenes.js — тем же текстом, который получает модель. */
+/* Ширина подписи повторяет ширину самого поля (.s2-body textarea ограничена
+   --w-form, а не 76% своей стороны), иначе подпись висит по своему левому краю,
+   а поле по своему — и они не читаются как одно целое. */
+.win-label {
+  display: block;
+  width: 100%;
+  max-width: var(--w-form);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: 0 0 8px;
+}
+.win-input { min-height: 200px; }
+
+/* Номера решений портфеля. В v1 они были скрыты, и харнесс переводил порядковый
+   номер в реальный id — трансляция, существовавшая только для одного носителя.
+   Показываем: в списке есть пропуски (нет 3 и 8, максимум 22). */
+.bl-id {
+  display: inline-block;
+  min-width: 2.2em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--muted-soft);
+}
+.bl-locked {
+  font-size: 13.5px;
+  color: var(--muted);
+  padding: 12px 0;
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+}
+.bl-locked b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.bl-over-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+}
+
+/* Свод дня перед последним окном и панель «Мои ответы» — один и тот же рендер.
+   Read-only: правки прежних ответов невозможны. */
+.recap-block { border-top: 1px solid var(--hairline); padding-top: 20px; }
+.recap-item { margin: 0 0 22px; }
+.recap-q {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted-soft);
+  margin-bottom: 6px;
+}
+.recap-a {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink);
+  max-width: var(--w-read);
+  border-left: 1px solid var(--hairline);
+  padding-left: 14px;
+}
+.recap-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.55; }
+.recap-list li { margin-bottom: 3px; }
+
+/* Установка дня: один текст, который человек видит здесь, а модель получает
+   в system. */
+.setup-card { max-width: 760px; text-align: left; }
+.setup-card p { text-align: left; }
+.setup-rules { margin: 18px 0 0; padding-left: 20px; }
+.setup-rules li { margin-bottom: 10px; font-size: 14.5px; line-height: 1.6; }
+
+/* Статус записи в шапке. В v1 он жил в полосе времени (progress.js), которая
+   знала имена файлов раундов; здесь маршрут один, поэтому статус — свой. */
+.hdr-save { font-size: 11.5px; color: var(--muted-soft); white-space: nowrap; }
+.hdr-save.is-pending { color: var(--muted); }
+.hdr-save.is-failed { color: var(--accent-ink); font-weight: 600; }

@@ -8,7 +8,10 @@
 
   // Контейнеры «настоящих» экранов на станциях/в комнатах. Как только любой из
   // них становится видимым — ожидание закончилось, загрузчик убираем.
-  var SCREENS = ['stationRoot', 'gate', 'gateStation1', 'gateStation2', 'finishOverlay', 'finalizeScreen'];
+  // assessRoot / setupGate — экраны платформы v2 (один движок на шесть сцен);
+  // остальные — станции и комнаты v1. Лишние id просто не находятся.
+  var SCREENS = ['stationRoot', 'gate', 'gateStation1', 'gateStation2', 'finishOverlay', 'finalizeScreen',
+                 'assessRoot', 'setupGate'];
 
   var obs = null;
 

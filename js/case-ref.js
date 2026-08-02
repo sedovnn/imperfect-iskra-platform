@@ -173,7 +173,10 @@
     show(); // показываем сразу с «Загружаю…», чтобы не было пустой паузы
     // без force-cache: не хотим показать устаревший кейс после деплоя; в рамках
     // сессии повторных запросов нет — результат кэшируется в переменной cache.
-    fetch('round1.html')
+    // Адрес источника задаёт страница: платформа v2 держит кейс отдельным файлом
+    // (case-v6.html, маркеры case:start/end, приложения раскрыты), старые раунды
+    // — внутри round1.html. Копии текста кейса нет ни там, ни там.
+    fetch(document.body.dataset.caseSrc || 'round1.html')
       .then(function (r) { return r.text(); })
       .then(function (html) {
         var doc = new DOMParser().parseFromString(html, 'text/html');

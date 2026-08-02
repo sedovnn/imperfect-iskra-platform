@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>«Искра» · один день — i(m)perfect</title>
+<meta name="description" content="Один день внешнего консультанта в «Искре»: шесть разговоров, шесть вопросов." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=98" />
+</head>
+<body class="frame-narrow">
+
+<!-- Один экран на весь ассессмент: шесть сцен идут линейно, карты-хаба нет.
+     Ни одной реплики в этой разметке — весь текст маршрута приходит из
+     js/scenes.js, включая установку дня ниже (её же получает модель в system). -->
+
+<div id="gate" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Нужен вход</p>
+    <h2>Сначала вход по номеру</h2>
+    <p class="section-lead" style="margin:0 0 24px;">День привязан к вашему номеру участника — без него ответы негде сохранить.</p>
+    <a class="btn btn-primary btn-block" href="index.html">Войти по номеру →</a>
+  </div>
+</div>
+
+<div id="setupGate" class="gate" style="display:none;">
+  <div class="gate-card setup-card">
+    <div id="setupBody"><!-- js/engine.js из scenes.js.system --></div>
+    <button class="btn btn-primary btn-block" id="startDayBtn" style="margin-top:26px;">Начать день →</button>
+  </div>
+</div>
+
+<div id="finishOverlay" class="gate gate-finish" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">✓ День закончен</p>
+    <h2>Письмо ушло Агееву</h2>
+    <p class="section-lead" style="margin:0 0 24px;">Ответы записаны. Разбор придёт отдельно — здесь оценок нет и не будет.</p>
+    <a class="btn btn-primary btn-block" href="index.html">На главную →</a>
+  </div>
+</div>
+
+<div id="answersPanel" class="dossier-overlay" style="display:none;" aria-hidden="true">
+  <div class="gate-card dossier-card" role="dialog" aria-modal="true" aria-label="Мои ответы за день">
+    <div class="dossier-card-header">
+      <div>
+        <p class="kicker">Мои ответы</p>
+        <h2 style="margin:0;">Что вы уже сказали</h2>
+      </div>
+      <button type="button" class="btn btn-ghost btn-xs" id="closeAnswersBtn">Закрыть ✕</button>
+    </div>
+    <p class="section-lead" style="margin:14px 0 0;">Дословно, в порядке разговоров — чтобы свериться, не держа в голове. Оценок здесь нет, и обращения сюда никуда не пишутся.</p>
+    <div class="fac-detail-body" id="answersPanelContent"></div>
+  </div>
+</div>
+
+<div class="frame station-frame" id="assessRoot" style="display:none;">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+        <span class="station-sep">/</span>
+        <h1 class="station-name">«Искра» · один день</h1>
+      </div>
+      <div class="station-header-right">
+        <span class="hdr-save" id="hdrSave"></span>
+        <span class="bib" id="hdrScene">1 / 6</span>
+        <span class="bib" id="hdrBib">№ 000</span>
+      </div>
+    </header>
+
+    <div class="s2-body" id="assessBody">
+      <!-- сцены рисует js/engine.js по данным js/scenes.js -->
+    </div>
+
+  </div>
+</div>
+
+<!-- Кнопку подхватывает js/case-ref.js: переносит её в шапку и ставит рядом
+     вторую — «Кейс». Обе панели под рукой на всём маршруте и не оцениваются. -->
+<button type="button" class="dossier-dock js-open-dossier" aria-label="Открыть мои ответы">Мои ответы</button>
+
+<script src="js/boot-loading.js?v=4"></script>
+<script src="js/main.js?v=4"></script>
+<script src="js/typo.js?v=2"></script>
+<script src="js/dialog.js?v=1"></script>
+<script src="js/api.js?v=4"></script>
+<script src="js/edits.js?v=1"></script>
+<script src="js/backlog.js?v=2"></script>
+<script src="js/scenes.js?v=1"></script>
+<script src="js/engine.js?v=1"></script>
+<script src="js/case-ref.js?v=11"></script>
+</body>
+</html>
