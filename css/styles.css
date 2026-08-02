@@ -2859,6 +2859,34 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
   color: var(--ink);
 }
 
+/* Приложения кейса v6 раскрыты по умолчанию: не <details>, а обычная секция с
+   шапкой. Ни раскрытия, ни статуса прочтения здесь нет сознательно — и то и
+   другое было сигналом, который у человека и у модели устроен по-разному (модели
+   кейс приходит целиком в system, «открыть приложение» у неё не событие), а
+   значит мерило браузер, а не мышление. Классы .appx-doc-badge / .appx-sentinel
+   и правила для summary остаются ниже, пока живы старые раунды. */
+.appx-doc-open > .appx-doc-head {
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #ececec;
+  font-family: var(--ff-display);
+  font-weight: 800;
+  font-size: 15.5px;
+}
+
+.appx-doc-open > .appx-doc-head::before {
+  content: '📎';
+  font-size: 14px;
+  flex: none;
+}
+
+.appx-doc-open > .appx-doc-head h3 {
+  margin: 0;
+  font-size: 15.5px;
+}
+
 .appx-body {
   padding: 22px 24px 26px;
 }
