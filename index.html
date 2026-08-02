@@ -70,7 +70,7 @@
              приходит сюда именно чтобы войти под другим номером. -->
         <div class="entry-resume" id="entryResume" style="display:none;">
           <p class="entry-resume-msg">Вы уже вошли как <b id="entryResumeBib">№ 000000</b>.</p>
-          <a class="btn btn-primary btn-block" href="map.html" id="entryResumeBtn">Продолжить ассессмент →</a>
+          <a class="btn btn-primary btn-block" href="assessment.html" id="entryResumeBtn">Продолжить ассессмент →</a>
           <p class="entry-resume-alt">Нужно войти под другим номером — заполните форму ниже.</p>
         </div>
 
@@ -181,14 +181,10 @@
           sessionStorage.setItem('imp_current_session', JSON.stringify(session));
           localStorage.setItem('imp_current_session', JSON.stringify(session));
         } catch (err) {}
-        // При каждом входе (в т.ч. повторном) участник заново проходит настройку на
-        // ассессмент и легенду карты — чистим одноразовые флаги, чтобы оба окна
-        // показались снова, затем ведём на установку. Дальше: установка → карта → раунд.
-        try {
-          localStorage.removeItem('imp_intro_seen_' + code);
-          localStorage.removeItem('imp_map_intro_seen_' + code);
-        } catch (err2) {}
-        window.location.href = 'intro.html';
+        // Один экран на весь день: установка → пакет материалов → шесть разговоров.
+        // Отдельных страниц установки и карты больше нет — маршрут линейный, и
+        // ветвиться участнику негде (платформа v2).
+        window.location.href = 'assessment.html';
         return;
       }
       submitBtn.disabled = false;

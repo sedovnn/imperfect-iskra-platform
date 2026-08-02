@@ -84,9 +84,17 @@
 
   var syncTimer = null;
 
+  // Демо-прохождение с витрины (служебный номер 900, флаг только в этой вкладке).
+  // Оно НЕ пишет на бэкенд: иначе демо-прогоны ложатся в лист Answers рядом с
+  // живыми и попадают в любую выборку по всем прогонам — а отличить их там
+  // будет нечем, волны у демо нет.
+  var isDemo = (function () {
+    try { return !!sessionStorage.getItem('imp_demo'); } catch (e) { return false; }
+  })();
+
   function saveState() {
     try { localStorage.setItem(storageKey(session.bib), JSON.stringify(state)); } catch (e) {}
-    if (!window.imp.isApiConfigured()) return;
+    if (isDemo || !window.imp.isApiConfigured()) return;
     clearTimeout(syncTimer);
     syncTimer = setTimeout(sync, 3000);
   }
@@ -116,7 +124,7 @@
   }
 
   function sync() {
-    if (!window.imp.isApiConfigured()) return Promise.resolve(true);
+    if (isDemo || !window.imp.isApiConfigured()) return Promise.resolve(true);
     return window.imp.callApiConfirmed('saveAnswers', payload());
   }
 
@@ -183,7 +191,7 @@
     if (act.when === 'overspend') return totals().over;
     return true;
   }
-  function isBlocking(act) { return act.kind === 'window' || act.kind === 'mechanic'; }
+  function isBlocking(act) { return act.kind === 'window' || act.kind === 'mechanic' || act.kind === 'case'; }
 
   // Курсор всегда стоит на ближайшем применимом блокирующем акте. Речь и свод
   // дня проходятся сами — они ничего не требуют.
@@ -254,12 +262,37 @@
     return d;
   }
 
+  // Прочитанный пакет остаётся в разговоре одной строкой — чтобы участник видел,
+  // что шаг был, и знал, где кейс теперь лежит. Это не «сигнал прочтения» для
+  // оценки: чтение не измеряется ни у кого, в Answers этот факт не пишется.
+  function caseDoneBlock(act) {
+    var d = document.createElement('div');
+    d.className = 's2-block case-done';
+    d.innerHTML = '<span class="case-done-mark">✓</span> ' + esc(act.done || 'Пакет материалов прочитан') +
+      ' · <button type="button" class="case-done-reopen" id="caseReopen">' + esc(act.reopen || 'открыть снова') + '</button>';
+    d.querySelector('#caseReopen').addEventListener('click', function () {
+      var b = document.querySelector('.case-ref-dock');
+      if (b) b.click();
+    });
+    return d;
+  }
+
   function windowBlock(act, locked) {
     var d = document.createElement('div');
     d.className = 's2-block';
     var val = state.answers[act.save] || '';
     if (locked) {
-      d.innerHTML = meHtml(val);
+      // Отметка «зафиксировано» с временем: участник должен видеть, что ответ
+      // ушёл и переписать его нельзя, — иначе необратимость приходится угадывать
+      // по тому, что поле исчезло.
+      var at = state.answersAt[act.save];
+      var stamp = '';
+      if (at) {
+        var dt = new Date(at);
+        stamp = '<div class="win-fixed">✓ зафиксировано · ' +
+          ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2) + '</div>';
+      }
+      d.innerHTML = meHtml(val) + stamp;
       return d;
     }
     d.innerHTML =
@@ -267,7 +300,10 @@
         '<label class="win-label" for="winInput">' + esc(act.label) + '</label>' +
         '<textarea id="winInput" class="win-input" rows="10" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
       '</div>' +
-      '<button class="btn btn-primary" id="commitBtn" style="margin-top:12px;">Ответить →</button>';
+      '<div class="win-foot">' +
+        '<button class="btn btn-primary" id="commitBtn">Ответить →</button>' +
+        '<span class="win-note">Ответ зафиксируется: вернуться и переписать его нельзя.</span>' +
+      '</div>';
 
     var ta = d.querySelector('#winInput');
     ta.addEventListener('input', function (e) {
@@ -468,8 +504,49 @@
   // ---------- рендер ----------
 
   var body = null;
+  var caseLoaded = false;
+
+  // Экран чтения пакета: пока курсор стоит на акте kind:'case', разговора нет —
+  // на экране только материалы. Это первый шаг дня и прямой ответ на реплику
+  // «Не отвлекаю, читайте»: читать должно быть что, а не где-то за кнопкой.
+  function showCaseScreen(act) {
+    var screen = document.getElementById('caseScreen');
+    document.getElementById('assessRoot').style.display = 'none';
+    screen.style.display = '';
+    document.getElementById('caseReadTitle').textContent = act.title || 'Пакет материалов';
+    document.getElementById('caseReadLead').textContent = act.lead || '';
+    document.getElementById('caseReadNote').textContent = act.note || '';
+    var cta = document.getElementById('caseReadCta');
+    cta.textContent = act.cta || 'Дальше →';
+    cta.onclick = function () { advance(); };
+
+    if (caseLoaded) return;
+    var host = document.getElementById('caseReadHost');
+    // Загрузчик приходит из case-ref.js, и он обязан быть подключён раньше
+    // движка. Если порядок скриптов кто-то переставит — говорим это прямо, а не
+    // падаем на первом рендере с пустым экраном.
+    if (!window.imp.loadCaseHtml) {
+      host.innerHTML = '<p class="fac-detail-text">Сборка страницы неверна: js/case-ref.js должен подключаться до js/engine.js. Без него материалы не загрузить.</p>';
+      document.getElementById('caseReadCta').disabled = true;
+      return;
+    }
+    window.imp.loadCaseHtml().then(function (html) {
+      host.innerHTML = html;
+      caseLoaded = true;
+      if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
+    }, function () {
+      // Пустой экран чтения молча пропускать нельзя: без пакета отвечать не на что.
+      host.innerHTML = '<p class="fac-detail-text">Не удалось загрузить материалы — проверьте соединение и обновите страницу. Без пакета разговор начинать нельзя.</p>';
+      cta.disabled = true;
+    });
+  }
 
   function render() {
+    var cur = route[state.cursor];
+    if (cur && applies(cur.act) && cur.act.kind === 'case') { showCaseScreen(cur.act); return; }
+    document.getElementById('caseScreen').style.display = 'none';
+    document.getElementById('assessRoot').style.display = '';
+
     body.innerHTML = '';
     var lastScene = -1;
     for (var i = 0; i < route.length; i++) {
@@ -485,6 +562,7 @@
       }
       if (st.act.kind === 'speech') body.appendChild(speechBlock(st.act));
       else if (st.act.kind === 'recap') body.appendChild(recapBlock(st.act));
+      else if (st.act.kind === 'case') body.appendChild(caseDoneBlock(st.act));
       else if (st.act.kind === 'window') body.appendChild(windowBlock(st.act, past));
       else if (st.act.kind === 'mechanic') body.appendChild(mechanicBlock(st.act, past));
     }
@@ -492,7 +570,10 @@
     if (state.cursor >= route.length && !state.finished) {
       var fin = document.createElement('div');
       fin.className = 's2-block';
-      fin.innerHTML = '<button class="btn btn-primary" id="finishBtn">Закончить день →</button>';
+      fin.innerHTML = '<div class="win-foot">' +
+        '<button class="btn btn-primary" id="finishBtn">Закончить день →</button>' +
+        '<span class="win-note">День закроется: письмо уйдёт Агееву, ответы менять будет нельзя.</span>' +
+        '</div>';
       fin.querySelector('#finishBtn').addEventListener('click', finish);
       body.appendChild(fin);
     }
@@ -512,6 +593,7 @@
 
   function showFinish() {
     document.getElementById('assessRoot').style.display = 'none';
+    document.getElementById('caseScreen').style.display = 'none';
     document.getElementById('finishOverlay').style.display = 'flex';
   }
 
@@ -604,7 +686,9 @@
     return;
   }
 
-  document.getElementById('hdrBib').textContent = '№ ' + String(session.bib).padStart(6, '0');
+  var bibLabel = '№ ' + String(session.bib).padStart(6, '0');
+  document.getElementById('hdrBib').textContent = bibLabel;
+  document.getElementById('hdrBibCase').textContent = bibLabel;
   document.body.dataset.caseSrc = S.caseSrc;
 
   body = document.getElementById('assessBody');
@@ -612,13 +696,23 @@
   route = S.route();
   normalizeCursor();
 
-  window.imp.hydrateOnce('loadAnswers', session.bib, storageKey(session.bib));
+  if (isDemo) {
+    // Прямо говорим, что это демо: иначе экран не отличим от реального прогона,
+    // а он не сохраняется на сервер и не оценивается.
+    var save = document.getElementById('hdrSave');
+    if (save) { save.className = 'hdr-save'; save.textContent = 'демо · не сохраняется на сервер'; }
+  } else {
+    window.imp.hydrateOnce('loadAnswers', session.bib, storageKey(session.bib));
+  }
 
   // Статус записи в шапке. Молчаливая потеря ответа — самое дорогое, что может
   // случиться на этом экране, поэтому состояние очереди видно всегда.
   (function initSaveStatus() {
     var el = document.getElementById('hdrSave');
     if (!el || !window.imp.onSyncStatus) return;
+    // В демо на это место написано «демо · не сохраняется на сервер»; подписка
+    // на статус очереди тут же перезатёрла бы надпись пустой строкой.
+    if (isDemo) return;
     window.imp.onSyncStatus(function (s) {
       if (s.failed > 0) {
         el.className = 'hdr-save is-failed';

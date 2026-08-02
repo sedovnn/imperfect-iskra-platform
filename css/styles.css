@@ -4539,3 +4539,69 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .hdr-save { font-size: 11.5px; color: var(--muted-soft); white-space: nowrap; }
 .hdr-save.is-pending { color: var(--muted); }
 .hdr-save.is-failed { color: var(--accent-ink); font-weight: 600; }
+
+/* Экран чтения пакета — первый шаг дня (акт kind:'case'). Разговора на нём нет:
+   на экране только материалы, как в бумажной папке, которую принесли в пятницу. */
+.case-read {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 var(--frame-pad, 56px);
+}
+.case-read-head { max-width: var(--w-read); padding: 26px 0 6px; }
+.case-read-head .kicker { margin: 0 0 8px; }
+.case-read-head .section-lead { margin: 0 0 6px; }
+.case-read #caseReadHost { padding-bottom: 28px; }
+/* Кнопка перехода липнет к низу: пакет длинный, и «дальше» не должно требовать
+   прокрутки до конца. Прочитать до конца никто не заставляет — чтение не
+   измеряется, и заслонка «точно дочитали?» означала бы обратное. */
+.case-read-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 14px 0 18px;
+  background: var(--paper);
+  border-top: 1px solid var(--hairline);
+}
+
+/* Прочитанный пакет в ленте разговора — одной строкой, со ссылкой открыть снова. */
+.case-done {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 10px 0;
+}
+.case-done-mark { color: var(--accent-ink); font-weight: 700; }
+.case-done-reopen {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* Необратимость перехода — словами, рядом с кнопкой, а не догадкой по тому, что
+   поле пропало. Плюс отметка времени на зафиксированном ответе. */
+.win-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 12px;
+}
+.win-note { font-size: 12px; color: var(--muted-soft); }
+.win-fixed {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted-soft);
+  text-align: right;
+  margin: -12px 2px 0 0;
+}

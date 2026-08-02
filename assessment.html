@@ -55,6 +55,39 @@
   </div>
 </div>
 
+<!-- Первый шаг дня: пакет материалов на экране. Текст приходит из case-v6.html
+     (тот же файл, который панель «Кейс» показывает потом, и тот же, который
+     харнесс кладёт модели в system) — копии кейса в этой разметке нет. -->
+<div class="frame station-frame" id="caseScreen" style="display:none;">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+        <span class="station-sep">/</span>
+        <h1 class="station-name">«Искра» · материалы</h1>
+      </div>
+      <div class="station-header-right" data-no-refs="1">
+        <span class="bib" id="hdrBibCase">№ 000</span>
+      </div>
+    </header>
+
+    <div class="case-read">
+      <div class="case-read-head">
+        <p class="kicker" id="caseReadTitle">Пакет материалов</p>
+        <p class="section-lead" id="caseReadLead"></p>
+        <p class="intro-note" id="caseReadNote"></p>
+      </div>
+      <div class="case-content" id="caseReadHost"><p class="fac-detail-loading">Загружаю материалы…</p></div>
+      <div class="case-read-foot">
+        <button type="button" class="btn btn-primary" id="caseReadCta">Дальше →</button>
+        <span class="win-note">Дальше начнётся разговор. Пакет останется доступен кнопкой «Кейс».</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <div class="frame station-frame" id="assessRoot" style="display:none;">
   <div class="station-shell">
 
@@ -89,8 +122,12 @@
 <script src="js/api.js?v=4"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=1"></script>
-<script src="js/engine.js?v=1"></script>
-<script src="js/case-ref.js?v=11"></script>
+<script src="js/scenes.js?v=2"></script>
+<!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml, которым
+     движок наполняет экран чтения пакета — а этот экран может быть первым, что
+     рисуется при возобновлении дня. В обратном порядке движок падал на первом же
+     рендере, и страница оставалась пустой без единой ошибки в консоли. -->
+<script src="js/case-ref.js?v=12"></script>
+<script src="js/engine.js?v=2"></script>
 </body>
 </html>

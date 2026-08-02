@@ -106,12 +106,11 @@
 
     <div class="vit-demo">
       <h3>Пройти как участник</h3>
-      <p>Демо-прохождение: все раунды предзаполнены, блокировок нет — ходите по любым экранам и смотрите платформу глазами руководителя. Данные демо локальные, на сервер не уходят.</p>
+      <p>Демо-прохождение: тот же день, что у настоящего участника — пакет материалов, шесть разговоров, портфель решений. Ответы остаются в этом браузере и на сервер не уходят.</p>
       <div class="vit-profiles">
-        <button type="button" class="vit-prof" data-profile="strong"><div class="pt">Сильный профиль</div><div class="pd">развёрнутые ответы, дальний горизонт, петли связей</div></button>
-        <button type="button" class="vit-prof" data-profile="mid"><div class="pt">Средний профиль</div><div class="pd">верные, но более поверхностные ответы</div></button>
-        <button type="button" class="vit-prof" data-profile="weak"><div class="pt">Слабый профиль</div><div class="pd">общие слова без опоры на кейс — видно «полы» L1</div></button>
+        <button type="button" class="vit-prof" data-profile="self"><div class="pt">Пройти день самому</div><div class="pd">материалы, шесть вопросов, портфель — без оценки в конце</div></button>
       </div>
+      <p class="vit-demo-note">Предзаполненные профили (сильный / средний / слабый) вернутся вместе с новым отчётом участника: прежние были собраны под старый формат из восемнадцати полей и к шести вопросам не подходят.</p>
       <p class="vit-demo-note" id="vitDemoErr" style="display:none;"></p>
     </div>
 
@@ -169,11 +168,16 @@
   document.querySelectorAll('.vit-prof').forEach(function (b) {
     b.addEventListener('click', function () {
       try {
-        sessionStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: b.getAttribute('data-profile'), seededFor: null }));
+        // imp_demo и сессия живут в sessionStorage — то есть только в ЭТОЙ вкладке:
+        // демо не перезаписывает реальную сессию участника в других вкладках
+        // (см. window.imp.loadSession в main.js). Номер 900 — служебный.
+        sessionStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: 'self' }));
+        sessionStorage.setItem('imp_current_session', JSON.stringify({ bib: 900, name: 'Демо' }));
         localStorage.removeItem('imp_demo');
       } catch (e) {}
-      // демо начинается с вводной установки (её тоже должно быть видно), затем станция 1
-      window.location.href = 'intro.html';
+      // Установка дня — первый экран самого ассессмента, отдельной страницы для
+      // неё больше нет: маршрут один и линейный.
+      window.location.href = 'assessment.html';
     });
   });
 })();
