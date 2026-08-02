@@ -72,10 +72,19 @@
           if (!parsed.finished && (parsed.step === 'q3' || parsed.step === 'done')) parsed.step = 'q3metrics';
         }
         if (parsed.horizon === undefined) parsed.horizon = '';
+        // Вопрос про расклады будущего вставлен 01.08 ПЕРЕД вопросом о смене
+        // курса. Незавершённую сессию, стоящую на q3 или done, возвращаем на него
+        // один раз — иначе вставленный посреди цепочки шаг отрисовался бы запертым
+        // и пустым (ровно то, что случилось при вставке q3metrics 31.07).
+        // Ответ про смену курса при этом сохраняется: answer2 не трогаем.
+        if (parsed.scenarios === undefined) {
+          parsed.scenarios = '';
+          if (!parsed.finished && (parsed.step === 'q3' || parsed.step === 'done')) parsed.step = 'q3scen';
+        }
         return parsed;
       }
     } catch (e) {}
-    return { vision: '', horizon: '', metrics: '', answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
+    return { vision: '', horizon: '', metrics: '', scenarios: '', answer1: '', answer2: '', step: 'q1', finished: false, startedAt: new Date().toISOString() };
   }
 
   var H_MARK = '\n\n[горизонт и амбиция цели] ';
@@ -217,7 +226,15 @@
     });
 
     var body = document.getElementById('roomBody');
-    var STEPS = ['q1', 'q2', 'q3metrics', 'q3', 'done'];
+    // q3scen — сценарии будущего (МК-2), q3 — признаки смены курса.
+    // Раньше это был ОДИН вопрос «как поймём, что пора менять курс», и он
+    // спрашивал не то, что судит МК-2: судья ищет ≥2 качественно разных мира со
+    // стратегией под каждый, а участник честно отвечал про индикаторы провала
+    // одного плана — по методологии это «план А с триггерами», потолок L3.
+    // Результат: все девять оценённых (7 живых + Опус + Хайку) имели МК-2 ≤ 3,
+    // включая того, кто дал четыре развилки. Разводим на два вопроса: сценарии
+    // судит МК-2, признаки смены курса остаются в разговоре как материал ПР-2.
+    var STEPS = ['q1', 'q2', 'q3metrics', 'q3scen', 'q3', 'done'];
     function stepIndex(s) { return STEPS.indexOf(s); }
     function stepLocked(s) { return state.finished || stepIndex(s) < stepIndex(state.step); }
 
@@ -337,10 +354,13 @@
       return block;
     }
 
-    // q3 — развороты будущего (МК-2, сценарии + сигналы). Смысл прежний,
-    // формулировка вопроса — читаемее.
-    function buildQ3Block() {
-      var locked = stepLocked('q3');
+    // q3scen — сценарии будущего. Это и есть предмет МК-2: не «что если план не
+    // сработает» (успех/провал одной траектории — по методологии L3), а разные
+    // МИРЫ, разведённые внешними условиями, и что компания делает в каждом.
+    // Вопрос спрашивает ровно это, не преподавая термин «сценарий»: у Лемеха
+    // своя причина спрашивать — ему нести стратегию на совет, где спросят «а если».
+    function buildScenBlock() {
+      var locked = stepLocked('q3scen');
       var block = document.createElement('div');
       var deep = (state.horizon || '').trim().length >= 40;
       var react = deep
@@ -349,9 +369,38 @@
       block.className = 'chat';
       block.innerHTML =
         them('Виктор Лемех', react) +
-        them('Виктор Лемех', { act: 'щурится', speech: 'Но будущее ведь может и не подыграть: рынок качнётся не туда, расчёт окажется неверным. И что тогда — как нам понять, что пора менять курс?' }) +
+        them('Виктор Лемех', { act: 'щурится', speech: 'Но мир ведь может повернуться не так, как вы рассчитываете. Опишите пару раскладов, в которых всё сложится по-разному, — и что мы делаем в каждом.' }) +
+        them('', { act: 'усмехается', speech: 'Меня на совете об этом спросят первым делом, а «будем следить за ситуацией» там не проходит.' }) +
+        (locked ? me(state.scenarios)
+                : inputBox('mk-scen', 'Какие расклады будущего вы видите и что делаем в каждом', state.scenarios, 'ваш ответ Лемеху', 'commitScenBtn', 'Ответить'));
+      if (!locked) {
+        block.querySelector('.mk-scen').addEventListener('input', function (e) {
+          state.scenarios = e.target.value; saveState();
+        });
+        block.querySelector('#commitScenBtn').addEventListener('click', function () {
+          var go = function () { state.step = 'q3'; saveState(); render(); };
+          if (!state.scenarios.trim()) {
+            window.imp.confirm('Ничего не ответить Лемеху — так и зафиксируем?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
+              .then(function (ok) { if (ok) go(); });
+            return;
+          }
+          go();
+        });
+      }
+      return block;
+    }
+
+    // q3 — по каким признакам поймём, что пора менять курс. Судья МК-2 это НЕ
+    // читает (триггеры пересмотра одного плана — материал ПР-2); вопрос остаётся,
+    // потому что он естественно закрывает разговор и полезен на разборе.
+    function buildQ3Block() {
+      var locked = stepLocked('q3');
+      var block = document.createElement('div');
+      block.className = 'chat';
+      block.innerHTML =
+        them('Виктор Лемех', { act: 'кивает', speech: 'Ладно. И последнее, чтобы я мог это защищать: по каким признакам вы сами поймёте, что пора менять курс?' }) +
         (locked ? me(state.answer2)
-                : inputBox('s2-rationale', 'Что если будущее пойдёт иначе и как поймёте, что пора менять курс', state.answer2, 'ваш ответ', 'commitQ3Btn', 'Ответить'));
+                : inputBox('s2-rationale', 'По каким признакам поймёте, что пора менять курс', state.answer2, 'ваш ответ', 'commitQ3Btn', 'Ответить'));
       if (!locked) {
         block.querySelector('.s2-rationale').addEventListener('input', function (e) {
           state.answer2 = e.target.value; saveState();
@@ -380,7 +429,8 @@
       if (upTo >= 0) body.appendChild(buildQ1Block());
       if (upTo >= 1) body.appendChild(buildQ2Block());
       if (upTo >= 2) body.appendChild(buildMetricsBlock());
-      if (upTo >= 3) body.appendChild(buildQ3Block());
+      if (upTo >= 3) body.appendChild(buildScenBlock());
+      if (upTo >= 4) body.appendChild(buildQ3Block());
       if (state.step === 'done' && !state.finished) body.appendChild(buildDoneBlock());
       // неразрывные пробелы после предлогов — уже по вставленной разметке
       if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
