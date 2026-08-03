@@ -10,6 +10,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
 <link rel="stylesheet" href="css/styles.css?v=96" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#ffffff" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Искра" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -74,6 +80,14 @@
           <p class="entry-resume-alt">Нужно войти под другим номером — заполните форму ниже.</p>
         </div>
 
+        <!-- Заглушка на время переработки платформы. Снимается одним флагом
+             MAINTENANCE в скрипте ниже; форма и блок продолжения остаются в
+             разметке нетронутыми, чтобы возврат был возвратом, а не сборкой заново. -->
+        <div class="entry-resume" id="entryMaintenance" style="display:none;">
+          <p class="entry-resume-msg"><b>Платформа в доработке.</b></p>
+          <p class="entry-resume-alt" style="margin-top:10px;">Вход по номеру сейчас закрыт. Организатор сообщит, когда ассессмент снова будет доступен.</p>
+        </div>
+
         <form class="entry-form" id="entryForm" novalidate autocomplete="off">
           <div class="field">
             <label for="entryCode">Номер участника — 6 цифр</label>
@@ -116,6 +130,11 @@
    ловится в сессию, но НЕ проверяется до появления бэкенд-аутентификации.
    Заменить блок onsubmit на реальный вызов авторизации, когда бэкенд готов. */
 (function () {
+  // ⚠ ЗАГЛУШКА. true — вход закрыт, участник видит сообщение о доработке.
+  // Служебное меню (▸▸▸ → кабинет, демо) продолжает работать: иначе мы закрыли
+  // бы доступ и себе. Снять заглушку = поставить false.
+  var MAINTENANCE = true;
+
   var trigger = document.getElementById('dotmenuTrigger');
   var list = document.getElementById('dotmenuList');
   trigger.addEventListener('click', function (e) {
@@ -136,9 +155,23 @@
     var demoOn = !!JSON.parse(sessionStorage.getItem('imp_demo') || 'null');
     if (!demoOn && window.imp && window.imp.loadSession) liveSession = window.imp.loadSession();
   } catch (e) {}
-  if (liveSession && liveSession.bib) {
+  if (liveSession && liveSession.bib && !MAINTENANCE) {
     document.getElementById('entryResumeBib').textContent = '№ ' + String(liveSession.bib).padStart(6, '0');
     document.getElementById('entryResume').style.display = '';
+  }
+
+  if (MAINTENANCE) {
+    // Форму и продолжение убираем из потока, сообщение показываем. Подзаголовок
+    // «введите номер» тоже врал бы, поэтому меняется вместе с ними.
+    form.style.display = 'none';
+    document.getElementById('entryResume').style.display = 'none';
+    document.getElementById('entryMaintenance').style.display = '';
+    var lead = document.querySelector('.entry-lead');
+    if (lead) lead.textContent = 'Ассессмент готовится к новой версии.';
+    // Заголовок «Вход» под сообщением «вход закрыт» читается как насмешка.
+    var h1 = document.querySelector('.entry-col h1');
+    if (h1) h1.textContent = 'Пауза';
+    return;
   }
 
   // единственная задача экрана — ввести номер: ставим курсор сразу в поле.
@@ -198,5 +231,6 @@
   });
 })();
 </script>
+<script src="js/pwa.js?v=1"></script>
 </body>
 </html>
