@@ -4697,10 +4697,15 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    прокруткой и памятью — налог, которого нет ни в одной рубрике.
    ═════════════════════════════════════════════════════════════════════════ */
 
+/* ТРИ КОЛОНКИ (СПЕК §4.1): оглавление · память · работа. Двухзонная раскладка
+   заменена, потому что кейс и разговор делили одну ширину и мешали друг другу:
+   34 тысячи знаков в колонке на 44% читались хуже, чем в v1 на полном экране.
+   Замер на живом тексте: 66 знаков в строке на 1440 и 1280, 57 на 1100 — вся
+   вилка попадает в комфортную полосу 55–75. */
 .day-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(360px, 44%) minmax(0, 1fr);
+  grid-template-columns: var(--toc-w, 210px) minmax(0, 1fr) minmax(0, 1fr);
   /* Строку задаём явно. Без неё единственный auto-ряд считался по содержимому, и
      колонка опоры получала 291 px из 694 доступных: на чтение пакета оставалась
      щель в 61 px. Ровно тот дефект, из-за которого кейс и выглядел «впаянным». */
@@ -4708,12 +4713,65 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   min-height: 0;
   border-top: 1px solid var(--hairline);
 }
-.day-grid.is-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
-.day-grid.is-collapsed > .support { display: none; }
+/* ⚠ Скрытая колонка ВЫПАДАЕТ из грида, а не занимает нулевой трек. Поэтому в
+   свёрнутом состоянии колонок должно стать ДВА, а не «0 + две»: иначе два
+   оставшихся элемента встают в треки 1 и 2, и центру достаётся нулевая ширина.
+   Поймано прототипом на 1280 — кейс был 0px, работа занимала половину экрана. */
+.day-grid.is-collapsed { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.day-grid.is-collapsed > .dayside { display: none; }
+/* «Скрыть материалы» — про СЕРЕДИНУ: участник, пишущий письмо правлению, вправе
+   отдать всё место работе. Отдельный класс, потому что смысл другой, чем у
+   сворачивания оглавления. */
+.day-grid.is-nomem { grid-template-columns: var(--toc-w, 210px) minmax(0, 1fr); }
+.day-grid.is-nomem.is-collapsed { grid-template-columns: minmax(0, 1fr); }
+.day-grid.is-nomem > .support { display: none; }
+@media (max-width: 1360px) { .day-grid.is-nomem { grid-template-columns: minmax(0, 1fr); } }
+/* 1100–1360: оглавление уезжает само — три колонки на ноутбуке 1280 дают кейсу
+   320px, и он перестаёт читаться. Кнопка «свернуть» при этом остаётся: авто —
+   отдельное правило, а не замена контрола участника. */
+@media (max-width: 1360px) {
+  .day-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .day-grid > .dayside { display: none; }
+  .toc-restore { display: inline-flex; }
+}
 /* Режим чтения пакета: день начинается с папки на столе во всю ширину, дальше та
-   же папка (тот же узел DOM, не копия) уезжает влево и остаётся под рукой. */
-.day-grid.is-reading { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+   же папка (тот же узел DOM, не копия) остаётся в середине под рукой. */
+.day-grid.is-reading { grid-template-columns: var(--toc-w, 210px) minmax(0, 1fr); }
+.day-grid.is-reading.is-collapsed { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 1360px) { .day-grid.is-reading { grid-template-columns: minmax(0, 1fr); } }
 .day-grid.is-reading > .talk { display: none; }
+
+/* ── левая колонка: оглавление текущей вкладки ── */
+.dayside {
+  display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  border-right: 1px solid var(--hairline); background: var(--soft);
+}
+.dayside-head {
+  display: flex; align-items: center; gap: 8px; flex: none;
+  padding: 12px 14px 10px; border-bottom: 1px solid var(--hairline);
+}
+.dayside-kicker {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--muted-soft);
+}
+.toc-collapse {
+  margin-left: auto; border: none; background: none; cursor: pointer; padding: 2px 4px;
+  font: inherit; font-size: 11px; color: var(--muted-soft);
+}
+.toc-collapse:hover { color: var(--ink); }
+.dayside-body { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 24px 14px; }
+.toc-group {
+  font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted-soft); margin: 16px 0 4px;
+}
+/* кнопка возврата оглавления — в шапке центральной колонки */
+.toc-restore {
+  display: none; align-items: center; border: 1px solid var(--hairline); background: var(--paper);
+  border-radius: 999px; cursor: pointer; font: inherit; font-size: 11.5px; color: var(--muted);
+  padding: 5px 10px; margin: 8px 10px 0 var(--frame-pad, 24px);
+}
+.day-grid.is-collapsed .toc-restore { display: inline-flex; }
+.toc-restore:hover { color: var(--ink); }
 
 /* ── опора ── */
 .support {
@@ -4845,9 +4903,130 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 @media (max-width: 1100px) {
   /* На узком экране паритет опоры хуже по построению: две зоны рядом не помещаются.
      Опора становится верхним слоем на всю ширину, разговор — под ней. Записано как
-     ограничение, а не как решение: день рассчитан на компьютер. */
-  .day-grid { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 42%) minmax(0, 1fr); }
+     ограничение, а не как решение: день рассчитан на компьютер. Блокировки нет —
+     предупреждение (СПЕК §4.1). */
+  .day-grid { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 42%) minmax(0, 1fr); }
   .day-grid.is-collapsed { grid-template-rows: 0 minmax(0, 1fr); }
   .support { border-right: none; border-bottom: 1px solid var(--hairline); }
   .talk-scroll { padding-left: 20px; padding-right: 20px; }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   ЭКРАН v2, ревизия СПЕК §4 (2026-08-03). Действие справа и вне прокрутки;
+   межсценовый экран поверх рабочей области; портфель компактными карточками
+   с двумя столбиками результата.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Мера строки в режиме чтения. Замер: без ограничения кейс на 1230px давал
+   79 знаков в строке — выше комфортной полосы 55–75, то есть чтение пакета
+   становилось хуже, чем в узкой колонке. Таблицы приложений при этом остаются
+   во всю ширину: их читают глазом по столбцам, а не строкой. */
+.day-grid.is-reading #supCaseText > .case-doc,
+.day-grid.is-reading #supCaseText article > p,
+.day-grid.is-reading #supCaseText article > h2,
+.day-grid.is-reading #supCaseText article > h3,
+.day-grid.is-reading #supCaseText article > ul,
+.day-grid.is-reading #supCaseText article > ol,
+.day-grid.is-reading #supCaseText article > blockquote {
+  max-width: var(--w-read);
+}
+
+/* ── действие: у нижнего края колонки, справа, вне прокрутки ──
+   Раньше кнопка лежала внутри прокручиваемого тела и уходила за край на 54px:
+   до главного действия надо было доскроллить. Замер прототипа. */
+.work-act {
+  flex: none;
+  display: flex; align-items: center; justify-content: flex-end;
+  flex-wrap: wrap-reverse; gap: 8px 14px;
+  padding: 12px var(--frame-pad, 24px) 16px;
+  background: var(--paper); border-top: 1px solid var(--hairline);
+}
+.work-act:empty { display: none; }
+.work-act .win-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px 14px; flex-wrap: wrap-reverse; margin: 0; }
+.work-act .win-note { text-align: right; max-width: 340px; }
+
+/* ── межсценовый экран: перекрывает ТОЛЬКО работу ──
+   Кейс и оглавление остаются на месте и читаются во время перехода; пустой
+   экран на всю ширину прерывал бы чтение без нужды (СПЕК §4.4). */
+.talk { position: relative; }
+.interlude {
+  position: absolute; inset: 0; z-index: 6; background: var(--paper);
+  display: flex; flex-direction: column; justify-content: center;
+  padding: 0 var(--frame-pad, 24px); overflow-y: auto;
+}
+.interlude-in { max-width: var(--w-read); }
+.interlude-mark { font-size: 12.5px; font-weight: 600; color: #2f7d32; margin: 0 0 26px; }
+.interlude-where { font-family: var(--ff-display); font-size: 26px; line-height: 1.15; margin: 0 0 6px; }
+.interlude-when { font-size: 13px; color: var(--muted-soft); margin: 0 0 26px; }
+.interlude-lead {
+  margin: 0 0 30px; padding-left: 14px; border-left: 2px solid var(--accent);
+  font-size: 15.5px; line-height: 1.6;
+}
+
+/* ── портфель: компактные карточки, два ряда по десять ──
+   Замер: 2×10 с доводом под «почему» — 2,6 экрана прокрутки; 1×20 с доводами —
+   5,5; подробный вариант во всю ширину — 3,0 и без кейса. Выиграл компактный. */
+.bl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+.bl-card {
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 9px 11px; display: flex; flex-direction: column; gap: 6px; background: var(--paper);
+}
+.bl-card-top { display: flex; align-items: baseline; gap: 8px; }
+.bl-n { font-size: 11px; font-weight: 700; color: var(--muted-soft); font-variant-numeric: tabular-nums; }
+.bl-card-cost {
+  margin-left: auto; font-size: 11px; color: var(--muted-soft);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.bl-card-title {
+  font-size: 13px; line-height: 1.35; font-weight: 500;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.bl-card.is-open .bl-card-title { -webkit-line-clamp: unset; overflow: visible; }
+.bl-card-who { font-size: 11px; color: var(--muted-soft); }
+.bl-card-arg { font-size: 12px; line-height: 1.45; color: var(--muted); margin: 0; }
+.bl-card-acts { display: flex; gap: 6px; align-items: center; }
+.bl-why {
+  margin-left: auto; border: none; background: none; cursor: pointer; padding: 4px 2px;
+  font: inherit; font-size: 11.5px; color: var(--muted-soft); text-decoration: underline;
+}
+.bl-why:hover { color: var(--ink); }
+/* решённая карточка уезжает не мгновенно: без этого следующая прыгает под курсор
+   и второй клик попадает не туда (проверено на прототипе) */
+@keyframes blLeave { to { opacity: 0; transform: translateY(-4px); } }
+.bl-card.is-leaving { animation: blLeave .18s ease forwards; }
+
+/* два столбика результата: портфель собирается на глазах, и перед вопросом
+   «почему эти» листать список обратно не нужно */
+.bl-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; align-items: start; }
+.bl-col-head {
+  font-size: 12px; font-weight: 600; padding: 0 0 7px; margin-bottom: 8px;
+  border-bottom: 1px solid var(--hairline);
+}
+.bl-col-head span { font-weight: 400; color: var(--muted-soft); }
+.bl-row {
+  display: grid; grid-template-columns: 20px 1fr auto; gap: 8px; align-items: baseline;
+  padding: 7px 0; border-bottom: 1px solid var(--soft); font-size: 12.5px; line-height: 1.35;
+}
+.bl-row-t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bl-row-back {
+  border: none; background: none; cursor: pointer; padding: 0 2px; font: inherit;
+  font-size: 11px; color: var(--muted-soft); text-decoration: underline;
+}
+.bl-row-back:hover { color: var(--ink); }
+.bl-zone-h {
+  display: flex; align-items: baseline; gap: 8px; margin: 18px 0 9px;
+  font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--muted-soft);
+}
+.bl-zone-h b { font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.bl-empty { font-size: 12px; color: var(--muted-soft); padding: 8px 0; }
+/* причина отказа — под строкой в столбике «не сейчас», не в карточке */
+.bl-row-reason { grid-column: 2 / 4; margin-top: 5px; }
+
+@media (max-width: 1360px) {
+  /* колонок стало две, работа шире — карточки остаются в два ряда */
+  .bl-grid { gap: 10px 14px; }
+}
+@media (max-width: 1100px) {
+  .bl-grid, .bl-cols { grid-template-columns: minmax(0, 1fr); }
 }

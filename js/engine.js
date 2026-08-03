@@ -50,7 +50,11 @@
   function el(id) { return document.getElementById(id); }
 
   function storageKey(bib) { return 'imp_v2_' + bib; }
-  function notesKey(bib) { return 'imp_v2_notes_' + bib; }
+  // Поле заметок убрано (СПЕК §3): сборщик телеметрии слушает любой textarea и
+  // складывает totals по всем полям, поэтому копирование цифр из кейса в заметки
+  // раздувало pastedChars и поднимало флаг ИИ за легитимное действие. Ключ
+  // оставлен только затем, чтобы прежние записи можно было прочитать и убрать.
+  function notesKeyLegacy(bib) { return 'imp_v2_notes_' + bib; }
 
   // ---------- состояние ----------
 
@@ -198,7 +202,13 @@
     if (act.when === 'overspend') return totals().over;
     return true;
   }
-  function isBlocking(act) { return act.kind === 'window' || act.kind === 'mechanic' || act.kind === 'case'; }
+  // Останавливающие акты: на них курсор стоит и ждёт участника. Реплики через
+  // такой акт проскакивают — они рисуются как часть текущей сцены. Межсценовый
+  // экран останавливающий: он и существует затем, чтобы день не переезжал из
+  // разговора в разговор без единого вдоха (СПЕК §4.4).
+  function isBlocking(act) {
+    return act.kind === 'window' || act.kind === 'mechanic' || act.kind === 'case' || act.kind === 'interlude';
+  }
 
   function normalizeCursor() {
     while (state.cursor < route.length) {
@@ -231,8 +241,41 @@
       var tt = totals();
       t = t.split('{people}').join(String(tt.people)).split('{money}').join(num(tt.money));
     }
+    if (t.indexOf('{drop1}') >= 0 || t.indexOf('{drop2}') >= 0) {
+      var d2 = namedRefusals();
+      t = t.split('{drop1}').join(d2[0] || '').split('{drop2}').join(d2[1] || '');
+      // При единственном отказе второго имени нет: «отложили X и » выглядело бы
+      // сломанным. Гейт фиксации требует хотя бы одного отказа, значит первый есть
+      // всегда, а союз убираем вместе с пустым вторым.
+      t = t.replace(/\s+и\s*(?=[.,?!])/g, '').replace(/\s{2,}/g, ' ');
+    }
     return t;
   }
+
+  // Две позиции, про которые Агеев спрашивает сам: самые дорогие по людям из
+  // отложенных, при равенстве — с меньшим номером. Правило детерминировано, а не
+  // случайно, по двум причинам: случайность у разных участников давала бы разную
+  // задачу, а харнесс модели обязан воспроизвести тот же выбор. Участнику правило
+  // неизвестно — подготовить удобный ответ он не может.
+  function namedRefusals() {
+    var dropped = [];
+    BACKLOG.forEach(function (it, ix) {
+      var p = pickOf(it.id);
+      if (p && !p.take) dropped.push({ it: it, n: ix + 1 });
+    });
+    dropped.sort(function (a, b) {
+      var d = (Number(b.it.people) || 0) - (Number(a.it.people) || 0);
+      return d !== 0 ? d : a.n - b.n;
+    });
+    return dropped.slice(0, 2).map(function (x) {
+      // Короткая часть названия до первого тире или запятой: полное название
+      // занимает строку и в реплике не читается. Кавычки не ставим, если внутри
+      // уже есть свои («перезапустить „Точку"») — двойные выглядят сломанно.
+      var short = String(x.it.title || '').split(/\s+—\s+|,\s+/)[0].trim();
+      return '№' + x.n + (short.indexOf('«') >= 0 ? ' ' + short : ' «' + short + '»');
+    });
+  }
+  window.imp.v2NamedRefusals = namedRefusals;
 
   function speechHtml(act) {
     var out = '';
@@ -262,13 +305,55 @@
 
   function setTab(name) {
     supportTab = name;
-    ['case', 'answers', 'notes', 'who'].forEach(function (k) {
+    ['case', 'answers', 'ref'].forEach(function (k) {
       var b = document.querySelector('.support-tab[data-tab="' + k + '"]');
       var body = el('sup' + k.charAt(0).toUpperCase() + k.slice(1));
       if (b) b.classList.toggle('is-on', k === name);
       if (body) body.classList.toggle('is-on', k === name);
     });
     if (name === 'answers') renderAnswersTab();
+    renderToc();
+  }
+
+  // Оглавление слева — оглавление ТЕКУЩЕЙ вкладки середины, а не отдельный
+  // элемент: одна колонка, разное содержимое. Иначе получаются два списка,
+  // спорящих за одно место.
+  function renderToc() {
+    var kicker = el('tocKicker'), body = el('tocBody');
+    if (!kicker || !body) return;
+    if (supportTab === 'case') {
+      kicker.textContent = 'Разделы';
+      body.innerHTML = caseTocHtml || '<p class="bl-empty">Загружаю…</p>';
+      return;
+    }
+    if (supportTab === 'ref') {
+      kicker.textContent = 'Справка';
+      body.innerHTML =
+        '<button type="button" class="toc-link" data-ref="ref-terms">Термины</button>' +
+        '<button type="button" class="toc-link" data-ref="ref-people">Люди</button>' +
+        '<button type="button" class="toc-link" data-ref="ref-things">Компании и продукты</button>';
+      return;
+    }
+    kicker.textContent = 'Зафиксировано';
+    var links = '';
+    S.windows().forEach(function (w, i) {
+      if (!state.answersAt[w.save]) return;
+      links += '<button type="button" class="toc-link" data-ans="' + i + '">' + esc(w.label) + '</button>';
+    });
+    if (state.picksAt) links += '<button type="button" class="toc-link" data-ans="picks">Разбор портфеля</button>';
+    body.innerHTML = links || '<p class="bl-empty">Пока ничего.</p>';
+  }
+
+  function refHtml() {
+    var R = S.reference || { terms: [], people: [], things: [] };
+    var rows = function (list) {
+      return list.map(function (r) {
+        return '<div class="who-row"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>';
+      }).join('');
+    };
+    return '<p class="who-h" id="ref-terms">Термины</p>' + rows(R.terms) +
+      '<p class="who-h" id="ref-people">Люди</p>' + rows(R.people) +
+      '<p class="who-h" id="ref-things">Компании и продукты</p>' + rows(R.things);
   }
 
   function initSupport() {
@@ -277,30 +362,47 @@
       if (b) setTab(b.getAttribute('data-tab'));
     });
 
-    // Заметки: отдельный ключ, отдельная жизнь. В payload их нет by design.
-    var ta = el('notesInput');
-    try { ta.value = localStorage.getItem(notesKey(session.bib)) || ''; } catch (e) {}
-    ta.addEventListener('input', function () {
-      try { localStorage.setItem(notesKey(session.bib), ta.value); } catch (e) {}
+    // Справка приезжает из scenes.js: тот же блок харнесс отдаёт модели в system,
+    // иначе у человека была бы опора, которой у модели нет (паритет носителей).
+    el('supRefBody').innerHTML = refHtml();
+
+    // Сворачивание оглавления — постоянный контрол участника. Автоматическое
+    // сворачивание ниже 1360 живёт в CSS и кнопку не заменяет.
+    el('tocCollapse').addEventListener('click', function () {
+      el('dayGrid').classList.add('is-collapsed');
+    });
+    el('tocRestore').addEventListener('click', function () {
+      el('dayGrid').classList.remove('is-collapsed');
     });
 
-    var who = window.imp.caseCheatsheet || { people: [], things: [] };
-    var rows = function (list) {
-      return list.map(function (r) {
-        return '<div class="who-row"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>';
-      }).join('');
-    };
-    el('supWhoBody').innerHTML =
-      '<p class="who-h">Люди</p>' + rows(who.people) +
-      '<p class="who-h">Компании и продукты</p>' + rows(who.things);
+    // Прокрутка по оглавлению: внутри колонки, не по хэшу — хэш увёл бы страницу.
+    el('tocBody').addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.toc-link');
+      if (!b) return;
+      var host = null, target = null;
+      if (b.dataset.target) { host = el('supCaseText'); target = host.querySelector('#' + b.dataset.target); }
+      else if (b.dataset.ref) { host = el('supRef'); target = host.querySelector('#' + b.dataset.ref); }
+      else if (b.dataset.ans) {
+        host = el('supRef') && supportTab === 'answers' ? el('supAnswers') : el('supAnswers');
+        var items = host.querySelectorAll('.recap-item');
+        target = b.dataset.ans === 'picks' ? items[items.length - 1] : items[Number(b.dataset.ans)];
+      }
+      if (!host || !target) return;
+      var scroller = host.classList.contains('support-body') ? host : host;
+      scroller.scrollTop += target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
+      el('tocBody').querySelectorAll('.toc-link').forEach(function (x) { x.classList.remove('is-on'); });
+      b.classList.add('is-on');
+    });
 
+    // Скрыть материалы — это про СЕРЕДИНУ, а не про оглавление: два разных
+    // контрола с разным смыслом, отсюда и два класса.
     el('supportToggle').addEventListener('click', function () {
-      var g = el('dayGrid');
-      var hidden = g.classList.toggle('is-collapsed');
+      var hidden = el('dayGrid').classList.toggle('is-nomem');
       this.textContent = hidden ? 'Показать материалы' : 'Скрыть материалы';
     });
 
     loadCaseIntoSupport();
+    renderToc();
   }
 
   function loadCaseIntoSupport() {
@@ -323,33 +425,31 @@
   // Оглавление собирается из самого пакета, а не задаётся списком: разъехаться
   // с кейсом ему тогда нечем. Переход — прокруткой контейнера, а не по хэшу:
   // хэш увёл бы всю страницу.
+  var caseTocHtml = '';
+
   function buildCaseToc() {
-    var host = el('supCaseText'), toc = el('supCaseToc');
+    var host = el('supCaseText');
     var arts = host.querySelectorAll('article[id]');
     if (!arts.length) return;
-    var html = '';
+    var html = '', appxStarted = false;
     for (var i = 0; i < arts.length; i++) {
       var h = arts[i].querySelector('h2, h3');
-      // У справки по терминам своего заголовка внутри статьи нет — он стоит
-      // разделителем перед ней. Без этого в оглавлении появлялся сырой id.
       var label = h ? h.textContent.trim() : '';
       if (!label) {
+        // Заголовок может стоять разделителем ПЕРЕД статьёй, а не внутри неё.
+        // Без этого в оглавлении появлялся сырой id вида «appx-1».
         var prev = arts[i].previousElementSibling;
         while (prev && !prev.classList.contains('appx-divider')) prev = prev.previousElementSibling;
         label = prev ? prev.textContent.trim() : arts[i].id;
       }
+      if (!appxStarted && /^appx/.test(arts[i].id)) {
+        appxStarted = true;
+        html += '<p class="toc-group">Приложения</p>';
+      }
       html += '<button type="button" class="toc-link" data-target="' + arts[i].id + '">' + esc(label) + '</button>';
     }
-    toc.innerHTML = '<div class="toc-title">Пакет материалов</div>' + html;
-    toc.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('.toc-link');
-      if (!b) return;
-      var target = host.querySelector('#' + b.getAttribute('data-target'));
-      if (!target) return;
-      host.scrollTop += target.getBoundingClientRect().top - host.getBoundingClientRect().top - 8;
-      toc.querySelectorAll('.toc-link').forEach(function (x) { x.classList.remove('is-on'); });
-      b.classList.add('is-on');
-    });
+    caseTocHtml = html;
+    renderToc();
   }
 
   // Вкладка «Мои ответы»: только зафиксированное. Незаполненное окно здесь не
@@ -449,6 +549,10 @@
     return d;
   }
 
+  // Какие доводы авторов раскрыты кнопкой «почему». Не пишется в состояние и не
+  // уходит на сервер: это не ответ, а способ читать список.
+  var openArg = {};
+
   function mechanicBlock(act, locked) {
     var d = document.createElement('div');
     d.className = 's2-block bl-host';
@@ -465,8 +569,12 @@
       '<div class="bl-decided"></div>' +
       '<div class="bl-list"></div>' +
       '<div class="bl-hint" style="display:none;"></div>' +
-      '<button class="btn btn-primary" id="fixBtn" style="margin-top:16px;">Зафиксировать разбор →</button>' +
-      '<span class="win-note" style="margin-left:12px;">Разбор зафиксируется: переиграть его нельзя.</span>';
+      // Тот же класс .win-foot, что у окон: движок переносит этот узел в подвал
+      // колонки, и правило «главное действие не требует прокрутки» одно на все акты.
+      '<div class="win-foot">' +
+        '<span class="win-note">Разбор зафиксируется: переиграть его нельзя.</span>' +
+        '<button class="btn btn-primary" id="fixBtn">Зафиксировать разбор →</button>' +
+      '</div>';
 
     function renderList() {
       var t = totals();
@@ -489,50 +597,57 @@
         if (!p) undecided.push(it); else if (p.take) taken.push(it); else dropped.push(it);
       });
 
-      var dec = d.querySelector('.bl-decided');
-      dec.innerHTML = '';
-      function group(title, arr, kind) {
-        if (!arr.length) return;
-        var g = document.createElement('div');
-        g.className = 'bl-group is-' + kind;
-        g.innerHTML = '<div class="bl-group-head">' + title + ' · ' + arr.length + '</div>';
-        arr.forEach(function (it) {
-          var p = pickOf(it.id) || {};
-          var row = document.createElement('div');
-          row.className = 'bl-mini';
-          // Автор и цена остаются видимыми и после решения: три окна из восьми
-          // опираются на эти данные, а после фиксации их больше нигде нет.
-          row.innerHTML =
-            '<span class="bl-mini-title"><span class="bl-id">' + it.id + '</span> ' + esc(it.title) +
-              '<span class="bl-mini-who">' + esc(it.who) + '</span></span>' +
-            '<span class="bl-mini-cost">' + it.people + ' чел. · ' + num(it.money) + ' млрд</span>' +
-            '<span class="bl-mini-acts"><button type="button" class="s2-act" data-flip="' + it.id + '">' +
-              (kind === 'taken' ? 'не сейчас' : 'беру') + '</button></span>' +
-            (kind === 'dropped'
-              ? '<textarea class="bl-reason" rows="2" data-reason="' + it.id + '" placeholder="почему не сейчас — если этот отказ сам по себе решение">' + esc(p.reason || '') + '</textarea>'
-              : '');
-          g.appendChild(row);
-        });
-        dec.appendChild(g);
-      }
-      group('Берём', taken, 'taken');
-      group('Не сейчас', dropped, 'dropped');
+      // Нерешённое — компактными карточками в два ряда по десять; решённое уезжает
+      // в свой столбик, и портфель собирается на глазах. Замер прототипа: 2×10 с
+      // доводом под «почему» — 2,6 экрана прокрутки против 5,5 у списка в один ряд.
+      // НОМЕР НА ЭКРАНЕ — ПОРЯДКОВЫЙ (1–20), а не id: id Кати идут 1,2,4,5…22 с
+      // вырезанными 3 и 8, и участник видел пропуски, думая, чего ему не показали.
+      // Внутренним ключом picks и записей судьи остаётся id.
+      var numOf = {};
+      BACKLOG.forEach(function (it, ix) { numOf[it.id] = ix + 1; });
 
       var list = d.querySelector('.bl-list');
-      list.innerHTML = '';
-      undecided.forEach(function (it) {
-        var row = document.createElement('div');
-        row.className = 'bl-item';
-        row.innerHTML =
-          '<p class="bl-title"><span class="bl-id">' + it.id + '</span> ' + esc(it.title) + '</p>' +
-          '<p class="bl-meta">' + esc(it.who) + '<span>' + it.people + ' чел.</span><span>' + num(it.money) + ' млрд</span></p>' +
-          (it.argument ? '<p class="bl-arg">' + esc(it.argument) + '</p>' : '') +
-          '<div class="bl-actions">' +
-            '<button type="button" class="s2-act" data-take="' + it.id + '">беру</button>' +
-            '<button type="button" class="s2-act" data-drop="' + it.id + '">не сейчас</button>' +
-          '</div>';
-        list.appendChild(row);
-      });
+      list.innerHTML = undecided.length
+        ? '<div class="bl-zone-h">не решено <b>' + undecided.length + '</b></div><div class="bl-grid">' +
+          undecided.map(function (it) {
+            var open = openArg[it.id];
+            return '<div class="bl-card' + (open ? ' is-open' : '') + '" data-card="' + it.id + '">' +
+              '<div class="bl-card-top"><span class="bl-n">' + numOf[it.id] + '</span>' +
+                '<span class="bl-card-cost">' + it.people + ' чел. · ' + num(it.money) + ' млрд</span></div>' +
+              '<div class="bl-card-title">' + esc(it.title) + '</div>' +
+              '<div class="bl-card-who">' + esc(it.who) + '</div>' +
+              (open && it.argument ? '<p class="bl-card-arg">' + esc(it.argument) + '</p>' : '') +
+              '<div class="bl-card-acts">' +
+                '<button type="button" class="s2-act" data-take="' + it.id + '">беру</button>' +
+                '<button type="button" class="s2-act" data-drop="' + it.id + '">не сейчас</button>' +
+                (it.argument ? '<button type="button" class="bl-why" data-why="' + it.id + '">' + (open ? 'скрыть' : 'почему') + '</button>' : '') +
+              '</div></div>';
+          }).join('') + '</div>'
+        : '<div class="bl-zone-h">все двадцать решены</div>';
+
+      var dec = d.querySelector('.bl-decided');
+      var col = function (title, arr, kind) {
+        var rows = arr.map(function (it) {
+          var p = pickOf(it.id) || {};
+          return '<div class="bl-row">' +
+            '<span class="bl-n">' + numOf[it.id] + '</span>' +
+            '<span class="bl-row-t">' + esc(it.title) +
+              '<span class="bl-mini-who">' + esc(it.who) + ' · ' + it.people + ' чел. · ' + num(it.money) + ' млрд</span></span>' +
+            '<button type="button" class="bl-row-back" data-flip="' + it.id + '">' +
+              (kind === 'taken' ? 'не сейчас' : 'беру') + '</button>' +
+            (kind === 'dropped'
+              ? '<textarea class="bl-reason bl-row-reason" rows="2" data-reason="' + it.id + '" placeholder="почему не сейчас — если этот отказ сам по себе решение">' + esc(p.reason || '') + '</textarea>'
+              : '') +
+            '</div>';
+        }).join('');
+        return '<div><div class="bl-col-head">' + title + ' <span>· ' + arr.length + '</span></div>' +
+          (rows || '<p class="bl-empty">пока ничего</p>') + '</div>';
+      };
+      // Сумма по «не сейчас» НЕ показывается: «высвобожденный ресурс» — верхний
+      // маркер ПР-1 (граница 3→4), посчитать его за участника значит выдать
+      // половину признака. Рамку по взятому Агеев назвал вслух сам.
+      dec.innerHTML = '<div class="bl-zone-h">портфель</div><div class="bl-cols">' +
+        col('Берём', taken, 'taken') + col('Не сейчас', dropped, 'dropped') + '</div>';
 
       var hint = d.querySelector('.bl-hint');
       var lines = [];
@@ -546,6 +661,8 @@
     }
 
     d.addEventListener('click', function (e) {
+      var why = e.target.getAttribute && e.target.getAttribute('data-why');
+      if (why) { openArg[why] = !openArg[why]; renderList(); return; }
       var take = e.target.getAttribute && e.target.getAttribute('data-take');
       var drop = e.target.getAttribute && e.target.getAttribute('data-drop');
       var flip = e.target.getAttribute && e.target.getAttribute('data-flip');
@@ -553,11 +670,15 @@
       if (!id) return;
       var prev = pickOf(id);
       var next = flip ? !(prev && prev.take) : !!take;
+      // Уход карточки заметен глазу: без короткой анимации следующая карточка
+      // мгновенно прыгает под курсор, и второй клик попадает не туда.
+      var card = d.querySelector('.bl-card[data-card="' + id + '"]');
+      if (card && (take || drop)) card.classList.add('is-leaving');
       // Причина отказа при возврате в «беру» НЕ теряется: участник мог передумать
       // дважды, и стирать написанное молча нельзя.
       state.picks[String(id)] = { take: next, reason: (prev && prev.reason) || '' };
       saveState();
-      renderList();
+      if (card && (take || drop)) { setTimeout(renderList, 180); } else renderList();
       if (drop) {
         // Поле причины появляется в сводке наверху, а клик был внизу: переводим
         // фокус, иначе участник его просто не находит.
@@ -603,7 +724,7 @@
       ' · <button type="button" class="case-done-reopen" id="caseReopen">' + esc(act.reopen || 'открыть снова') + '</button>';
     d.querySelector('#caseReopen').addEventListener('click', function () {
       setTab('case');
-      el('dayGrid').classList.remove('is-collapsed');
+      el('dayGrid').classList.remove('is-nomem');
       el('supportToggle').textContent = 'Скрыть материалы';
     });
     return d;
@@ -625,10 +746,33 @@
     cta.onclick = function () { el('hdrDayName').textContent = '«Искра» · один день'; advance(); };
   }
 
+  // Межсценовый экран: перекрывает рабочую область, оставляя кейс и оглавление на
+  // месте. Строка настроя берётся из S.interlude — она ОДНА на все переходы, и
+  // это не экономия: разная строка подсказывала бы предмет замера следующей сцены.
+  function interludeMode(on, step) {
+    var box = el('interlude');
+    if (!box) return;
+    box.style.display = on ? 'flex' : 'none';
+    if (!on) return;
+    var I = S.interlude || { lead: [], cta: 'Дальше →' };
+    var lastAt = '';
+    S.windows().forEach(function (w) { if (state.answersAt[w.save]) lastAt = state.answersAt[w.save]; });
+    el('interludeMark').textContent = lastAt ? '✓ Ответ зафиксирован · ' + hhmm(lastAt) : '';
+    el('interludeWhere').textContent = step.scene.name;
+    el('interludeWhen').textContent = 'Разговор ' + (step.sceneIx + 1) + ' из ' + S.scenes.length +
+      ' · ' + step.scene.where;
+    el('interludeLead').innerHTML = (I.lead || []).map(function (p) { return '<p style="margin:0 0 6px;">' + br(p) + '</p>'; }).join('');
+    var cta = el('interludeCta');
+    cta.textContent = I.cta || 'Дальше →';
+    cta.onclick = function () { advance(); };
+    if (window.imp && window.imp.typoDom) window.imp.typoDom(box);
+  }
+
   function render() {
     var cur = route[state.cursor];
     if (cur && applies(cur.act) && cur.act.kind === 'case') { readingMode(true, cur.act); return; }
     readingMode(false);
+    interludeMode(!!(cur && applies(cur.act) && cur.act.kind === 'interlude'), cur || { scene: S.scenes[0], sceneIx: 0 });
 
     var hist = el('talkHistory');
     var now = el('talkCurrent');
@@ -689,8 +833,19 @@
       now.appendChild(fin);
     }
 
+    // Ряд действия переносим из прокрутки в подвал колонки. Именно переносим
+    // узел, а не пересобираем разметку: обработчики уже висят на кнопке, и копия
+    // означала бы вторую реализацию фиксации ответа.
+    var actHost = el('talkAct');
+    if (actHost) {
+      actHost.innerHTML = '';
+      var foot = now.querySelector('.win-foot');
+      if (foot) actHost.appendChild(foot);
+    }
+
     if (window.imp && window.imp.typoDom) window.imp.typoDom(now);
     if (supportTab === 'answers') renderAnswersTab();
+    renderToc();
     syncHeader();
     // Прокрутка: начало текущего разговора — к верху колонки. Считаем по rect'ам,
     // а не по offsetTop: offsetTop меряется от позиционированного предка, и первая

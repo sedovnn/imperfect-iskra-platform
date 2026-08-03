@@ -8,15 +8,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=100" />
+<link rel="stylesheet" href="css/styles.css?v=102" />
 </head>
 <body class="frame-narrow">
 
-<!-- РАБОЧИЙ СТОЛ, а не лента. Слева опора, которая никуда не уходит: пакет
-     материалов, свои ответы, заметки, справочник. Справа — один текущий вопрос.
+<!-- ТРИ КОЛОНКИ (СПЕК §4): слева оглавление текущей вкладки, в середине память
+     (кейс · мои ответы · справка), справа работа — один текущий вопрос.
      Принцип: всё, что модель перечитывает бесплатно (кейс в system и вся история
      на каждом шаге), человек должен перечитывать почти бесплатно. Иначе платформа
      меряет память и прокрутку, чего не меряет ни одна из десяти способностей.
+     Поля заметок здесь нет сознательно: сборщик телеметрии считает любой textarea,
+     и выписки из кейса раздували бы маркер ИИ (СПЕК §3).
      Ни одной реплики в этой разметке — весь текст маршрута из js/scenes.js. -->
 
 <div id="gate" class="gate" style="display:none;">
@@ -76,18 +78,27 @@
 
     <div class="day-grid" id="dayGrid">
 
-      <!-- ОПОРА. Не модалка: перекрывать поле ответа тем, с чем участник сверяется,
-           значит заставлять его выбирать между чтением и письмом. -->
+      <!-- ЛЕВАЯ КОЛОНКА: оглавление ТЕКУЩЕЙ вкладки середины, а не отдельный
+           элемент. Сворачивается кнопкой участника; ниже 1360 уезжает сама. -->
+      <aside class="dayside" id="daySide">
+        <div class="dayside-head">
+          <span class="dayside-kicker" id="tocKicker">Разделы</span>
+          <button type="button" class="toc-collapse" id="tocCollapse" title="Свернуть оглавление">свернуть ⟨</button>
+        </div>
+        <div class="dayside-body" id="tocBody"></div>
+      </aside>
+
+      <!-- СЕРЕДИНА: память. Не модалка: перекрывать поле ответа тем, с чем участник
+           сверяется, значит заставлять его выбирать между чтением и письмом. -->
       <aside class="support" id="supportPane">
+        <button type="button" class="toc-restore" id="tocRestore" title="Показать оглавление">⟩ оглавление</button>
         <nav class="support-tabs" id="supportTabs">
           <button type="button" class="support-tab is-on" data-tab="case">Кейс</button>
           <button type="button" class="support-tab" data-tab="answers">Мои ответы</button>
-          <button type="button" class="support-tab" data-tab="notes">Заметки</button>
-          <button type="button" class="support-tab" data-tab="who">Кто есть кто</button>
+          <button type="button" class="support-tab" data-tab="ref">Справка</button>
         </nav>
 
         <div class="support-body is-on" id="supCase">
-          <div class="case-toc" id="supCaseToc"></div>
           <div class="case-content" id="supCaseText"><p class="fac-detail-loading">Загружаю материалы…</p></div>
         </div>
 
@@ -96,18 +107,16 @@
           <div id="supAnswersBody"></div>
         </div>
 
-        <div class="support-body" id="supNotes">
-          <p class="support-note">Заметки видите только вы. Они остаются в этом браузере, не уходят на сервер и в оценке не участвуют.</p>
-          <textarea id="notesInput" class="notes-input" placeholder="выписывайте, что заметили, — цифры, имена, что с чем связано"></textarea>
-        </div>
-
-        <div class="support-body" id="supWho">
-          <p class="support-note">Только факты из пакета. Ни одна способность не измеряет память на имена.</p>
-          <div id="supWhoBody"></div>
+        <!-- Справка: девять терминов приехали из кейса v7, «кто есть кто» — указатель
+             по уже названным в кейсе людям и продуктам. Опора, не подсказка: памяти
+             на имена и термины не измеряет ни одна из десяти способностей. -->
+        <div class="support-body" id="supRef">
+          <p class="support-note">Только факты из материалов. Ни одна способность не измеряет память на имена и термины.</p>
+          <div id="supRefBody"></div>
         </div>
 
         <!-- Виден только в режиме чтения пакета: день начинается с папки на столе,
-             дальше та же папка уезжает влево и остаётся под рукой. -->
+             дальше та же папка остаётся в середине под рукой. -->
         <div class="case-read-foot" id="caseReadFoot" style="display:none;">
           <button type="button" class="btn btn-primary" id="caseReadCta">Дальше →</button>
           <span class="win-note" id="caseReadNote"></span>
@@ -119,6 +128,27 @@
         <div class="talk-scroll" id="talkScroll">
           <div id="talkHistory"></div>
           <div id="talkCurrent"></div>
+        </div>
+
+        <!-- Действие живёт ВНЕ прокручиваемого тела и прижато вправо. Липкость
+             внутри прокрутки не работала: у блока с кнопкой высота равна высоте
+             содержимого, двигаться внутри было некуда — тот же дефект, что был у
+             счётчика портфеля. Ряд заполняет движок, перенося сюда узел .win-foot
+             целиком (обработчики остаются на элементе). -->
+        <div class="work-act" id="talkAct"></div>
+
+        <!-- Переход между сценами перекрывает ТОЛЬКО рабочую область: кейс и
+             оглавление остаются на месте, и во время перехода их можно читать.
+             Строка настроя одна на все шесть переходов (S.interlude) — разная
+             подсказывала бы предмет замера. -->
+        <div class="interlude" id="interlude" style="display:none;">
+          <div class="interlude-in">
+            <p class="interlude-mark" id="interludeMark"></p>
+            <p class="interlude-where" id="interludeWhere"></p>
+            <p class="interlude-when" id="interludeWhen"></p>
+            <div class="interlude-lead" id="interludeLead"></div>
+            <button type="button" class="btn btn-primary" id="interludeCta">Дальше →</button>
+          </div>
         </div>
       </section>
 
@@ -133,11 +163,11 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=2"></script>
+<script src="js/scenes.js?v=3"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
 <script src="js/case-ref.js?v=13"></script>
-<script src="js/engine.js?v=3"></script>
+<script src="js/engine.js?v=6"></script>
 </body>
 </html>
