@@ -4605,3 +4605,86 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   text-align: right;
   margin: -12px 2px 0 0;
 }
+
+/* ── Кабинет оценок v2 (cabinet.html + js/cabinet.js) ────────────────────── */
+.cab-body { padding: 22px var(--frame-pad, 56px) 64px; }
+.cab-status { font-size: 11.5px; color: var(--muted-soft); }
+.cab-status.is-bad { color: var(--accent-ink); font-weight: 600; }
+
+.cab-table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 13.5px; }
+.cab-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--muted-soft);
+  padding: 0 12px 8px 0;
+  border-bottom: 1px solid var(--hairline);
+}
+.cab-table td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+.cab-table tbody tr { cursor: pointer; }
+.cab-table tbody tr:hover { background: var(--soft); }
+.cab-row-ai td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+.cab-dim { color: var(--muted-soft); }
+.cab-total { font-size: 17px; font-variant-numeric: tabular-nums; }
+.cab-ai, .cab-runner, .cab-stale, .cab-flag {
+  font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+}
+.cab-ai { color: var(--accent-ink); }
+.cab-stale { color: var(--accent-ink); }
+.cab-flag { font-size: 13px; }
+
+/* Ход: точка на окно плюс портфель. Девять необратимых шагов, а не шесть сцен. */
+.cab-progress { white-space: nowrap; }
+.cab-dot {
+  display: inline-block; width: 7px; height: 7px; margin-right: 3px;
+  border-radius: 50%; border: 1px solid #d8dadd; vertical-align: middle;
+}
+.cab-dot.is-done { background: var(--ink); border-color: var(--ink); }
+.cab-dot-picks { border-radius: 2px; margin-left: 5px; }
+.cab-dot-picks.is-done { background: var(--accent); border-color: var(--accent); }
+.cab-fin { color: var(--accent-ink); font-weight: 700; }
+
+.cab-skill { display: inline-block; margin-right: 9px; font-size: 11px; color: var(--muted-soft); }
+.cab-skill b { display: inline-block; margin-left: 3px; font-size: 13.5px; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ── карточка ── */
+.cab-card { max-width: 900px; }
+.cab-actions { display: flex; align-items: center; gap: 12px; margin: 16px 0 6px; }
+.cab-block { margin-top: 26px; }
+.cab-block h3 { font-size: 15px; margin: 0 0 6px; }
+.cab-note { font-size: 12px; color: var(--muted-soft); margin: 0 0 12px; max-width: var(--w-read); }
+.cab-warn { font-size: 13px; color: var(--accent-ink); font-weight: 600; margin: 10px 0; }
+.cab-warn-inline { color: var(--accent-ink); }
+.cab-k { font-weight: 600; color: var(--muted); }
+
+.cab-skills-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 14px; }
+.cab-skill-box {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 62px; padding: 10px 12px;
+  border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--paper);
+}
+.cab-skill-box span { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-soft); }
+.cab-skill-box b { font-size: 20px; font-variant-numeric: tabular-nums; }
+.cab-skill-box i { font-size: 10px; color: var(--muted-soft); font-style: normal; }
+.cab-skill-box.is-total { border-color: var(--ink); }
+
+.cab-ability { padding: 10px 0; border-top: 1px solid var(--hairline); }
+.cab-ability-head { display: flex; align-items: baseline; gap: 10px; }
+.cab-ability-name { font-size: 13.5px; font-weight: 600; }
+.cab-level { margin-left: auto; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cab-jitter { color: var(--accent-ink); }
+.cab-reasoning summary { cursor: pointer; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.cab-reasoning > div { font-size: 13px; line-height: 1.55; color: var(--ink); margin-top: 6px; max-width: var(--w-read); }
+.cab-control { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--soft); font-size: 13px; }
+.cab-control p { margin: 0 0 8px; }
+.cab-flags { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.55; }
+
+.cab-answer { padding: 14px 0; border-top: 1px solid var(--hairline); }
+.cab-answer-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 6px; }
+.cab-answer-label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.cab-answer-head .cab-dim { font-size: 11px; margin-left: auto; }
+.cab-elicit { font-size: 11px; color: var(--accent-ink); margin-bottom: 6px; }
+.cab-answer-text { font-size: 14px; line-height: 1.6; max-width: var(--w-read); }
+.cab-answer-text ul { padding-left: 18px; }

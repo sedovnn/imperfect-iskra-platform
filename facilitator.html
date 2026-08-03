@@ -36,9 +36,13 @@
         <span class="station-sep">/</span>
         <span class="station-name">Кабинет фасилитатора</span>
       </div>
-      <div class="station-header-right">
+      <div class="station-header-right" data-no-refs="1">
         <span class="station-hint" id="facCount">0 участников</span>
         <button class="btn btn-ghost btn-sm" id="facRefreshBtn">Обновить</button>
+        <!-- Прогоны новой платформы (лист Answers) живут на отдельном экране: этот
+             кабинет читает листы Round1…Round5 старого маршрута и остаётся их
+             архивом — ростер, волны и пароли здесь по-прежнему рабочие. -->
+        <a class="btn btn-ghost btn-sm" href="cabinet.html">Оценки v2 →</a>
       </div>
     </header>
 

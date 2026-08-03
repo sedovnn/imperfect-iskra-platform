@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Оценки — i(m)perfect · «Искра»</title>
+<meta name="description" content="Кабинет оценок платформы v2: ответы, десять способностей, флаги." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
+<link rel="stylesheet" href="css/styles.css?v=99" />
+</head>
+<body>
+
+<div id="cabGate" class="gate">
+  <div class="gate-card">
+    <p class="kicker">Кабинет</p>
+    <h2>Оценки</h2>
+    <p class="section-lead" style="margin:0 0 20px;">Пароль вам передаст команда. Ростер, волны и пароли участников — в <a href="facilitator.html">кабинете фасилитатора</a>.</p>
+    <div class="field">
+      <label for="cabPass">Пароль</label>
+      <input type="password" id="cabPass" autocomplete="current-password" />
+    </div>
+    <p class="field-err" id="cabPassErr" style="display:none;">Неверный пароль.</p>
+    <button class="btn btn-primary btn-block" id="cabPassBtn" style="margin-top:14px;">Войти →</button>
+  </div>
+</div>
+
+<div class="frame station-frame" id="cabContent" style="display:none;">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+        <span class="station-sep">/</span>
+        <h1 class="station-name">Оценки · шесть открытых вопросов</h1>
+      </div>
+      <div class="station-header-right" data-no-refs="1">
+        <span class="cab-status" id="cabStatus"></span>
+        <span class="bib" id="cabCount">—</span>
+        <button type="button" class="btn btn-ghost btn-sm" id="cabRefresh">Обновить</button>
+        <a class="btn btn-ghost btn-sm" href="facilitator.html">Ростер и волны →</a>
+      </div>
+    </header>
+
+    <div class="cab-body">
+      <p class="section-lead" style="max-width:var(--w-read);">Один день, восемь окон, десять способностей. Итог по §9 методологии — сумма пяти навыков из 25, и он показывается только когда оценены все десять способностей. Старые прогоны по маршруту из восемнадцати полей остались в <a href="facilitator.html">кабинете фасилитатора</a>.</p>
+      <div id="cabList"><p class="fac-detail-loading">Загружаю…</p></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="cabDetail" class="dossier-overlay" style="display:none;" aria-hidden="true">
+  <div class="gate-card dossier-card cab-card" role="dialog" aria-modal="true" aria-label="Карточка участника">
+    <div class="dossier-card-header">
+      <div>
+        <p class="kicker">Карточка участника</p>
+        <h2 style="margin:0;" id="cabDetailTitle">—</h2>
+      </div>
+      <button type="button" class="btn btn-ghost btn-xs" id="cabDetailClose">Закрыть ✕</button>
+    </div>
+    <div class="fac-detail-body" id="cabDetailBody"></div>
+  </div>
+</div>
+
+<script src="js/main.js?v=4"></script>
+<script src="js/typo.js?v=2"></script>
+<script src="js/dialog.js?v=1"></script>
+<script src="js/api.js?v=5"></script>
+<script src="js/cabinet.js?v=1"></script>
+</body>
+</html>
