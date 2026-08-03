@@ -55,12 +55,14 @@
   (function initTelemetry() {
     var stats = new Map();
     var IDLE = 5000; // паузы длиннее — не «активный набор», в activeMs не идут
+    // ТОЛЬКО ПОЛЯ ОТВЕТА, и это не оптимизация. Раньше считался любой textarea на
+    // странице, а totals складывались по всем полям сразу: участник, копирующий
+    // цифры из кейса в свою пометку, раздувал pastedChars и получал флаг ИИ за
+    // совершенно легитимное действие. Из-за этого пришлось убрать поле заметок —
+    // лечили следствие. Теперь причина: поле ответа помечено data-answer="1",
+    // всё остальное (пометки, поиск, служебные поля кабинета) в замер не идёт.
     function isTracked(el) {
-      if (!el) return false;
-      if (el.isContentEditable) return true;
-      if (el.tagName === 'TEXTAREA') return true;
-      if (el.tagName === 'INPUT') return /^(text|search|email|url|tel|number|)$/i.test(el.type || '');
-      return false;
+      return !!(el && el.dataset && el.dataset.answer === '1');
     }
     function statFor(el) {
       var s = stats.get(el);

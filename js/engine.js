@@ -66,6 +66,10 @@
       backlogVersion: S.backlogVersion,
       answers: {}, answersAt: {},
       picks: {}, picksAt: '',
+      // Выписки из материалов. Собираем (владелец: «собирать максимум текста»),
+      // но судьям не отдаём: выделение — вспомогательный инструмент, а не
+      // инструмент оценки. Попасть в оценку не могут по построению.
+      marks: [],
       cursor: 0, started: false, finished: false,
       startedAt: nowIso(), finishedAt: ''
     };
@@ -87,6 +91,7 @@
           if (!p.answers) p.answers = {};
           if (!p.answersAt) p.answersAt = {};
           if (!p.picks) p.picks = {};
+          if (!p.marks) p.marks = [];
           var started = p.started || Object.keys(p.answersAt).length || p.picksAt;
           if (p.scenesVersion !== S.version && started && !p.finished) {
             try { localStorage.setItem(storageKey(bib) + '_v_' + p.scenesVersion, raw); } catch (e) {}
@@ -129,6 +134,9 @@
       picks: picksForJudge(),
       picksAt: state.picksAt,
       elicited: S.elicitedMap(),
+      // Пометки едут на сервер и НЕ едут судье: buildJudgeInput_ собирает вход по
+      // списку окон из V2_JUDGE_TASKS, и колонки marksJson для него не существует.
+      marks: state.marks || [],
       cursor: state.cursor,
       started: !!state.started,
       finished: !!state.finished,
@@ -305,14 +313,142 @@
 
   function setTab(name) {
     supportTab = name;
-    ['case', 'answers', 'ref'].forEach(function (k) {
+    ['case', 'answers', 'marks', 'ref'].forEach(function (k) {
       var b = document.querySelector('.support-tab[data-tab="' + k + '"]');
       var body = el('sup' + k.charAt(0).toUpperCase() + k.slice(1));
       if (b) b.classList.toggle('is-on', k === name);
       if (body) body.classList.toggle('is-on', k === name);
     });
     if (name === 'answers') renderAnswersTab();
+    if (name === 'marks') renderMarks();
     renderToc();
+  }
+
+  // ---------- пометки ----------
+  // Пометка — ВЫПИСКА, а не указатель в текст. Поэтому хранится сам фрагмент, и
+  // смена версии кейса её не ломает: переякоривать нечего. Переход «показать в
+  // кейсе» — по совпадению текста, и если фрагмент не нашёлся (материалы
+  // обновились), выписка всё равно на месте, просто без прыжка.
+
+  function markId() { return 'm' + Date.now().toString(36) + Math.floor(Math.random() * 1e3); }
+
+  function addMark(quote) {
+    var q = String(quote || '').replace(/\s+/g, ' ').trim();
+    if (q.length < 3) return;
+    if (q.length > 1200) q = q.slice(0, 1200);
+    state.marks = state.marks || [];
+    // Тот же фрагмент дважды не добавляем: участник выделил, отвлёкся, выделил снова.
+    for (var i = 0; i < state.marks.length; i++) if (state.marks[i].quote === q) return;
+    state.marks.push({ id: markId(), quote: q, note: '', at: nowIso() });
+    saveState();
+    renderMarks();
+    markCount();
+  }
+
+  function markCount() {
+    var e = el('marksCount');
+    if (!e) return;
+    var n = (state.marks || []).length;
+    e.textContent = n ? ' · ' + n : '';
+  }
+
+  function renderMarks() {
+    var host = el('supMarksBody');
+    if (!host) return;
+    var list = state.marks || [];
+    if (!list.length) {
+      host.innerHTML = '<p class="bl-empty">Пока ничего. Выделите фрагмент в материалах — появится кнопка «В пометки».</p>';
+      return;
+    }
+    host.innerHTML = list.map(function (m) {
+      return '<div class="mark-item" data-mark="' + m.id + '">' +
+        '<blockquote class="mark-quote">' + esc(m.quote) + '</blockquote>' +
+        // data-answer здесь НЕТ сознательно: это не ответ, и в замер вставок и
+        // набора поле не идёт. Именно из-за обратного пришлось убрать заметки.
+        '<textarea class="mark-note" rows="2" data-note="' + m.id + '" placeholder="своя строка — если нужна">' + esc(m.note || '') + '</textarea>' +
+        '<div class="mark-acts">' +
+          '<button type="button" class="mark-act" data-show="' + m.id + '">показать в кейсе</button>' +
+          '<button type="button" class="mark-act" data-del="' + m.id + '">убрать</button>' +
+          '<span class="mark-when">' + hhmm(m.at) + '</span>' +
+        '</div></div>';
+    }).join('');
+  }
+
+  // Ищем фрагмент по тексту, а не по сохранённой позиции: позиция и есть то, что
+  // ломается при новой версии кейса.
+  function showMarkInCase(quote) {
+    setTab('case');
+    var host = el('supCaseText');
+    var norm = function (s) { return String(s).replace(/\s+/g, ' '); };
+    var needle = norm(quote).slice(0, 80);
+    var walker = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, null);
+    var node, found = null;
+    while ((node = walker.nextNode())) {
+      if (norm(node.nodeValue).indexOf(needle.slice(0, Math.min(40, needle.length))) >= 0) { found = node; break; }
+    }
+    var box = el('markBar');
+    if (!found) {
+      box.style.display = '';
+      el('markBarQuote').textContent = 'Фрагмент не найден: материалы обновились. Выписка сохранена.';
+      el('markBarAdd').style.display = 'none';
+      return;
+    }
+    var target = found.parentElement;
+    host.scrollTop += target.getBoundingClientRect().top - host.getBoundingClientRect().top - 10;
+    target.classList.add('mark-flash');
+    setTimeout(function () { target.classList.remove('mark-flash'); }, 1200);
+  }
+
+  function initMarks() {
+    var bar = el('markBar'), quoteEl = el('markBarQuote'), addBtn = el('markBarAdd');
+    var pending = '';
+
+    var onSelect = function () {
+      var sel = window.getSelection ? window.getSelection() : null;
+      var txt = sel ? String(sel.toString()).replace(/\s+/g, ' ').trim() : '';
+      var inside = false;
+      if (sel && sel.rangeCount && txt) {
+        var n = sel.getRangeAt(0).commonAncestorContainer;
+        inside = el('supCaseText').contains(n.nodeType === 1 ? n : n.parentNode);
+      }
+      if (!inside || txt.length < 3) { bar.style.display = 'none'; pending = ''; return; }
+      pending = txt;
+      addBtn.style.display = '';
+      quoteEl.textContent = txt.length > 120 ? txt.slice(0, 120) + '…' : txt;
+      bar.style.display = '';
+    };
+    document.addEventListener('selectionchange', onSelect);
+    el('supCaseText').addEventListener('mouseup', onSelect);
+
+    addBtn.addEventListener('click', function () {
+      if (!pending) return;
+      addMark(pending);
+      pending = '';
+      bar.style.display = 'none';
+      try { window.getSelection().removeAllRanges(); } catch (e) {}
+    });
+
+    el('supMarksBody').addEventListener('click', function (e) {
+      var del = e.target.getAttribute && e.target.getAttribute('data-del');
+      var show = e.target.getAttribute && e.target.getAttribute('data-show');
+      if (del) {
+        state.marks = (state.marks || []).filter(function (m) { return m.id !== del; });
+        saveState(); renderMarks(); markCount(); return;
+      }
+      if (show) {
+        var m = (state.marks || []).filter(function (x) { return x.id === show; })[0];
+        if (m) showMarkInCase(m.quote);
+      }
+    });
+    el('supMarksBody').addEventListener('input', function (e) {
+      var id = e.target.getAttribute && e.target.getAttribute('data-note');
+      if (!id) return;
+      (state.marks || []).forEach(function (m) { if (m.id === id) m.note = e.target.value; });
+      saveState();
+    });
+
+    renderMarks();
+    markCount();
   }
 
   // Оглавление слева — оглавление ТЕКУЩЕЙ вкладки середины, а не отдельный
@@ -324,6 +460,17 @@
     if (supportTab === 'case') {
       kicker.textContent = 'Разделы';
       body.innerHTML = caseTocHtml || '<p class="bl-empty">Загружаю…</p>';
+      return;
+    }
+    if (supportTab === 'marks') {
+      kicker.textContent = 'Пометки';
+      var ms = state.marks || [];
+      body.innerHTML = ms.length
+        ? ms.map(function (m, i) {
+            var t = m.quote.length > 46 ? m.quote.slice(0, 46) + '…' : m.quote;
+            return '<button type="button" class="toc-link" data-markjump="' + m.id + '">' + esc(t) + '</button>';
+          }).join('')
+        : '<p class="bl-empty">Пока ничего.</p>';
       return;
     }
     if (supportTab === 'ref') {
@@ -380,6 +527,11 @@
       var b = e.target.closest && e.target.closest('.toc-link');
       if (!b) return;
       var host = null, target = null;
+      if (b.dataset.markjump) {
+        var mk = (state.marks || []).filter(function (x) { return x.id === b.dataset.markjump; })[0];
+        if (mk) showMarkInCase(mk.quote);
+        return;
+      }
       if (b.dataset.target) { host = el('supCaseText'); target = host.querySelector('#' + b.dataset.target); }
       else if (b.dataset.ref) { host = el('supRef'); target = host.querySelector('#' + b.dataset.ref); }
       else if (b.dataset.ans) {
@@ -402,6 +554,7 @@
     });
 
     loadCaseIntoSupport();
+    initMarks();
     renderToc();
   }
 
@@ -512,7 +665,10 @@
     d.innerHTML =
       '<div class="s2-mine"><span class="chat-name">Вы</span>' +
         '<label class="win-label" for="winInput">' + esc(act.label) + '</label>' +
-        '<textarea id="winInput" class="win-input" rows="9" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
+        // data-answer="1" — метка для сборщика телеметрии: он считает ТОЛЬКО поля
+        // ответа. Без метки поле не попадёт в замер вставок и набора, то есть
+        // маркер ИИ по этому окну не сработает.
+        '<textarea id="winInput" class="win-input" data-answer="1" rows="9" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
       '</div>' +
       '<div class="win-foot">' +
         '<button class="btn btn-primary" id="commitBtn">Ответить →</button>' +
@@ -636,7 +792,7 @@
             '<button type="button" class="bl-row-back" data-flip="' + it.id + '">' +
               (kind === 'taken' ? 'не сейчас' : 'беру') + '</button>' +
             (kind === 'dropped'
-              ? '<textarea class="bl-reason bl-row-reason" rows="2" data-reason="' + it.id + '" placeholder="почему не сейчас — если этот отказ сам по себе решение">' + esc(p.reason || '') + '</textarea>'
+              ? '<textarea class="bl-reason bl-row-reason" data-answer="1" rows="2" data-reason="' + it.id + '" placeholder="почему не сейчас — если этот отказ сам по себе решение">' + esc(p.reason || '') + '</textarea>'
               : '') +
             '</div>';
         }).join('');
