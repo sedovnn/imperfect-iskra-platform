@@ -219,7 +219,14 @@
 
   function subst(text) {
     var t = String(text || '');
-    if (t.indexOf('{name}') >= 0) t = t.split('{name}').join(pname());
+    if (t.indexOf('{name}') >= 0) {
+      var nm = pname();
+      // Имени может не быть: старая сессия, вход по номеру без самозаписи, пустое
+      // поле. Тогда убираем не подстановку, а всё обращение вместе с запятой —
+      // иначе персонаж говорит «Спасибо, . Прочитал» и выглядит сломанным.
+      t = nm ? t.split('{name}').join(nm)
+             : t.replace(/,\s*\{name\}/g, '').replace(/\{name\}\s*,\s*/g, '').split('{name}').join('');
+    }
     if (t.indexOf('{people}') >= 0 || t.indexOf('{money}') >= 0) {
       var tt = totals();
       t = t.split('{people}').join(String(tt.people)).split('{money}').join(num(tt.money));
@@ -761,8 +768,12 @@
     return;
   }
 
+  // Номер и пароль всегда на виду. Так тестеру нечего запоминать и незачем
+  // хранить письмо с доступами: чтобы продолжить с другого устройства, он
+  // переписывает две строки из шапки. Демо-сессии пароля нет.
   var bibLabel = '№ ' + String(session.bib).padStart(6, '0');
-  el('hdrBib').textContent = bibLabel;
+  el('hdrBib').textContent = bibLabel + (session.pass ? ' · пароль ' + session.pass : '');
+  el('hdrBib').title = 'Ваш номер и пароль: с ними вы продолжите день на другом устройстве';
   document.body.dataset.caseSrc = S.caseSrc;
 
   state = loadState(session.bib);

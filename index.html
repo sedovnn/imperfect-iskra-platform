@@ -82,6 +82,22 @@
           <p class="entry-resume-alt" style="margin-top:10px;">Вход по номеру сейчас закрыт. Организатор сообщит, когда ассессмент снова будет доступен.</p>
         </div>
 
+        <!-- Самозапись для тестовых волн: открывается ссылкой index.html?w=<3 цифры
+             волны>. Пересылать каждому номер и пароль руками — лишняя работа и
+             лишняя пересылка доступов; здесь тестер сам заходит по ссылке, называет
+             себя одним полем и сразу оказывается в дне. Волна должна быть явно
+             открыта флагом selfEnroll — номер настоящей волны в адресе входа не даёт.
+             Заглушка при этом остаётся для всех, кто пришёл без ссылки. -->
+        <form class="entry-form" id="selfForm" novalidate autocomplete="off" style="display:none;">
+          <div class="field">
+            <label for="selfName">Как вас называть</label>
+            <input class="pass-input" id="selfName" type="text" autocomplete="off" maxlength="40" placeholder="Имя" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Начать день →</button>
+          <p class="entry-err" id="selfErr">Не удалось начать.</p>
+          <p class="entry-hint">Так к вам будут обращаться в разговорах. Номер и пароль платформа выдаст сама: они всегда видны в шапке, запоминать не нужно.</p>
+        </form>
+
         <form class="entry-form" id="entryForm" novalidate autocomplete="off">
           <div class="field">
             <label for="entryCode">Номер участника — 6 цифр</label>
@@ -154,6 +170,73 @@
     document.getElementById('entryResume').style.display = '';
   }
 
+  // ---------- самозапись по ссылке тестовой волны ----------
+  // Приоритет выше заглушки: заглушка закрывает СЛУЧАЙНОГО посетителя, а тестер
+  // приходит по адресной ссылке. Волну проверяет бэкенд (флаг selfEnroll), здесь
+  // только форма: три цифры в адресе сами по себе ничего не открывают.
+  var waveParam = '';
+  try { waveParam = (new URLSearchParams(location.search).get('w') || '').trim(); } catch (e) {}
+
+  if (/^\d{3}$/.test(waveParam)) {
+    var selfForm = document.getElementById('selfForm');
+    var nameEl = document.getElementById('selfName');
+    var selfErrEl = document.getElementById('selfErr');
+    var selfBtn = selfForm.querySelector('button[type="submit"]');
+
+    form.style.display = 'none';
+    document.getElementById('entryMaintenance').style.display = 'none';
+    selfForm.style.display = '';
+    var leadSelf = document.querySelector('.entry-lead');
+    if (leadSelf) leadSelf.textContent = 'Тестовый прогон. Назовите себя, и день начнётся.';
+    var h1Self = document.querySelector('.entry-col h1');
+    if (h1Self) h1Self.textContent = 'Знакомство';
+    // Уже есть живая сессия — предлагаем продолжить, а не заводить второй номер:
+    // иначе тестер, вернувшийся по той же ссылке, начинает день заново.
+    if (liveSession && liveSession.bib) {
+      document.getElementById('entryResumeBib').textContent = '№ ' + String(liveSession.bib).padStart(6, '0');
+      document.getElementById('entryResume').style.display = '';
+    }
+
+    nameEl.addEventListener('input', function () { selfErrEl.classList.remove('show'); });
+    if (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches) {
+      try { nameEl.focus(); } catch (e) {}
+    }
+
+    selfForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var nm = (nameEl.value || '').trim();
+      selfErrEl.classList.remove('show');
+      if (!nm) {
+        selfErrEl.textContent = 'Напишите, как к вам обращаться.';
+        selfErrEl.classList.add('show');
+        return;
+      }
+      var st = selfBtn.textContent;
+      selfBtn.disabled = true;
+      selfBtn.textContent = 'Начинаю…';
+      window.imp.callApi('selfEnroll', { wave: waveParam, name: nm }).then(function (res) {
+        if (res && res.ok && res.bib) {
+          var s = { bib: String(res.bib), pass: String(res.password || ''), name: res.name || nm };
+          try {
+            sessionStorage.setItem('imp_current_session', JSON.stringify(s));
+            localStorage.setItem('imp_current_session', JSON.stringify(s));
+          } catch (err) {}
+          window.location.href = 'assessment.html';
+          return;
+        }
+        selfBtn.disabled = false;
+        selfBtn.textContent = st;
+        var er = res && res.error;
+        selfErrEl.textContent = er === 'self_enroll_closed' ? 'Эта волна закрыта для самозаписи.'
+          : er === 'wave_not_found' ? 'Волна с таким номером не найдена.'
+          : er === 'wave_full' ? 'В этой волне больше нет свободных номеров.'
+          : 'Не удалось начать. Проверьте связь и попробуйте ещё раз.';
+        selfErrEl.classList.add('show');
+      });
+    });
+    return;
+  }
+
   if (MAINTENANCE) {
     // Форму и продолжение убираем из потока, сообщение показываем. Подзаголовок
     // «введите номер» тоже врал бы, поэтому меняется вместе с ними.
@@ -203,7 +286,9 @@
     submitBtn.textContent = 'Вхожу…';
     window.imp.callApi('participantLogin', { bib: code, password: pass }).then(function (res) {
       if (res && res.ok) {
-        var session = { bib: code, pass: pass };  // bib как строка — нули сохраняются
+        // nickname приходит с сервера: имя, названное при самозаписи, следует за
+        // участником на другое устройство, и обращаться к нему продолжают так же.
+        var session = { bib: code, pass: pass, name: (res.nickname || '').trim() };  // bib строкой — нули сохраняются
         try {
           sessionStorage.setItem('imp_current_session', JSON.stringify(session));
           localStorage.setItem('imp_current_session', JSON.stringify(session));
