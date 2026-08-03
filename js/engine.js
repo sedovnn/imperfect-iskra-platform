@@ -1,20 +1,25 @@
-// i(m)perfect / «Искра» — платформа v2. ОДИН ДВИЖОК РАЗГОВОРА НА ШЕСТЬ СЦЕН.
+// i(m)perfect / «Искра» — платформа v2. ДВИЖОК РАБОЧЕГО СТОЛА.
 //
-// В v1 было шесть страниц и шесть разных машин шагов (round1.js…round5.js +
-// map.js, 262 КБ вместе). Одинаковое поведение приходилось писать заново в каждой,
-// и оно расходилось: в одной реплика реагировала на длину ответа, в другой нет;
-// в одной шаг «перебор» был, в харнессе — не было. Здесь машина одна, а сцены —
-// данные (js/scenes.js). Ни одной реплики литералом в этом файле.
+// Заменил ленту разговора на рабочий стол по одной причине, и она про замер, а не
+// про удобство. Языковая модель по построению получает на КАЖДОМ шаге: полный кейс
+// в system, всю историю разговора дословно и скрытое рассуждение, которое не судится.
+// Человек в прежней версии получал кейс, убранный за кнопку, свои ответы — за вторую
+// такую же, ленту в восемь тысяч пикселей и двадцать имён, которые надо держать в
+// голове. Он платил когнитивный налог, которого модель не платит, — а весь продукт
+// стоит на сравнении их между собой. Налог — это ошибка измерения.
 //
-// Что движок обязан делать одинаково с харнессом (иначе маршруты расходятся):
-//   • предъявлять акты строго по порядку scenes.route(), без переигрывания;
-//   • показывать условный акт «перебор» по тому же числовому правилу;
-//   • держать три гейта фиксации портфеля;
-//   • не менять ни одной реплики в зависимости от содержания или длины ответа.
+// Отсюда принцип раскладки: всё, что модель перечитывает бесплатно, человек должен
+// перечитывать почти бесплатно. Значит опора (кейс, свои ответы, заметки,
+// справочник) живёт слева постоянно и НЕ перекрывает поле ответа, а справа —
+// ровно один текущий вопрос; прошлые разговоры свёрнуты в строки.
 //
-// Чего движок НЕ делает: не настаивает (встречный вопрос вместо ответа —
-// сохраняется как есть, прогон идёт дальше), не оценивает, не показывает
-// участнику ничего про рубрику.
+// Заметки вернулись, и это тоже про паритет, а не про комфорт: у модели есть
+// скрытое рассуждение, которое не попадает ни в ответ, ни к судье. Блокнот —
+// его человеческий эквивалент. Поэтому содержимое заметок не уходит на сервер
+// НИКОГДА: отдельный ключ localStorage, отсутствие в payload, ноль телеметрии.
+//
+// Что осталось неизменным: шесть сцен и восемь окон из scenes.js, портфель с тремя
+// гейтами, необратимость, отсутствие любых реакций на содержание и длину ответа.
 
 (function () {
   var S = window.imp.scenes;
@@ -24,6 +29,8 @@
   var session = null;
   var state = null;
   var route = null;
+  var caseLoaded = false;
+  var recapShown = false;
 
   // ---------- утилиты ----------
 
@@ -36,8 +43,16 @@
   function num(n) { return String(Math.round(Number(n) * 10) / 10).replace('.', ','); }
   function nowIso() { return new Date().toISOString(); }
   function pname() { return session && session.name ? String(session.name).trim() : ''; }
+  function hhmm(iso) {
+    try { var d = new Date(iso); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+    catch (e) { return ''; }
+  }
+  function el(id) { return document.getElementById(id); }
 
   function storageKey(bib) { return 'imp_v2_' + bib; }
+  function notesKey(bib) { return 'imp_v2_notes_' + bib; }
+
+  // ---------- состояние ----------
 
   function freshState() {
     return {
@@ -45,17 +60,19 @@
       scenesVersion: S.version,
       caseVersion: S.caseVersion,
       backlogVersion: S.backlogVersion,
-      answers: {},      // q1…q8 + overspend
-      answersAt: {},
-      picks: {},        // {"<id>": {take:bool, reason:string}}
-      picksAt: '',
-      cursor: 0,
-      started: false,
-      finished: false,
-      startedAt: nowIso(),
-      finishedAt: ''
+      answers: {}, answersAt: {},
+      picks: {}, picksAt: '',
+      cursor: 0, started: false, finished: false,
+      startedAt: nowIso(), finishedAt: ''
     };
   }
+
+  // Версия маршрута сменилась под уже начатым прогоном. Ответы отвечали на другие
+  // реплики, поэтому продолжать нельзя — но и терять их нельзя тем более. Прежняя
+  // запись сохраняется под версионным ключом, участник видит отдельный экран, и
+  // НИ ОДНА запись на сервер отсюда не уходит: молчаливое обнуление строки в листе
+  // было самым дорогим дефектом платформы.
+  var blockedByVersion = false;
 
   function loadState(bib) {
     try {
@@ -66,14 +83,11 @@
           if (!p.answers) p.answers = {};
           if (!p.answersAt) p.answersAt = {};
           if (!p.picks) p.picks = {};
-          // Версия маршрута сменилась под уже начатым прогоном. Тихо продолжать
-          // нельзя: ответы отвечали на другие реплики. Незавершённый прогон
-          // начинаем заново, завершённый оставляем исторической записью.
-          if (p.scenesVersion !== S.version && !p.finished) {
-            var fresh = freshState();
-            fresh.startedAt = p.startedAt || fresh.startedAt;
-            fresh.restartedFrom = p.scenesVersion;
-            return fresh;
+          var started = p.started || Object.keys(p.answersAt).length || p.picksAt;
+          if (p.scenesVersion !== S.version && started && !p.finished) {
+            try { localStorage.setItem(storageKey(bib) + '_v_' + p.scenesVersion, raw); } catch (e) {}
+            blockedByVersion = true;
+            return p;
           }
           return p;
         }
@@ -84,23 +98,22 @@
 
   var syncTimer = null;
 
-  // Демо-прохождение с витрины (служебный номер 900, флаг только в этой вкладке).
-  // Оно НЕ пишет на бэкенд: иначе демо-прогоны ложатся в лист Answers рядом с
-  // живыми и попадают в любую выборку по всем прогонам — а отличить их там
-  // будет нечем, волны у демо нет.
+  // Демо с витрины (номер 900): на сервер не пишет вовсе, иначе демо-прогоны легли
+  // бы в лист Answers рядом с живыми, и отличить их там было бы нечем.
   var isDemo = (function () {
     try { return !!sessionStorage.getItem('imp_demo'); } catch (e) { return false; }
   })();
 
   function saveState() {
+    if (blockedByVersion) return;
     try { localStorage.setItem(storageKey(session.bib), JSON.stringify(state)); } catch (e) {}
     if (isDemo || !window.imp.isApiConfigured()) return;
     clearTimeout(syncTimer);
     syncTimer = setTimeout(sync, 3000);
   }
 
-  // Один путь записи: тем же действием saveAnswers, которым пишет харнесс.
-  // Отдельного «сохрани ответ модели» в боевом пути нет.
+  // Один путь записи: тем же действием saveAnswers, которым пишет харнесс модели.
+  // Заметок здесь нет и быть не может — см. шапку файла.
   function payload() {
     return {
       bib: session.bib,
@@ -112,9 +125,6 @@
       picks: picksForJudge(),
       picksAt: state.picksAt,
       elicited: S.elicitedMap(),
-      // Позиция в маршруте едет с ответами: без неё вход с другого устройства
-      // подтягивал восемь ответов и ставил курсор в начало дня — участник получал
-      // первый вопрос заново и первым же нажатием переписывал свой ответ.
       cursor: state.cursor,
       started: !!state.started,
       finished: !!state.finished,
@@ -124,7 +134,7 @@
   }
 
   function sync() {
-    if (isDemo || !window.imp.isApiConfigured()) return Promise.resolve(true);
+    if (blockedByVersion || isDemo || !window.imp.isApiConfigured()) return Promise.resolve(true);
     return window.imp.callApiConfirmed('saveAnswers', payload());
   }
 
@@ -146,12 +156,11 @@
     t.overPeople = t.people > LIM.people;
     t.overMoney = t.money > LIM.money;
     t.over = t.overPeople || t.overMoney;
+    t.leftPeople = LIM.people - t.people;
+    t.leftMoney = Math.round((LIM.money - t.money) * 10) / 10;
     return t;
   }
 
-  // Вид, в котором факты портфеля уходят судье: ровно то же, что отдаёт
-  // инструмент модели — {taken:[id], dropped:[id], reasons:{}} плюс суммы.
-  // Разбора чисел из прозы нет вовсе.
   function picksForJudge() {
     var taken = [], dropped = [], reasons = {};
     BACKLOG.forEach(function (it) {
@@ -174,10 +183,8 @@
     };
   }
 
-  // Три гейта фиксации — те же тексты, что харнесс отдаёт модели в tool_result.
   function gateFailure(act) {
-    var t = totals();
-    var g = act.gates || {};
+    var t = totals(), g = act.gates || {};
     if (t.undecided) return String(g.allDecided || '').replace('{n}', t.undecided);
     if (!t.taken) return g.atLeastOneTaken || '';
     if (t.dropped && !t.reasoned) return g.atLeastOneReason || '';
@@ -193,8 +200,6 @@
   }
   function isBlocking(act) { return act.kind === 'window' || act.kind === 'mechanic' || act.kind === 'case'; }
 
-  // Курсор всегда стоит на ближайшем применимом блокирующем акте. Речь и свод
-  // дня проходятся сами — они ничего не требуют.
   function normalizeCursor() {
     while (state.cursor < route.length) {
       var st = route[state.cursor];
@@ -210,8 +215,7 @@
     render();
   }
 
-  // ---------- разметка речи ----------
-  // Те же пузыри, что во всех разговорах v1: оформление платформы не меняем.
+  // ---------- речь ----------
 
   function subst(text) {
     var t = String(text || '');
@@ -238,67 +242,170 @@
     return out;
   }
 
-  function meHtml(text) {
+  function meHtml(text, at) {
     var t = String(text == null ? '' : text).trim();
     return '<div class="chat"><div class="chat-msg me"><span class="chat-name">Вы</span>' +
-      '<div class="chat-bubble">' + (t ? br(t) : '<i>промолчали</i>') + '</div></div></div>';
+      '<div class="chat-bubble">' + (t ? br(t) : '<i>промолчали</i>') + '</div></div></div>' +
+      (at ? '<div class="win-fixed">✓ зафиксировано · ' + hhmm(at) + '</div>' : '');
   }
 
-  // ---------- блоки ----------
+  // ---------- опора ----------
+
+  var supportTab = 'case';
+
+  function setTab(name) {
+    supportTab = name;
+    ['case', 'answers', 'notes', 'who'].forEach(function (k) {
+      var b = document.querySelector('.support-tab[data-tab="' + k + '"]');
+      var body = el('sup' + k.charAt(0).toUpperCase() + k.slice(1));
+      if (b) b.classList.toggle('is-on', k === name);
+      if (body) body.classList.toggle('is-on', k === name);
+    });
+    if (name === 'answers') renderAnswersTab();
+  }
+
+  function initSupport() {
+    el('supportTabs').addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.support-tab');
+      if (b) setTab(b.getAttribute('data-tab'));
+    });
+
+    // Заметки: отдельный ключ, отдельная жизнь. В payload их нет by design.
+    var ta = el('notesInput');
+    try { ta.value = localStorage.getItem(notesKey(session.bib)) || ''; } catch (e) {}
+    ta.addEventListener('input', function () {
+      try { localStorage.setItem(notesKey(session.bib), ta.value); } catch (e) {}
+    });
+
+    var who = window.imp.caseCheatsheet || { people: [], things: [] };
+    var rows = function (list) {
+      return list.map(function (r) {
+        return '<div class="who-row"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>';
+      }).join('');
+    };
+    el('supWhoBody').innerHTML =
+      '<p class="who-h">Люди</p>' + rows(who.people) +
+      '<p class="who-h">Компании и продукты</p>' + rows(who.things);
+
+    el('supportToggle').addEventListener('click', function () {
+      var g = el('dayGrid');
+      var hidden = g.classList.toggle('is-collapsed');
+      this.textContent = hidden ? 'Показать материалы' : 'Скрыть материалы';
+    });
+
+    loadCaseIntoSupport();
+  }
+
+  function loadCaseIntoSupport() {
+    if (caseLoaded) return;
+    var host = el('supCaseText');
+    if (!window.imp.loadCaseHtml) {
+      host.innerHTML = '<p class="fac-detail-text">Сборка страницы неверна: js/case-ref.js должен подключаться до js/engine.js.</p>';
+      return;
+    }
+    window.imp.loadCaseHtml().then(function (html) {
+      host.innerHTML = html;
+      caseLoaded = true;
+      buildCaseToc();
+      if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
+    }, function () {
+      host.innerHTML = '<p class="fac-detail-text">Не удалось загрузить материалы — проверьте соединение и обновите страницу.</p>';
+    });
+  }
+
+  // Оглавление собирается из самого пакета, а не задаётся списком: разъехаться
+  // с кейсом ему тогда нечем. Переход — прокруткой контейнера, а не по хэшу:
+  // хэш увёл бы всю страницу.
+  function buildCaseToc() {
+    var host = el('supCaseText'), toc = el('supCaseToc');
+    var arts = host.querySelectorAll('article[id]');
+    if (!arts.length) return;
+    var html = '';
+    for (var i = 0; i < arts.length; i++) {
+      var h = arts[i].querySelector('h2, h3');
+      // У справки по терминам своего заголовка внутри статьи нет — он стоит
+      // разделителем перед ней. Без этого в оглавлении появлялся сырой id.
+      var label = h ? h.textContent.trim() : '';
+      if (!label) {
+        var prev = arts[i].previousElementSibling;
+        while (prev && !prev.classList.contains('appx-divider')) prev = prev.previousElementSibling;
+        label = prev ? prev.textContent.trim() : arts[i].id;
+      }
+      html += '<button type="button" class="toc-link" data-target="' + arts[i].id + '">' + esc(label) + '</button>';
+    }
+    toc.innerHTML = '<div class="toc-title">Пакет материалов</div>' + html;
+    toc.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.toc-link');
+      if (!b) return;
+      var target = host.querySelector('#' + b.getAttribute('data-target'));
+      if (!target) return;
+      host.scrollTop += target.getBoundingClientRect().top - host.getBoundingClientRect().top - 8;
+      toc.querySelectorAll('.toc-link').forEach(function (x) { x.classList.remove('is-on'); });
+      b.classList.add('is-on');
+    });
+  }
+
+  // Вкладка «Мои ответы»: только зафиксированное. Незаполненное окно здесь не
+  // показывается — иначе панель печатала бы карту вопросов дня вперёд, то есть
+  // выдавала бы ось замера до того, как вопрос задан.
+  function answersHtml() {
+    var out = '';
+    S.windows().forEach(function (w) {
+      if (!state.answersAt[w.save]) return;
+      var val = state.answers[w.save];
+      out += '<div class="recap-item">' +
+        '<div class="recap-q">' + esc(w.scene.name) + ' · ' + esc(w.label) + '</div>' +
+        '<div class="recap-a">' + (String(val || '').trim() ? br(val) : '<i>промолчали</i>') + '</div>' +
+        '</div>';
+    });
+    if (state.picksAt) {
+      var t = totals(), p = picksForJudge(), byId = {};
+      BACKLOG.forEach(function (it) { byId[it.id] = it; });
+      var line = function (ids) {
+        return ids.map(function (id) {
+          var it = byId[id] || {};
+          return '<li><span class="bl-id">' + id + '</span> ' + esc(it.title || '') +
+            '<span class="recap-cost">' + (it.people || 0) + ' чел. · ' + num(it.money || 0) + ' млрд</span>' +
+            (p.reasons[String(id)] ? '<br /><i>' + esc(p.reasons[String(id)]) + '</i>' : '') + '</li>';
+        }).join('');
+      };
+      out += '<div class="recap-item">' +
+        '<div class="recap-q">Кабинет Агеева · разбор портфеля</div>' +
+        '<div class="recap-a">' +
+          '<p style="margin:0 0 8px;">' + t.people + ' человек из ' + LIM.people + ' · ' + num(t.money) + ' млрд из ' + LIM.money +
+          (t.over ? ' — за рамкой' : ' — в рамке') + '</p>' +
+          '<p style="margin:10px 0 4px;"><b>Берём (' + p.taken.length + ')</b></p><ul class="recap-list">' + line(p.taken) + '</ul>' +
+          '<p style="margin:10px 0 4px;"><b>Не сейчас (' + p.dropped.length + ')</b></p><ul class="recap-list">' + line(p.dropped) + '</ul>' +
+        '</div></div>';
+    }
+    return out || '<p class="support-note">Пока ничего не зафиксировано.</p>';
+  }
+
+  function renderAnswersTab() {
+    var host = el('supAnswersBody');
+    host.innerHTML = answersHtml();
+    if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
+  }
+
+  // ---------- блоки разговора ----------
 
   function sceneHead(scene, ix) {
-    var d = document.createElement('div');
-    d.className = 'sc-head';
-    d.innerHTML = '<span class="sc-head-count">Разговор ' + (ix + 1) + ' из ' + S.scenes.length + '</span>' +
+    return '<div class="sc-head">' +
+      '<span class="sc-head-count">Разговор ' + (ix + 1) + ' из ' + S.scenes.length + '</span>' +
       '<span class="sc-head-name">' + esc(scene.name) + '</span>' +
-      '<span class="sc-head-where">' + esc(scene.where) + '</span>';
-    return d;
-  }
-
-  function speechBlock(act) {
-    var d = document.createElement('div');
-    d.className = 's2-block';
-    d.innerHTML = speechHtml(act);
-    return d;
-  }
-
-  // Прочитанный пакет остаётся в разговоре одной строкой — чтобы участник видел,
-  // что шаг был, и знал, где кейс теперь лежит. Это не «сигнал прочтения» для
-  // оценки: чтение не измеряется ни у кого, в Answers этот факт не пишется.
-  function caseDoneBlock(act) {
-    var d = document.createElement('div');
-    d.className = 's2-block case-done';
-    d.innerHTML = '<span class="case-done-mark">✓</span> ' + esc(act.done || 'Пакет материалов прочитан') +
-      ' · <button type="button" class="case-done-reopen" id="caseReopen">' + esc(act.reopen || 'открыть снова') + '</button>';
-    d.querySelector('#caseReopen').addEventListener('click', function () {
-      var b = document.querySelector('.case-ref-dock');
-      if (b) b.click();
-    });
-    return d;
+      '<span class="sc-head-where">' + esc(scene.where) + '</span>' +
+      '</div>';
   }
 
   function windowBlock(act, locked) {
     var d = document.createElement('div');
     d.className = 's2-block';
     var val = state.answers[act.save] || '';
-    if (locked) {
-      // Отметка «зафиксировано» с временем: участник должен видеть, что ответ
-      // ушёл и переписать его нельзя, — иначе необратимость приходится угадывать
-      // по тому, что поле исчезло.
-      var at = state.answersAt[act.save];
-      var stamp = '';
-      if (at) {
-        var dt = new Date(at);
-        stamp = '<div class="win-fixed">✓ зафиксировано · ' +
-          ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2) + '</div>';
-      }
-      d.innerHTML = meHtml(val) + stamp;
-      return d;
-    }
+    if (locked) { d.innerHTML = meHtml(val, state.answersAt[act.save]); return d; }
     d.innerHTML =
       '<div class="s2-mine"><span class="chat-name">Вы</span>' +
         '<label class="win-label" for="winInput">' + esc(act.label) + '</label>' +
-        '<textarea id="winInput" class="win-input" rows="10" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
+        '<textarea id="winInput" class="win-input" rows="9" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
       '</div>' +
       '<div class="win-foot">' +
         '<button class="btn btn-primary" id="commitBtn">Ответить →</button>' +
@@ -306,10 +413,19 @@
       '</div>';
 
     var ta = d.querySelector('#winInput');
+    // Поле растёт под ответ: писать письмо правлению в одиннадцать видимых строк,
+    // не видя начала, — это про выносливость, а не про мышление. Обратной связи о
+    // качестве или объёме здесь нет: реплики не меняются, ничего не подсвечивается.
+    var grow = function () {
+      ta.style.height = 'auto';
+      ta.style.height = Math.max(200, ta.scrollHeight + 2) + 'px';
+    };
     ta.addEventListener('input', function (e) {
       state.answers[act.save] = e.target.value;
+      grow();
       saveState();
     });
+    setTimeout(grow, 0);
     d.querySelector('#commitBtn').addEventListener('click', function () {
       var go = function () {
         state.answers[act.save] = ta.value;
@@ -317,8 +433,6 @@
         advance();
       };
       if (!String(ta.value).trim()) {
-        // Не настойка: молчание — законный ответ, он сохраняется как есть и
-        // прогон идёт дальше. Спрашиваем один раз, потому что ход необратим.
         window.imp.confirm(act.silence || 'Промолчать?', { confirmLabel: 'Промолчать', cancelLabel: 'Вернуться к ответу' })
           .then(function (ok) { if (ok) go(); });
         return;
@@ -332,12 +446,11 @@
     var d = document.createElement('div');
     d.className = 's2-block bl-host';
     if (locked) {
-      var t = totals();
-      d.innerHTML = '<div class="bl-locked">' +
-        '<b>' + t.taken + '</b> берём · <b>' + t.dropped + '</b> не сейчас · ' +
-        t.people + ' человек из ' + LIM.people + ' · ' + num(t.money) + ' млрд из ' + LIM.money +
-        (t.over ? ' <span class="bl-over-tag">за рамкой</span>' : '') +
-        '</div>';
+      var tl = totals();
+      d.innerHTML = '<div class="bl-locked"><b>' + tl.taken + '</b> берём · <b>' + tl.dropped + '</b> не сейчас · ' +
+        tl.people + ' человек из ' + LIM.people + ' · ' + num(tl.money) + ' млрд из ' + LIM.money +
+        (tl.over ? ' <span class="bl-over-tag">за рамкой</span>' : '') +
+        ' <span class="bl-locked-hint">разбор целиком — во вкладке «Мои ответы»</span></div>';
       return d;
     }
     d.innerHTML =
@@ -345,15 +458,21 @@
       '<div class="bl-decided"></div>' +
       '<div class="bl-list"></div>' +
       '<div class="bl-hint" style="display:none;"></div>' +
-      '<button class="btn btn-primary" id="fixBtn" style="margin-top:16px;">Зафиксировать разбор →</button>';
+      '<button class="btn btn-primary" id="fixBtn" style="margin-top:16px;">Зафиксировать разбор →</button>' +
+      '<span class="win-note" style="margin-left:12px;">Разбор зафиксируется: переиграть его нельзя.</span>';
 
     function renderList() {
-      var sum = d.querySelector('.bl-sum-host');
       var t = totals();
-      sum.innerHTML = '<div class="bl-sum' + (t.over ? ' is-over' : '') + '">' +
+      // Счётчик показывает ОСТАТОК, а не только набранное: арифметику «сколько ещё
+      // влезает» участник не должен делать в голове — её не меряет ни одна
+      // способность. Подсветки «что ещё влезет» нет: это была бы подсказка отбора.
+      d.querySelector('.bl-sum-host').innerHTML =
+        '<div class="bl-sum' + (t.over ? ' is-over' : '') + '">' +
         '<span class="bl-sum-item"><b>' + t.taken + '</b> берём</span>' +
-        '<span class="bl-sum-item' + (t.overPeople ? ' is-over' : '') + '"><b>' + t.people + '</b> человек из ' + LIM.people + '</span>' +
-        '<span class="bl-sum-item' + (t.overMoney ? ' is-over' : '') + '"><b>' + num(t.money) + '</b> млрд из ' + LIM.money + '</span>' +
+        '<span class="bl-sum-item' + (t.overPeople ? ' is-over' : '') + '"><b>' + t.people + '</b> из ' + LIM.people + ' человек' +
+          '<i>' + (t.leftPeople >= 0 ? 'свободно ' + t.leftPeople : 'перебор на ' + (-t.leftPeople)) + '</i></span>' +
+        '<span class="bl-sum-item' + (t.overMoney ? ' is-over' : '') + '"><b>' + num(t.money) + '</b> из ' + LIM.money + ' млрд' +
+          '<i>' + (t.leftMoney >= 0 ? 'свободно ' + num(t.leftMoney) : 'перебор на ' + num(-t.leftMoney)) + '</i></span>' +
         (t.undecided ? '<span class="bl-sum-left">осталось решить: ' + t.undecided + '</span>' : '') +
         '</div>';
 
@@ -363,8 +482,6 @@
         if (!p) undecided.push(it); else if (p.take) taken.push(it); else dropped.push(it);
       });
 
-      // Решённое уезжает наверх по одной строке: полотно из двадцати карточек
-      // тает по мере разбора. Передумать можно тут же.
       var dec = d.querySelector('.bl-decided');
       dec.innerHTML = '';
       function group(title, arr, kind) {
@@ -376,8 +493,11 @@
           var p = pickOf(it.id) || {};
           var row = document.createElement('div');
           row.className = 'bl-mini';
+          // Автор и цена остаются видимыми и после решения: три окна из восьми
+          // опираются на эти данные, а после фиксации их больше нигде нет.
           row.innerHTML =
-            '<span class="bl-mini-title"><span class="bl-id">' + it.id + '</span> ' + esc(it.title) + '</span>' +
+            '<span class="bl-mini-title"><span class="bl-id">' + it.id + '</span> ' + esc(it.title) +
+              '<span class="bl-mini-who">' + esc(it.who) + '</span></span>' +
             '<span class="bl-mini-cost">' + it.people + ' чел. · ' + num(it.money) + ' млрд</span>' +
             '<span class="bl-mini-acts"><button type="button" class="s2-act" data-flip="' + it.id + '">' +
               (kind === 'taken' ? 'не сейчас' : 'беру') + '</button></span>' +
@@ -391,10 +511,6 @@
       group('Берём', taken, 'taken');
       group('Не сейчас', dropped, 'dropped');
 
-      // Нерешённое: номер, заголовок, автор, цена, аргумент автора. Номера
-      // показываем (план §5.1): в v1 они были скрыты, а харнесс переводил
-      // порядковый номер в реальный id — трансляция, существовавшая только для
-      // одного носителя. В списке есть пропуски (нет 3 и 8, максимум 22).
       var list = d.querySelector('.bl-list');
       list.innerHTML = '';
       undecided.forEach(function (it) {
@@ -414,15 +530,11 @@
       var hint = d.querySelector('.bl-hint');
       var lines = [];
       if (t.over) {
-        // Превышение НЕ блокируем: Агеев вслух разрешил выйти за рамку, а
-        // превышение — наблюдаемый ответ, не ошибка формы. Но раз он обещал
-        // спросить, чем платите, — предупреждаем здесь, спрашиваем следующим тактом.
         lines.push('Набрано ' + t.people + ' человек при ' + LIM.people + ' и ' + num(t.money) +
           ' млрд при ' + LIM.money + '. Выйти за рамку можно — Агеев тогда спросит, чем платите.');
       }
       hint.innerHTML = lines.join('<br />');
       hint.style.display = lines.length ? '' : 'none';
-
       if (window.imp && window.imp.typoDom) window.imp.typoDom(d);
     }
 
@@ -434,9 +546,17 @@
       if (!id) return;
       var prev = pickOf(id);
       var next = flip ? !(prev && prev.take) : !!take;
-      state.picks[String(id)] = { take: next, reason: next ? '' : (prev && prev.reason) || '' };
+      // Причина отказа при возврате в «беру» НЕ теряется: участник мог передумать
+      // дважды, и стирать написанное молча нельзя.
+      state.picks[String(id)] = { take: next, reason: (prev && prev.reason) || '' };
       saveState();
       renderList();
+      if (drop) {
+        // Поле причины появляется в сводке наверху, а клик был внизу: переводим
+        // фокус, иначе участник его просто не находит.
+        var box = d.querySelector('.bl-reason[data-reason="' + id + '"]');
+        if (box) { box.focus(); }
+      }
     });
     d.addEventListener('input', function (e) {
       var rid = e.target.getAttribute && e.target.getAttribute('data-reason');
@@ -457,144 +577,139 @@
     return d;
   }
 
-  // Свод дня перед последним окном: read-only, дословно, плюс разбор портфеля.
+  // Свод дня перед письмом: не вторая копия ответов в ленте, а переключение опоры
+  // на вкладку «Мои ответы». Требование плана — «участник видит свой день перед
+  // тем, как писать письмо» — выполняется, а 1600 пикселей дубля не появляется.
   function recapBlock(act) {
     var d = document.createElement('div');
-    d.className = 's2-block recap-block';
+    d.className = 's2-block recap-pointer';
     d.innerHTML = '<p class="kicker">' + esc(act.title) + '</p>' +
-      '<p class="section-lead" style="margin:0 0 18px;">' + esc(act.lead) + '</p>' +
-      answersHtml();
+      '<p class="section-lead" style="margin:0;">' + esc(act.lead) + ' Всё, что вы сказали за день, — во вкладке «Мои ответы» слева.</p>';
+    if (!recapShown) { recapShown = true; setTab('answers'); }
     return d;
   }
 
-  // Один рендер и для свода дня, и для панели «Мои ответы»: подписи окон берутся
-  // из scenes.js, поэтому вторая копия текстов вопросов не появляется.
-  function answersHtml() {
-    var out = '';
-    S.windows().forEach(function (w) {
-      var val = state.answers[w.save];
-      if (w.conditional && !String(val || '').trim()) return;
-      out += '<div class="recap-item">' +
-        '<div class="recap-q">' + esc(w.scene.name) + ' · ' + esc(w.label) + '</div>' +
-        '<div class="recap-a">' + (String(val || '').trim() ? br(val) : '<i>промолчали</i>') + '</div>' +
-        '</div>';
+  function caseDoneBlock(act) {
+    var d = document.createElement('div');
+    d.className = 's2-block case-done';
+    d.innerHTML = '<span class="case-done-mark">✓</span> ' + esc(act.done || 'Пакет материалов прочитан') +
+      ' · <button type="button" class="case-done-reopen" id="caseReopen">' + esc(act.reopen || 'открыть снова') + '</button>';
+    d.querySelector('#caseReopen').addEventListener('click', function () {
+      setTab('case');
+      el('dayGrid').classList.remove('is-collapsed');
+      el('supportToggle').textContent = 'Скрыть материалы';
     });
-    if (state.picksAt) {
-      var t = totals(), p = picksForJudge();
-      var byId = {};
-      BACKLOG.forEach(function (it) { byId[it.id] = it; });
-      var line = function (ids) {
-        return ids.map(function (id) {
-          return '<li><span class="bl-id">' + id + '</span> ' + esc((byId[id] || {}).title || '') +
-            (p.reasons[String(id)] ? ' — <i>' + esc(p.reasons[String(id)]) + '</i>' : '') + '</li>';
-        }).join('');
-      };
-      out += '<div class="recap-item">' +
-        '<div class="recap-q">Кабинет Агеева · разбор портфеля</div>' +
-        '<div class="recap-a">' +
-          '<p style="margin:0 0 8px;">' + t.people + ' человек из ' + LIM.people + ' · ' + num(t.money) + ' млрд из ' + LIM.money +
-          (t.over ? ' — за рамкой' : ' — в рамке') + '</p>' +
-          '<p style="margin:10px 0 4px;"><b>Берём (' + p.taken.length + ')</b></p><ul class="recap-list">' + line(p.taken) + '</ul>' +
-          '<p style="margin:10px 0 4px;"><b>Не сейчас (' + p.dropped.length + ')</b></p><ul class="recap-list">' + line(p.dropped) + '</ul>' +
-        '</div></div>';
-    }
-    return out || '<p class="section-lead">Пока ничего не сказано.</p>';
+    return d;
   }
 
   // ---------- рендер ----------
 
-  var body = null;
-  var caseLoaded = false;
-
-  // Экран чтения пакета: пока курсор стоит на акте kind:'case', разговора нет —
-  // на экране только материалы. Это первый шаг дня и прямой ответ на реплику
-  // «Не отвлекаю, читайте»: читать должно быть что, а не где-то за кнопкой.
-  function showCaseScreen(act) {
-    var screen = document.getElementById('caseScreen');
-    document.getElementById('assessRoot').style.display = 'none';
-    screen.style.display = '';
-    document.getElementById('caseReadTitle').textContent = act.title || 'Пакет материалов';
-    document.getElementById('caseReadLead').textContent = act.lead || '';
-    document.getElementById('caseReadNote').textContent = act.note || '';
-    var cta = document.getElementById('caseReadCta');
+  function readingMode(on, act) {
+    var g = el('dayGrid');
+    g.classList.toggle('is-reading', !!on);
+    el('caseReadFoot').style.display = on ? '' : 'none';
+    el('supportToggle').style.display = on ? 'none' : '';
+    if (!on) return;
+    setTab('case');
+    el('hdrDayName').textContent = '«Искра» · материалы';
+    el('caseReadNote').textContent = act.note || '';
+    var cta = el('caseReadCta');
     cta.textContent = act.cta || 'Дальше →';
-    cta.onclick = function () { advance(); };
-
-    if (caseLoaded) return;
-    var host = document.getElementById('caseReadHost');
-    // Загрузчик приходит из case-ref.js, и он обязан быть подключён раньше
-    // движка. Если порядок скриптов кто-то переставит — говорим это прямо, а не
-    // падаем на первом рендере с пустым экраном.
-    if (!window.imp.loadCaseHtml) {
-      host.innerHTML = '<p class="fac-detail-text">Сборка страницы неверна: js/case-ref.js должен подключаться до js/engine.js. Без него материалы не загрузить.</p>';
-      document.getElementById('caseReadCta').disabled = true;
-      return;
-    }
-    window.imp.loadCaseHtml().then(function (html) {
-      host.innerHTML = html;
-      caseLoaded = true;
-      if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
-    }, function () {
-      // Пустой экран чтения молча пропускать нельзя: без пакета отвечать не на что.
-      host.innerHTML = '<p class="fac-detail-text">Не удалось загрузить материалы — проверьте соединение и обновите страницу. Без пакета разговор начинать нельзя.</p>';
-      cta.disabled = true;
-    });
+    cta.onclick = function () { el('hdrDayName').textContent = '«Искра» · один день'; advance(); };
   }
 
   function render() {
     var cur = route[state.cursor];
-    if (cur && applies(cur.act) && cur.act.kind === 'case') { showCaseScreen(cur.act); return; }
-    document.getElementById('caseScreen').style.display = 'none';
-    document.getElementById('assessRoot').style.display = '';
+    if (cur && applies(cur.act) && cur.act.kind === 'case') { readingMode(true, cur.act); return; }
+    readingMode(false);
 
-    body.innerHTML = '';
-    var lastScene = -1;
+    var hist = el('talkHistory');
+    var now = el('talkCurrent');
+    hist.innerHTML = '';
+    now.innerHTML = '';
+
+    var curSceneIx = cur ? cur.sceneIx : S.scenes.length - 1;
+
+    // Прошлые разговоры — свёрнутыми строками. Двенадцать экранов прокрутки,
+    // чтобы вспомнить, что сказал в первом разговоре, — это налог на память.
+    S.scenes.forEach(function (sc, si) {
+      if (si >= curSceneIx) return;
+      var det = document.createElement('details');
+      det.className = 'talk-past';
+      var answered = sc.acts.filter(function (a) { return a.kind === 'window' && state.answersAt[a.save]; }).length;
+      det.innerHTML = '<summary><span class="talk-past-mark">✓</span> Разговор ' + (si + 1) + ' · ' + esc(sc.name) +
+        '<span class="talk-past-meta">' + (answered ? answered + (answered === 1 ? ' ответ' : ' ответа') : 'пройден') + '</span></summary>';
+      var body = document.createElement('div');
+      body.className = 'talk-past-body';
+      sc.acts.forEach(function (a) {
+        if (!applies(a)) return;
+        if (a.kind === 'speech') body.innerHTML += speechHtml(a);
+        else if (a.kind === 'window' && state.answersAt[a.save]) {
+          body.innerHTML += '<div class="win-label-past">' + esc(a.label) + '</div>' +
+            meHtml(state.answers[a.save], state.answersAt[a.save]);
+        }
+      });
+      det.appendChild(body);
+      hist.appendChild(det);
+    });
+
+    // Текущий разговор: его акты до курсора включительно.
+    var scene = S.scenes[curSceneIx];
+    now.insertAdjacentHTML('beforeend', sceneHead(scene, curSceneIx));
     for (var i = 0; i < route.length; i++) {
       var st = route[i];
+      if (st.sceneIx !== curSceneIx) continue;
       if (!applies(st.act)) continue;
-      var past = i < state.cursor;
-      var current = i === state.cursor;
+      var past = i < state.cursor, current = i === state.cursor;
       if (!past && !current) break;
-
-      if (st.sceneIx !== lastScene) {
-        body.appendChild(sceneHead(st.scene, st.sceneIx));
-        lastScene = st.sceneIx;
-      }
-      if (st.act.kind === 'speech') body.appendChild(speechBlock(st.act));
-      else if (st.act.kind === 'recap') body.appendChild(recapBlock(st.act));
-      else if (st.act.kind === 'case') body.appendChild(caseDoneBlock(st.act));
-      else if (st.act.kind === 'window') body.appendChild(windowBlock(st.act, past));
-      else if (st.act.kind === 'mechanic') body.appendChild(mechanicBlock(st.act, past));
+      if (st.act.kind === 'speech') {
+        var b = document.createElement('div');
+        b.className = 's2-block';
+        b.innerHTML = speechHtml(st.act);
+        now.appendChild(b);
+      } else if (st.act.kind === 'recap') now.appendChild(recapBlock(st.act));
+      else if (st.act.kind === 'case') now.appendChild(caseDoneBlock(st.act));
+      else if (st.act.kind === 'window') now.appendChild(windowBlock(st.act, past));
+      else if (st.act.kind === 'mechanic') now.appendChild(mechanicBlock(st.act, past));
     }
 
     if (state.cursor >= route.length && !state.finished) {
       var fin = document.createElement('div');
       fin.className = 's2-block';
-      fin.innerHTML = '<div class="win-foot">' +
-        '<button class="btn btn-primary" id="finishBtn">Закончить день →</button>' +
-        '<span class="win-note">День закроется: письмо уйдёт Агееву, ответы менять будет нельзя.</span>' +
-        '</div>';
+      fin.innerHTML = '<div class="win-foot"><button class="btn btn-primary" id="finishBtn">Закончить день →</button>' +
+        '<span class="win-note">День закроется: письмо уйдёт Агееву, ответы менять будет нельзя.</span></div>';
       fin.querySelector('#finishBtn').addEventListener('click', finish);
-      body.appendChild(fin);
+      now.appendChild(fin);
     }
 
-    if (window.imp && window.imp.typoDom) window.imp.typoDom(body);
+    if (window.imp && window.imp.typoDom) window.imp.typoDom(now);
+    if (supportTab === 'answers') renderAnswersTab();
     syncHeader();
-    var last = body.lastElementChild;
-    if (last && !state.finished) last.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    // Прокрутка: начало текущего разговора — к верху колонки. Считаем по rect'ам,
+    // а не по offsetTop: offsetTop меряется от позиционированного предка, и первая
+    // версия увозила шапку сцены за экран.
+    // Мгновенно, без smooth: плавная прокрутка на первом рендере не срабатывает,
+    // и после обновления страницы участник оказывался в начале ленты.
+    var scroller = el('talkScroll');
+    var head = now.querySelector('.sc-head');
+    if (scroller && head) {
+      // Ставим НАЧАЛО текущего разговора к верху колонки и на этом останавливаемся.
+      // Доводить до поля ответа было ошибкой: реплика персонажа — это вопрос, и
+      // прокрутка к полю пролистывала бы участнику вопрос, на который он отвечает.
+      scroller.scrollTop += head.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 12;
+    }
   }
 
   function syncHeader() {
     var st = route[Math.min(state.cursor, route.length - 1)];
     var ix = st ? st.sceneIx : S.scenes.length - 1;
-    var el = document.getElementById('hdrScene');
-    if (el) el.textContent = (state.cursor >= route.length ? S.scenes.length : ix + 1) + ' / ' + S.scenes.length;
+    var e = el('hdrScene');
+    if (e) e.textContent = (state.cursor >= route.length ? S.scenes.length : ix + 1) + ' / ' + S.scenes.length;
   }
 
   function showFinish() {
-    document.getElementById('assessRoot').style.display = 'none';
-    document.getElementById('caseScreen').style.display = 'none';
-    document.getElementById('finishOverlay').style.display = 'flex';
+    el('assessRoot').style.display = 'none';
+    el('finishOverlay').style.display = 'flex';
   }
 
   function finish() {
@@ -603,54 +718,20 @@
     saveState();
     clearTimeout(syncTimer);
     render();
-    // Финиш-оверлей ждёт подтверждения записи: при сбое сети участник иначе
-    // уходит уверенным, что ответы сохранены. Не дождались — оверлей всё равно
-    // покажем (локально всё есть), а api.js повторит отправку сам.
     sync().then(showFinish, showFinish);
   }
 
-  // ---------- панель «Мои ответы» ----------
-
-  function initAnswersPanel() {
-    var panel = document.getElementById('answersPanel');
-    var host = document.getElementById('answersPanelContent');
-    if (!panel || !host) return;
-    function open() {
-      host.innerHTML = answersHtml();
-      if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
-      panel.style.display = 'flex';
-      panel.setAttribute('aria-hidden', 'false');
-      host.scrollTop = 0;
-    }
-    function close() {
-      panel.style.display = 'none';
-      panel.setAttribute('aria-hidden', 'true');
-    }
-    // .js-open-dossier — класс, который case-ref.js ставит кнопке, перенося её
-    // в шапку. Панель v1 (dossier-panel.js) на этой странице не подключена,
-    // поэтому конфликта обработчиков нет: тот рендер знал восемнадцать полей.
-    document.addEventListener('click', function (e) {
-      if (e.target.closest && e.target.closest('.js-open-dossier, .js-open-answers')) { e.preventDefault(); open(); }
-    });
-    document.getElementById('closeAnswersBtn').addEventListener('click', close);
-    panel.addEventListener('click', function (e) { if (e.target === panel) close(); });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && panel.style.display !== 'none') close();
-    });
-  }
-
-  // ---------- установка дня ----------
+  // ---------- установка ----------
 
   function initSetup() {
-    var host = document.getElementById('setupBody');
-    var sys = S.system;
+    var host = el('setupBody'), sys = S.system;
     host.innerHTML =
       '<p class="kicker">' + esc(sys.title) + '</p>' +
       sys.lead.map(function (p) { return '<p>' + br(p) + '</p>'; }).join('') +
       '<ul class="setup-rules">' + sys.rules.map(function (r) { return '<li>' + br(r) + '</li>'; }).join('') + '</ul>' +
       '<p class="intro-note">' + br(sys.note) + '</p>';
     if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
-    document.getElementById('startDayBtn').addEventListener('click', function () {
+    el('startDayBtn').addEventListener('click', function () {
       state.started = true;
       saveState();
       showRoot();
@@ -658,8 +739,8 @@
   }
 
   function showRoot() {
-    document.getElementById('setupGate').style.display = 'none';
-    document.getElementById('assessRoot').style.display = '';
+    el('setupGate').style.display = 'none';
+    el('assessRoot').style.display = '';
     render();
     if (state.finished) showFinish();
   }
@@ -667,84 +748,64 @@
   // ---------- старт ----------
 
   session = (function () { try { return window.imp.loadSession(); } catch (e) { return null; } })();
-  if (!session || !session.bib) {
-    document.getElementById('gate').style.display = 'flex';
-    return;
-  }
+  if (!session || !session.bib) { el('gate').style.display = 'flex'; return; }
 
-  // Сверка источников до первого рендера: если портфель в backlog.js разошёлся с
-  // версией, объявленной в сценах, суммы в реплике Агеева («22 миллиарда»,
-  // «около пятисот») больше не описывают экран — падаем громко, а не считаем
-  // ресурс мимо, как это делал pr1FloorFree в v1.
+  // Сверка источников до первого рендера: разошёлся портфель — суммы в реплике
+  // Агеева больше не описывают экран, и начинать разговор нельзя.
   if (S.backlogVersion !== window.imp.backlogVersion) {
-    document.getElementById('gate').style.display = 'flex';
+    el('gate').style.display = 'flex';
     document.querySelector('#gate .gate-card').innerHTML =
       '<p class="kicker">Сборка маршрута</p><h2>Версии портфеля разошлись</h2>' +
       '<p class="section-lead">scenes.js ожидает портфель ' + esc(S.backlogVersion) +
-      ', а backlog.js отдаёт ' + esc(window.imp.backlogVersion) +
-      '. Пока это не сведено, разговор начинать нельзя: лимиты в репликах перестали описывать экран.</p>';
+      ', а backlog.js отдаёт ' + esc(window.imp.backlogVersion) + '.</p>';
     return;
   }
 
   var bibLabel = '№ ' + String(session.bib).padStart(6, '0');
-  document.getElementById('hdrBib').textContent = bibLabel;
-  document.getElementById('hdrBibCase').textContent = bibLabel;
+  el('hdrBib').textContent = bibLabel;
   document.body.dataset.caseSrc = S.caseSrc;
 
-  body = document.getElementById('assessBody');
   state = loadState(session.bib);
   route = S.route();
+
+  if (blockedByVersion) { el('versionGate').style.display = 'flex'; return; }
+
   normalizeCursor();
 
   if (isDemo) {
-    // Прямо говорим, что это демо: иначе экран не отличим от реального прогона,
-    // а он не сохраняется на сервер и не оценивается.
-    var save = document.getElementById('hdrSave');
-    if (save) { save.className = 'hdr-save'; save.textContent = 'демо · не сохраняется на сервер'; }
+    var sv = el('hdrSave');
+    if (sv) { sv.className = 'hdr-save'; sv.textContent = 'демо · не сохраняется на сервер'; }
   } else {
     window.imp.hydrateOnce('loadAnswers', session.bib, storageKey(session.bib));
+    (function initSaveStatus() {
+      var e2 = el('hdrSave');
+      if (!e2 || !window.imp.onSyncStatus) return;
+      window.imp.onSyncStatus(function (s) {
+        if (s.failed > 0) {
+          e2.className = 'hdr-save is-failed';
+          e2.textContent = 'не сохранено';
+          e2.title = 'Ответы сохранены в этом браузере; отправка повторится, когда связь вернётся.';
+        } else if (s.pending > 0) {
+          e2.className = 'hdr-save is-pending'; e2.textContent = 'сохраняю…'; e2.title = '';
+        } else if (s.lastOkAt) {
+          e2.className = 'hdr-save'; e2.textContent = 'сохранено ' + hhmm(s.lastOkAt);
+          e2.title = 'Последнее подтверждение записи на сервере.';
+        } else { e2.className = 'hdr-save'; e2.textContent = ''; }
+      });
+    })();
   }
 
-  // Статус записи в шапке. Молчаливая потеря ответа — самое дорогое, что может
-  // случиться на этом экране, поэтому состояние очереди видно всегда.
-  (function initSaveStatus() {
-    var el = document.getElementById('hdrSave');
-    if (!el || !window.imp.onSyncStatus) return;
-    // В демо на это место написано «демо · не сохраняется на сервер»; подписка
-    // на статус очереди тут же перезатёрла бы надпись пустой строкой.
-    if (isDemo) return;
-    window.imp.onSyncStatus(function (s) {
-      if (s.failed > 0) {
-        el.className = 'hdr-save is-failed';
-        el.textContent = 'не сохранено';
-        el.title = 'Ответы сохранены в этом браузере; отправка повторится, когда связь вернётся.';
-      } else if (s.pending > 0) {
-        el.className = 'hdr-save is-pending';
-        el.textContent = 'сохраняю…';
-        el.title = '';
-      } else if (s.lastOkAt) {
-        var d = new Date(s.lastOkAt);
-        el.className = 'hdr-save';
-        el.textContent = 'сохранено ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
-        el.title = 'Последнее подтверждение записи на сервере.';
-      } else {
-        el.className = 'hdr-save';
-        el.textContent = '';
-      }
-    });
-  })();
-
-  initAnswersPanel();
+  initSupport();
   initSetup();
 
   if (state.started) showRoot();
-  else document.getElementById('setupGate').style.display = 'flex';
+  else el('setupGate').style.display = 'flex';
 
-  // отладочная поверхность для харнесса и для проверки тождественности маршрута
   window.imp.v2 = {
     state: function () { return state; },
     route: function () { return route; },
     payload: payload,
-    totals: totals
+    totals: totals,
+    setTab: setTab
   };
 })();
