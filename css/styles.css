@@ -15,10 +15,16 @@
   --accent-tint: #fff2ec;
   --accent-line: #ffd7c7;
   --accent-ink: #c73500;  /* вермилион для мелкого текста на --accent-tint: 4.9:1 (WCAG 1.4.3); сам --accent там даёт 3.1:1 */
+  /* ГОЛУБОЙ = «ВЫ» (решение 04.08, было наоборот — см. DESIGN.md, Colors).
+     Участник отмечен голубым везде: своя реплика в дне (--band), маркер и свои
+     значения в отчёте (--jb-ink). Вермилион в словаре сравнения перешёл на
+     ИИ-референс и там всегда контуром, а не заливкой: у своих значений заливка,
+     у референса контур — форма различает их, если цвет не прочитался. */
   --jb: #89bbf1;
   --band: #eaf3fb;
   --band-line: #bcd9f2;
-  --jb-ink: #2f6bb0;   /* читаемый синий текст на светлом фоне (служебные страницы) */
+  --jb-ink: #2f6bb0;   /* читаемый синий: текст на светлом и ЗАЛИТЫЙ маркер «вы» —
+                          сам --jb на бумаге даёт ≈2:1, ниже порога 3:1 (WCAG 1.4.11) */
   --ink: #181818;
   --paper: #ffffff;
   --muted: #6b6e73;
@@ -35,20 +41,50 @@
                   снизу упирается в maxWidth 1120 из DESIGN.md, дальше тянется
                   до 1560 — чтобы на 1920/2560 не оставалось полполосы пустоты.
                   Это max-width, поэтому на узких экранах просто отдаёт всю ширину.
-       --w-read   ЧТЕНИЕ (легенда, реплики, вопросы) — readWidth 68ch из DESIGN.md.
-                  Шире читать вредно, поэтому проза не растёт вместе с рамкой.
+       --w-read   ЧТЕНИЕ (легенда, реплики, вопросы, текст кейса) — readWidth из
+                  DESIGN.md. 04.08 опущен с 68ch до 60ch по решению владельца:
+                  замер на русском тексте кейса дал при 68ch восемьдесят один знак
+                  в строке, а комфортная полоса кончается на 75. Единица врёт по
+                  построению — ch это ширина латинского нуля, кириллица у́же, — так
+                  что ориентир здесь замер, а не число в записи. На мониторах до
+                  1680 потолок вообще не участвует: строку держит ширина колонки.
        --w-form   ПИСЬМО (текстареа, поля) — шире прозы: человек пишет стратегию,
                   а не читает её. Но не во всю рамку, иначе строка расползается.
        --frame-pad боковой отступ рамки (spacing.frame) — текучий, ОДИН для шапки
                   и для тела, иначе лого разъезжается с колонкой контента. */
   --maxw: clamp(1120px, 92vw, 1560px);
-  --w-read: 68ch;
+  --w-read: 60ch;
   --w-form: 880px;
   --frame-pad: clamp(20px, 4vw, 56px);
   /* высота шапки раунда — нужна, чтобы экран легенды ложился ПОД шапку, а не поверх неё */
   --hdr-h: 70px;
   --ff-display: 'Inter Tight', sans-serif;
   --ff-body: 'Inter Tight', sans-serif;
+
+  /* ---- МЕТКА: один рецепт на всю систему ----
+     DESIGN.md, Label/kicker: 11px / вес 600 / разрядка 0.1em / UPPERCASE / серый-2.
+     Сведено 04.08 по решению владельца. До этого одна и та же метка была написана
+     ДВЕНАДЦАТЬЮ правилами и ВОСЬМЮ разными наборами значений: кегли 10, 10.5, 11 и 13,
+     вес всюду 700 вместо 600, разрядка от 0.05 до 0.14em. Разница читалась не как
+     иерархия, а как небрежность, и любая правка «метки» требовала найти все двенадцать.
+     Теперь размер, вес и разрядка живут здесь; правила ниже задают только положение
+     и цвет (цвет отдельный, потому что у двух меток он несёт сигнал). */
+  /* ---- ШКАЛА КЕГЛЯ: пять ступеней, у каждой своя работа ----
+     Сведено 04.08 по решению владельца («давай пока 5»). До этого на экране дня
+     было ПЯТНАДЦАТЬ размеров в шестидесяти семи объявлениях, шесть из них
+     половинные (10.5, 11.5, 12.5, 13.5, 14.5, 15.5) — между 13 и 12.5 разницы не
+     видно, то есть половинные ступени не работали как иерархия, а только добавляли
+     голосов. DESIGN.md определяет для такого экрана три ступени; двух не хватает,
+     потому что плотные списки портфеля шестнадцатым кеглем не помещаются, — эти две
+     дописаны в документ вместе с их работой.
+     Глубокая адаптация бренд-платформы под инструмент — отдельный проход позже. */
+  --fs-place: 26px;   /* место сцены, заголовок межсценового экрана */
+  --fs-read: 16px;    /* всё, что читают: реплики, поле ответа, установка, свод */
+  --fs-dense: 14px;   /* плотные списки: карточки портфеля, выписки, справка */
+  --fs-util: 12px;    /* служебное: записки у кнопок, ссылки оглавления, статусы */
+  --label-size: 11px; /* метка — и только метка, см. рецепт ниже */
+  --label-weight: 600;
+  --label-track: 0.1em;
 
   /* legacy aliases → вермилион (временные, убрать по мере миграции секций) */
   /* ЛЕГАСИ: --lime* остались с до-редизайна, но держат ВЕРМИЛИОН (не лайм). Алиас
@@ -69,6 +105,10 @@
    ⚠ Блок обязан стоять ПОСЛЕ закрытого :root и содержать ТОЛЬКО --maxw:
    первая вставка закрыла :root раньше времени и утащила сюда переменные
    шрифтов — все страницы без .frame-narrow упали в Times. */
+/* ⚠ С 04.08 не применяется ни на одной странице: assessment.html его снял (см.
+   комментарий там). Правило оставлено для будущих экранов-разговоров, но помните
+   его цену — оно меняет ЗНАЧЕНИЕ --maxw, а не отменяет ограничение: экрану, тело
+   которого на --maxw не сидит, оно только уменьшает разъезд шапки, а не убирает. */
 body.frame-narrow {
   --maxw: 1120px;
 }
@@ -79,9 +119,9 @@ body.frame-narrow {
    наследуем всем, чтобы точечные textarea/input без явного font-family
    не выпадали из Inter Tight. */
 input, textarea, select, button { font-family: inherit; }
-/* Синего в палитре нет: браузерный accent-color по умолчанию красит радио
-   и галочки в системный синий. Один раз на всю платформу — чернила.
-   (Jordy Blue --jb — это окно ИИ в отчёте, не элементы управления.) */
+/* Браузерный accent-color по умолчанию красит радио и галочки в системный синий.
+   Один раз на всю платформу — чернила. (Наш Jordy Blue --jb несёт смысл «вы» и
+   «служебное», а не «элемент управления», поэтому системный синий тут ни при чём.) */
 input[type="radio"], input[type="checkbox"] { accent-color: var(--ink); }
 
 html, body {
@@ -110,6 +150,29 @@ body {
 }
 
 a { color: inherit; }
+
+/* Единый рецепт метки. Стоит рано, чтобы правила ниже могли задавать только своё —
+   отступы и цвет. Если когда-нибудь метке понадобится другой размер, менять надо
+   токены выше, а не этот список. */
+.kicker,
+.chat-name,
+.recap-q,
+.win-fixed,
+.win-label-past,
+.bl-over-tag,
+.dayside-kicker,
+.toc-title,
+.who-h,
+.toc-group,
+.bl-zone-h,
+.hdr-num {
+  font-family: var(--ff-body);
+  font-size: var(--label-size);
+  font-weight: var(--label-weight);
+  letter-spacing: var(--label-track);
+  text-transform: uppercase;
+  color: var(--muted-soft);
+}
 
 /* ---------- nav ---------- */
 
@@ -181,7 +244,7 @@ a { color: inherit; }
   gap: 10px;
   font-family: var(--ff-body);
   font-weight: 700;
-  font-size: 15px;
+  font-size: var(--fs-read);
   padding: 14px 24px;
   border-radius: var(--radius);
   border: 1px solid transparent;
@@ -309,12 +372,6 @@ section + section { border-top: 1px solid #ececec; }
 }
 
 .kicker {
-  font-family: var(--ff-body);
-  font-size: 13px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--muted); /* 7.13:1 — мелкий uppercase должен проходить AA */
   margin: 0 0 10px;
 }
 
@@ -825,7 +882,7 @@ footer {
 }
 
 /* --- малый вариант кнопки (вместо инлайн-патчей размеров/font-size) --- */
-.btn-sm { padding: 11px 20px; font-size: 14px; }
+.btn-sm { padding: 11px 20px; font-size: var(--fs-dense); }
 /* На тач-устройствах добираем до 44px тап-таргета (WCAG 2.5.5). */
 @media (pointer: coarse) {
   .btn-sm { min-height: 44px; }
@@ -833,7 +890,7 @@ footer {
 
 /* Компактные кнопки шапки станций (?, «Мои ответы», «Закрыть») и размер
    плашки-номера — были повторяющимся инлайном на station1/2/3 и в комнатах. */
-.btn-xs { padding: 6px 12px; font-size: 14px; }
+.btn-xs { padding: 6px 12px; font-size: var(--fs-dense); }
 /* иконки-кнопки в шапке станции («?» и «ⓘ») — равные квадраты независимо от
    глифа (иначе «ⓘ» шире «?»); button и a выравниваются одинаково */
 .station-header-right .btn-xs { width: 32px; min-width: 32px; height: 32px; padding: 0; line-height: 1; }
@@ -1021,7 +1078,7 @@ footer {
 }
 
 .s2-ageev {
-  font-size: 15px;
+  font-size: var(--fs-read);
   line-height: 1.65;
   max-width: var(--w-read);
   margin: 0 0 18px;
@@ -1048,7 +1105,7 @@ footer {
 .s2-col.is-drop-target { background: var(--accent-tint); border-color: var(--accent-line); }
 .s2-col h4 {
   font-family: var(--ff-display);
-  font-size: 15px;
+  font-size: var(--fs-read);
   margin: 0 0 2px;
 }
 .s2-col .links-hint { margin-bottom: 10px; }
@@ -1065,7 +1122,7 @@ footer {
   cursor: grab;
 }
 .s2-item:active { cursor: grabbing; }
-.s2-item p { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.s2-item p { margin: 0; font-size: var(--fs-dense); line-height: 1.5; }
 .s2-item.is-priority { border-color: var(--accent); background: var(--accent-tint); }
 
 .s2-item-rank {
@@ -1075,7 +1132,7 @@ footer {
   border-radius: 50%;
   background: var(--accent);
   color: var(--paper);
-  font-size: 12px;
+  font-size: var(--fs-util);
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -1091,7 +1148,7 @@ footer {
   border: 1px solid #e3e3e0;
   border-radius: 8px;
   padding: 6px 9px;
-  font-size: 12px;
+  font-size: var(--fs-util);
   font-family: inherit;
 }
 
@@ -1106,7 +1163,7 @@ footer {
   border: 1px solid #d6d8d2;
   background: transparent;
   border-radius: 7px;
-  font-size: 11px;
+  font-size: var(--fs-util);
   padding: 3px 8px;
   cursor: pointer;
   font-family: inherit;
@@ -1118,7 +1175,7 @@ footer {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  font-size: 14px;
+  font-size: var(--fs-dense);
   margin: 0 0 10px;
   text-transform: none;
   letter-spacing: 0;
@@ -1134,7 +1191,7 @@ footer {
   border: 1px solid #e3e3e0;
   border-radius: 10px;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--fs-dense);
   font-family: inherit;
   line-height: 1.5;
   resize: vertical;
@@ -1170,10 +1227,10 @@ footer {
   border-bottom: 1px solid var(--hairline);
   padding: 12px 0;
   margin: 18px 0 6px;
-  font-size: 13px;
+  font-size: var(--fs-dense);
   color: var(--muted);
 }
-.bl-sum b { font-size: 17px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.bl-sum b { font-size: var(--fs-read); color: var(--ink); font-variant-numeric: tabular-nums; }
 .bl-sum-item.is-over b { color: var(--accent-ink); }
 .bl-sum-item.is-over { color: var(--accent-ink); }
 .bl-sum-left { margin-left: auto; color: var(--muted-soft); }
@@ -1199,7 +1256,7 @@ footer {
 .bl-title {
   grid-column: 1;
   margin: 0;
-  font-size: 15.5px;
+  font-size: var(--fs-read);
   line-height: 1.4;
   font-weight: 600;
   max-width: 62ch;
@@ -1209,7 +1266,7 @@ footer {
 .bl-meta {
   grid-column: 1;
   margin: 0;
-  font-size: 11px;
+  font-size: var(--fs-util);
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -1226,7 +1283,7 @@ footer {
 .bl-arg {
   grid-column: 1 / -1;
   margin: 2px 0 0;
-  font-size: 13.5px;
+  font-size: var(--fs-dense);
   line-height: 1.5;
   color: var(--muted);
   max-width: var(--w-read);
@@ -1242,8 +1299,8 @@ footer {
   align-self: start;
 }
 .bl-actions .s2-act {
-  font-size: 13px;
-  padding: 7px 14px;
+  font-size: var(--fs-dense);
+  padding: 8px 14px;
   min-width: 92px;
   text-align: center;
   border-radius: var(--radius);
@@ -1254,7 +1311,7 @@ footer {
    Передумать можно тут же: кнопка возвращает позицию в противоположную группу. */
 .bl-group { margin-top: 16px; }
 .bl-group-head {
-  font-size: 11px;
+  font-size: var(--fs-util);
   font-weight: 700;
   letter-spacing: .07em;
   text-transform: uppercase;
@@ -1268,15 +1325,15 @@ footer {
   grid-template-columns: 1fr auto auto;
   gap: 6px 12px;
   align-items: baseline;
-  padding: 7px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--hairline);
-  font-size: 13px;
+  font-size: var(--fs-dense);
 }
 .bl-mini-title { min-width: 0; line-height: 1.4; }
 .bl-group.is-dropped .bl-mini-title { color: var(--muted); }
 .bl-mini.is-open .bl-mini-title { color: var(--ink); font-weight: 600; }
 .bl-mini-cost {
-  font-size: 11px;
+  font-size: var(--fs-util);
   color: var(--muted-soft);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1291,7 +1348,7 @@ footer {
   border: 1px solid #e3e3e0;
   border-radius: var(--radius);
   padding: 8px 10px;
-  font-size: 13px;
+  font-size: var(--fs-dense);
   font-family: inherit;
 }
 /* «Моя» сторона разговора в раунде 2: пока шаг открыт — поля справа, той же
@@ -1331,7 +1388,7 @@ footer {
 .s2-mine-label {
   align-self: flex-end;
   text-align: right;
-  font-size: 11px;
+  font-size: var(--fs-util);
   font-weight: 700;
   letter-spacing: .07em;
   text-transform: uppercase;
@@ -1344,7 +1401,7 @@ footer {
 
 .bl-hint {
   margin: 16px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-dense);
   line-height: 1.5;
   color: var(--accent-ink);
   max-width: var(--w-read);
@@ -2383,7 +2440,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   padding: 44px 40px;
   /* 420px рвали заголовки финиш-экранов («Дашу зовут к стойке» переносилось) и
      резали баблы прощания на строки по четыре слова. 560 — заголовок в одну
-     строку, а карточка всё ещё уже колонки чтения (68ch), т.е. не превращается
+     строку, а карточка всё ещё уже колонки чтения (--w-read), т.е. не превращается
      в полосу текста. */
   max-width: 560px;
   width: 100%;
@@ -2428,7 +2485,11 @@ body.imp-drawer-open .dock-rail { display: none; }
   position: sticky;
   top: 0;
   z-index: 75;
-  border-bottom: 1px solid #ececec;
+  /* был литерал #ececec — параллельный hairline на пять единиц светлее токена.
+     Под шапкой дня он стоял вплотную к border-top у .day-grid, и стык читался
+     двойной линией из двух разных серых (DESIGN.md стр. 128: глубина — только
+     hairline, одной). */
+  border-bottom: 1px solid var(--hairline);
   flex: none;
   /* единая рамка: шапка той же ширины, что и контент (var(--maxw)), по центру —
      чтобы на всех экранах шапка и рабочая область совпадали по ширине */
@@ -2693,7 +2754,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 /* Потолок читаемой ширины кейса: на очень широких экранах строки не растягиваются
    в нечитаемо длинные; на ноутах колонка уже потолка — правило не мешает. */
 /* та же ширина чтения, что в раундах 2–5: на широком мониторе колонка кейса
-   вырастает, но строка не расползается за 68ch */
+   вырастает, но строка держится в --w-read (60ch с 04.08) */
 .case-content article { margin-bottom: 40px; max-width: var(--w-read); }
 
 .case-content h2 {
@@ -3108,7 +3169,7 @@ textarea + .rationale-block { margin-top: 22px; }
 
 .btn-small {
   padding: 8px 16px !important;
-  font-size: 13px !important;
+  font-size: var(--fs-dense) !important;
   margin-bottom: 18px;
 }
 
@@ -4029,7 +4090,7 @@ tr.fac-row-ai td { background: var(--band); }
   width: 180px;
 }
 
-.fac-wave-add .btn { padding: 7px 14px; font-size: 13px; }
+.fac-wave-add .btn { padding: 7px 14px; font-size: var(--fs-dense); }
 
 .fac-toolbar {
   display: flex;
@@ -4221,17 +4282,12 @@ tr.fac-row-ai td { background: var(--band); }
 .chat-msg { max-width: 76%; }
 .chat-msg.them { align-self: flex-start; }
 .chat-msg.me { align-self: flex-end; }
+/* Имя персонажа — метка (DESIGN.md стр. 157 «имя-метка»), поэтому размер, вес и
+   разрядка приходят из единого рецепта метки. До 04.08 здесь стояло 13px/700/0.06em
+   с обоснованием «тот же шаг, что у .chat-note и .chat-act рядом»; после сведения
+   имя стало мельче ремарки — и это правильно: ремарка это проза, имя это метка. */
 .chat-name {
   display: block;
-  font-family: var(--ff-body);
-  /* 13px — тот же шаг, что у .chat-note и .chat-act рядом: подпись перестаёт
-     теряться в тексте, а новый размер в системе не появляется. Отличие от
-     ремарок держится капсом и весом, не размером. */
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted-soft);
   margin: 0 0 4px 2px;
 }
 .chat-msg.me .chat-name { text-align: right; margin-right: 2px; }
@@ -4241,24 +4297,37 @@ tr.fac-row-ai td { background: var(--band); }
 .chat-note,
 .chat-act {
   font-family: var(--ff-body);
-  font-size: 13px;
+  font-size: var(--fs-dense);
   line-height: 1.45;
   color: var(--muted);
 }
 .chat-note { text-transform: none; letter-spacing: 0; font-weight: 400; }
 .chat-act { font-style: italic; margin: 0 0 4px 2px; }
-.chat-after { font-family: var(--ff-body); font-size: 13px; font-style: italic; color: var(--muted-soft); margin: 5px 0 0 2px; }
+.chat-after { font-family: var(--ff-body); font-size: var(--fs-dense); font-style: italic; color: var(--muted-soft); margin: 4px 0 0 2px; }
 .chat-bubble {
-  font-size: 16px;
+  font-size: var(--fs-read);
   line-height: 1.55;
-  padding: 12px 15px;
+  padding: 12px 16px;
   border-radius: var(--radius);
   border: 1px solid var(--hairline);
   background: var(--paper);
   white-space: pre-wrap;
 }
 .chat-msg.them .chat-bubble { background: var(--soft); }
-.chat-msg.me .chat-bubble { background: var(--accent-tint); border-color: var(--accent); }
+/* ПУЗЫРИ ОСТАЮТСЯ — решение владельца 04.08: формат переписки читаем и общеизвестен,
+   и менять его на editorial-цитату мы не будем (я предлагал обратное, ссылаясь на
+   DESIGN.md стр. 157; владелец подтвердил формат после возражения — спор закрыт).
+   Сменился только цвет своей стороны: был вермилион-тинт с вермилионовой рамкой,
+   стал голубой band. Причина: вермилион в системе помечает одно главное действие
+   (стр. 101), и залитый им уже написанный ответ сообщал «вот тут важно» там, где
+   важно другое.
+   Следствие было названо: голубой раньше означал «окно ИИ» в отчёте, а маркер
+   «вы» был вермилионовым. Владелец решил обменять роли, а не откатывать цвет
+   реплики: теперь голубой — это «вы» на всех экранах, вермилион в словаре
+   сравнения перешёл на ИИ-референс (DESIGN.md, Colors, решение 04.08).
+   Классы .chat* использует только движок дня (проверено), поэтому правка сюда
+   больше ничего не задевает. */
+.chat-msg.me .chat-bubble { background: var(--band); border-color: var(--band-line); }
 /* появление последней реплики — короткое, чтобы не заставлять ждать */
 .chat-msg.is-new { animation: chatIn 340ms cubic-bezier(0.22, 1, 0.36, 1) both; }
 /* Реплики одного шага появляются по очереди, а не одновременно: задержку ставит
@@ -4446,20 +4515,21 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   border-bottom: 1px solid var(--hairline);
 }
 .s2-body > .sc-head:first-child { margin-top: 8px; }
-.sc-head-count {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  color: var(--accent-ink);
-}
+/* .sc-head-count (вермилионовое «РАЗГОВОР 3 ИЗ 6») удалён 04.08: прогресс дня по
+   СПЕК §4.4 живёт только на межсценовом экране, а здесь он висел над полем ответа
+   всё время, пока участник пишет. Осталось место и день — «Лифтовый холл ·
+   понедельник, 9 февраля», — потому что «где я» не измеряется ни одной
+   способностью, а без него экран читается как оборванный. */
 .sc-head-name {
   font-family: var(--ff-display);
   font-weight: 800;
-  font-size: 17px;
+  font-size: var(--fs-read);
   color: var(--ink);
 }
-.sc-head-where { font-size: 12.5px; color: var(--muted-soft); margin-left: auto; }
+/* margin-left: auto убран вместе со счётчиком: без него в ряду оставались две
+   вещи, разогнанные по краям колонки, и они перестали читаться как одна строка. */
+.sc-head-sep { font-size: var(--fs-util); color: var(--muted-soft); }
+.sc-head-where { font-size: var(--fs-util); color: var(--muted-soft); }
 
 /* Подпись окна ответа. В v1 подписи полей жили в разметке пяти страниц; здесь
    она приходит из scenes.js — тем же текстом, который получает модель. */
@@ -4470,26 +4540,29 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   display: block;
   width: 100%;
   max-width: var(--w-form);
-  font-size: 12.5px;
+  font-size: var(--fs-util);
   font-weight: 600;
   color: var(--muted);
   margin: 0 0 8px;
 }
 .win-input { min-height: 200px; }
 
-/* Номера решений портфеля. В v1 они были скрыты, и харнесс переводил порядковый
-   номер в реальный id — трансляция, существовавшая только для одного носителя.
-   Показываем: в списке есть пропуски (нет 3 и 8, максимум 22). */
-.bl-id {
+/* Номер позиции в СПИСКЕ (свод дня, «Мои ответы»): свой класс, потому что здесь
+   номер стоит колонкой и должен выравниваться по ней — отсюда min-width. В
+   карточках портфеля номер идёт первым элементом флекс-ряда, там это .bl-n.
+   Оба показывают порядковый 1–20 (СПЕК §4.5); раньше здесь печатался сырой id,
+   и участник видел у одной позиции два разных номера. Класс назывался .bl-id —
+   переименован 04.08 вместе с правкой, чтобы имя не обещало id. */
+.bl-num {
   display: inline-block;
   min-width: 2.2em;
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  font-size: 12px;
+  font-size: var(--fs-util);
   color: var(--muted-soft);
 }
 .bl-locked {
-  font-size: 13.5px;
+  font-size: var(--fs-dense);
   color: var(--muted);
   padding: 12px 0;
   border-top: 1px solid var(--hairline);
@@ -4497,10 +4570,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .bl-locked b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .bl-over-tag {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .05em;
-  text-transform: uppercase;
   color: var(--accent-ink);
 }
 
@@ -4509,34 +4578,40 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .recap-block { border-top: 1px solid var(--hairline); padding-top: 20px; }
 .recap-item { margin: 0 0 22px; }
 .recap-q {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  color: var(--muted-soft);
   margin-bottom: 6px;
 }
 .recap-a {
-  font-size: 14.5px;
+  font-size: var(--fs-read);
   line-height: 1.6;
   color: var(--ink);
   max-width: var(--w-read);
   border-left: 1px solid var(--hairline);
   padding-left: 14px;
 }
-.recap-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.55; }
-.recap-list li { margin-bottom: 3px; }
+.recap-list { margin: 0; padding-left: 18px; font-size: var(--fs-dense); line-height: 1.55; }
+.recap-list li { margin-bottom: 4px; }
 
 /* Установка дня: один текст, который человек видит здесь, а модель получает
    в system. */
 .setup-card { max-width: 760px; text-align: left; }
 .setup-card p { text-align: left; }
 .setup-rules { margin: 18px 0 0; padding-left: 20px; }
-.setup-rules li { margin-bottom: 10px; font-size: 14.5px; line-height: 1.6; }
+.setup-rules li { margin-bottom: 10px; font-size: var(--fs-read); line-height: 1.6; }
+
+/* Номер участника в шапке дня. Свой класс, а не общий .bib: тот рисует тёмную
+   плашку с вермилионовым текстом — элемент брендированных экранов (DESIGN.md
+   стр. 143), а день — тихий экран рассуждения, где вермилион занят единственным
+   главным действием (стр. 101). Номер нужен участнику (назвать организатору,
+   продолжить на другом устройстве), поэтому он остаётся — служебной меткой в том
+   же ряду, что «сохранено» и «Скрыть материалы». Цифры моноширинно: номер
+   шестизначный и не должен дёргаться при смене состояния. */
+/* Размер, вес, разрядка и цвет приходят из единого рецепта метки (см. начало файла);
+   здесь остаётся только своё: номер не переносится и цифры моноширинно. */
+.hdr-num { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* Статус записи в шапке. В v1 он жил в полосе времени (progress.js), которая
    знала имена файлов раундов; здесь маршрут один, поэтому статус — свой. */
-.hdr-save { font-size: 11.5px; color: var(--muted-soft); white-space: nowrap; }
+.hdr-save { font-size: var(--fs-util); color: var(--muted-soft); white-space: nowrap; }
 .hdr-save.is-pending { color: var(--muted); }
 .hdr-save.is-failed { color: var(--accent-ink); font-weight: 600; }
 
@@ -4570,7 +4645,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 
 /* Прочитанный пакет в ленте разговора — одной строкой, со ссылкой открыть снова. */
 .case-done {
-  font-size: 13px;
+  font-size: var(--fs-dense);
   color: var(--muted);
   padding: 10px 0;
 }
@@ -4595,14 +4670,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   gap: 8px 14px;
   margin-top: 12px;
 }
-.win-note { font-size: 12px; color: var(--muted-soft); }
+.win-note { font-size: var(--fs-util); color: var(--muted-soft); }
+/* text-align: right снят (DESIGN.md стр. 124): отметка стоит над полем ответа,
+   а поле выключено влево — метка висела по другому краю, чем то, к чему она
+   относится. */
 .win-fixed {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  color: var(--muted-soft);
-  text-align: right;
   margin: -12px 2px 0 0;
 }
 
@@ -4705,14 +4777,32 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .day-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: var(--toc-w, 210px) minmax(0, 1fr) minmax(0, 1fr);
+  /* КОЛОНКА ОГЛАВЛЕНИЯ ШИРЕ РОВНО НА ОТСТУП РАМКИ, и этот отступ она отдаёт слева
+     (см. .dayside-head / .dayside-body). Иначе лого в шапке стоит на 56px, а
+     «Разделы» под ним — на 14px, и шапка читается приклеенной отдельно от экрана
+     (DESIGN.md стр. 138). Полезная ширина ссылок оглавления при этом не меняется —
+     ровно тот приём, которым это решено для колонки материалов в v1 (.case-nav).
+     Замер после правки: лого и «Разделы» на 56px, колонки 266/587/587 при 1440. */
+  --toc-col: calc(var(--toc-w, 210px) + var(--frame-pad));
+  grid-template-columns: var(--toc-col) minmax(0, 1fr) minmax(0, 1fr);
   /* Строку задаём явно. Без неё единственный auto-ряд считался по содержимому, и
      колонка опоры получала 291 px из 694 доступных: на чтение пакета оставалась
      щель в 61 px. Ровно тот дефект, из-за которого кейс и выглядел «впаянным». */
   grid-template-rows: minmax(0, 1fr);
   min-height: 0;
-  border-top: 1px solid var(--hairline);
+  /* border-top снят 04.08: у .station-header уже есть border-bottom, и две
+     соседние линии давали 2px. Линия под шапкой — одна, и она шапкина. */
 }
+
+/* РАМКА ДНЯ — ОКНО ЦЕЛИКОМ, И ШАПКА СИДИТ НА НЕЙ ЖЕ (DESIGN.md стр. 138:
+   «шапка и тело обязаны сидеть на одной рамке… самый частый дефект в этом
+   проекте»). Тело дня — это грид выше, и на var(--maxw) он не сидит: ширины
+   колонок замерены по окну (66 знаков в строке на 1440 и 1280). Пока шапка
+   стояла на var(--maxw) и центрировалась, лого уезжало от левого края
+   оглавления на 216px при 1440 и на 456px при 1920 — считано, не оценено.
+   Если однажды решим стянуть день к рамке 1120–1560, снимать надо ЭТО правило
+   и заново мерить знаки в строке, а не возвращать body.frame-narrow. */
+#assessRoot .station-header { max-width: none; }
 /* ⚠ Скрытая колонка ВЫПАДАЕТ из грида, а не занимает нулевой трек. Поэтому в
    свёрнутом состоянии колонок должно стать ДВА, а не «0 + две»: иначе два
    оставшихся элемента встают в треки 1 и 2, и центру достаётся нулевая ширина.
@@ -4722,7 +4812,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* «Скрыть материалы» — про СЕРЕДИНУ: участник, пишущий письмо правлению, вправе
    отдать всё место работе. Отдельный класс, потому что смысл другой, чем у
    сворачивания оглавления. */
-.day-grid.is-nomem { grid-template-columns: var(--toc-w, 210px) minmax(0, 1fr); }
+.day-grid.is-nomem { grid-template-columns: var(--toc-col) minmax(0, 1fr); }
 .day-grid.is-nomem.is-collapsed { grid-template-columns: minmax(0, 1fr); }
 .day-grid.is-nomem > .support { display: none; }
 @media (max-width: 1360px) { .day-grid.is-nomem { grid-template-columns: minmax(0, 1fr); } }
@@ -4736,7 +4826,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 /* Режим чтения пакета: день начинается с папки на столе во всю ширину, дальше та
    же папка (тот же узел DOM, не копия) остаётся в середине под рукой. */
-.day-grid.is-reading { grid-template-columns: var(--toc-w, 210px) minmax(0, 1fr); }
+.day-grid.is-reading { grid-template-columns: var(--toc-col) minmax(0, 1fr); }
 .day-grid.is-reading.is-collapsed { grid-template-columns: minmax(0, 1fr); }
 @media (max-width: 1360px) { .day-grid.is-reading { grid-template-columns: minmax(0, 1fr); } }
 .day-grid.is-reading > .talk { display: none; }
@@ -4746,29 +4836,28 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   display: flex; flex-direction: column; min-height: 0; min-width: 0;
   border-right: 1px solid var(--hairline); background: var(--soft);
 }
+/* Левый отступ = var(--frame-pad), тот же, что у шапки: на нём стоит лого, и
+   «Разделы» обязаны стоять на нём же. Колонка расширена на этот отступ в
+   .day-grid, поэтому полезная ширина оглавления не пострадала. */
 .dayside-head {
   display: flex; align-items: center; gap: 8px; flex: none;
-  padding: 12px 14px 10px; border-bottom: 1px solid var(--hairline);
-}
-.dayside-kicker {
-  font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-  color: var(--muted-soft);
+  padding: 12px 14px 10px var(--frame-pad);
+  border-bottom: 1px solid var(--hairline);
 }
 .toc-collapse {
   margin-left: auto; border: none; background: none; cursor: pointer; padding: 2px 4px;
-  font: inherit; font-size: 11px; color: var(--muted-soft);
+  font: inherit; font-size: var(--fs-util); color: var(--muted-soft);
 }
 .toc-collapse:hover { color: var(--ink); }
-.dayside-body { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 24px 14px; }
-.toc-group {
-  font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
-  color: var(--muted-soft); margin: 16px 0 4px;
+.dayside-body { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 24px var(--frame-pad); }
+.toc-group { margin: 16px 0 4px;
 }
 /* кнопка возврата оглавления — в шапке центральной колонки */
 .toc-restore {
+  /* радиус в системе один — sm 4px (DESIGN.md стр. 128); было 999px, пилюля */
   display: none; align-items: center; border: 1px solid var(--hairline); background: var(--paper);
-  border-radius: 999px; cursor: pointer; font: inherit; font-size: 11.5px; color: var(--muted);
-  padding: 5px 10px; margin: 8px 10px 0 var(--frame-pad, 24px);
+  border-radius: var(--radius); cursor: pointer; font: inherit; font-size: var(--fs-util); color: var(--muted);
+  padding: 4px 10px; margin: 8px 10px 0 var(--frame-pad, 24px);
 }
 .day-grid.is-collapsed .toc-restore { display: inline-flex; }
 .toc-restore:hover { color: var(--ink); }
@@ -4794,7 +4883,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   background: none;
   padding: 8px 12px 10px;
   font: inherit;
-  font-size: 12.5px;
+  font-size: var(--fs-util);
   color: var(--muted-soft);
   cursor: pointer;
   border-bottom: 2px solid transparent;
@@ -4807,7 +4896,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .support-body { display: none; min-height: 0; flex: 1; overflow: hidden; }
 .support-body.is-on { display: flex; flex-direction: column; }
 #supAnswers.is-on, #supNotes.is-on, #supWho.is-on { overflow-y: auto; padding: 16px var(--frame-pad, 24px) 28px; }
-.support-note { font-size: 12px; line-height: 1.5; color: var(--muted-soft); margin: 0 0 14px; max-width: var(--w-read); }
+.support-note { font-size: var(--fs-util); line-height: 1.5; color: var(--muted-soft); margin: 0 0 14px; max-width: var(--w-read); }
 
 /* оглавление собирается из самого пакета — списком в разметке его нет */
 .case-toc {
@@ -4818,13 +4907,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   border-bottom: 1px solid var(--hairline);
   background: var(--soft);
 }
-.toc-title {
-  font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-  color: var(--muted-soft); margin-bottom: 6px;
+.toc-title { margin-bottom: 6px;
 }
 .toc-link {
   display: block; width: 100%; text-align: left; border: none; background: none;
-  padding: 4px 0; font: inherit; font-size: 12.5px; color: var(--muted); cursor: pointer;
+  padding: 4px 0; font: inherit; font-size: var(--fs-util); color: var(--muted); cursor: pointer;
 }
 .toc-link:hover { color: var(--ink); }
 .toc-link.is-on { color: var(--ink); font-weight: 600; }
@@ -4852,17 +4939,15 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .notes-input {
   width: 100%; flex: 1; min-height: 320px;
   border: 1px solid var(--hairline); border-radius: var(--radius);
-  padding: 12px 14px; font-family: inherit; font-size: 14px; line-height: 1.6;
+  padding: 12px 14px; font-family: inherit; font-size: var(--fs-dense); line-height: 1.6;
   color: var(--ink); resize: vertical; outline: none;
 }
 .notes-input:focus { border-color: var(--ink); }
 
-.who-h {
-  font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
-  color: var(--muted-soft); margin: 18px 0 8px;
+.who-h { margin: 18px 0 8px;
 }
 .who-h:first-child { margin-top: 0; }
-.who-row { display: grid; grid-template-columns: minmax(120px, 34%) 1fr; gap: 4px 12px; padding: 7px 0; border-bottom: 1px solid var(--hairline); font-size: 13px; line-height: 1.45; }
+.who-row { display: grid; grid-template-columns: minmax(120px, 34%) 1fr; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--hairline); font-size: var(--fs-dense); line-height: 1.45; }
 .who-row b { font-weight: 600; }
 .who-row span { color: var(--muted); }
 
@@ -4874,27 +4959,25 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .talk-past { border-bottom: 1px solid var(--hairline); }
 .talk-past > summary {
   list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 8px;
-  padding: 10px 2px; font-size: 13px; color: var(--muted);
+  padding: 10px 2px; font-size: var(--fs-dense); color: var(--muted);
 }
 .talk-past > summary::-webkit-details-marker { display: none; }
 .talk-past > summary:hover { color: var(--ink); }
 .talk-past-mark { color: var(--accent-ink); font-weight: 700; }
-.talk-past-meta { margin-left: auto; font-size: 11px; color: var(--muted-soft); }
+.talk-past-meta { margin-left: auto; font-size: var(--fs-util); color: var(--muted-soft); }
 .talk-past-body { padding: 6px 0 18px; }
-.win-label-past {
-  font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-  color: var(--muted-soft); margin: 14px 0 6px; text-align: right;
+.win-label-past { margin: 14px 0 6px; text-align: right;
 }
 
 .recap-pointer { border-top: 1px solid var(--hairline); padding-top: 18px; }
-.recap-cost { display: block; font-size: 11px; color: var(--muted-soft); font-variant-numeric: tabular-nums; }
+.recap-cost { display: block; font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums; }
 
 /* остаток ресурса рядом с набранным: арифметику «сколько ещё влезает» участник не
    должен делать в голове — её не меряет ни одна способность */
-.bl-sum-item i { display: block; font-style: normal; font-size: 10.5px; color: var(--muted-soft); }
+.bl-sum-item i { display: block; font-style: normal; font-size: var(--fs-util); color: var(--muted-soft); }
 .bl-sum-item.is-over i { color: var(--accent-ink); }
-.bl-mini-who { display: block; font-size: 10.5px; color: var(--muted-soft); }
-.bl-locked-hint { color: var(--muted-soft); font-size: 12px; }
+.bl-mini-who { display: block; font-size: var(--fs-util); color: var(--muted-soft); }
+.bl-locked-hint { color: var(--muted-soft); font-size: var(--fs-util); }
 /* липкость счётчика — на обёртке: у самой .bl-sum высота равна высоте обёртки,
    двигаться внутри неё было некуда, и счётчик уезжал с восьмой позиции */
 .bl-sum-host { position: sticky; top: 0; z-index: 3; background: var(--paper); }
@@ -4924,10 +5007,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   font-family: var(--ff-display); font-weight: 800; font-size: clamp(30px, 8vw, 40px);
   line-height: 1.05; letter-spacing: -.015em; text-transform: uppercase; margin: 14px 0 0;
 }
-.phone-lead { font-size: 16px; line-height: 1.55; margin: 18px 0 0; }
-.phone-tail { font-size: 14px; line-height: 1.55; color: var(--muted); margin: 14px 0 0; }
+.phone-lead { font-size: var(--fs-read); line-height: 1.55; margin: 18px 0 0; }
+.phone-tail { font-size: var(--fs-dense); line-height: 1.55; color: var(--muted); margin: 14px 0 0; }
 .entry-req {
-  font-size: 14px; line-height: 1.55; color: var(--ink); margin: 16px 0 0; max-width: 42ch;
+  font-size: var(--fs-dense); line-height: 1.55; color: var(--ink); margin: 16px 0 0; max-width: 42ch;
   padding: 12px 14px; background: var(--accent-tint); border: 1px solid var(--accent-line);
   border-radius: var(--radius);
 }
@@ -4944,7 +5027,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   border-top: 1px solid var(--hairline); background: var(--accent-tint);
 }
 .mark-bar-q {
-  font-size: 12.5px; line-height: 1.4; color: var(--accent-ink);
+  font-size: var(--fs-util); line-height: 1.4; color: var(--accent-ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .mark-bar .btn { margin-left: auto; flex: none; }
@@ -4952,20 +5035,20 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mark-item { padding: 12px 0; border-bottom: 1px solid var(--hairline); }
 .mark-quote {
   margin: 0 0 8px; padding-left: 12px; border-left: 2px solid var(--accent);
-  font-size: 13.5px; line-height: 1.55; color: var(--ink);
+  font-size: var(--fs-dense); line-height: 1.55; color: var(--ink);
 }
 .mark-note {
-  width: 100%; resize: vertical; padding: 7px 10px; border: 1px solid var(--hairline);
-  border-radius: var(--radius); font: inherit; font-size: 13px; line-height: 1.5;
+  width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--hairline);
+  border-radius: var(--radius); font: inherit; font-size: var(--fs-dense); line-height: 1.5;
   background: var(--paper);
 }
 .mark-acts { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
 .mark-act {
   border: none; background: none; cursor: pointer; padding: 2px 0; font: inherit;
-  font-size: 11.5px; color: var(--muted-soft); text-decoration: underline;
+  font-size: var(--fs-util); color: var(--muted-soft); text-decoration: underline;
 }
 .mark-act:hover { color: var(--ink); }
-.mark-when { margin-left: auto; font-size: 11px; color: var(--muted-soft); font-variant-numeric: tabular-nums; }
+.mark-when { margin-left: auto; font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums; }
 /* короткая подсветка найденного места — вместо стрелки «вот здесь» */
 .mark-flash { background: var(--accent-tint); transition: background .4s ease; }
 
@@ -4995,7 +5078,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .work-act:empty { display: none; }
 .work-act .win-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px 14px; flex-wrap: wrap-reverse; margin: 0; }
-.work-act .win-note { text-align: right; max-width: 340px; }
+/* text-align: right снят: выключка только влево (DESIGN.md стр. 124). Сама
+   записка прижата вправо раскладкой ряда (justify-content: flex-end), а текст
+   внутри неё читается по левому краю. */
+.work-act .win-note { max-width: 340px; }
 
 /* ── межсценовый экран: перекрывает ТОЛЬКО работу ──
    Кейс и оглавление остаются на месте и читаются во время перехода; пустой
@@ -5007,12 +5093,18 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 0 var(--frame-pad, 24px); overflow-y: auto;
 }
 .interlude-in { max-width: var(--w-read); }
-.interlude-mark { font-size: 12.5px; font-weight: 600; color: #2f7d32; margin: 0 0 26px; }
-.interlude-where { font-family: var(--ff-display); font-size: 26px; line-height: 1.15; margin: 0 0 6px; }
-.interlude-when { font-size: 13px; color: var(--muted-soft); margin: 0 0 26px; }
+/* «✓ Ответ зафиксирован · ЧЧ:ММ». Был зелёный #2f7d32 — единственный цвет вне
+   палитры DESIGN.md на всём экране дня. Та же галочка в ленте разговора и в
+   строке прочитанного пакета уже стоит --accent-ink (.talk-past-mark,
+   .case-done-mark): один знак — один цвет. */
+.interlude-mark { font-size: var(--fs-util); font-weight: 600; color: var(--accent-ink); margin: 0 0 26px; }
+/* font-weight был не задан: дисплейная гарнитура наследовала 400 от body, то есть
+   крупнейший текст экрана перехода рисовался светлым (DESIGN.md стр. 119: title — 700). */
+.interlude-where { font-family: var(--ff-display); font-weight: 700; font-size: var(--fs-place); line-height: 1.15; margin: 0 0 6px; }
+.interlude-when { font-size: var(--fs-dense); color: var(--muted-soft); margin: 0 0 26px; }
 .interlude-lead {
   margin: 0 0 30px; padding-left: 14px; border-left: 2px solid var(--accent);
-  font-size: 15.5px; line-height: 1.6;
+  font-size: var(--fs-read); line-height: 1.6;
 }
 
 /* ── портфель: компактные карточки, два ряда по десять ──
@@ -5021,25 +5113,26 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .bl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
 .bl-card {
   border: 1px solid var(--hairline); border-radius: var(--radius);
-  padding: 9px 11px; display: flex; flex-direction: column; gap: 6px; background: var(--paper);
+  padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--paper);
 }
 .bl-card-top { display: flex; align-items: baseline; gap: 8px; }
-.bl-n { font-size: 11px; font-weight: 700; color: var(--muted-soft); font-variant-numeric: tabular-nums; }
+.bl-n { font-size: var(--fs-util); font-weight: 700; color: var(--muted-soft); font-variant-numeric: tabular-nums; }
 .bl-card-cost {
-  margin-left: auto; font-size: 11px; color: var(--muted-soft);
+  margin-left: auto; font-size: var(--fs-util); color: var(--muted-soft);
   white-space: nowrap; font-variant-numeric: tabular-nums;
 }
 .bl-card-title {
-  font-size: 13px; line-height: 1.35; font-weight: 500;
+  /* 600, а не 500: в системе четыре веса — 400/600/700/800 (DESIGN.md стр. 116) */
+  font-size: var(--fs-dense); line-height: 1.35; font-weight: 600;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
 }
 .bl-card.is-open .bl-card-title { -webkit-line-clamp: unset; overflow: visible; }
-.bl-card-who { font-size: 11px; color: var(--muted-soft); }
-.bl-card-arg { font-size: 12px; line-height: 1.45; color: var(--muted); margin: 0; }
+.bl-card-who { font-size: var(--fs-util); color: var(--muted-soft); }
+.bl-card-arg { font-size: var(--fs-util); line-height: 1.45; color: var(--muted); margin: 0; }
 .bl-card-acts { display: flex; gap: 6px; align-items: center; }
 .bl-why {
   margin-left: auto; border: none; background: none; cursor: pointer; padding: 4px 2px;
-  font: inherit; font-size: 11.5px; color: var(--muted-soft); text-decoration: underline;
+  font: inherit; font-size: var(--fs-util); color: var(--muted-soft); text-decoration: underline;
 }
 .bl-why:hover { color: var(--ink); }
 /* решённая карточка уезжает не мгновенно: без этого следующая прыгает под курсор
@@ -5051,29 +5144,27 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    «почему эти» листать список обратно не нужно */
 .bl-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; align-items: start; }
 .bl-col-head {
-  font-size: 12px; font-weight: 600; padding: 0 0 7px; margin-bottom: 8px;
+  font-size: var(--fs-util); font-weight: 600; padding: 0 0 8px; margin-bottom: 8px;
   border-bottom: 1px solid var(--hairline);
 }
 .bl-col-head span { font-weight: 400; color: var(--muted-soft); }
 .bl-row {
   display: grid; grid-template-columns: 20px 1fr auto; gap: 8px; align-items: baseline;
-  padding: 7px 0; border-bottom: 1px solid var(--soft); font-size: 12.5px; line-height: 1.35;
+  padding: 8px 0; border-bottom: 1px solid var(--soft); font-size: var(--fs-util); line-height: 1.35;
 }
 .bl-row-t { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .bl-row-back {
   border: none; background: none; cursor: pointer; padding: 0 2px; font: inherit;
-  font-size: 11px; color: var(--muted-soft); text-decoration: underline;
+  font-size: var(--fs-util); color: var(--muted-soft); text-decoration: underline;
 }
 .bl-row-back:hover { color: var(--ink); }
 .bl-zone-h {
-  display: flex; align-items: baseline; gap: 8px; margin: 18px 0 9px;
-  font-size: 10px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
-  color: var(--muted-soft);
+  display: flex; align-items: baseline; gap: 8px; margin: 18px 0 8px;
 }
-.bl-zone-h b { font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--ink); }
-.bl-empty { font-size: 12px; color: var(--muted-soft); padding: 8px 0; }
+.bl-zone-h b { font-size: var(--fs-util); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.bl-empty { font-size: var(--fs-util); color: var(--muted-soft); padding: 8px 0; }
 /* причина отказа — под строкой в столбике «не сейчас», не в карточке */
-.bl-row-reason { grid-column: 2 / 4; margin-top: 5px; }
+.bl-row-reason { grid-column: 2 / 4; margin-top: 4px; }
 
 @media (max-width: 1360px) {
   /* колонок стало две, работа шире — карточки остаются в два ряда */

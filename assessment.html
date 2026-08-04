@@ -8,9 +8,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=104" />
+<link rel="stylesheet" href="css/styles.css?v=109" />
 </head>
-<body class="frame-narrow">
+<body>
+
+<!-- У body был класс .frame-narrow — снят 04.08. Он пришпиливал --maxw к 1120, а
+     тело дня (.day-grid) на --maxw не сидит вообще, поэтому шапка оказывалась
+     колонкой по центру над телом во всю ширину окна: разъезд лого 216px на 1440 и
+     456px на 1920. Рамка дня — окно целиком, и шапка снимает ограничение вместе с
+     телом; см. #assessRoot .station-header в styles.css и DESIGN.md стр. 138. -->
 
 <!-- ТРИ КОЛОНКИ (СПЕК §4): слева оглавление текущей вкладки, в середине память
      (кейс · мои ответы · пометки · справка), справа работа — один текущий вопрос.
@@ -75,11 +81,17 @@
         <span class="station-sep">/</span>
         <h1 class="station-name" id="hdrDayName">«Искра» · один день</h1>
       </div>
+      <!-- Плашки счётчика «N / 6» здесь больше нет: прогресс дня по СПЕК §4.4 живёт
+           только на межсценовом экране, а в шапке он был виден всё время, пока
+           участник пишет. Номер участника остался — без него человек не знает, чей
+           это прогон, — но перестал быть тёмной плашкой с вермилионовым текстом:
+           вермилион в системе помечает одно главное действие (DESIGN.md стр. 101),
+           а тёмная плашка — элемент брендированных экранов (стр. 143).
+           Шесть знаков, а не три: номер выдаётся padStart(6) — engine.js. -->
       <div class="station-header-right" data-no-refs="1">
         <span class="hdr-save" id="hdrSave"></span>
         <button type="button" class="btn btn-ghost btn-sm" id="supportToggle" title="Свернуть или показать опору">Скрыть материалы</button>
-        <span class="bib" id="hdrScene">1 / 6</span>
-        <span class="bib" id="hdrBib">№ 000</span>
+        <span class="hdr-num" id="hdrBib">№ 000000</span>
       </div>
     </header>
 
@@ -186,11 +198,11 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=6"></script>
+<script src="js/scenes.js?v=7"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
 <script src="js/case-ref.js?v=13"></script>
-<script src="js/engine.js?v=13"></script>
+<script src="js/engine.js?v=16"></script>
 </body>
 </html>

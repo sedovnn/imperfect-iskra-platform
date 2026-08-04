@@ -26,6 +26,18 @@
   var BACKLOG = window.imp.backlog || [];
   var LIM = window.imp.backlogLimits || { people: 0, money: 0 };
 
+  // НОМЕР ПОЗИЦИИ НА ЭКРАНЕ — ПОРЯДКОВЫЙ (1–20), а не id (СПЕК §4.5). id Кати идут
+  // 1,2,4,5…22 с вырезанными 3 и 8. Таблица считается один раз и на весь файл:
+  // раньше она была локальной в рендере портфеля, и свод дня печатал сырой id — то
+  // есть участник видел у одной позиции два разных номера и пропуски, которые
+  // решением от 03.08 убраны. Новый показ номера — только через blNum().
+  var BL_NUM = (function () {
+    var m = {};
+    BACKLOG.forEach(function (it, ix) { m[it.id] = ix + 1; });
+    return m;
+  })();
+  function blNum(id) { return BL_NUM[id] || ''; }
+
   var session = null;
   var state = null;
   var route = null;
@@ -639,7 +651,7 @@
       var line = function (ids) {
         return ids.map(function (id) {
           var it = byId[id] || {};
-          return '<li><span class="bl-id">' + id + '</span> ' + esc(it.title || '') +
+          return '<li><span class="bl-num">' + blNum(id) + '</span> ' + esc(it.title || '') +
             '<span class="recap-cost">' + (it.people || 0) + ' чел. · ' + num(it.money || 0) + ' млрд</span>' +
             '</li>';
         }).join('');
@@ -664,10 +676,16 @@
 
   // ---------- блоки разговора ----------
 
-  function sceneHead(scene, ix) {
+  // Заголовок сцены — МЕСТО И ДЕНЬ, без номера разговора (решение владельца 04.08).
+  // Номер стоял здесь и в шапке экрана; оба места противоречили СПЕК §4.4, где
+  // прогресс дня живёт только на межсценовом экране, потому что в рабочей области
+  // он превращает ответ в норматив. Место и день остаются: без них участник не
+  // понимает, где он, а «где» ни одной способностью не измеряется.
+  // Прогресс дня остался ровно в одном месте — interludeWhen.
+  function sceneHead(scene) {
     return '<div class="sc-head">' +
-      '<span class="sc-head-count">Разговор ' + (ix + 1) + ' из ' + S.scenes.length + '</span>' +
       '<span class="sc-head-name">' + esc(scene.name) + '</span>' +
+      '<span class="sc-head-sep">·</span>' +
       '<span class="sc-head-where">' + esc(scene.where) + '</span>' +
       '</div>';
   }
@@ -787,19 +805,15 @@
       // Нерешённое — компактными карточками в два ряда по десять; решённое уезжает
       // в свой столбик, и портфель собирается на глазах. Замер прототипа: 2×10 с
       // доводом под «почему» — 2,6 экрана прокрутки против 5,5 у списка в один ряд.
-      // НОМЕР НА ЭКРАНЕ — ПОРЯДКОВЫЙ (1–20), а не id: id Кати идут 1,2,4,5…22 с
-      // вырезанными 3 и 8, и участник видел пропуски, думая, чего ему не показали.
+      // Номер на экране — порядковый, через blNum() (см. BL_NUM в начале файла).
       // Внутренним ключом picks и записей судьи остаётся id.
-      var numOf = {};
-      BACKLOG.forEach(function (it, ix) { numOf[it.id] = ix + 1; });
-
       var list = d.querySelector('.bl-list');
       list.innerHTML = undecided.length
         ? '<div class="bl-zone-h">не решено <b>' + undecided.length + '</b></div><div class="bl-grid">' +
           undecided.map(function (it) {
             var open = openArg[it.id];
             return '<div class="bl-card' + (open ? ' is-open' : '') + '" data-card="' + it.id + '">' +
-              '<div class="bl-card-top"><span class="bl-n">' + numOf[it.id] + '</span>' +
+              '<div class="bl-card-top"><span class="bl-n">' + blNum(it.id) + '</span>' +
                 '<span class="bl-card-cost">' + it.people + ' чел. · ' + num(it.money) + ' млрд</span></div>' +
               '<div class="bl-card-title">' + esc(it.title) + '</div>' +
               '<div class="bl-card-who">' + esc(it.who) + '</div>' +
@@ -822,7 +836,7 @@
       var col = function (title, arr, kind) {
         var rows = arr.map(function (it) {
           return '<div class="bl-row">' +
-            '<span class="bl-n">' + numOf[it.id] + '</span>' +
+            '<span class="bl-n">' + blNum(it.id) + '</span>' +
             '<span class="bl-row-t">' + esc(it.title) +
               '<span class="bl-mini-who">' + esc(it.who) + ' · ' + it.people + ' чел. · ' + num(it.money) + ' млрд</span></span>' +
             '<button type="button" class="bl-row-back" data-flip="' + it.id + '">' +
@@ -982,7 +996,7 @@
 
     // Текущий разговор: его акты до курсора включительно.
     var scene = S.scenes[curSceneIx];
-    now.insertAdjacentHTML('beforeend', sceneHead(scene, curSceneIx));
+    now.insertAdjacentHTML('beforeend', sceneHead(scene));
     for (var i = 0; i < route.length; i++) {
       var st = route[i];
       if (st.sceneIx !== curSceneIx) continue;
@@ -1022,7 +1036,6 @@
     if (window.imp && window.imp.typoDom) window.imp.typoDom(now);
     if (supportTab === 'answers') renderAnswersTab();
     renderToc();
-    syncHeader();
     // Прокрутка: начало текущего разговора — к верху колонки. Считаем по rect'ам,
     // а не по offsetTop: offsetTop меряется от позиционированного предка, и первая
     // версия увозила шапку сцены за экран.
@@ -1038,12 +1051,13 @@
     }
   }
 
-  function syncHeader() {
-    var st = route[Math.min(state.cursor, route.length - 1)];
-    var ix = st ? st.sceneIx : S.scenes.length - 1;
-    var e = el('hdrScene');
-    if (e) e.textContent = (state.cursor >= route.length ? S.scenes.length : ix + 1) + ' / ' + S.scenes.length;
-  }
+  // ЗДЕСЬ БЫЛ syncHeader() — он писал счётчик «N / 6» в плашку шапки. Убран 04.08
+  // по решению владельца, основание — СПЕК §4.4: «Прогресс дня („3 из 6“) живёт
+  // только здесь [на межсценовом экране]: полоса прогресса в рабочей области
+  // превращает ответ в норматив». В шапке счётчик висел на каждом шаге, то есть
+  // был виден всё время, пока участник пишет, и противоречил обещанию строки
+  // настроя «Время в оценку не входит». Прогресс остался в одном месте —
+  // interludeWhen. Если счётчик когда-нибудь вернут в шапку, сначала правится §4.4.
 
   function showFinish() {
     el('assessRoot').style.display = 'none';
