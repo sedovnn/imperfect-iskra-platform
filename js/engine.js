@@ -636,6 +636,22 @@
     renderToc();
   }
 
+  // Введение в роль над пакетом. Текст берётся из S.system.lead — того же блока,
+  // который харнесс отдаёт модели в system, поэтому переезд с экрана установки на
+  // страницу чтения ничего не меняет для паритета носителей. Описание пакета
+  // (lead акта чтения) идёт последней строкой: оно про то, что лежит ниже.
+  function roleHtml() {
+    var sys = S.system || {};
+    var caseAct = null;
+    (S.scenes || []).forEach(function (sc) {
+      (sc.acts || []).forEach(function (a) { if (!caseAct && a.kind === 'case') caseAct = a; });
+    });
+    var out = '<div class="read-role"><p class="kicker">Ваша роль</p>' +
+      (sys.lead || []).map(function (p) { return '<p>' + br(subst(p)) + '</p>'; }).join('');
+    if (caseAct && caseAct.lead) out += '<p class="read-role-lead">' + br(caseAct.lead) + '</p>';
+    return out + '</div>';
+  }
+
   function loadCaseIntoSupport() {
     if (caseLoaded) return;
     var host = el('supCaseText');
@@ -645,6 +661,9 @@
     }
     window.imp.loadCaseHtml().then(function (html) {
       host.innerHTML = html;
+      // Введение в роль ставится ПЕРЕД пакетом и только после его загрузки: сам
+      // пакет приезжает как innerHTML и стёр бы любой узел, вставленный заранее.
+      host.insertAdjacentHTML('afterbegin', roleHtml());
       caseLoaded = true;
       buildCaseToc();
       if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
@@ -754,9 +773,14 @@
         // маркер ИИ по этому окну не сработает.
         '<textarea id="winInput" class="win-input" data-answer="1" rows="9" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
       '</div>' +
+      // Порядок [записка, кнопка] обязателен: ряд прижат вправо, значит последний
+      // элемент стоит у самого края. При обратном порядке кнопка «Ответить» уезжала
+      // влево от записки — на широком экране на четыреста пикселей от края, тогда
+      // как «Зафиксировать разбор» (порядок правильный) стояла у края. Именно это
+      // видел владелец: действие прыгало от экрана к экрану.
       '<div class="win-foot">' +
-        '<button class="btn btn-primary" id="commitBtn">Ответить →</button>' +
         '<span class="win-note">Ответ зафиксируется: вернуться и переписать его нельзя.</span>' +
+        '<button class="btn btn-primary" id="commitBtn">Ответить →</button>' +
       '</div>';
 
     var ta = d.querySelector('#winInput');
@@ -1065,8 +1089,9 @@
     if (state.cursor >= route.length && !state.finished) {
       var fin = document.createElement('div');
       fin.className = 's2-block';
-      fin.innerHTML = '<div class="win-foot"><button class="btn btn-primary" id="finishBtn">Закончить день →</button>' +
-        '<span class="win-note">День закроется: письмо уйдёт Агееву, ответы менять будет нельзя.</span></div>';
+      fin.innerHTML = '<div class="win-foot">' +
+        '<span class="win-note">День закроется: письмо уйдёт Агееву, ответы менять будет нельзя.</span>' +
+        '<button class="btn btn-primary" id="finishBtn">Закончить день →</button></div>';
       fin.querySelector('#finishBtn').addEventListener('click', finish);
       now.appendChild(fin);
     }
@@ -1110,6 +1135,13 @@
   function showFinish() {
     el('assessRoot').style.display = 'none';
     el('finishOverlay').style.display = 'flex';
+    // Из демо выход ведёт на витрину, а не на вход по номеру (решение владельца
+    // 04.08): демо смотрят с витрины, и отправлять человека на страницу входа
+    // участника значит показывать ему гейт, к которому у него нет номера.
+    if (isDemo) {
+      var out = el('finishOverlay').querySelector('a.btn');
+      if (out) { out.setAttribute('href', 'vitrina.html'); out.textContent = 'На витрину →'; }
+    }
   }
 
   function finish() {
@@ -1125,9 +1157,15 @@
 
   function initSetup() {
     var host = el('setupBody'), sys = S.system;
+    // sys.lead СЮДА БОЛЬШЕ НЕ ИДЁТ (решение владельца 04.08). На одном экране
+    // стояли две разные вещи: история роли — кто вы, кто звонил, когда встреча — и
+    // технические правила прохождения. Роль переехала на страницу чтения пакета
+    // (roleHtml), здесь остался только порядок дня. Данные S.system не тронуты:
+    // модель по-прежнему получает весь блок в system.
+    // Заголовком, а не меткой: без двух абзацев истории карточка начиналась
+    // одиннадцатипиксельной надписью и списком, то есть без заголовка вообще.
     host.innerHTML =
-      '<p class="kicker">' + esc(sys.title) + '</p>' +
-      sys.lead.map(function (p) { return '<p>' + br(p) + '</p>'; }).join('') +
+      '<h2>' + esc(sys.title) + '</h2>' +
       '<ul class="setup-rules">' + sys.rules.map(function (r) { return '<li>' + br(r) + '</li>'; }).join('') + '</ul>' +
       '<p class="intro-note">' + br(sys.note) + '</p>';
     if (window.imp && window.imp.typoDom) window.imp.typoDom(host);

@@ -4950,7 +4950,27 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .toc-link.is-on { color: var(--ink); font-weight: 600; }
 
 #supCaseText { flex: 1; min-height: 0; overflow-y: auto; padding: 20px var(--frame-pad, 24px) 40px; }
-.day-grid.is-reading #supCaseText { padding-left: var(--frame-pad, 56px); padding-right: var(--frame-pad, 56px); }
+/* СТРАНИЦА ЧТЕНИЯ — ОДНА КОЛОНКА ДОКУМЕНТА, ПО ЦЕНТРУ ПАНЕЛИ.
+   Было: текст статей 534px прижат влево, а заголовок пакета (.appx-divider) с его
+   двухпиксельной линейкой — 1621px во всю панель, и справа оставалось около 1100px
+   пустоты. Замер на окне 2000px, 04.08. То есть линейка шла над колонкой в три раза
+   шире самой колонки — ровно то, что владелец назвал нелепым распределением.
+   DESIGN.md стр. 148: «Всё влево ВНУТРИ колонки контента… сама колонка — по центру
+   окна». Здесь колонка контента одна, значит вся она и центрируется, а выключка
+   внутри неё остаётся левой. Таблицы приложений не страдают: они и так лежат в
+   .tbl-wrap с собственной горизонтальной прокруткой и в разговоре читаются в
+   колонке 508–587px, то есть уже, чем здесь. */
+.day-grid.is-reading #supCaseText {
+  padding-left: var(--frame-pad, 56px);
+  padding-right: var(--frame-pad, 56px);
+  /* ⚠ ch считается по шрифту САМОГО элемента, а не страницы. У .appx-divider
+     дисплейная гарнитура 13px, и 60ch там = 433px против 534px у прозы — то есть
+     раздача max-width каждому ребёнку давала три разные ширины. Поэтому мера
+     задаётся ОДИН раз здесь, на теле с базовым шрифтом, а дети берут 100%. */
+  max-width: calc(var(--w-read) + 2 * var(--frame-pad, 56px));
+  margin-inline: auto;
+}
+.day-grid.is-reading #supCaseText > * { width: 100%; max-width: none; }
 /* В режиме чтения оглавление ложится строкой во всю ширину: вертикальным списком
    оно съедало 200 px из 840, то есть четверть экрана чтения. */
 .day-grid.is-reading .case-toc {
@@ -4959,6 +4979,21 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .day-grid.is-reading .toc-title { width: 100%; }
 .day-grid.is-reading .toc-link { width: auto; }
+
+/* ВВЕДЕНИЕ В РОЛЬ — на странице чтения, а не на экране установки (решение
+   владельца 04.08: «смешалось всё — и введение в кейс, и технические
+   комментарии»). Установка осталась про устройство дня, роль переехала туда, где
+   человек садится читать пакет. Тот же текст (S.system.lead) — данные не менялись,
+   значит паритет с моделью, которая получает этот блок в system, сохранён. */
+/* Виден только на странице чтения: в разговоре вкладка «Кейс» — это тот же узел
+   DOM, и введение там отнимало бы прокрутку у материалов, за которыми в него
+   пришли. Текст никуда не пропадает — страницу чтения можно открыть снова. */
+.read-role { display: none; }
+.day-grid.is-reading .read-role { display: block; }
+.read-role { border-bottom: 1px solid var(--hairline); padding-bottom: 24px; margin-bottom: 28px; }
+.read-role p { font-size: var(--fs-read); line-height: 1.62; margin: 0 0 14px; }
+.read-role p:last-child { margin-bottom: 0; }
+.read-role .read-role-lead { color: var(--muted); font-size: var(--fs-dense); }
 
 /* Кнопка перехода в разговор живёт только в режиме чтения, липнет к низу опоры.
    Прижата ВПРАВО тем же правилом, что и кнопка ответа в .work-act: место главного
@@ -5116,7 +5151,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   background: var(--paper); border-top: 1px solid var(--hairline);
 }
 .work-act:empty { display: none; }
-.work-act .win-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px 14px; flex-wrap: wrap-reverse; margin: 0; }
+/* wrap, а не wrap-reverse: разметка теперь [записка, кнопка], и при переносе
+   кнопка обязана оставаться ПОД запиской, а не над ней. С wrap-reverse строки
+   менялись местами, и порядок зависел от того, влезли они в одну строку или нет —
+   отсюда и брался прыгающий вид. */
+.work-act .win-foot { display: flex; align-items: center; justify-content: flex-end; gap: 8px 14px; flex-wrap: wrap; margin: 0; }
 /* text-align: right снят: выключка только влево (DESIGN.md стр. 124). Сама
    записка прижата вправо раскладкой ряда (justify-content: flex-end), а текст
    внутри неё читается по левому краю. */
