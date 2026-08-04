@@ -170,12 +170,12 @@
   }
 
   function totals() {
-    var t = { people: 0, money: 0, taken: 0, dropped: 0, undecided: 0, reasoned: 0 };
+    var t = { people: 0, money: 0, taken: 0, dropped: 0, undecided: 0 };
     BACKLOG.forEach(function (it) {
       var p = pickOf(it.id);
       if (!p) { t.undecided++; return; }
       if (p.take) { t.taken++; t.people += Number(it.people) || 0; t.money += Number(it.money) || 0; }
-      else { t.dropped++; if (String(p.reason || '').trim()) t.reasoned++; }
+      else { t.dropped++; }
     });
     t.overPeople = t.people > LIM.people;
     t.overMoney = t.money > LIM.money;
@@ -186,16 +186,14 @@
   }
 
   function picksForJudge() {
+    // reasons остаётся пустым объектом и уезжает на сервер как есть: поля причин
+    // у позиций больше нет (механика — это поступок), а форма записи не меняется,
+    // чтобы прежние строки листа читались тем же кодом.
     var taken = [], dropped = [], reasons = {};
     BACKLOG.forEach(function (it) {
       var p = pickOf(it.id);
       if (!p) return;
-      if (p.take) taken.push(it.id);
-      else {
-        dropped.push(it.id);
-        var r = String(p.reason || '').trim();
-        if (r) reasons[String(it.id)] = r;
-      }
+      if (p.take) taken.push(it.id); else dropped.push(it.id);
     });
     var t = totals();
     return {
@@ -211,7 +209,6 @@
     var t = totals(), g = act.gates || {};
     if (t.undecided) return String(g.allDecided || '').replace('{n}', t.undecided);
     if (!t.taken) return g.atLeastOneTaken || '';
-    if (t.dropped && !t.reasoned) return g.atLeastOneReason || '';
     return '';
   }
 
@@ -288,10 +285,16 @@
       return d !== 0 ? d : a.n - b.n;
     });
     return dropped.slice(0, 2).map(function (x) {
-      // Короткая часть названия до первого тире или запятой: полное название
-      // занимает строку и в реплике не читается. Кавычки не ставим, если внутри
-      // уже есть свои («перезапустить „Точку"») — двойные выглядят сломанно.
-      var short = String(x.it.title || '').split(/\s+—\s+|,\s+/)[0].trim();
+      // Короткая часть названия — до первого тире, запятой или двоеточия: полное
+      // название занимает строку и в реплике не читается. Двоеточие обязательно:
+      // без него «Ввести формальные критерии приоритизации: как владельцы
+      // продуктов решают…» обрывалось посреди пояснения. Кавычки не ставим, если
+      // внутри уже есть свои («перезапустить „Точку"») — двойные выглядят сломанно.
+      var short = String(x.it.title || '').split(/\s+—\s+|,\s+|:\s+/)[0].trim();
+      // И потолок по длине: у трёх позиций даже первая часть названия тянет на
+      // восемьдесят знаков, и реплика Агеева превращалась в цитирование бэклога.
+      // Полное название рядом — в столбике «Не сейчас», номер сходится.
+      if (short.length > 48) short = short.slice(0, short.lastIndexOf(' ', 48)).trim() + '…';
       return '№' + x.n + (short.indexOf('«') >= 0 ? ' ' + short : ' «' + short + '»');
     });
   }
@@ -638,7 +641,7 @@
           var it = byId[id] || {};
           return '<li><span class="bl-id">' + id + '</span> ' + esc(it.title || '') +
             '<span class="recap-cost">' + (it.people || 0) + ' чел. · ' + num(it.money || 0) + ' млрд</span>' +
-            (p.reasons[String(id)] ? '<br /><i>' + esc(p.reasons[String(id)]) + '</i>' : '') + '</li>';
+            '</li>';
         }).join('');
       };
       out += '<div class="recap-item">' +
@@ -762,12 +765,16 @@
       // влезает» участник не должен делать в голове — её не меряет ни одна
       // способность. Подсветки «что ещё влезет» нет: это была бы подсказка отбора.
       d.querySelector('.bl-sum-host').innerHTML =
-        '<div class="bl-sum' + (t.over ? ' is-over' : '') + '">' +
+        // Счётчик СПОКОЙНЫЙ: числа без красного и без слова «перебор». Выйти за
+        // рамку Агеев разрешил вслух («тогда скажете, чем платите»), и подсветка
+        // тревогой читалась бы как «так нельзя» — то есть подталкивала бы к
+        // единственному «правильному» поведению там, где мы меряем выбор.
+        // Факт перебора не теряется: он считается кодом, уходит судье в fitsFrame
+        // и вызывает отдельный вопрос Агеева.
+        '<div class="bl-sum">' +
         '<span class="bl-sum-item"><b>' + t.taken + '</b> берём</span>' +
-        '<span class="bl-sum-item' + (t.overPeople ? ' is-over' : '') + '"><b>' + t.people + '</b> из ' + LIM.people + ' человек' +
-          '<i>' + (t.leftPeople >= 0 ? 'свободно ' + t.leftPeople : 'перебор на ' + (-t.leftPeople)) + '</i></span>' +
-        '<span class="bl-sum-item' + (t.overMoney ? ' is-over' : '') + '"><b>' + num(t.money) + '</b> из ' + LIM.money + ' млрд' +
-          '<i>' + (t.leftMoney >= 0 ? 'свободно ' + num(t.leftMoney) : 'перебор на ' + num(-t.leftMoney)) + '</i></span>' +
+        '<span class="bl-sum-item"><b>' + t.people + '</b> из ' + LIM.people + ' человек</span>' +
+        '<span class="bl-sum-item"><b>' + num(t.money) + '</b> из ' + LIM.money + ' млрд</span>' +
         (t.undecided ? '<span class="bl-sum-left">осталось решить: ' + t.undecided + '</span>' : '') +
         '</div>';
 
@@ -806,18 +813,20 @@
         : '<div class="bl-zone-h">все двадцать решены</div>';
 
       var dec = d.querySelector('.bl-decided');
+      // Полей «почему не сейчас» здесь БОЛЬШЕ НЕТ. Механика — это поступок:
+      // раскидать двадцать позиций, и всё. Объяснение отказа спрашивает Агеев
+      // следующей репликой, называя две самые дорогие по людям отложенные позиции,
+      // и ответ идёт в окно q2 — туда, где судья читает текст. Комментарий у
+      // каждой позиции был вторым запросом того же самого и, будучи обязательным,
+      // давал строки, написанные ради кнопки.
       var col = function (title, arr, kind) {
         var rows = arr.map(function (it) {
-          var p = pickOf(it.id) || {};
           return '<div class="bl-row">' +
             '<span class="bl-n">' + numOf[it.id] + '</span>' +
             '<span class="bl-row-t">' + esc(it.title) +
               '<span class="bl-mini-who">' + esc(it.who) + ' · ' + it.people + ' чел. · ' + num(it.money) + ' млрд</span></span>' +
             '<button type="button" class="bl-row-back" data-flip="' + it.id + '">' +
               (kind === 'taken' ? 'не сейчас' : 'беру') + '</button>' +
-            (kind === 'dropped'
-              ? '<textarea class="bl-reason bl-row-reason" data-answer="1" rows="2" data-reason="' + it.id + '" placeholder="почему не сейчас — если этот отказ сам по себе решение">' + esc(p.reason || '') + '</textarea>'
-              : '') +
             '</div>';
         }).join('');
         return '<div><div class="bl-col-head">' + title + ' <span>· ' + arr.length + '</span></div>' +
@@ -854,25 +863,12 @@
       // мгновенно прыгает под курсор, и второй клик попадает не туда.
       var card = d.querySelector('.bl-card[data-card="' + id + '"]');
       if (card && (take || drop)) card.classList.add('is-leaving');
-      // Причина отказа при возврате в «беру» НЕ теряется: участник мог передумать
-      // дважды, и стирать написанное молча нельзя.
-      state.picks[String(id)] = { take: next, reason: (prev && prev.reason) || '' };
+      // Решение — это только «берём / не сейчас». Поля причины у позиции больше
+      // нет, поэтому и хранить нечего: объяснение отказа живёт в ответе на вопрос
+      // Агеева про две названные позиции.
+      state.picks[String(id)] = { take: next };
       saveState();
       if (card && (take || drop)) { setTimeout(renderList, 180); } else renderList();
-      if (drop) {
-        // Поле причины появляется в сводке наверху, а клик был внизу: переводим
-        // фокус, иначе участник его просто не находит.
-        var box = d.querySelector('.bl-reason[data-reason="' + id + '"]');
-        if (box) { box.focus(); }
-      }
-    });
-    d.addEventListener('input', function (e) {
-      var rid = e.target.getAttribute && e.target.getAttribute('data-reason');
-      if (!rid) return;
-      var p = pickOf(rid) || { take: false };
-      p.reason = e.target.value;
-      state.picks[String(rid)] = p;
-      saveState();
     });
     d.querySelector('#fixBtn').addEventListener('click', function () {
       var fail = gateFailure(act);
