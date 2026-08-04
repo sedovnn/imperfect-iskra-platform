@@ -157,6 +157,22 @@
     syncTimer = setTimeout(sync, 3000);
   }
 
+  // Флаги элиситации описывают, что участнику ДЕЙСТВИТЕЛЬНО задали, а не что
+  // задумано в маршруте. Один флаг зависит от хода прогона: Агеев спрашивает про две
+  // отложенные позиции только если отложенные есть. Если портфель не размечен, пузырь
+  // не произносится (bubbleShown), значит и флаг не должен уезжать — иначе протокол
+  // утверждал бы, что признак ПР-1 был подсказан вопросом, которого не было, и судья
+  // снижал бы уровень за элиситацию впустую.
+  function elicitedNow() {
+    var m = S.elicitedMap();
+    if (namedRefusals().length) return m;
+    Object.keys(m).forEach(function (k) {
+      m[k] = m[k].filter(function (f) { return f !== 'pr1_named_refusals_asked'; });
+      if (!m[k].length) delete m[k];
+    });
+    return m;
+  }
+
   // Один путь записи: тем же действием saveAnswers, которым пишет харнесс модели.
   // Заметок здесь нет и быть не может — см. шапку файла.
   function payload() {
@@ -169,7 +185,7 @@
       answersAt: state.answersAt,
       picks: picksForJudge(),
       picksAt: state.picksAt,
-      elicited: S.elicitedMap(),
+      elicited: elicitedNow(),
       // Пометки едут на сервер и НЕ едут судье: buildJudgeInput_ собирает вход по
       // списку окон из V2_JUDGE_TASKS, и колонки marksJson для него не существует.
       marks: state.marks || [],
@@ -229,7 +245,16 @@
     };
   }
 
+  // Гейты фиксации портфеля. В ДЕМО их нет (решение владельца 04.08): демо служит
+  // тем, чтобы посмотреть день, а не пройти замер, и запирать выход требованием
+  // разметить двадцать позиций там нечем — портфель ничего не мерит.
+  // ⚠ В живом прогоне гейты пока остаются, и это единственное место, где они
+  //   держатся: их обоснование («пол ПР-1 обязан мериться одинаково у человека и у
+  //   модели», scenes.js) отпало вместе с самим полом — в рубрике v10 pr1LevelFrom
+  //   считает уровень только по признакам судьи. Снимать их в живом прогоне или
+  //   нет — решение владельца.
   function gateFailure(act) {
+    if (isDemo) return '';
     var t = totals(), g = act.gates || {};
     if (t.undecided) return String(g.allDecided || '').replace('{n}', t.undecided);
     if (!t.taken) return g.atLeastOneTaken || '';
@@ -324,9 +349,21 @@
   }
   window.imp.v2NamedRefusals = namedRefusals;
 
+  // Реплика может опираться на поступок участника, а поступка может не быть: без
+  // гейтов фиксации (демо) портфель законно остаётся неразмеченным, и тогда
+  // отложенных позиций ноль. Пузырь «Вы отложили {drop1} и {drop2}» в этом случае
+  // не произносится вовсе — иначе Агеев спрашивал бы про пустое место. Флаг
+  // элиситации pr1_named_refusals_asked при этом тоже не уезжает: см. payload().
+  function bubbleShown(b) {
+    if (b.needs === 'refusals') return namedRefusals().length > 0;
+    return true;
+  }
+
   function speechHtml(act) {
     var out = '';
-    (act.bubbles || []).forEach(function (b, i) {
+    // Фильтр ДО перебора, а не внутри: имя говорящего и ремарка привязаны к первому
+    // пузырю, и пропуск первого молча стирал бы подпись реплики.
+    (act.bubbles || []).filter(bubbleShown).forEach(function (b, i) {
       var name = i === 0 ? (act.who || '') : '';
       var actLine = i === 0 ? (b.act || act.act || '') : (b.act || '');
       out += '<div class="chat"><div class="chat-msg them"' + (act.who ? ' data-who="' + esc(act.who) + '"' : '') + '>' +
@@ -352,7 +389,9 @@
 
   function setTab(name) {
     supportTab = name;
-    ['case', 'answers', 'marks', 'ref'].forEach(function (k) {
+    // Порядок как в разметке (кейс · справка · пометки · мои ответы) — на работу он
+    // не влияет, но список, читающийся иначе, чем экран, потом обманывает.
+    ['case', 'ref', 'marks', 'answers'].forEach(function (k) {
       var b = document.querySelector('.support-tab[data-tab="' + k + '"]');
       var body = el('sup' + k.charAt(0).toUpperCase() + k.slice(1));
       if (b) b.classList.toggle('is-on', k === name);
@@ -553,12 +592,16 @@
     el('supRefBody').innerHTML = refHtml();
 
     // Сворачивание оглавления — постоянный контрол участника. Автоматическое
-    // сворачивание ниже 1360 живёт в CSS и кнопку не заменяет.
+    // сворачивание ниже 1360 живёт в CSS и кнопку не заменяет: класс is-tocon
+    // говорит «участник попросил» и перебивает медиазапрос, иначе на ноутбуке
+    // кнопка «⟩ оглавление» снимала класс, которого там не было, и не делала ничего.
     el('tocCollapse').addEventListener('click', function () {
       el('dayGrid').classList.add('is-collapsed');
+      el('dayGrid').classList.remove('is-tocon');
     });
     el('tocRestore').addEventListener('click', function () {
       el('dayGrid').classList.remove('is-collapsed');
+      el('dayGrid').classList.add('is-tocon');
     });
 
     // Прокрутка по оглавлению: внутри колонки, не по хэшу — хэш увёл бы страницу.
@@ -585,12 +628,8 @@
       b.classList.add('is-on');
     });
 
-    // Скрыть материалы — это про СЕРЕДИНУ, а не про оглавление: два разных
-    // контрола с разным смыслом, отсюда и два класса.
-    el('supportToggle').addEventListener('click', function () {
-      var hidden = el('dayGrid').classList.toggle('is-nomem');
-      this.textContent = hidden ? 'Показать материалы' : 'Скрыть материалы';
-    });
+    // Обработчика «Скрыть материалы» здесь больше нет: кнопка снята из шапки
+    // 04.08, класса .is-nomem в styles.css тоже нет.
 
     loadCaseIntoSupport();
     initMarks();
@@ -926,8 +965,6 @@
       ' · <button type="button" class="case-done-reopen" id="caseReopen">' + esc(act.reopen || 'открыть снова') + '</button>';
     d.querySelector('#caseReopen').addEventListener('click', function () {
       setTab('case');
-      el('dayGrid').classList.remove('is-nomem');
-      el('supportToggle').textContent = 'Скрыть материалы';
     });
     return d;
   }
@@ -938,7 +975,6 @@
     var g = el('dayGrid');
     g.classList.toggle('is-reading', !!on);
     el('caseReadFoot').style.display = on ? '' : 'none';
-    el('supportToggle').style.display = on ? 'none' : '';
     if (!on) return;
     setTab('case');
     el('hdrDayName').textContent = '«Искра» · материалы';

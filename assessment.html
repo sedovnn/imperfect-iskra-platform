@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=110" />
+<link rel="stylesheet" href="css/styles.css?v=111" />
 </head>
 <body>
 
@@ -19,7 +19,7 @@
      телом; см. #assessRoot .station-header в styles.css и DESIGN.md стр. 138. -->
 
 <!-- ТРИ КОЛОНКИ (СПЕК §4): слева оглавление текущей вкладки, в середине память
-     (кейс · мои ответы · пометки · справка), справа работа — один текущий вопрос.
+     (кейс · справка · пометки · мои ответы), справа работа — один текущий вопрос.
      Принцип: всё, что модель перечитывает бесплатно (кейс в system и вся история
      на каждом шаге), человек должен перечитывать почти бесплатно. Иначе платформа
      меряет память и прокрутку, чего не меряет ни одна из десяти способностей.
@@ -88,9 +88,13 @@
            вермилион в системе помечает одно главное действие (DESIGN.md стр. 101),
            а тёмная плашка — элемент брендированных экранов (стр. 143).
            Шесть знаков, а не три: номер выдаётся padStart(6) — engine.js. -->
+      <!-- Кнопки «Скрыть материалы» здесь больше нет: снята 04.08 по решению
+           владельца. На этом этапе она не нужна, а середина — кейс, свои ответы,
+           пометки, справка — обязана быть под рукой всегда: без неё платформа
+           меряет память, чего не меряет ни одна из десяти способностей. Класс
+           .is-nomem удалён из styles.css вместе с кнопкой. -->
       <div class="station-header-right" data-no-refs="1">
         <span class="hdr-save" id="hdrSave"></span>
-        <button type="button" class="btn btn-ghost btn-sm" id="supportToggle" title="Свернуть или показать опору">Скрыть материалы</button>
         <span class="hdr-num" id="hdrBib">№ 000000</span>
       </div>
     </header>
@@ -111,11 +115,15 @@
            сверяется, значит заставлять его выбирать между чтением и письмом. -->
       <aside class="support" id="supportPane">
         <button type="button" class="toc-restore" id="tocRestore" title="Показать оглавление">⟩ оглавление</button>
+        <!-- Порядок вкладок задан владельцем 04.08: кейс, справка по кейсу,
+             пометки, свои ответы. Он идёт от материала к своему следу в нём —
+             сначала то, что дали, потом то, чем это расшифровывается, потом то,
+             что участник из этого выписал, и только потом сказанное им. -->
         <nav class="support-tabs" id="supportTabs">
           <button type="button" class="support-tab is-on" data-tab="case">Кейс</button>
-          <button type="button" class="support-tab" data-tab="answers">Мои ответы</button>
-          <button type="button" class="support-tab" data-tab="marks">Пометки<span class="tab-count" id="marksCount"></span></button>
           <button type="button" class="support-tab" data-tab="ref">Справка</button>
+          <button type="button" class="support-tab" data-tab="marks">Пометки<span class="tab-count" id="marksCount"></span></button>
+          <button type="button" class="support-tab" data-tab="answers">Мои ответы</button>
         </nav>
 
         <div class="support-body is-on" id="supCase">
@@ -126,6 +134,14 @@
             <span class="mark-bar-q" id="markBarQuote"></span>
             <button type="button" class="btn btn-primary btn-sm" id="markBarAdd">В пометки</button>
           </div>
+        </div>
+
+        <!-- Справка: девять терминов приехали из кейса v7, «кто есть кто» — указатель
+             по уже названным в кейсе людям и продуктам. Опора, не подсказка: памяти
+             на имена и термины не измеряет ни одна из десяти способностей. -->
+        <div class="support-body" id="supRef">
+          <p class="support-note">Только факты из материалов. Ни одна способность не измеряет память на имена и термины.</p>
+          <div id="supRefBody"></div>
         </div>
 
         <!-- ПОМЕТКИ. Не указатель в текст, а выписка: хранится сам фрагмент, поэтому
@@ -142,19 +158,14 @@
           <div id="supAnswersBody"></div>
         </div>
 
-        <!-- Справка: девять терминов приехали из кейса v7, «кто есть кто» — указатель
-             по уже названным в кейсе людям и продуктам. Опора, не подсказка: памяти
-             на имена и термины не измеряет ни одна из десяти способностей. -->
-        <div class="support-body" id="supRef">
-          <p class="support-note">Только факты из материалов. Ни одна способность не измеряет память на имена и термины.</p>
-          <div id="supRefBody"></div>
-        </div>
-
         <!-- Виден только в режиме чтения пакета: день начинается с папки на столе,
              дальше та же папка остаётся в середине под рукой. -->
+        <!-- Порядок [записка, кнопка], а не наоборот: ряд прижат вправо, и главное
+             действие обязано стоять у самого края — на том же месте, где кнопка
+             ответа в разговоре. См. .support > .case-read-foot в styles.css. -->
         <div class="case-read-foot" id="caseReadFoot" style="display:none;">
-          <button type="button" class="btn btn-primary" id="caseReadCta">Дальше →</button>
           <span class="win-note" id="caseReadNote"></span>
+          <button type="button" class="btn btn-primary" id="caseReadCta">Дальше →</button>
         </div>
       </aside>
 
@@ -177,11 +188,18 @@
              Строка настроя одна на все шесть переходов (S.interlude) — разная
              подсказывала бы предмет замера. -->
         <div class="interlude" id="interlude" style="display:none;">
-          <div class="interlude-in">
-            <p class="interlude-mark" id="interludeMark"></p>
-            <p class="interlude-where" id="interludeWhere"></p>
-            <p class="interlude-when" id="interludeWhen"></p>
-            <div class="interlude-lead" id="interludeLead"></div>
+          <div class="interlude-body">
+            <div class="interlude-in">
+              <p class="interlude-mark" id="interludeMark"></p>
+              <p class="interlude-where" id="interludeWhere"></p>
+              <p class="interlude-when" id="interludeWhen"></p>
+              <div class="interlude-lead" id="interludeLead"></div>
+            </div>
+          </div>
+          <!-- Кнопка вынесена из текстового блока в подвал: место главного действия
+               на экране дня одно — правый низ. Раньше она стояла слева посреди
+               текста, и за день участник видел «дальше» то слева, то справа. -->
+          <div class="interlude-act">
             <button type="button" class="btn btn-primary" id="interludeCta">Дальше →</button>
           </div>
         </div>
@@ -198,11 +216,11 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=8"></script>
+<script src="js/scenes.js?v=9"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
 <script src="js/case-ref.js?v=13"></script>
-<script src="js/engine.js?v=17"></script>
+<script src="js/engine.js?v=18"></script>
 </body>
 </html>
