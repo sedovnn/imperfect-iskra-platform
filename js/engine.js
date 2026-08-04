@@ -62,6 +62,18 @@
   function el(id) { return document.getElementById(id); }
 
   function storageKey(bib) { return 'imp_v2_' + bib; }
+  // ГДЕ ЖИВЁТ ПРОГОН. Живой участник — localStorage: он должен вернуться в свой день
+  // после закрытия браузера. ДЕМО — sessionStorage, то есть только в этой вкладке.
+  // Починка 04.08: демо писалось в localStorage под imp_v2_900 и не чистилось ничем
+  // (витрина убирала только флаг imp_demo). Поэтому после первого прохода демо
+  // навсегда возвращалось в завершённый разговор с Агеевым, и «сброс» не помогал —
+  // сбрасывался флаг, а не сам прогон. Витрина теперь дополнительно стирает старый
+  // ключ из localStorage: см. vitrina.html.
+  function store() {
+    var demo = false;
+    try { demo = !!sessionStorage.getItem('imp_demo'); } catch (e) {}
+    return demo ? sessionStorage : localStorage;
+  }
   // Поле заметок убрано (СПЕК §3): сборщик телеметрии слушает любой textarea и
   // складывает totals по всем полям, поэтому копирование цифр из кейса в заметки
   // раздувало pastedChars и поднимало флаг ИИ за легитимное действие. Ключ
@@ -96,7 +108,7 @@
 
   function loadState(bib) {
     try {
-      var raw = localStorage.getItem(storageKey(bib));
+      var raw = store().getItem(storageKey(bib));
       if (raw) {
         var p = JSON.parse(raw);
         if (p && p.v === 1) {
@@ -111,7 +123,7 @@
           // получал «день приостановлен» на пустом месте.
           var hasWork = Object.keys(p.answersAt).some(function (k) { return p.answersAt[k]; }) || !!p.picksAt;
           if (p.scenesVersion !== S.version && hasWork && !p.finished && !isDemo) {
-            try { localStorage.setItem(storageKey(bib) + '_v_' + p.scenesVersion, raw); } catch (e) {}
+            try { store().setItem(storageKey(bib) + '_v_' + p.scenesVersion, raw); } catch (e) {}
             blockedByVersion = true;
             return p;
           }
@@ -119,7 +131,7 @@
           // сохранять нечего, а показывать «материалы обновились» посетителю
           // витрины — пугать его нашей внутренней жизнью.
           if (p.scenesVersion !== S.version) {
-            try { localStorage.removeItem(storageKey(bib)); } catch (e) {}
+            try { store().removeItem(storageKey(bib)); } catch (e) {}
             return freshState();
           }
           return p;
@@ -139,7 +151,7 @@
 
   function saveState() {
     if (blockedByVersion) return;
-    try { localStorage.setItem(storageKey(session.bib), JSON.stringify(state)); } catch (e) {}
+    try { store().setItem(storageKey(session.bib), JSON.stringify(state)); } catch (e) {}
     if (isDemo || !window.imp.isApiConfigured()) return;
     clearTimeout(syncTimer);
     syncTimer = setTimeout(sync, 3000);
