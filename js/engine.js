@@ -1002,6 +1002,10 @@
     if (!on) return;
     setTab('case');
     el('hdrDayName').textContent = '«Искра» · материалы';
+    // act.note у акта чтения снят 04.08 (строка уехала в установку), но поле
+    // оставлено: подвал один на все акты этого вида, и если у следующего пакета
+    // примечание к действию появится, ему есть куда встать. Пустой span скрыт
+    // правилом .win-note:empty, иначе он держал бы отступ рядом с кнопкой.
     el('caseReadNote').textContent = act.note || '';
     var cta = el('caseReadCta');
     cta.textContent = act.cta || 'Дальше →';

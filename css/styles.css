@@ -5009,6 +5009,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   background: var(--paper);
 }
 .support > .case-read-foot .win-note { max-width: 340px; }
+/* Пустое примечание не должно держать место и зазор рядом с кнопкой. */
+.win-note:empty { display: none; }
 
 .notes-input {
   width: 100%; flex: 1; min-height: 320px;
