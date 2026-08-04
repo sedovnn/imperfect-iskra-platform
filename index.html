@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=96" />
+<link rel="stylesheet" href="css/styles.css?v=104" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -58,10 +58,15 @@
     </header>
 
     <main class="entry-main">
-      <div class="entry-col">
+      <div class="entry-col" id="entryCol">
         <p class="kicker">Стратегическое мышление · ассессмент</p>
         <h1>Вход</h1>
         <p class="entry-lead">Введите номер участника и пароль — их выдал организатор.</p>
+
+        <!-- Требование, а не рекомендация. Стоит ДО формы: узнать про полтора часа
+             и про «не беспокоить» нужно раньше, чем участник начнёт день, а не
+             посреди второго разговора. Текст один на все экраны — imp.deviceReq. -->
+        <p class="entry-req" id="entryReq"></p>
 
         <!-- Участник, попавший сюда посреди ассессмента (история браузера, закладка,
              вручную набранный адрес), раньше видел только форму и должен был снова
@@ -129,7 +134,7 @@
   </div>
 </div>
 
-<script src="js/main.js?v=4"></script>
+<script src="js/main.js?v=6"></script>
 <script src="js/typo.js?v=2"></script>
 <script src="js/api.js?v=4"></script>
 <script>
@@ -144,6 +149,16 @@
   // Служебное меню (▸▸▸ → кабинет, демо) продолжает работать: иначе мы закрыли
   // бы доступ и себе. Снять заглушку = поставить false.
   var MAINTENANCE = true;
+
+  // ЗАПРЕТ С ТЕЛЕФОНА — раньше всего остального, включая заглушку и служебное меню.
+  // Это не предупреждение: с телефона ассессмент не проходят ни в тесте, ни в
+  // живой волне. Планшет разрешён (см. imp.isPhone: смотрим короткую сторону
+  // ЭКРАНА, а не окна, иначе запрет прилетел бы человеку с узким окном браузера).
+  if (window.imp.blockIfPhone('entryCol')) return;
+
+  // Требование к прохождению на обычном экране: ставим текстом из одного места.
+  var reqEl = document.getElementById('entryReq');
+  if (reqEl) reqEl.textContent = window.imp.deviceReq.lead;
 
   var trigger = document.getElementById('dotmenuTrigger');
   var list = document.getElementById('dotmenuList');

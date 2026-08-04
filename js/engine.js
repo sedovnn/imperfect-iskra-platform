@@ -1078,6 +1078,19 @@
   // ---------- старт ----------
 
   session = (function () { try { return window.imp.loadSession(); } catch (e) { return null; } })();
+  // Запрет с телефона — раньше всего, даже раньше проверки сессии: с телефона
+  // ассессмент не проходят ни в тесте, ни в живой волне (решение владельца 03.08).
+  // Планшет разрешён — см. imp.isPhone.
+  if (window.imp.isPhone && window.imp.isPhone()) {
+    var R = window.imp.deviceReq || { head: 'Нужен компьютер', lead: '', tail: '' };
+    el('phoneGateCard').innerHTML =
+      '<p class="kicker">Не с телефона</p><h2>' + R.head + '</h2>' +
+      '<p class="section-lead" style="margin:0 0 16px;">' + R.lead + '</p>' +
+      '<p class="section-lead" style="margin:0;">' + R.tail + '</p>';
+    el('phoneGate').style.display = 'flex';
+    return;
+  }
+
   if (!session || !session.bib) { el('gate').style.display = 'flex'; return; }
 
   // Сверка источников до первого рендера: разошёлся портфель — суммы в реплике

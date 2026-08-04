@@ -111,6 +111,53 @@
     return narrow && (coarse || touch);
   };
 
+  // ── ТЕЛЕФОН: вход запрещён, всегда ───────────────────────────────────────────
+  // Решение владельца 2026-08-03: не «рекомендуем компьютер», а запрет. Причина
+  // про замер, а не про удобство: шесть открытых вопросов с телефона меряют
+  // терпение и большие пальцы, а участник с телефона несопоставим с участником с
+  // ноутбука — при том что на сравнении и стоит весь продукт.
+  //
+  // Планшет РАЗРЕШЁН, поэтому одной ширины окна недостаточно: iPad в портрете —
+  // 744–834 логических пикселя, iPhone Pro Max — 430. Отсюда две проверки:
+  //   1) короткая сторона ЭКРАНА УСТРОЙСТВА (не окна) меньше 700 — это телефон;
+  //   2) навигатор сам сообщает mobile:true (Chromium; в Safari поля нет).
+  // Узкое окно на компьютере телефоном НЕ считается: там остаётся предупреждение,
+  // а не запрет — человек может просто растянуть окно.
+  window.imp.isPhone = function () {
+    try {
+      if (navigator.userAgentData && navigator.userAgentData.mobile === true) return true;
+      var w = (window.screen && window.screen.width) || window.innerWidth;
+      var h = (window.screen && window.screen.height) || window.innerHeight;
+      var shortSide = Math.min(w, h);
+      var coarse = window.matchMedia('(pointer: coarse)').matches;
+      return shortSide < 700 && coarse;
+    } catch (e) { return false; }
+  };
+
+  // Требование к прохождению. Один текст на все экраны: он же на входе, он же в
+  // запрете на телефоне, он же в установке дня. Две копии разъехались бы.
+  window.imp.deviceReq = {
+    head: 'Нужен компьютер',
+    lead: 'Для прохождения нужен ноутбук, компьютер или планшет и 1,5–2 часа свободного времени, когда вас никто не будет отвлекать. Телефон лучше поставить в режим «не беспокоить».',
+    tail: 'С телефона ассессмент не проходят: в нём шесть развёрнутых письменных ответов, и на маленьком экране это меряло бы терпение, а не мышление.'
+  };
+
+  // Показать запрет вместо содержимого. Возвращает true, если запрет показан.
+  window.imp.blockIfPhone = function (hostId) {
+    if (!window.imp.isPhone()) return false;
+    var host = document.getElementById(hostId);
+    if (!host) return true;
+    var R = window.imp.deviceReq;
+    host.innerHTML =
+      '<div class="phone-block">' +
+        '<p class="kicker">Не с телефона</p>' +
+        '<h1>' + R.head + '</h1>' +
+        '<p class="phone-lead">' + R.lead + '</p>' +
+        '<p class="phone-tail">' + R.tail + '</p>' +
+      '</div>';
+    return true;
+  };
+
   // Сессию читаем sessionStorage → localStorage. sessionStorage изолирован по
   // ВКЛАДКЕ: режим «Экскурсия» держит свою демо-сессию (bib 900) только там, где
   // запущен, и не перезаписывает общую (localStorage) реальную сессию в других

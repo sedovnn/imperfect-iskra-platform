@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=103" />
+<link rel="stylesheet" href="css/styles.css?v=104" />
 </head>
 <body class="frame-narrow">
 
@@ -21,6 +21,12 @@
      идут ТОЛЬКО поля с data-answer="1" — иначе выписка из кейса поднимала бы
      маркер ИИ за легитимное действие (из-за этого и убирали заметки).
      Ни одной реплики в этой разметке — весь текст маршрута из js/scenes.js. -->
+
+<!-- Запрет с телефона: день сюда не пускает даже при живой сессии. Заполняется
+     из js/main.js (imp.deviceReq), чтобы текст требования жил в одном месте. -->
+<div id="phoneGate" class="gate" style="display:none;">
+  <div class="gate-card" id="phoneGateCard"></div>
+</div>
 
 <div id="gate" class="gate" style="display:none;">
   <div class="gate-card">
@@ -174,17 +180,17 @@
 </div>
 
 <script src="js/boot-loading.js?v=4"></script>
-<script src="js/main.js?v=5"></script>
+<script src="js/main.js?v=6"></script>
 <script src="js/typo.js?v=2"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=3"></script>
+<script src="js/scenes.js?v=5"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
 <script src="js/case-ref.js?v=13"></script>
-<script src="js/engine.js?v=8"></script>
+<script src="js/engine.js?v=10"></script>
 </body>
 </html>

@@ -4917,6 +4917,21 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    с двумя столбиками результата.
    ═════════════════════════════════════════════════════════════════════════ */
 
+/* ── ЗАПРЕТ С ТЕЛЕФОНА и требование к прохождению ──
+   Не предупреждение: с телефона ассессмент не проходят. Планшет разрешён. */
+.phone-block { max-width: 30rem; }
+.phone-block h1 {
+  font-family: var(--ff-display); font-weight: 800; font-size: clamp(30px, 8vw, 40px);
+  line-height: 1.05; letter-spacing: -.015em; text-transform: uppercase; margin: 14px 0 0;
+}
+.phone-lead { font-size: 16px; line-height: 1.55; margin: 18px 0 0; }
+.phone-tail { font-size: 14px; line-height: 1.55; color: var(--muted); margin: 14px 0 0; }
+.entry-req {
+  font-size: 14px; line-height: 1.55; color: var(--ink); margin: 16px 0 0; max-width: 42ch;
+  padding: 12px 14px; background: var(--accent-tint); border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+}
+
 /* ── ПОМЕТКИ: выписки из материалов, доступные на любом шаге ──
    Не указатель в текст, а сам фрагмент: смена версии кейса их не ломает. */
 .tab-count { font-variant-numeric: tabular-nums; color: var(--muted-soft); }
