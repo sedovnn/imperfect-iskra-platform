@@ -92,11 +92,23 @@
           if (!p.answersAt) p.answersAt = {};
           if (!p.picks) p.picks = {};
           if (!p.marks) p.marks = [];
-          var started = p.started || Object.keys(p.answersAt).length || p.picksAt;
-          if (p.scenesVersion !== S.version && started && !p.finished) {
+          // Гейт версии защищает ОТВЕТЫ, а не факт открытия страницы. Поэтому
+          // блокируем только когда есть что терять: зафиксированный ответ или
+          // разобранный портфель. Прежнее условие включало p.started, и участник,
+          // который просто нажал «Начать день» и ушёл, при следующей правке сцен
+          // получал «день приостановлен» на пустом месте.
+          var hasWork = Object.keys(p.answersAt).some(function (k) { return p.answersAt[k]; }) || !!p.picksAt;
+          if (p.scenesVersion !== S.version && hasWork && !p.finished && !isDemo) {
             try { localStorage.setItem(storageKey(bib) + '_v_' + p.scenesVersion, raw); } catch (e) {}
             blockedByVersion = true;
             return p;
+          }
+          // Демо и прогон без работы под новой версией начинаем заново молча:
+          // сохранять нечего, а показывать «материалы обновились» посетителю
+          // витрины — пугать его нашей внутренней жизнью.
+          if (p.scenesVersion !== S.version) {
+            try { localStorage.removeItem(storageKey(bib)); } catch (e) {}
+            return freshState();
           }
           return p;
         }
