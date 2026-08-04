@@ -977,7 +977,7 @@
     var d = document.createElement('div');
     d.className = 's2-block recap-pointer';
     d.innerHTML = '<p class="kicker">' + esc(act.title) + '</p>' +
-      '<p class="section-lead" style="margin:0;">' + esc(act.lead) + ' Всё, что вы сказали за день, — во вкладке «Мои ответы» слева.</p>';
+      '<p class="section-lead" style="margin:0;">' + esc(act.lead) + ' Всё, что вы сказали, — во вкладке «Мои ответы» слева.</p>';
     if (!recapShown) { recapShown = true; setTab('answers'); }
     return d;
   }
@@ -1009,7 +1009,7 @@
     el('caseReadNote').textContent = act.note || '';
     var cta = el('caseReadCta');
     cta.textContent = act.cta || 'Дальше →';
-    cta.onclick = function () { el('hdrDayName').textContent = '«Искра» · один день'; advance(); };
+    cta.onclick = function () { el('hdrDayName').textContent = '«Искра» · ассессмент'; advance(); };
   }
 
   // Межсценовый экран: перекрывает рабочую область, оставляя кейс и оглавление на
@@ -1094,8 +1094,8 @@
       var fin = document.createElement('div');
       fin.className = 's2-block';
       fin.innerHTML = '<div class="win-foot">' +
-        '<span class="win-note">День закроется: письмо уйдёт Агееву, ответы менять будет нельзя.</span>' +
-        '<button class="btn btn-primary" id="finishBtn">Закончить день →</button></div>';
+        '<span class="win-note">Ассессмент закроется: письмо уйдёт Агееву, ответы менять будет нельзя.</span>' +
+        '<button class="btn btn-primary" id="finishBtn">Закончить ассессмент →</button></div>';
       fin.querySelector('#finishBtn').addEventListener('click', finish);
       now.appendChild(fin);
     }
@@ -1221,7 +1221,7 @@
   // переписывает две строки из шапки. Демо-сессии пароля нет.
   var bibLabel = '№ ' + String(session.bib).padStart(6, '0');
   el('hdrBib').textContent = bibLabel + (session.pass ? ' · пароль ' + session.pass : '');
-  el('hdrBib').title = 'Ваш номер и пароль: с ними вы продолжите день на другом устройстве';
+  el('hdrBib').title = 'Ваш номер и пароль: с ними вы продолжите ассессмент на другом устройстве';
   document.body.dataset.caseSrc = S.caseSrc;
 
   state = loadState(session.bib);

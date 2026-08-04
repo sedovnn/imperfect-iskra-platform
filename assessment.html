@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>«Искра» · один день — i(m)perfect</title>
-<meta name="description" content="Один день внешнего консультанта в «Искре»: шесть разговоров, шесть вопросов." />
+<title>«Искра» · ассессмент — i(m)perfect</title>
+<meta name="description" content="Ассессмент «Искра»: один день внешнего консультанта — шесть разговоров, шесть вопросов." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
@@ -38,7 +38,7 @@
   <div class="gate-card">
     <p class="kicker">Нужен вход</p>
     <h2>Сначала вход по номеру</h2>
-    <p class="section-lead" style="margin:0 0 24px;">День привязан к вашему номеру участника — без него ответы негде сохранить.</p>
+    <p class="section-lead" style="margin:0 0 24px;">Ассессмент привязан к вашему номеру участника — без него ответы негде сохранить.</p>
     <a class="btn btn-primary btn-block" href="index.html">Войти по номеру →</a>
   </div>
 </div>
@@ -48,10 +48,10 @@
      решение организатора, не участника. Прежние ответы сохранены локально. -->
 <div id="versionGate" class="gate" style="display:none;">
   <div class="gate-card">
-    <p class="kicker">День приостановлен</p>
-    <h2>Материалы дня обновились</h2>
-    <p class="section-lead" style="margin:0 0 18px;">Пока вы работали, вопросы этого дня изменились. Продолжать с середины нельзя: часть ответов относилась бы к прежним формулировкам.</p>
-    <p class="section-lead" style="margin:0 0 24px;">Ваши ответы сохранены и не потеряны. Напишите организатору — он решит, начинать день заново или зачесть сказанное.</p>
+    <p class="kicker">Ассессмент приостановлен</p>
+    <h2>Материалы обновились</h2>
+    <p class="section-lead" style="margin:0 0 18px;">Пока вы работали, вопросы этого ассессмента изменились. Продолжать с середины нельзя: часть ответов относилась бы к прежним формулировкам.</p>
+    <p class="section-lead" style="margin:0 0 24px;">Ваши ответы сохранены и не потеряны. Напишите организатору — он решит, начинать ассессмент заново или зачесть сказанное.</p>
     <a class="btn btn-ghost btn-block" href="index.html">На главную</a>
   </div>
 </div>
@@ -59,13 +59,13 @@
 <div id="setupGate" class="gate" style="display:none;">
   <div class="gate-card setup-card">
     <div id="setupBody"><!-- js/engine.js из scenes.js.system --></div>
-    <button class="btn btn-primary btn-block" id="startDayBtn" style="margin-top:26px;">Начать день →</button>
+    <button class="btn btn-primary btn-block" id="startDayBtn" style="margin-top:26px;">Начать ассессмент →</button>
   </div>
 </div>
 
 <div id="finishOverlay" class="gate gate-finish" style="display:none;">
   <div class="gate-card">
-    <p class="kicker">✓ День закончен</p>
+    <p class="kicker">✓ Ассессмент закончен</p>
     <h2>Письмо ушло Агееву</h2>
     <p class="section-lead" style="margin:0 0 24px;">Ответы записаны. Разбор придёт отдельно — здесь оценок нет и не будет.</p>
     <a class="btn btn-primary btn-block" href="index.html">На главную →</a>
@@ -79,7 +79,7 @@
       <div class="station-header-left">
         <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
-        <h1 class="station-name" id="hdrDayName">«Искра» · один день</h1>
+        <h1 class="station-name" id="hdrDayName">«Искра» · ассессмент</h1>
       </div>
       <!-- Плашки счётчика «N / 6» здесь больше нет: прогресс дня по СПЕК §4.4 живёт
            только на межсценовом экране, а в шапке он был виден всё время, пока
@@ -149,7 +149,7 @@
              Уезжают на сервер отдельной колонкой и НЕ передаются судьям: вход судьи
              собирается по явному списку окон, пометок в нём нет. -->
         <div class="support-body" id="supMarks">
-          <p class="support-note">Ваши выписки из материалов. Доступны на любом шаге дня, в оценке не участвуют.</p>
+          <p class="support-note">Ваши выписки из материалов. Доступны на любом шаге ассессмента, в оценке не участвуют.</p>
           <div id="supMarksBody"></div>
         </div>
 
@@ -216,11 +216,11 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=10"></script>
+<script src="js/scenes.js?v=11"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
 <script src="js/case-ref.js?v=13"></script>
-<script src="js/engine.js?v=20"></script>
+<script src="js/engine.js?v=21"></script>
 </body>
 </html>
