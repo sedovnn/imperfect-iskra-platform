@@ -94,6 +94,44 @@
     },
     render: function (host, m, ctx) {
       var byId = function (id) { return m.cards.filter(function (x) { return x.id === id; })[0]; };
+      // ── ОПОРА ТЕЗИСА: ВЫПИСКА, А НЕ ССЫЛКА СЛОВАМИ ──
+      // В платформе давно есть механика отметок: выделил фрагмент в материалах —
+      // забрал его в «Пометки» вместе с цитатой. Здесь стояло плоское поле «где
+      // именно», в которое участник должен был ПЕРЕПЕЧАТАТЬ то, что уже отметил.
+      // Теперь тезис можно опереть на саму выписку: цитата видна целиком и уезжает
+      // судье как цитата, а не как «раздел 3».
+      // Поле словами осталось рядом: сослаться можно и на то, что не выписывал, а
+      // требовать выписку значило бы требовать пользоваться инструментом.
+      // ⚠ ГРАНИЦА: сами пометки судье НЕ отдаются (решение 03.08, marksJson в
+      //   вход судьи не входит). Выписка, ВЫБРАННАЯ опорой тезиса, — уже часть
+      //   ответа, и она уезжает: участник сказал ею, а не просто выделил.
+      var picking = {};
+      var anchorHtml = function (x) {
+        var marks = ctx.marks ? ctx.marks() : [];
+        var h = '';
+        if (x.anchorRef) {
+          h += '<div class="mx-anchor"><span class="mx-anchor-k">выписка из материалов</span>' +
+            '<blockquote class="mark-quote">' + ctx.esc(x.anchor) + '</blockquote>' +
+            '<button type="button" class="s2-act" data-anchoroff="' + x.id + '">убрать опору</button></div>';
+          return h;
+        }
+        if (picking[x.id]) {
+          h += '<div class="mx-anchor">' + (marks.length
+            ? '<span class="mx-anchor-k">какая из ваших выписок</span>' + marks.map(function (mk) {
+                return '<button type="button" class="mx-anchor-pick" data-anchorset="' + x.id +
+                  '" data-mid="' + mk.id + '">' + ctx.esc(cut(mk.quote, 90)) + '</button>';
+              }).join('')
+            : '<p class="mx-hint">Выписок пока нет. Выделите фрагмент в материалах справа — появится кнопка «В пометки».</p>') +
+            '<button type="button" class="s2-act" data-anchorclose="' + x.id + '">скрыть</button></div>';
+        } else {
+          h += '<button type="button" class="s2-act mx-anchor-open" data-anchoropen="' + x.id + '">' +
+            'Опереть на выписку' + (marks.length ? ' (' + marks.length + ')' : '') + '</button>';
+        }
+        h += '<input type="text" class="mx-input mx-input-thin" data-answer="1" data-anchor="' + x.id + '"' +
+          ' placeholder="или словами: если ссылаетесь на материалы — где именно (необязательно)" value="' +
+          ctx.esc(x.anchor) + '" />';
+        return h;
+      };
       var draw = function () {
         var h = head('Тезисы', normCount(m.cards.length, NORM));
         m.cards.forEach(function (x, i) {
@@ -111,8 +149,7 @@
             // Подпись нейтральная (правка ревью №14): «Где в материалах это видно»
             // внушало, что легитимны только тезисы из пакета, а выход за кейс —
             // ровно граница АК-1 3→4.
-            '<input type="text" class="mx-input mx-input-thin" data-answer="1" data-anchor="' + x.id + '"' +
-              ' placeholder="Если ссылаетесь на материалы — где именно (необязательно)" value="' + ctx.esc(x.anchor) + '" />' +
+            anchorHtml(x) +
             '</div>';
         });
         h += '<button type="button" class="mx-add" data-add="1">+ тезис</button>';
@@ -203,6 +240,24 @@
           }
           if (t.getAttribute && t.getAttribute('data-add')) {
             m.cards.push({ id: m.nextId++, text: '', anchor: '' }); ctx.save(); draw(); ctx.sync(); return;
+          }
+          if ((a = t.getAttribute && t.getAttribute('data-anchoropen'))) { picking[Number(a)] = true; draw(); return; }
+          if ((a = t.getAttribute && t.getAttribute('data-anchorclose'))) { picking[Number(a)] = false; draw(); return; }
+          if ((a = t.getAttribute && t.getAttribute('data-anchorset'))) {
+            var card = byId(Number(a));
+            var mk = (ctx.marks ? ctx.marks() : []).filter(function (q) { return q.id === t.getAttribute('data-mid'); })[0];
+            if (card && mk) {
+              // Пишем САМУ цитату, а не ссылку на пометку: пометку можно убрать,
+              // а сказанное участником исчезать не должно.
+              card.anchor = mk.quote; card.anchorRef = mk.id;
+              picking[card.id] = false; ctx.save(); draw(); ctx.sync();
+            }
+            return;
+          }
+          if ((a = t.getAttribute && t.getAttribute('data-anchoroff'))) {
+            var c2 = byId(Number(a));
+            if (c2) { c2.anchor = ''; c2.anchorRef = null; ctx.save(); draw(); ctx.sync(); }
+            return;
           }
           if ((a = t.getAttribute && t.getAttribute('data-linkdel'))) {
             m.links.splice(Number(a), 1); ctx.save(); draw(); return;
@@ -437,8 +492,20 @@
 
         // Три столбика, не два: «не сейчас» и «не делаем» показаны раздельно и в
         // лицо — на печати (С3б) участник увидит ровно этот расклад.
+        // ── СТОПКИ. Решённое лежит стопкой и переносится между стопками ОДНИМ
+        // кликом: в строке стоят две другие возможности, а не «вернуть» в общий
+        // пул. С двумя решениями «вернуть» хватало (единственный переезд —
+        // туда-обратно), с тремя оно означало два клика вместо одного и потерю
+        // места: карточка уезжала обратно в «не решено» и искалась заново.
+        var OTHER = { take: 'берём', later: 'не сейчас', never: 'не делаем' };
         var col = function (title, arr, d) {
-          return '<div><div class="bl-col-head">' + title + ' <span>· ' + arr.length + '</span></div>' +
+          // .mx-pile — стопка как ОТДЕЛЬНЫЙ предмет: рамка, подпись, счёт. Без
+          // рамки три зоны в узкой колонке (474px на 1440) читались одним плоским
+          // списком с подзаголовками — «раскладывания по стопкам» не было видно, а
+          // именно оно здесь и есть поступок. Полосой во всю ширину, а не
+          // столбиком: почему — в styles.css у .bl-cols.mx-cols3, там замер.
+          return '<div class="mx-pile mx-pile-' + d + '">' +
+            '<div class="bl-col-head">' + title + ' <span>· ' + arr.length + '</span></div>' +
             (arr.map(function (r) {
               // ⚠ У ВЗЯТОГО СВОЕГО ВАРИАНТА ПОЛЯ ВИЛКИ ОСТАЮТСЯ ЗДЕСЬ. Пока их не
               // было, участник попадал в тупик: карточка уходила из «не решено» в
@@ -448,10 +515,24 @@
               // (в шкалы идёт только взятое), и спрашивать его значило бы просить
               // работу впустую.
               var needBand = r.own && d === 'take';
+              // Автор и цена в строке решённого — как в прежнем разборе: без них
+              // стопка превращается в список заголовков, и участник, чтобы понять,
+              // из чего сложились 1 602 человека, обязан помнить цены наизусть.
+              var meta = r.own
+                ? 'ваш вариант' + (d === 'take' && m.chosen[r.key]
+                    ? ' · ' + ((m.chosen[r.key].people || 0) + ' чел. · ' + ctx.num(m.chosen[r.key].money || 0) + ' млрд')
+                    : '')
+                : ctx.esc(r.who) + ' · ' + r.people + ' чел. · ' + ctx.num(r.money) + ' млрд';
+              var moves = Object.keys(OTHER).filter(function (k) { return k !== d; })
+                .map(function (k) {
+                  return '<button type="button" class="bl-row-back" data-set="' + k +
+                    '" data-key="' + r.key + '">' + OTHER[k] + '</button>';
+                }).join('');
               return '<div class="bl-row' + (needBand ? ' mx-row-wide' : '') + '">' +
                 '<span class="bl-n">' + (r.own ? 'ваш' : ctx.blNum(r.id)) + '</span>' +
-                '<span class="bl-row-t">' + ctx.esc(r.title) + '</span>' +
-                '<button type="button" class="bl-row-back" data-set="" data-key="' + r.key + '">вернуть</button>' +
+                '<span class="bl-row-t">' + ctx.esc(r.title) +
+                  '<span class="bl-mini-who">' + meta + '</span></span>' +
+                '<span class="mx-row-moves">' + moves + '</span>' +
                 (needBand ? '<div class="mx-row-band">' + priceOf(r) + '</div>' : '') +
                 '</div>';
             }).join('') || '<p class="bl-empty">пока ничего</p>') + '</div>';
@@ -494,7 +575,14 @@
         // можно, нажав другое решение или «вернуть» в решённом столбике.
         if (d && m.decided[key] === d) return;
         if (d) m.decided[key] = d; else delete m.decided[key];
-        ctx.save(); draw(); ctx.sync();
+        ctx.save();
+        // Уход карточки из пула ЗАМЕТЕН ГЛАЗУ. Без этих 180 мс следующая карточка
+        // мгновенно прыгает под курсор, и второй клик попадает не туда — правка
+        // прежнего разбора, оплаченная тем же промахом. Переезд между стопками
+        // перерисовывается сразу: строка не исчезает, она меняет столбик.
+        var card = t2.closest && t2.closest('.bl-grid .bl-card');
+        if (card) { card.classList.add('is-leaving'); setTimeout(function () { draw(); ctx.sync(); }, 180); }
+        else { draw(); ctx.sync(); }
       });
       draw();
     }

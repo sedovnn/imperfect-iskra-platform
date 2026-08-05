@@ -577,9 +577,72 @@
     markCount();
   }
 
-  // Оглавление слева — оглавление ТЕКУЩЕЙ вкладки середины, а не отдельный
-  // элемент: одна колонка, разное содержимое. Иначе получаются два списка,
-  // спорящих за одно место.
+  // ── МАРШРУТ ДНЯ (верх левой колонки) ────────────────────────────────────
+  // Что участник видит: разговоры по порядку, в каждом — его шаги; где он сейчас;
+  // что уже сделано. Время и место берутся из scene.where, названия шагов — из
+  // самих актов (label у окна, MECH_TITLES у механики). Второго списка шагов
+  // здесь нет: маршрут собирается из route, то есть из scenes.js.
+  //
+  // ТРИ ПРАВИЛА, БЕЗ КОТОРЫХ ЭТО СТАЛО БЫ ПОДСКАЗКОЙ:
+  //  1. Будущие разговоры не называются — только их счёт. Перечень того, что ещё
+  //     спросят, это карта дня; по ней участник готовит ответы заранее и мы мерим
+  //     подготовку, а не мышление.
+  //  2. Условный шаг, который НЕ сработал, в маршруте не появляется вовсе —
+  //     иначе участник узнавал бы, что где-то была развилка, и по какому признаку.
+  //  3. Клик по пройденному шагу ПРОКРУЧИВАЕТ к нему, а не возвращает в него:
+  //     день идёт вперёд, зафиксированное не переигрывается.
+  function renderRoute() {
+    var host = el('routeBody');
+    if (!host) return;
+    var cur = route[state.cursor];
+    var curSceneIx = cur ? cur.sceneIx : S.scenes.length - 1;
+    var html = '';
+    S.scenes.forEach(function (sc, si) {
+      if (si > curSceneIx) return;
+      html += '<div class="route-scene' + (si === curSceneIx ? ' is-now' : '') + '">' +
+        '<div class="route-where">' + esc(sc.where) + '</div>' +
+        '<div class="route-name">' + esc(sc.name) + '</div>';
+      sc.acts.forEach(function (a, ai) {
+        if (!isBlocking(a) || a.kind === 'interlude') return;
+        if (!applies(a)) return;
+        var ix = -1;
+        for (var i = 0; i < route.length; i++) {
+          if (route[i].sceneIx === si && route[i].actIx === ai) { ix = i; break; }
+        }
+        if (ix > state.cursor) return;             // будущее внутри текущей сцены не называем
+        // Названия механик в реестре строчные («тезисы и связки») — они там
+        // подписи внутри окна. В маршруте это строка списка рядом с «Пакет
+        // материалов», поэтому первая буква поднимается здесь, а не в реестре:
+        // иначе пришлось бы держать два написания одного названия.
+        var title = a.kind === 'case' ? 'Пакет материалов'
+          : (a.kind === 'mechanic' ? mechTitle(a.mech) : (a.label || 'Ответ'));
+        title = title.charAt(0).toUpperCase() + title.slice(1);
+        var done = ix < state.cursor;
+        html += '<button type="button" class="route-step' + (done ? ' is-done' : '') +
+          (ix === state.cursor ? ' is-on' : '') + '" data-rstep="' + si + '">' +
+          '<span class="route-mark">' + (done ? '✓' : '•') + '</span>' + esc(title) + '</button>';
+      });
+      html += '</div>';
+    });
+    var left = S.scenes.length - 1 - curSceneIx;
+    if (left > 0) {
+      html += '<p class="route-left">дальше — ещё ' +
+        left + ' ' + plural(left, 'разговор', 'разговора', 'разговоров') + '</p>';
+    }
+    host.innerHTML = html;
+  }
+
+  function plural(n, one, few, many) {
+    var a = Math.abs(n) % 100, b = a % 10;
+    if (a > 10 && a < 20) return many;
+    if (b > 1 && b < 5) return few;
+    if (b === 1) return one;
+    return many;
+  }
+
+  // Оглавление в НИЗУ левой колонки — оглавление ТЕКУЩЕЙ вкладки справа, а не
+  // отдельный элемент: одна колонка, разное содержимое. Иначе получаются два
+  // списка, спорящих за одно место.
   function renderToc() {
     var kicker = el('tocKicker'), body = el('tocBody');
     if (!kicker || !body) return;
@@ -608,12 +671,16 @@
       return;
     }
     kicker.textContent = 'Зафиксировано';
+    // ⚠ Механики считаются наравне с окнами: их семь из двенадцати, и по одному
+    // answersAt в этом списке было видно максимум пять записей из двенадцати —
+    // участник не находил во «Моих ответах» того, что только что сделал.
     var links = '';
     S.windows().forEach(function (w, i) {
-      if (!state.answersAt[w.save]) return;
-      links += '<button type="button" class="toc-link" data-ans="' + i + '">' + esc(w.label) + '</button>';
+      var fixed = w.mech ? !!(state.mechAt && state.mechAt[w.mech]) : !!state.answersAt[w.save];
+      if (!fixed) return;
+      var title = w.mech ? mechTitle(w.mech) : w.label;
+      links += '<button type="button" class="toc-link" data-ans="' + i + '">' + esc(title) + '</button>';
     });
-    if (state.picksAt) links += '<button type="button" class="toc-link" data-ans="picks">Разбор портфеля</button>';
     body.innerHTML = links || '<p class="bl-empty">Пока ничего.</p>';
   }
 
@@ -674,6 +741,24 @@
       scroller.scrollTop += target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
       el('tocBody').querySelectorAll('.toc-link').forEach(function (x) { x.classList.remove('is-on'); });
       b.classList.add('is-on');
+    });
+
+    // Клик по маршруту — ПРОКРУТКА к разговору в центральной колонке, и только.
+    // Пройденный разговор лежит свёрнутой строкой: раскрываем её и подводим к ней
+    // глаз. Ни курсор, ни зафиксированные ответы отсюда не двигаются — иначе
+    // маршрут стал бы способом переиграть день.
+    el('routeBody').addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-rstep]');
+      if (!b) return;
+      var si = Number(b.getAttribute('data-rstep'));
+      var scroller = el('talkScroll');
+      var cur = route[state.cursor];
+      var target = (cur && si === cur.sceneIx)
+        ? el('talkCurrent')
+        : el('talkHistory').querySelectorAll('.talk-past')[si];
+      if (!target) return;
+      if (target.tagName === 'DETAILS') target.open = true;
+      scroller.scrollTop += target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
     });
 
     // Обработчика «Скрыть материалы» здесь больше нет: кнопка снята из шапки
@@ -922,6 +1007,10 @@
       // Доступ к соседней ветке: список инициатив (С3) обязан видеть варианты,
       // которые участник назвал в С2, — иначе своё вообще не попадает на стол.
       mech: function (name) { return (state.mech && state.mech[name]) || null; },
+      // Выписки участника — механикам НУЖНЫ, чтобы тезис можно было опереть на
+      // цитату, а не на перепечатанную ссылку. Отдаём копию массива: механика
+      // читает пометки, но не правит их — правит их только вкладка «Пометки».
+      marks: function () { return (state.marks || []).slice(); },
       // Перерисовать текущий акт целиком, включая подвал: механике этого не сделать
       // самой, потому что подвал живёт в другой колонке (движок его туда переносит).
       redraw: function () { render(); },
@@ -1199,6 +1288,10 @@
 
   function render() {
     var cur = route[state.cursor];
+    // Маршрут рисуется ПЕРВЫМ и до всех возвратов: страница чтения пакета выходит
+    // из render() сразу, и при вызове в конце левая колонка на первом же шаге дня
+    // оставалась без маршрута — то есть ровно там, где участник впервые её видит.
+    renderRoute();
     if (cur && applies(cur.act) && cur.act.kind === 'case') { readingMode(true, cur.act); return; }
     readingMode(false);
     interludeMode(!!(cur && applies(cur.act) && cur.act.kind === 'interlude'), cur || { scene: S.scenes[0], sceneIx: 0 });
@@ -1216,7 +1309,10 @@
       if (si >= curSceneIx) return;
       var det = document.createElement('details');
       det.className = 'talk-past';
-      var answered = sc.acts.filter(function (a) { return a.kind === 'window' && state.answersAt[a.save]; }).length;
+      var answered = sc.acts.filter(function (a) {
+        return (a.kind === 'window' && state.answersAt[a.save]) ||
+               (a.kind === 'mechanic' && state.mechAt && state.mechAt[a.mech]);
+      }).length;
       det.innerHTML = '<summary><span class="talk-past-mark">✓</span> Разговор ' + (si + 1) + ' · ' + esc(sc.name) +
         '<span class="talk-past-meta">' + (answered ? answered + (answered === 1 ? ' ответ' : ' ответа') : 'пройден') + '</span></summary>';
       var body = document.createElement('div');
@@ -1227,6 +1323,13 @@
         else if (a.kind === 'window' && state.answersAt[a.save]) {
           body.innerHTML += '<div class="win-label-past">' + esc(a.label) + '</div>' +
             meHtml(state.answers[a.save], state.answersAt[a.save]);
+        }
+        // Механики в свёрнутом разговоре — сводкой (locked), а не пустотой: до
+        // этой правки прошлый разговор с тремя механиками раскрывался в одни
+        // реплики Агеева, и участник не видел там ни своих тезисов, ни разбора.
+        else if (a.kind === 'mechanic' && state.mechAt && state.mechAt[a.mech]) {
+          body.innerHTML += '<div class="win-label-past">' + esc(mechTitle(a.mech)) + '</div>' +
+            '<div class="bl-locked">' + mechAnswerHtml(a.mech) + '</div>';
         }
       });
       det.appendChild(body);
@@ -1275,6 +1378,7 @@
 
     if (window.imp && window.imp.typoDom) window.imp.typoDom(now);
     if (supportTab === 'answers') renderAnswersTab();
+    renderRoute();
     renderToc();
     // Прокрутка: начало текущего разговора — к верху колонки. Считаем по rect'ам,
     // а не по offsetTop: offsetTop меряется от позиционированного предка, и первая

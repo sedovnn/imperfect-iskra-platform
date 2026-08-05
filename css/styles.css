@@ -4872,6 +4872,35 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .toc-collapse:hover { color: var(--ink); }
 .dayside-body { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 24px var(--frame-pad); }
+
+/* ── МАРШРУТ ДНЯ — верх левой колонки ──
+   Не прокручивается сам: двенадцать строк максимум, и прокрутку в колонке держит
+   одно место — оглавление ниже. flex: none, иначе два скроллера в одной колонке
+   начинают спорить, и участник теряет, где он. Ни одного нового токена: те же
+   цвета и кегли, что у оглавления. */
+.dayside-route { flex: none; padding: 10px 8px 12px var(--frame-pad); }
+.route-scene + .route-scene { margin-top: 12px; }
+.route-where { font-size: var(--fs-util); color: var(--muted-soft); }
+.route-name { font-size: var(--fs-util); color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+.route-scene.is-now .route-name { color: var(--ink); }
+.route-step {
+  display: flex; gap: 6px; width: 100%; text-align: left; border: none; background: none;
+  padding: 3px 0; font: inherit; font-size: var(--fs-util); color: var(--muted-soft); cursor: pointer;
+}
+.route-step:hover { color: var(--ink); }
+.route-step.is-done { color: var(--muted); }
+/* Текущий шаг — единственная жирная строка в колонке: «вы здесь» должно читаться
+   без чтения. */
+.route-step.is-on { color: var(--ink); font-weight: 600; cursor: default; }
+.route-mark { flex: none; width: 10px; color: var(--muted-soft); }
+.route-step.is-on .route-mark { color: var(--ink); }
+.route-left { margin: 12px 0 0; font-size: var(--fs-util); color: var(--muted-soft); }
+/* Подпись оглавления ниже маршрута: та же линейка, что у .dayside-head, но без
+   кнопки свёртки — она одна на колонку и живёт выше. */
+.dayside-sub {
+  flex: none; padding: 10px 14px 8px var(--frame-pad);
+  border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline);
+}
 .toc-group { margin: 16px 0 4px;
 }
 /* кнопка возврата оглавления — в шапке центральной колонки */
@@ -5270,6 +5299,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   font-size: var(--fs-util); color: var(--muted-soft); text-decoration: underline;
 }
 .bl-row-back:hover { color: var(--ink); }
+/* Строка в стопке несёт две строки текста — заголовок и «автор · цена», — поэтому
+   обрезка на двух строках срезала бы заголовок до одной. Три: два на заголовок,
+   один на подпись. */
+.bl-row-t:has(.bl-mini-who) { -webkit-line-clamp: 3; }
+/* Переезд между стопками: две возможности в столбик, чтобы строка не растягивалась
+   по ширине и стопка оставалась стопкой. */
+.mx-row-moves { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .bl-zone-h {
   display: flex; align-items: baseline; gap: 8px; margin: 18px 0 8px;
 }
@@ -5327,6 +5363,20 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .mx-input:focus { outline: none; border-color: var(--accent); background: var(--accent-tint); }
 .mx-input-thin { margin-top: 6px; }
+/* ── ОПОРА ТЕЗИСА НА ВЫПИСКУ ──
+   Цитата рисуется тем же .mark-quote, что и во вкладке «Пометки»: это одна и та же
+   вещь, и выглядеть она обязана одинаково — иначе выписка в тезисе читается как
+   другой объект. Здесь только рамка вокруг неё, без новых цветов и кеглей. */
+.mx-anchor { margin-top: 6px; padding: 8px 10px; border: 1px solid var(--hairline); border-radius: var(--radius); }
+.mx-anchor-k { display: block; font-size: var(--fs-util); color: var(--muted-soft); margin-bottom: 6px; }
+.mx-anchor .mark-quote { margin-bottom: 8px; }
+.mx-anchor-pick {
+  display: block; width: 100%; text-align: left; margin-bottom: 6px; cursor: pointer;
+  border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--paper);
+  padding: 6px 8px; font: inherit; font-size: var(--fs-util); color: var(--muted); line-height: 1.5;
+}
+.mx-anchor-pick:hover { border-color: var(--accent); color: var(--ink); }
+.mx-anchor-open { margin-top: 6px; }
 .mx-add {
   border: 1px dashed var(--hairline); background: var(--paper); color: var(--muted);
   border-radius: var(--radius); font: inherit; font-size: var(--fs-dense);
@@ -5368,22 +5418,35 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mx-row-band { grid-column: 1 / 4; margin: 2px 0 4px; }
 .mx-row-band .mx-label { margin-top: 6px; }
 
-/* ТРИ СТОЛБИКА РЕШЕНИЙ вместо двух: «не сейчас» и «не делаем» разведены поступком,
+/* ТРИ СТОПКИ РЕШЕНИЙ вместо двух: «не сейчас» и «не делаем» разведены поступком,
    иначе псевдо-отказ (L2) и настоящий выбор (пол L3) неразличимы.
-   ⚠ ПОРОГ СЧИТАЕТСЯ ПО КОНТЕЙНЕРУ, А НЕ ПО ОКНУ, и порог взят из замера, а не на
-   глаз. Медиазапрос по окну ничего не знает о том, сколько места реально у
-   механики: замерено на живом дне — хост .bl-host получает 474px при окне 1440 и
-   714px при 1920 (рабочая колонка минус её отступы). При пороге 760px три столбика
-   не появились бы вообще ни на одной ширине. Порог 660px: на 1920 три столбика
-   дают по ~230px — ровно та ширина, на которой с 03.08 работает существующий
-   разбор заявок в два столбика при 1440. На 1440 (474px) все три идут столбиком:
-   порядок «берём → не сейчас → не делаем» читается и так, а рвать заголовки ради
-   колонок незачем. */
-.bl-host { container-type: inline-size; }
+   ⚠ СТОПКИ ИДУТ ПОЛОСАМИ, А НЕ СТОЛБИКАМИ, И ЭТО ЗАМЕР, А НЕ ВКУС. Замерено 05.08
+   на живом дне: рабочая колонка отдаёт хосту механики 474px при окне 1440, 554 при
+   1600, 714 при 1920. Три столбика влезают только на 1920 и дают по 230px — на этой
+   ширине заголовок заявки занимает три строки, а подпись «автор · столько человек ·
+   столько денег» обрезкой съедается совсем. Именно она и делает стопку читаемой:
+   без неё участник, чтобы понять, из чего сложились 785 человек, обязан помнить
+   цены наизусть. Поэтому раскладка ОДНА на всех ширинах — три полосы во всю ширину
+   колонки, каждая в рамке (.mx-pile). Два варианта раскладки здесь означали бы, что
+   на 1920 механика теряет данные, которых на 1440 не теряет. */
 .bl-cols.mx-cols3 { grid-template-columns: minmax(0, 1fr); }
-@container (min-width: 660px) {
-  .bl-cols.mx-cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; }
+/* ── СТОПКА КАК ПРЕДМЕТ ──
+   Замер 05.08: рабочая колонка — 474px на 1440, 554 на 1600, 537 на 1280, 714 на
+   1920. Три столбика в ряд дают по 150–230px, то есть рваный заголовок и съеденную
+   подпись, поэтому стопки идут полосами (см. .bl-cols.mx-cols3 выше). Полосой это
+   раньше читалось одним плоским списком с подзаголовками: «раскладывания» не
+   было видно, хотя оно здесь и есть поступок. Рамка возвращает предмет: три стопки
+   вместо трёх подзаголовков. Ни одного нового цвета — --paper, --hairline, --soft. */
+.mx-pile {
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--paper); padding: 8px 10px 2px;
 }
+.mx-pile + .mx-pile { margin-top: 8px; }
+.mx-pile .bl-col-head { margin-top: 0; }
+/* Последняя строка стопки без разделителя: он рисовал линию вдоль дна рамки. */
+.mx-pile .bl-row:last-child { border-bottom: none; }
+.mx-pile .bl-empty { margin: 4px 0 8px; }
+
 /* Карточки нерешённого НЕ трогаем: два ряда в 587px дают 285px на карточку и так
    живут с 03.08, а за узкий экран отвечает медиазапрос ≤1100 выше. Второе правило
    на тот же класс дало бы два источника правды на одну раскладку. */
