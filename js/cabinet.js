@@ -107,14 +107,16 @@
       (p.flags ? ' <span class="cab-flag" title="' + p.flags + ' флаг(ов) — открыть карточку">⚑</span>' : '');
   }
 
-  // Ход: восемь окон плюс портфель. Точка на окно — самый честный вид прогресса
-  // в линейном маршруте: сцен шесть, а необратимых шагов девять.
+  // Ход: точка на шаг. Маршрут v4.4.f — двенадцать необратимых шагов (семь механик
+  // и пять свободных окон), из них два условных: у участника, которого не спросили
+  // про перебор и про Северову, точек честно десять, а не «двух не хватает».
+  // Отдельной точки портфеля больше нет — портфель стал разбором заявок и считается
+  // среди двенадцати.
   function progressCell(p) {
     var out = '';
-    for (var i = 1; i <= 8; i++) {
-      out += '<span class="cab-dot' + (i <= p.answered ? ' is-done' : '') + '" title="окно ' + i + '"></span>';
+    for (var i = 1; i <= 12; i++) {
+      out += '<span class="cab-dot' + (i <= p.answered ? ' is-done' : '') + '" title="шаг ' + i + '"></span>';
     }
-    out += '<span class="cab-dot cab-dot-picks' + (p.picksDone ? ' is-done' : '') + '" title="портфель решений"></span>';
     if (p.finished) out += ' <span class="cab-fin" title="День закончен">✓</span>';
     return out;
   }
@@ -166,23 +168,45 @@
         (flags.length ? '<div class="cab-elicit" title="О чём спросили прямо — судья получает это машинно">спрошено прямо: ' + esc(flags.join(', ')) + '</div>' : '') +
         '<div class="cab-answer-text">' + (w.text.trim() ? br(w.text) : '<i>промолчал</i>') + '</div>' +
         '</div>';
-    }).join('') + picksHtml(d.picks));
+    }).join('') + factsHtml(d.facts) + picksHtml(d.picks));
   }
 
+  // Факты разбора заявок — ровно тем же составом, что уходит судье (listFacts_ в
+  // backend/code.js): три решения названиями, ресурс взятого против рамки года.
+  function factsHtml(f) {
+    if (!f) return '';
+    var lim = f.limits || {};
+    var zone = function (title, arr) {
+      return '<p><span class="cab-k">' + title + ' (' + arr.length + '):</span></p>' +
+        (arr.length ? '<ul>' + arr.map(function (r) {
+          return '<li>' + esc(r.title) + (r.own ? ' <i>— свой вариант</i>' : '') +
+            ' <span class="cab-dim">' + r.people + ' чел. · ' + r.money + ' млрд</span></li>';
+        }).join('') + '</ul>' : '<p class="cab-dim">ни одной</p>');
+    };
+    return '<div class="cab-answer"><div class="cab-answer-head">' +
+      '<span class="cab-answer-label">Разбор заявок — факты</span></div>' +
+      '<div class="cab-answer-text">' +
+        '<p><b>' + f.take.length + '</b> берём · <b>' + f.later.length + '</b> не сейчас · ' +
+        '<b>' + f.never.length + '</b> не делаем · ' +
+        f.people + ' человек из ' + lim.people + ' · ' + f.money + ' млрд из ' + lim.money +
+        (f.fitsFrame === false ? ' — <b>за рамкой</b>' : ' — в рамке') + '</p>' +
+        (f.undecided.length ? '<p><b>не решено: ' + f.undecided.length + '</b> — разбор неполный</p>' : '') +
+        zone('Берём', f.take) + zone('Не сейчас', f.later) + zone('Не делаем', f.never) +
+      '</div></div>';
+  }
+
+  // Портфель прежней схемы — только у исторических строк; у прогонов маршрута
+  // v4.4.f этого блока нет вовсе (picksJson там пустой).
   function picksHtml(p) {
-    if (!p || !p.taken) return '';
+    if (!p || !p.taken || !p.taken.length) return '';
     var lim = p.limits || {};
-    return '<div class="cab-answer"><div class="cab-answer-head"><span class="cab-answer-label">Портфель решений — факты</span></div>' +
+    return '<div class="cab-answer"><div class="cab-answer-head"><span class="cab-answer-label">Портфель решений — прежняя схема</span></div>' +
       '<div class="cab-answer-text">' +
         '<p><b>' + (p.taken || []).length + '</b> берём · <b>' + (p.dropped || []).length + '</b> не сейчас · ' +
         p.people + ' человек из ' + lim.people + ' · ' + p.money + ' млрд из ' + lim.money +
         (p.fitsFrame === false ? ' — <b>за рамкой</b>' : ' — в рамке') + '</p>' +
         '<p><span class="cab-k">Взято:</span> ' + esc((p.taken || []).join(', ')) + '</p>' +
         '<p><span class="cab-k">Отложено:</span> ' + esc((p.dropped || []).join(', ')) + '</p>' +
-        (Object.keys(p.reasons || {}).length
-          ? '<p><span class="cab-k">Причины отказов:</span></p><ul>' + Object.keys(p.reasons).map(function (k) {
-              return '<li>' + esc(k) + ' — ' + esc(p.reasons[k]) + '</li>'; }).join('') + '</ul>'
-          : '<p class="cab-dim">Причин отказа не названо ни по одному решению.</p>') +
       '</div></div>';
   }
 

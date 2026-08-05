@@ -4897,7 +4897,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  border-right: 1px solid var(--hairline);
+  /* ⚠ БОКОВОЙ ЛИНИИ ЗДЕСЬ НЕТ — и это следствие перестановки колонок 05.08.
+     Опора теперь ПОСЛЕДНЯЯ колонка, её правый край = правый край окна: линия
+     справа рисовалась бы по краю экрана отдельной ниткой. Шов «работа | опора»
+     держит .talk своим border-right, шов «оглавление | работа» — .dayside.
+     Правило: линию рисует ЛЕВЫЙ сосед шва, тогда у последней колонки её нет. */
   background: var(--paper);
 }
 .support-tabs {
@@ -5027,8 +5031,15 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .who-row b { font-weight: 600; }
 .who-row span { color: var(--muted); }
 
-/* ── разговор ── */
-.talk { display: flex; flex-direction: column; min-height: 0; min-width: 0; }
+/* ── разговор (ЦЕНТРАЛЬНАЯ колонка с 05.08) ── */
+.talk {
+  display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  /* Шов «работа | опора». Линию рисует левый сосед шва (см. .support): работа
+     стоит между оглавлением и опорой, поэтому линия у неё справа. В режиме
+     чтения пакета работа скрыта целиком — линия уходит вместе с ней, и шов
+     «оглавление | опора» остаётся один, от .dayside. */
+  border-right: 1px solid var(--hairline);
+}
 .talk-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 18px var(--frame-pad, 40px) 64px; }
 
 /* прошлые разговоры — строкой, а не двенадцатью экранами прокрутки */
@@ -5066,7 +5077,15 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
      предупреждение (СПЕК §4.1). */
   .day-grid { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 42%) minmax(0, 1fr); }
   .day-grid.is-collapsed { grid-template-rows: 0 minmax(0, 1fr); }
-  .support { border-right: none; border-bottom: 1px solid var(--hairline); }
+  /* ⚠ ЗДЕСЬ ОПОРА ВОЗВРАЩАЕТСЯ НАВЕРХ — order, а не порядок узлов. Перестановка
+     колонок 05.08 поставила работу перед опорой в DOM, и на узком экране это дало
+     бы работу в первом ряду (42%), а опору во втором (58%): печатать в меньшей
+     половине, читать пакет в большей — ровно наоборот к тому, что нужно. Ряды
+     здесь неравные, поэтому решает не «центр» (его нет — колонка одна), а размер:
+     работе достаётся 58%. Решение «опора сверху» принято раньше и не отменялось. */
+  .support { order: -1; border-bottom: 1px solid var(--hairline); }
+  /* линия шва «работа | опора» вертикальная — в один столбец ей нечего делить */
+  .talk { border-right: none; }
   .talk-scroll { padding-left: 20px; padding-right: 20px; }
 }
 
@@ -5266,3 +5285,120 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 @media (max-width: 1100px) {
   .bl-grid, .bl-cols { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   MX- — ОБЩИЕ ПЕРВОЭЛЕМЕНТЫ МЕХАНИК (js/mechanics.js, лор v4.4.f).
+   Платформа держит классы по механике: bl- у разбора заявок. Семь механик лора
+   делят карточку, группу полей и счётчик нормы, поэтому у общего — префикс mx-.
+   Классы прототипа (.mech, .slot, .fan-ray, .table3, .years, .gauge) сюда НЕ
+   переехали: прототип собрал свой параллельный словарь рядом с платформенным, и
+   смысл «совместить с дизайном» ровно в том, чтобы словарь остался один.
+   Ни одного нового цвета и размера: только токены системы.
+   ═════════════════════════════════════════════════════════════════════════ */
+.mx-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 18px 0 8px; }
+.mx-title {
+  font-family: var(--ff-body); font-size: var(--label-size); font-weight: var(--label-weight);
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--muted-soft);
+}
+.mx-count { font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums; }
+.mx-opt { color: var(--muted-soft); font-weight: 400; }
+
+.mx-card {
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--paper); padding: 10px 12px; margin: 0 0 8px;
+}
+/* Отмеченный самый тревожный симптом и свой вариант в списке — «своё» помечено
+   левой чертой цветом бренда: та же фигура, что у .dir в прототипе, но токеном. */
+.mx-card.is-first, .bl-card.mx-own { border-color: var(--jb-ink); background: var(--band); }
+.mx-card-top { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; }
+.mx-acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.mx-flag {
+  font-size: var(--fs-util); font-weight: 700; color: var(--jb-ink);
+  text-transform: uppercase; letter-spacing: var(--label-track);
+}
+/* выбранное решение — не подсветка «правильного», а отметка поступка */
+.s2-act.is-on { border-color: var(--jb-ink); color: var(--jb-ink); font-weight: 600; }
+
+.mx-label { display: block; font-size: var(--fs-util); color: var(--muted-soft); margin: 8px 0 3px; }
+.mx-input {
+  width: 100%; border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 7px 9px; font-family: inherit; font-size: var(--fs-dense); line-height: 1.55;
+  color: var(--ink); background: var(--paper); resize: vertical;
+}
+.mx-input:focus { outline: none; border-color: var(--accent); background: var(--accent-tint); }
+.mx-input-thin { margin-top: 6px; }
+.mx-add {
+  border: 1px dashed var(--hairline); background: var(--paper); color: var(--muted);
+  border-radius: var(--radius); font: inherit; font-size: var(--fs-dense);
+  padding: 7px 12px; cursor: pointer; width: 100%; text-align: left;
+}
+.mx-add:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
+.mx-add:disabled { opacity: .45; cursor: default; }
+.mx-hint { font-size: var(--fs-util); color: var(--muted-soft); margin: 8px 0 3px; }
+
+/* слот симптома: метка-заголовок, без стрелки и без глагола (лор §С1) */
+.mx-slot {
+  border: 1px dashed var(--hairline); border-radius: var(--radius);
+  padding: 10px 12px; background: var(--band); margin: 12px 0 0;
+}
+.mx-quote { font-size: var(--fs-dense); line-height: 1.55; margin: 6px 0 0; }
+
+/* связки */
+.mx-link { border: 1px solid var(--band-line); background: var(--band); border-radius: var(--radius); padding: 10px 12px; margin: 0 0 8px; }
+.mx-link-n { font-size: var(--fs-util); font-weight: 700; color: var(--jb-ink); }
+.mx-link-refs { font-size: var(--fs-util); color: var(--muted); margin: 4px 0 8px; line-height: 1.5; }
+.mx-pick { display: flex; align-items: flex-start; gap: 8px; font-size: var(--fs-dense); line-height: 1.45; padding: 3px 0; }
+.mx-pick input { margin-top: 3px; }
+
+/* вилка финансистов: пределы — текстом, выбор участника — двумя числами */
+.mx-band { white-space: normal; }
+.mx-pair { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0 0; font-size: var(--fs-util); color: var(--muted-soft); }
+.mx-num {
+  width: 6em; border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 4px 6px; font: inherit; font-size: var(--fs-util);
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+.mx-num:focus { outline: none; border-color: var(--accent); background: var(--accent-tint); }
+
+/* Взятый свой вариант в столбике «Берём» остаётся с полями вилки: строка
+   раскрывается на всю ширину и отдаёт третий ряд под пределы и два числа. Без
+   этого участник попадал в тупик — гейт требовал число, а поля уезжали вместе с
+   карточкой (поймано стендом механик). */
+.bl-row.mx-row-wide { grid-template-columns: 20px 1fr auto; }
+.mx-row-band { grid-column: 1 / 4; margin: 2px 0 4px; }
+.mx-row-band .mx-label { margin-top: 6px; }
+
+/* ТРИ СТОЛБИКА РЕШЕНИЙ вместо двух: «не сейчас» и «не делаем» разведены поступком,
+   иначе псевдо-отказ (L2) и настоящий выбор (пол L3) неразличимы.
+   ⚠ ПОРОГ СЧИТАЕТСЯ ПО КОНТЕЙНЕРУ, А НЕ ПО ОКНУ, и порог взят из замера, а не на
+   глаз. Медиазапрос по окну ничего не знает о том, сколько места реально у
+   механики: замерено на живом дне — хост .bl-host получает 474px при окне 1440 и
+   714px при 1920 (рабочая колонка минус её отступы). При пороге 760px три столбика
+   не появились бы вообще ни на одной ширине. Порог 660px: на 1920 три столбика
+   дают по ~230px — ровно та ширина, на которой с 03.08 работает существующий
+   разбор заявок в два столбика при 1440. На 1440 (474px) все три идут столбиком:
+   порядок «берём → не сейчас → не делаем» читается и так, а рвать заголовки ради
+   колонок незачем. */
+.bl-host { container-type: inline-size; }
+.bl-cols.mx-cols3 { grid-template-columns: minmax(0, 1fr); }
+@container (min-width: 660px) {
+  .bl-cols.mx-cols3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; }
+}
+/* Карточки нерешённого НЕ трогаем: два ряда в 587px дают 285px на карточку и так
+   живут с 03.08, а за узкий экран отвечает медиазапрос ≤1100 выше. Второе правило
+   на тот же класс дало бы два источника правды на одну раскладку. */
+
+/* печать (С3б): итог крупно, список раздельно и в лицо */
+.mx-seal-total {
+  font-size: var(--fs-place); font-weight: 700; font-variant-numeric: tabular-nums;
+  padding: 0 0 4px;
+}
+
+/* слайдер срока (С5). Дефолта нет: пока не сдвинут, значение «не выбрано» —
+   обязательный срок стирал наблюдение «сам ли человек привязал цель ко времени» */
+.mx-years { display: flex; align-items: center; gap: 14px; margin: 0 0 4px; }
+.mx-years input[type="range"] { flex: 1; accent-color: var(--accent); }
+.mx-years-val {
+  font-size: var(--fs-place); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 5.2em;
+}
+.mx-years-val.is-empty { font-size: var(--fs-dense); font-weight: 400; color: var(--muted-soft); }

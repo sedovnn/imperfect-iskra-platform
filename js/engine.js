@@ -9,17 +9,20 @@
 // стоит на сравнении их между собой. Налог — это ошибка измерения.
 //
 // Отсюда принцип раскладки: всё, что модель перечитывает бесплатно, человек должен
-// перечитывать почти бесплатно. Значит опора (кейс, свои ответы, заметки,
-// справочник) живёт слева постоянно и НЕ перекрывает поле ответа, а справа —
+// перечитывать почти бесплатно. Значит опора (кейс, свои ответы, пометки,
+// справочник) живёт РЯДОМ постоянно и НЕ перекрывает поле ответа, а работа —
 // ровно один текущий вопрос; прошлые разговоры свёрнуты в строки.
+// ⚠ Стороны поменялись 05.08 по решению владельца: работа переехала в ЦЕНТР,
+// опора — вправо. Принцип не изменился, изменилось только, где что стоит.
 //
 // Заметки вернулись, и это тоже про паритет, а не про комфорт: у модели есть
 // скрытое рассуждение, которое не попадает ни в ответ, ни к судье. Блокнот —
 // его человеческий эквивалент. Поэтому содержимое заметок не уходит на сервер
 // НИКОГДА: отдельный ключ localStorage, отсутствие в payload, ноль телеметрии.
 //
-// Что осталось неизменным: шесть сцен и восемь окон из scenes.js, портфель с тремя
-// гейтами, необратимость, отсутствие любых реакций на содержание и длину ответа.
+// Что осталось неизменным: маршрут целиком берётся из scenes.js (семь сцен,
+// двенадцать шагов), необратимость каждого шага, отсутствие любых реакций на
+// содержание и длину ответа.
 
 (function () {
   var S = window.imp.scenes;
@@ -90,6 +93,11 @@
       backlogVersion: S.backlogVersion,
       answers: {}, answersAt: {},
       picks: {}, picksAt: '',
+      // Состояние семи механик маршрута v4.4.f — по одной ветке на механику
+      // (js/mechanics.js). Отдельно от picks: picks — прежний разбор заявок на два
+      // решения, на маршруте его больше нет, и он остаётся пустым. Ветку не убираем
+      // ради строк прежних прогонов: их читает тот же код кабинета.
+      mech: {}, mechAt: {},
       // Выписки из материалов. Собираем (владелец: «собирать максимум текста»),
       // но судьям не отдаём: выделение — вспомогательный инструмент, а не
       // инструмент оценки. Попасть в оценку не могут по построению.
@@ -115,13 +123,21 @@
           if (!p.answers) p.answers = {};
           if (!p.answersAt) p.answersAt = {};
           if (!p.picks) p.picks = {};
+          if (!p.mech) p.mech = {};
+          if (!p.mechAt) p.mechAt = {};
           if (!p.marks) p.marks = [];
           // Гейт версии защищает ОТВЕТЫ, а не факт открытия страницы. Поэтому
           // блокируем только когда есть что терять: зафиксированный ответ или
           // разобранный портфель. Прежнее условие включало p.started, и участник,
           // который просто нажал «Начать день» и ушёл, при следующей правке сцен
           // получал «день приостановлен» на пустом месте.
-          var hasWork = Object.keys(p.answersAt).some(function (k) { return p.answersAt[k]; }) || !!p.picksAt;
+          // ⚠ ШТАМПЫ МЕХАНИК СЧИТАЮТСЯ ЗДЕСЬ НАРАВНЕ С ОКНАМИ. На маршруте v4.4.f
+          // первые три шага — механики: участник, зафиксировавший тезисы, варианты и
+          // разбор заявок, но ещё не дошедший до свободного окна, по одному
+          // answersAt выглядел как «работы нет», и правка сцен стирала его день
+          // молча — тот самый дефект, от которого этот гейт и поставлен.
+          var hasWork = Object.keys(p.answersAt).some(function (k) { return p.answersAt[k]; }) ||
+            Object.keys(p.mechAt).some(function (k) { return p.mechAt[k]; }) || !!p.picksAt;
           if (p.scenesVersion !== S.version && hasWork && !p.finished && !isDemo) {
             try { store().setItem(storageKey(bib) + '_v_' + p.scenesVersion, raw); } catch (e) {}
             blockedByVersion = true;
@@ -185,6 +201,13 @@
       answersAt: state.answersAt,
       picks: picksForJudge(),
       picksAt: state.picksAt,
+      // Состояние механик — основной измеряемый материал с маршрута v4.4.f: тезисы
+      // и связки, варианты, разбор с вилками, печать, будущее, цель, четыре поля
+      // письма. Уезжает СЫРЫМ, без сводок и без оценок: судья читает то же, что
+      // видел участник, а не наш пересказ. Пол ПР-1 и факты вилок считает бэкенд по
+      // этим же данным — одним кодом, а не двумя.
+      mech: state.mech || {},
+      mechAt: state.mechAt || {},
       elicited: elicitedNow(),
       // Пометки едут на сервер и НЕ едут судье: buildJudgeInput_ собирает вход по
       // списку окон из V2_JUDGE_TASKS, и колонки marksJson для него не существует.
@@ -263,9 +286,34 @@
 
   // ---------- маршрут ----------
 
+  // Два машинных ветвления маршрута, оба закрытые и считаются кодом одинаково у
+  // человека и у модели. Ни одно не зависит от СОДЕРЖАНИЯ ответа — только от
+  // поступка в механике списка.
+  var SEVEROVA_ID = 6;   // «выделить „Миру" в отдельный P&L», М. Северова
+  function listSums() {
+    var lm = state.mech && state.mech.list;
+    var spec = window.imp.mechanics && window.imp.mechanics.list;
+    // Пока список не собран, ветвление не срабатывает: судить перебор не по чему.
+    if (!lm || !spec) return null;
+    return spec.sums(lm, mechCtx());
+  }
   function applies(act) {
     if (!act.when) return true;
-    if (act.when === 'overspend') return totals().over;
+    if (act.when === 'overspend') {
+      var t = listSums();
+      // ⚠ Перебор считается по НОВОМУ списку (три решения + выбранные внутри вилки
+      // числа), а не по прежнему totals() над picks: со маршрута v4.4.f на столе
+      // лежат ещё и варианты участника, и их цену участник выбирает сам внутри
+      // пределов. Старый totals() их не видел вовсе — ветка «чем платим» молчала
+      // бы ровно там, где участник вышел за рамку своим вариантом.
+      return t ? t.over : totals().over;
+    }
+    if (act.when === 'severova') {
+      var lm = state.mech && state.mech.list;
+      if (!lm || !lm.decided) return false;
+      var d = lm.decided['a' + SEVEROVA_ID];
+      return d === 'later' || d === 'never';
+    }
     return true;
   }
   // Останавливающие акты: на них курсор стоит и ждёт участника. Реплики через
@@ -708,6 +756,17 @@
   function answersHtml() {
     var out = '';
     S.windows().forEach(function (w) {
+      // Механики отдают свой след сами: у них нет одного поля ответа, есть ветка
+      // состояния. Без этой ветки вкладка «Мои ответы» после маршрута v4.4.f была
+      // бы почти пустой — семь шагов из двенадцати не показывали бы ничего, а
+      // именно в них с 05.08 живёт основной текст участника.
+      if (w.mech) {
+        if (!(state.mechAt && state.mechAt[w.mech])) return;
+        out += '<div class="recap-item">' +
+          '<div class="recap-q">' + esc(w.scene.name) + ' · ' + esc(mechTitle(w.mech)) + '</div>' +
+          '<div class="recap-a">' + mechAnswerHtml(w.mech) + '</div></div>';
+        return;
+      }
       if (!state.answersAt[w.save]) return;
       var val = state.answers[w.save];
       out += '<div class="recap-item">' +
@@ -829,7 +888,110 @@
   // уходит на сервер: это не ответ, а способ читать список.
   var openArg = {};
 
+  // ---------- мост к реестру механик (js/mechanics.js) ----------
+  // Движок остаётся распорядителем: он даёт механике место в DOM, состояние,
+  // сохранение и подвал с кнопкой — и забирает у неё гейт. Ничего про замер он не
+  // знает, а механика ничего не знает про маршрут: единственная связь — этот ctx.
+  function mechState(name, def) {
+    if (!state.mech) state.mech = {};
+    if (!state.mech[name]) state.mech[name] = def ? def() : {};
+    return state.mech[name];
+  }
+  // Название шага для вкладки «Мои ответы» и свода. Живёт рядом с реестром, а не в
+  // scenes.js: это подпись СЛЕДА механики, а не реплика маршрута.
+  var MECH_TITLES = {
+    theses: 'тезисы и связки', variants: 'варианты', list: 'разбор заявок',
+    seal: 'печать', futures: 'варианты будущего', goal: 'цель', letter: 'письмо правлению'
+  };
+  function mechTitle(name) { return MECH_TITLES[name] || name; }
+  function mechAnswerHtml(name) {
+    var spec = window.imp.mechanics[name];
+    var m = state.mech && state.mech[name];
+    if (!spec || !m) return '<i>не заполнено</i>';
+    // Полный след — дело самой механики (она знает свою форму); если она его не
+    // умеет, показываем хотя бы свод, а не пустоту.
+    if (spec.answerHtml) return spec.answerHtml(m, mechCtx());
+    return spec.locked(m, mechCtx());
+  }
+
+  function mechCtx(refreshGate) {
+    return {
+      esc: esc, br: br, num: num, blNum: blNum, BACKLOG: BACKLOG, LIM: LIM, isDemo: isDemo,
+      save: function () { saveState(); },
+      sync: refreshGate || function () {},
+      // Доступ к соседней ветке: список инициатив (С3) обязан видеть варианты,
+      // которые участник назвал в С2, — иначе своё вообще не попадает на стол.
+      mech: function (name) { return (state.mech && state.mech[name]) || null; },
+      // Перерисовать текущий акт целиком, включая подвал: механике этого не сделать
+      // самой, потому что подвал живёт в другой колонке (движок его туда переносит).
+      redraw: function () { render(); },
+      // ⚠ ЕДИНСТВЕННОЕ ОТСТУПЛЕНИЕ ОТ НЕОБРАТИМОСТИ ДНЯ, и оно из лора: печать
+      // (С3б) даёт участнику один возврат к списку — «Вернуться и изменить». Без
+      // него маркер устойчивости под давлением вырождается: «утвердил» и «вернулся
+      // и изменил» — разные поступки, и различить их можно только дав второй.
+      // Возврат ровно один, его считает сама механика печати; движок лишь двигает
+      // курсор на акт с нужной механикой и снимает отметку фиксации, иначе список
+      // отрисовался бы запертым.
+      jumpBackTo: function (mechName) {
+        for (var i = state.cursor; i >= 0; i--) {
+          if (route[i] && route[i].act && route[i].act.mech === mechName) {
+            state.cursor = i;
+            if (state.mechAt) delete state.mechAt[mechName];
+            saveState(); render();
+            return true;
+          }
+        }
+        return false;
+      }
+    };
+  }
+  // Механика реестра. Отличается от прежнего разбора заявок тем, что не знает ни
+  // одной подробности про маршрут: всё, что ей нужно, лежит в act.mech и ctx.
+  function registryBlock(act, locked) {
+    var spec = window.imp.mechanics[act.mech];
+    var d = document.createElement('div');
+    d.className = 's2-block bl-host';
+    var m = mechState(act.mech, spec.init);
+    if (locked) {
+      d.innerHTML = '<div class="bl-locked">' + spec.locked(m, mechCtx()) + '</div>';
+      return d;
+    }
+    var foot = spec.foot(m, mechCtx());
+    d.innerHTML = '<div class="mx-host"></div>' +
+      '<div class="win-foot">' +
+        // Второстепенное действие (у печати — «Вернуться и изменить») стоит ПЕРЕД
+        // запиской, то есть дальше всего от края: у края всегда одно главное
+        // действие. Порядок [ghost, записка, главная] — тот же, что у окон.
+        (foot.extra || '') +
+        '<span class="win-note">' + esc(foot.note) + '</span>' +
+        '<button class="btn btn-primary" id="fixBtn">' + esc(foot.cta) + '</button>' +
+      '</div>';
+    var btn = d.querySelector('#fixBtn');
+    var refresh = function () { btn.disabled = !!spec.gate(m, mechCtx()); };
+    spec.render(d.querySelector('.mx-host'), m, mechCtx(refresh));
+    if (spec.footWire) spec.footWire(d.querySelector('.win-foot'), m, mechCtx(refresh));
+    refresh();
+    btn.addEventListener('click', function () {
+      var fail = spec.gate(m, mechCtx());
+      // Кнопка и так выключена при незакрытом гейте — alert остаётся на случай
+      // клика по включённой кнопке в момент, когда состояние успело измениться.
+      if (fail) { window.imp.alert(fail); return; }
+      // Механика может забрать главную кнопку себе и НЕ пускать день дальше:
+      // печать так делает первый шаг («Утверждаю» ещё не значит «дальше» — после
+      // него появляется поле объяснения). Возврат false = «я перерисовалась сама».
+      if (spec.onCta && spec.onCta(m, mechCtx(refresh)) === false) return;
+      state.mechAt[act.mech] = nowIso();
+      saveState();
+      advance();
+    });
+    if (window.imp && window.imp.typoDom) window.imp.typoDom(d);
+    return d;
+  }
+
   function mechanicBlock(act, locked) {
+    // Новые механики лора идут через реестр; старый разбор заявок (act без .mech)
+    // остаётся здесь, пока маршрут не переведён целиком.
+    if (act.mech && window.imp.mechanics && window.imp.mechanics[act.mech]) return registryBlock(act, locked);
     var d = document.createElement('div');
     d.className = 's2-block bl-host';
     if (locked) {
@@ -977,7 +1139,8 @@
     var d = document.createElement('div');
     d.className = 's2-block recap-pointer';
     d.innerHTML = '<p class="kicker">' + esc(act.title) + '</p>' +
-      '<p class="section-lead" style="margin:0;">' + esc(act.lead) + ' Всё, что вы сказали, — во вкладке «Мои ответы» слева.</p>';
+      // «справа», а не «слева»: опора переехала вправо 05.08 вместе с обменом колонок.
+      '<p class="section-lead" style="margin:0;">' + esc(act.lead) + ' Всё, что вы сказали, — во вкладке «Мои ответы» справа.</p>';
     if (!recapShown) { recapShown = true; setTab('answers'); }
     return d;
   }
