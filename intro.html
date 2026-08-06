@@ -149,7 +149,13 @@
       s.name = nm;
       try {
         sessionStorage.setItem('imp_current_session', JSON.stringify(s));
-        localStorage.setItem('imp_current_session', JSON.stringify(s));
+        // ⚠ В ДЕМО — ТОЛЬКО В sessionStorage. Демо-сессия служебная (номер 900) и
+        // живёт в одной вкладке; запись её в localStorage затёрла бы сессию
+        // настоящего участника в этом браузере. Ровно от этого витрина и держит
+        // демо в sessionStorage — а имя, введённое на этом экране, обходило защиту.
+        if (!sessionStorage.getItem('imp_demo')) {
+          localStorage.setItem('imp_current_session', JSON.stringify(s));
+        }
       } catch (e) {}
     }
     if (nameEl) nameEl.addEventListener('change', persistName);
@@ -160,6 +166,9 @@
     btn.addEventListener('click', function () {
       persistName();
       try {
+        // В ДЕМО отметку не ставим: демо должно каждый раз показывать путь целиком,
+        // иначе второй запуск с витрины начинается с материалов.
+        if (sessionStorage.getItem('imp_demo')) return;
         var s = JSON.parse(localStorage.getItem('imp_current_session') || 'null');
         if (s && s.bib) localStorage.setItem('imp_intro_seen_' + s.bib, '1');
       } catch (e) {}
