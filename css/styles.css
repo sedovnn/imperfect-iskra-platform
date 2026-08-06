@@ -4809,6 +4809,27 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    Поймано прототипом на 1280 — кейс был 0px, работа занимала половину экрана. */
 .day-grid.is-collapsed { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .day-grid.is-collapsed > .dayside { display: none; }
+/* СВЁРНУТАЯ ПРАВАЯ КОЛОНКА. Симметрично левой: колонка исчезает, а её место
+   забирает рабочая область — минус одна колонка в шаблоне, а не нулевая ширина
+   (нулевая оставляла бы шов и отступы). */
+.day-grid.is-memoff { grid-template-columns: var(--toc-col) minmax(0, 1fr); }
+.day-grid.is-memoff.is-collapsed { grid-template-columns: minmax(0, 1fr); }
+.day-grid.is-memoff > .support { display: none; }
+/* Пока материалы свёрнуты, шов справа у рабочей колонки не нужен: справа от неё
+   уже край окна. */
+.day-grid.is-memoff > .talk { border-right: none; }
+.mem-collapse {
+  margin-left: auto; border: none; background: none; cursor: pointer; padding: 2px 4px;
+  font: inherit; font-size: var(--fs-util); color: var(--muted-soft); align-self: center;
+}
+.mem-collapse:hover { color: var(--ink); }
+.mem-restore {
+  display: none; align-items: center; border: 1px solid var(--hairline); background: var(--paper);
+  border-radius: var(--radius); cursor: pointer; font: inherit; font-size: var(--fs-util); color: var(--muted);
+  padding: 4px 10px; margin: 8px var(--frame-pad, 24px) 0 auto;
+}
+.day-grid.is-memoff .mem-restore { display: inline-flex; }
+.day-grid.is-memoff .mem-restore:hover { color: var(--ink); }
 /* Класса .is-nomem больше нет: кнопка «Скрыть материалы» снята из шапки 04.08 по
    решению владельца — на этом этапе она не нужна, а середина (кейс, ответы,
    пометки, справка) обязана быть под рукой всегда. Правила скрытия середины
@@ -4993,14 +5014,52 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    внутри неё остаётся левой. Таблицы приложений не страдают: они и так лежат в
    .tbl-wrap с собственной горизонтальной прокруткой и в разговоре читаются в
    колонке 508–587px, то есть уже, чем здесь. */
+/* ── ЭКРАН ЧТЕНИЯ: МЕРА СТРОКИ ПО НОРМЕ, А НЕ ПО ВКУСУ ──
+   Владелец 06.08: «на большом экране кейс висит в центре сосиской». Замер это
+   подтвердил: на 2560 колонка текста 646px и 62 знака в строке при панели 2294px,
+   то есть по 824px пустоты с каждой стороны.
+   Растянуть текст во всю ширину нельзя: общепринятая норма набора — 45–75 знаков в
+   строке (оптимум ~66, Bringhurst; WCAG 1.4.8 требует не больше 80), а 2294px дали
+   бы около 220. Лечится не шириной, а КЕГЛЕМ: на широком экране текст крупнее,
+   мера остаётся 66 знаков, колонка физически шире, пустота уходит сама. Приём
+   стандартный (fluid type), не наш.
+   ⚠ ЧЕГО ЗДЕСЬ НЕТ И ПОЧЕМУ. Пробовал ограничить рамку экрана чтения по --maxw и
+   центрировать — на 2560 это оторвало шапку от содержимого: лого осталось у левого
+   края окна, а колонки уехали в середину, и экран прочитался сломанным. Шапка живёт
+   во всю ширину по решению 04.08 (см. #assessRoot .station-header), и ограничивать
+   тело, не ограничив её, нельзя. Поэтому пустота на очень широком экране остаётся —
+   это поля документа при честной мере, а не дефект. Единственный оставшийся рычаг,
+   если владелец захочет плотнее: поднять меру с 66 до 80 знаков (потолок WCAG
+   1.4.8) — правка одной строки ниже. */
+/* КЕГЛЬ КЕЙСА В ПАНЕЛИ — 16px, А НЕ 14,5.
+   14,5px стояло у .case-content p с прежних раундов, где кейс был справкой на
+   полстраницы. Здесь это двадцать две тысячи знаков основного чтения: норма для
+   длинного текста — 16px и выше, и она же снимает половину жалобы на «сосиску»
+   (при 14,5px мера 60 знаков давала колонку 435px в панели на 590). Правило узкое,
+   только для панели ассессмента: .case-content живёт ещё на трёх страницах, и общий
+   кегль там менять незачем. Наследование через 1em, чтобы кегль задавался ОДИН раз
+   на контейнере, а абзацы, списки и таблицы шли от него. */
+#supCaseText { font-size: 16px; }
+#supCaseText p, #supCaseText li, #supCaseText td, #supCaseText th { font-size: 1em; }
+/* Мера держится КОНТЕЙНЕРОМ, а не каждой статьёй: у .case-content article стоит
+   max-width: var(--w-read) в 60ch, и внутри свёртки это давало вторую, более
+   узкую рамку — заголовок свёртки шёл по одной ширине, текст по другой. */
+#supCaseText .case-block > article { max-width: none; }
+#supCaseText { max-width: calc(66ch + 2 * var(--frame-pad, 24px)); }
+
 .day-grid.is-reading #supCaseText {
+  /* 1280 → 16px, 1440 → 16,5, 1920 → 18, 2560 → 19 (дальше не растёт) */
+  font-size: clamp(16px, 0.28vw + 12.5px, 19px);
   padding-left: var(--frame-pad, 56px);
   padding-right: var(--frame-pad, 56px);
   /* ⚠ ch считается по шрифту САМОГО элемента, а не страницы. У .appx-divider
      дисплейная гарнитура 13px, и 60ch там = 433px против 534px у прозы — то есть
      раздача max-width каждому ребёнку давала три разные ширины. Поэтому мера
      задаётся ОДИН раз здесь, на теле с базовым шрифтом, а дети берут 100%. */
-  max-width: calc(var(--w-read) + 2 * var(--frame-pad, 56px));
+  /* 66ch, а не 60: 60 было опущено 04.08 замером на 16px, где 68ch давали 81 знак.
+     Здесь ch считается по СОБСТВЕННОМУ кеглю элемента, поэтому мера в знаках не
+     плывёт от того, что кегль растёт вместе с окном. */
+  max-width: calc(66ch + 2 * var(--frame-pad, 56px));
   margin-inline: auto;
 }
 .day-grid.is-reading #supCaseText > * { width: 100%; max-width: none; }
@@ -5155,6 +5214,56 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .mark-bar .btn { margin-left: auto; flex: none; }
+
+/* ── КНОПКА ОТМЕТКИ У ВЫДЕЛЕНИЯ ──
+   position: fixed, потому что панель кейса прокручивается: позиционируй её внутри
+   потока — уехала бы при первом колесе. Кегль служебный, вермилион не занимаем:
+   главное действие на экране одно (DESIGN.md стр. 101), и это «Прочитал». */
+.mark-pop { position: fixed; z-index: 40; }
+.mark-pop-act {
+  border: 1px solid var(--ink); background: var(--ink); color: var(--paper);
+  border-radius: var(--radius); cursor: pointer; padding: 5px 12px;
+  font: inherit; font-size: var(--fs-util); font-weight: 600;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
+}
+.mark-pop-act:hover { background: var(--accent); border-color: var(--accent); }
+
+/* ── ВОЗВРАТ ИЗ ПРИЛОЖЕНИЯ НА СТРОКУ ЧТЕНИЯ ──
+   Липнет к верху панели: после прыжка в приложение глаз наверху, и кнопка должна
+   быть там же, а не в конце документа. */
+.case-back {
+  position: sticky; top: 0; z-index: 3; flex: none;
+  padding: 8px var(--frame-pad, 24px);
+  background: var(--accent-tint); border-bottom: 1px solid var(--accent-line);
+}
+.case-back-act {
+  border: none; background: none; padding: 0; cursor: pointer;
+  font: inherit; font-size: var(--fs-util); font-weight: 600; color: var(--accent-ink);
+}
+.case-back-act:hover { text-decoration: underline; }
+
+/* Ссылка на приложение в тексте кейса. Начертание то же, что задумано в самом
+   кейсе (.appx-ref там уже описан), здесь только курсор и поведение ссылки без
+   адреса — переход делает движок, а href="#" нужен для доступности с клавиатуры. */
+#supCaseText .appx-ref { cursor: pointer; }
+
+/* ── ШАПКА ПАКЕТА НА ЭКРАНЕ ЧТЕНИЯ ──
+   Что за пакет и как работают пометки. Только здесь: в панели рядом с разговором
+   это была бы инструкция на месте, где нужен текст. */
+/* Шапка пакета лежит ПЕРВЫМ узлом внутри прокрутки и уезжает вместе с текстом:
+   инструкцию читают один раз, а верх панели нужен всегда. Отступов по бокам у неё
+   нет — их уже держит сам контейнер (.case-content padding), иначе врезка стояла бы
+   уже текста на двойной отступ. */
+.case-intro { margin: 0 0 18px; }
+/* Кегль тот же, что у текста под ней: мера задана в ch, а ch считается по
+   СОБСТВЕННОМУ кеглю элемента — при разных кеглях шапка и текст встали бы по разным
+   границам, и это видно глазом (снимок 06.08: расхождение 20px). */
+.case-intro-lead, .case-intro-marks { max-width: none; }
+.case-intro-lead { margin: 0 0 10px; font-size: var(--fs-read); line-height: 1.6; color: var(--ink); }
+.case-intro-marks {
+  margin: 0; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--soft); font-size: var(--fs-dense); line-height: 1.55; color: var(--muted);
+}
 
 .mark-item { padding: 12px 0; border-bottom: 1px solid var(--hairline); }
 .mark-quote {
@@ -5362,6 +5471,117 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   color: var(--ink); background: var(--paper); resize: vertical;
 }
 .mx-input:focus { outline: none; border-color: var(--accent); background: var(--accent-tint); }
+/* Логистика перехода на межэтапном экране: крупнее строки настроя, но тише места и
+   времени — это рассказ о том, что произошло между этапами. */
+.interlude-bridge { margin: 10px 0 18px; }
+.interlude-bridge-p { margin: 0 0 6px; font-size: var(--fs-read); line-height: 1.6; color: var(--ink); }
+
+/* ── ДВА ТАКТА ШАГА: слушаю → работаю ── */
+.talk-listen .win-foot { margin-top: 6px; }
+.talk-folded { border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--soft); }
+.talk-folded-sum {
+  display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none;
+  padding: 10px 14px; font-size: var(--fs-util); color: var(--muted);
+}
+.talk-folded-sum::-webkit-details-marker { display: none; }
+.talk-folded-t {
+  font-family: var(--ff-body); font-size: var(--label-size); font-weight: var(--label-weight);
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--muted-soft);
+}
+.talk-folded-n { margin-left: auto; color: var(--muted-soft); }
+.talk-folded-sum:hover .talk-folded-n { color: var(--ink); }
+.talk-folded[open] { background: var(--paper); }
+.talk-folded-body { padding: 0 14px 8px; }
+
+/* Карточка тезиса как цель перетаскивания пометки. Подсветка только пока курсор
+   над ней: постоянная рамка обещала бы приём там, где ничего не тащат. */
+.mx-card.is-drop { border-color: var(--accent); background: var(--accent-tint); }
+.mark-quote[draggable="true"] { cursor: grab; }
+.mark-quote[draggable="true"]:active { cursor: grabbing; }
+
+/* ── ПАКЕТ КАК АККОРДЕОН ──
+   Свёрнутые разделы и есть оглавление кейса (решение владельца 06.08): отдельной
+   колонки оглавления нет, четыре зоны на экране — перебор. Свёртка рисуется строкой
+   с линейкой сверху: список заголовков читается как содержание, а не как набор
+   кнопок. Ни одного нового цвета — --hairline, --soft, --muted, --ink. */
+/* Полоса управления пакетом стоит НАД прокруткой, отдельным узлом панели.
+   Внутри прокрутки она была sticky и оставляла зазор в верхнем отступе: в него
+   пролезала строка текста и читалась поверх полосы (снимок 06.08). Отрицательные
+   отступы этот зазор закрывали лишь отчасти, а платой была вылезающая наверх строка. */
+.case-bar {
+  flex: none; display: flex; align-items: baseline; gap: 12px;
+  padding: 10px var(--frame-pad, 24px);
+  background: var(--paper); border-bottom: 1px solid var(--hairline);
+}
+.case-bar-k {
+  font-family: var(--ff-body); font-size: var(--label-size); font-weight: var(--label-weight);
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--muted-soft);
+  margin-right: auto;
+}
+.case-bar-act {
+  border: none; background: none; padding: 0; cursor: pointer;
+  font: inherit; font-size: var(--fs-util); color: var(--muted); text-decoration: underline;
+}
+.case-bar-act:hover { color: var(--ink); }
+
+.case-block { border-top: 1px solid var(--hairline); }
+.case-block:first-of-type { border-top: none; }
+.case-sum {
+  display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none;
+  padding: 12px 0; color: var(--ink);
+}
+.case-sum::-webkit-details-marker { display: none; }
+.case-sum-t { font-family: var(--ff-display); font-weight: 700; line-height: 1.25; }
+/* Значок состояния — плюс/минус текстом, а не стрелка-глиф: стрелка в этой
+   гарнитуре съезжает по базовой линии, а знак стоит ровно. */
+.case-sum-mark { margin-left: auto; flex: none; color: var(--muted-soft); font-size: var(--fs-util); }
+.case-sum-mark::before { content: 'развернуть  +'; }
+.case-block[open] > .case-sum .case-sum-mark::before { content: 'свернуть  −'; }
+.case-block[open] > .case-sum { border-bottom: 1px solid var(--soft); }
+.case-sum:hover .case-sum-mark { color: var(--ink); }
+.case-block > article { padding: 4px 0 18px; }
+
+/* ── ЭКРАНЫ ПЕРЕД СТАРТОМ (intro.html, role.html) ──
+   Раскладка общая на два экрана: одна колонка чтения, метки системным .kicker,
+   пункты нумерованными кружками. Своих цветов и кеглей здесь нет — только те же
+   токены; из v1 (intro2.html) стили переехали в общий файл, потому что теперь их
+   два экрана, а не один, и копия разъехалась бы при первой же правке. */
+.intro { max-width: 760px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 40px); min-height: 100vh; display: flex; flex-direction: column; }
+.intro-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
+.intro-hero { padding: 40px 0 6px; }
+.pgroup { margin-top: 34px; }
+.prin { display: flex; gap: 14px; padding: 13px 0; border-top: 1px solid var(--hairline); }
+.prin:first-of-type { border-top: none; }
+.prin .n {
+  flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--ink);
+  font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+}
+.prin .t { font-size: 15px; line-height: 1.5; color: var(--ink); }
+.prin .t b { font-weight: 700; }
+/* «про ИИ» — единственный акцент-блок: это важно проговорить прямо */
+.prin.accent .n { border-color: var(--accent); color: var(--accent); }
+/* Логистика — та же секция, но без нумерации: нумерованное = принципы,
+   ненумерованное = справка. Различие намеренное, а не «дописали в конце». */
+.intro-note { padding: 13px 0; border-top: 1px solid var(--hairline); font-size: 15px; line-height: 1.5; color: var(--muted); }
+.intro-note:first-of-type { border-top: none; }
+.intro-note b { color: var(--ink); font-weight: 700; }
+.intro-disclaimer { margin-top: 28px; font-size: 15px; line-height: 1.5; color: var(--muted); }
+.intro-name p { font-size: 15px; line-height: 1.5; color: var(--muted); margin: 0 0 10px; }
+.intro-name input {
+  width: 100%; max-width: 380px; border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 11px 12px; font: inherit; font-size: var(--fs-read); color: var(--ink); background: var(--paper);
+}
+.intro-name input:focus { outline: none; border-color: var(--accent); }
+.intro-cta { margin: 40px 0; }
+/* Строка под кнопкой: куда именно она ведёт. Кнопка обещает один шаг, эта строка
+   говорит, что будет за ним, — без неё «К введению в роль» читается как «начали». */
+.intro-next { margin: 10px 0 0; font-size: var(--fs-util); line-height: 1.5; color: var(--muted-soft); }
+.intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: 13px; color: var(--muted-soft); }
+.intro-back { color: var(--muted); text-decoration: none; }
+.intro-back:hover { color: var(--ink); text-decoration: underline; }
+/* Роль на своём экране: абзацы истории читаются как проза, а не как лид-врезка. */
+#roleLead .lead { max-width: 62ch; margin: 0 0 12px; }
+
 .mx-input-thin { margin-top: 6px; }
 /* ── ОПОРА ТЕЗИСА НА ВЫПИСКУ ──
    Цитата рисуется тем же .mark-quote, что и во вкладке «Пометки»: это одна и та же
@@ -5465,3 +5685,12 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   font-size: var(--fs-place); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 5.2em;
 }
 .mx-years-val.is-empty { font-size: var(--fs-dense); font-weight: 400; color: var(--muted-soft); }
+
+/* Тихие ссылки под главной кнопкой экрана установки: перечитать настройку и роль.
+   Служебный кегль и приглушённый цвет — это не действие экрана, а выход из него. */
+.setup-links { margin: 14px 0 0; text-align: center; font-size: var(--fs-util); color: var(--muted-soft); }
+/* Те же ссылки внизу левой колонки ассессмента: выключка влево по колонке и отступ
+   как у остального её содержимого, а не по центру карточки. */
+.dayside .setup-links { flex: none; text-align: left; margin: 0; padding: 10px 8px 16px var(--frame-pad); }
+.setup-links a { color: var(--muted); text-decoration: none; }
+.setup-links a:hover { color: var(--ink); text-decoration: underline; }

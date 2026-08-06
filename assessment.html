@@ -4,11 +4,17 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>«Искра» · ассессмент — i(m)perfect</title>
-<meta name="description" content="Ассессмент «Искра»: один день внешнего консультанта — шесть разговоров, шесть вопросов." />
+<meta name="description" content="Ассессмент «Искра»: один день внешнего консультанта — семь этапов." />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=115" />
+<!-- ШРИФТ ГРУЗИТСЯ НЕБЛОКИРУЮЩЕ. Обычный <link rel="stylesheet"> задерживает
+     ИСПОЛНЕНИЕ скриптов до ответа шрифтового CSS: если fonts.googleapis.com
+     отвечает медленно, страница висит пустой, хотя вся её логика уже загружена
+     (поймано 06.08 на переходе между экранами). media="print" снимает
+     блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/styles.css?v=119" />
 </head>
 <body>
 
@@ -18,7 +24,8 @@
      456px на 1920. Рамка дня — окно целиком, и шапка снимает ограничение вместе с
      телом; см. #assessRoot .station-header в styles.css и DESIGN.md стр. 138. -->
 
-<!-- ТРИ КОЛОНКИ (СПЕК §4): слева оглавление текущей вкладки, В ЦЕНТРЕ РАБОТА —
+<!-- ТРИ КОЛОНКИ (СПЕК §4): слева ЭТАПЫ АССЕССМЕНТА и оглавление текущей вкладки,
+     В ЦЕНТРЕ РАБОТА —
      один текущий вопрос, справа память (кейс · справка · пометки · мои ответы).
      ⚠ Колонки поменялись местами 05.08 по решению владельца: работа была справа,
      память в центре. Само деление на три окна не менялось — только порядок.
@@ -58,12 +65,12 @@
   </div>
 </div>
 
-<div id="setupGate" class="gate" style="display:none;">
-  <div class="gate-card setup-card">
-    <div id="setupBody"><!-- js/engine.js из scenes.js.system --></div>
-    <button class="btn btn-primary btn-block" id="startDayBtn" style="margin-top:26px;">Начать ассессмент →</button>
-  </div>
-</div>
+<!-- ЭКРАНА УСТАНОВКИ ЗДЕСЬ БОЛЬШЕ НЕТ (решение владельца 06.08). Он был четвёртым
+     в пути и повторял второй: те же правила из S.system, то же примечание. Путь —
+     три экрана с одной кнопкой каждый: intro.html → role.html → материалы. Согласие
+     на старт даёт кнопка на экране роли, она приводит сюда с ?start=1; кто пришёл
+     без признака и без начатого прогона, уезжает на intro.html (см. engine.js).
+     Перечитать настройку и роль можно ссылками внизу левой колонки. -->
 
 <div id="finishOverlay" class="gate gate-finish" style="display:none;">
   <div class="gate-card">
@@ -120,8 +127,8 @@
              во «Моих ответах» нет списка будущих окон). Виден только счёт
              оставшихся разговоров: он снимает тревогу и ничего не подсказывает. -->
         <div class="dayside-head">
-          <span class="dayside-kicker">День в здании</span>
-          <button type="button" class="toc-collapse" id="tocCollapse" title="Свернуть колонку">свернуть ⟨</button>
+          <span class="dayside-kicker">Этапы ассессмента</span>
+          <button type="button" class="toc-collapse" id="tocCollapse" title="Свернуть колонку">свернуть</button>
         </div>
         <div class="dayside-route" id="routeBody"></div>
         <!-- НИЗ КОЛОНКИ — оглавление ТЕКУЩЕЙ вкладки справа (разделы кейса,
@@ -132,6 +139,13 @@
           <span class="dayside-kicker" id="tocKicker">Разделы</span>
         </div>
         <div class="dayside-body" id="tocBody"></div>
+        <!-- Перечитать то, что было до старта. Внизу колонки и служебным кеглем:
+             это выход из ассессмента к инструкции, а не действие ассессмента.
+             ?from= возвращает ровно сюда. -->
+        <p class="setup-links">
+          <a href="intro.html?from=assessment.html">Как проходить</a> ·
+          <a href="role.html">Ваша роль</a>
+        </p>
       </aside>
 
       <!-- ЦЕНТР — РАБОТА (решение владельца 05.08). Один текущий вопрос; прошлые
@@ -141,6 +155,9 @@
            поэтому tab и скринридер идут так же, как глаз: оглавление → работа →
            опора. -->
       <section class="talk" id="talkPane">
+        <!-- Возврат свёрнутых колонок. Обе кнопки стоят в одном месте — верх
+             рабочей области, — чтобы «вернуть панель» не искалось по экрану. -->
+        <button type="button" class="mem-restore" id="memRestore" title="Показать материалы">материалы</button>
         <div class="talk-scroll" id="talkScroll">
           <div id="talkHistory"></div>
           <div id="talkCurrent"></div>
@@ -161,6 +178,10 @@
           <div class="interlude-body">
             <div class="interlude-in">
               <p class="interlude-mark" id="interludeMark"></p>
+              <!-- Логистика перехода: что стало с ответом, сколько прошло времени и
+                   где ждут. Из scenes.js (scene.bridge) — только календарь и место,
+                   ничего о предмете следующего разговора. -->
+              <div class="interlude-bridge" id="interludeBridge"></div>
               <p class="interlude-where" id="interludeWhere"></p>
               <p class="interlude-when" id="interludeWhen"></p>
               <div class="interlude-lead" id="interludeLead"></div>
@@ -182,7 +203,7 @@
            разворачивается на её место — то есть в самом начале дня пакет всё так
            же занимает всю ширину рядом с оглавлением. -->
       <aside class="support" id="supportPane">
-        <button type="button" class="toc-restore" id="tocRestore" title="Показать оглавление">⟩ оглавление</button>
+        <button type="button" class="toc-restore" id="tocRestore" title="Показать оглавление">этапы</button>
         <!-- Порядок вкладок задан владельцем 04.08: кейс, справка по кейсу,
              пометки, свои ответы. Он идёт от материала к своему следу в нём —
              сначала то, что дали, потом то, чем это расшифровывается, потом то,
@@ -192,15 +213,44 @@
           <button type="button" class="support-tab" data-tab="ref">Справка</button>
           <button type="button" class="support-tab" data-tab="marks">Пометки<span class="tab-count" id="marksCount"></span></button>
           <button type="button" class="support-tab" data-tab="answers">Мои ответы</button>
+          <!-- Сворачивание ПРАВОЙ колонки — так же, как слева: рабочая область
+               расширяется на её место. Кнопка живёт в ряду вкладок, а не отдельной
+               полосой: полоса ради одной кнопки съедала бы высоту у материалов. -->
+          <button type="button" class="mem-collapse" id="memCollapse" title="Свернуть материалы">свернуть</button>
         </nav>
 
         <div class="support-body is-on" id="supCase">
+          <!-- Ушли в приложение по ссылке в тексте — эта строка возвращает на строку
+               чтения. Липнет к верху панели: после прыжка глаз там. -->
+          <div class="case-back" id="caseBack" style="display:none;">
+            <button type="button" class="case-back-act" id="caseBackAct">← вернуться к чтению</button>
+          </div>
+          <!-- Управление свёртками пакета. СНАРУЖИ прокручиваемой области: внутри она
+               была sticky и оставляла зазор в верхнем отступе прокрутки, через который
+               пролезала строка текста (снимок 06.08). Управление — не содержимое, его
+               место рядом с панелью, а не в потоке документа. -->
+          <div class="case-bar" id="caseBar" style="display:none;">
+            <span class="case-bar-k">Материалы «Искры»</span>
+            <button type="button" class="case-bar-act" data-caseall="1">развернуть всё</button>
+            <button type="button" class="case-bar-act" data-caseall="0">свернуть всё</button>
+          </div>
+          <!-- Шапка пакета на экране чтения: что за пакет и как работают пометки.
+               Наполняется из scenes.js (акт чтения), на рабочих экранах скрыта. -->
+          <div class="case-intro" id="caseIntro" style="display:none;"></div>
           <div class="case-content" id="supCaseText"><p class="fac-detail-loading">Загружаю материалы…</p></div>
-          <!-- Выделили фрагмент — предлагаем забрать его в пометки. Появляется
-               только при непустом выделении внутри пакета. -->
+          <!-- ⚠ КНОПКА ОТМЕТКИ СТОИТ У ВЫДЕЛЕНИЯ, А НЕ ПОЛОСОЙ СНИЗУ (решение
+               владельца 06.08). Полоса внизу панели требовала увести глаз и руку от
+               выделенного фрагмента к краю экрана — то есть отметить было дороже, чем
+               не отмечать. Кнопка появляется там, где кончилось выделение.
+               Разметка остаётся здесь (а не создаётся в JS), чтобы у неё было одно
+               место и её было видно при чтении файла. -->
+          <div class="mark-pop" id="markPop" style="display:none;">
+            <button type="button" class="mark-pop-act" id="markBarAdd">отметить</button>
+          </div>
+          <!-- Сообщение «фрагмент не найден» при переходе к пометке в обновившемся
+               кейсе. Это не действие, а ответ на действие, поэтому строкой снизу. -->
           <div class="mark-bar" id="markBar" style="display:none;">
             <span class="mark-bar-q" id="markBarQuote"></span>
-            <button type="button" class="btn btn-primary btn-sm" id="markBarAdd">В пометки</button>
           </div>
         </div>
 
@@ -243,13 +293,13 @@
 </div>
 
 <script src="js/boot-loading.js?v=4"></script>
-<script src="js/main.js?v=6"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/typo.js?v=2"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=13"></script>
+<script src="js/scenes.js?v=17"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -257,7 +307,7 @@
 <!-- mechanics.js ДО engine.js: движок спрашивает window.imp.mechanics[act.mech] в
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
-<script src="js/mechanics.js?v=3"></script>
-<script src="js/engine.js?v=25"></script>
+<script src="js/mechanics.js?v=4"></script>
+<script src="js/engine.js?v=29"></script>
 </body>
 </html>

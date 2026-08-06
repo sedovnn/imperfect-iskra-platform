@@ -106,6 +106,36 @@
       //   вход судьи не входит). Выписка, ВЫБРАННАЯ опорой тезиса, — уже часть
       //   ответа, и она уезжает: участник сказал ею, а не просто выделил.
       var picking = {};
+      // ── ПЕРЕТАСКИВАНИЕ ПОМЕТКИ НА КАРТОЧКУ ТЕЗИСА ──
+      // Решение владельца 06.08. Клик-выбор («Опереть на выписку») остаётся: мышь
+      // есть не у всех и не всегда, а на планшете перетаскивание вообще недоступно.
+      // Здесь добавлен второй путь для того, у кого пометки уже открыты рядом:
+      // тащит цитату из панели прямо на карточку.
+      var dropWire = function (host2) {
+        host2.querySelectorAll('.mx-card').forEach(function (card) {
+          var id = Number(card.getAttribute('data-card'));
+          if (!id) return;
+          card.addEventListener('dragover', function (e) {
+            if (!e.dataTransfer) return;
+            e.preventDefault();
+            card.classList.add('is-drop');
+          });
+          card.addEventListener('dragleave', function () { card.classList.remove('is-drop'); });
+          card.addEventListener('drop', function (e) {
+            card.classList.remove('is-drop');
+            if (!e.dataTransfer) return;
+            e.preventDefault();
+            var mid = e.dataTransfer.getData('text/imp-mark');
+            var quote = e.dataTransfer.getData('text/plain');
+            if (!mid && !quote) return;
+            var c = byId(id);
+            if (!c) return;
+            c.anchor = quote || '';
+            c.anchorRef = mid || 'drag';
+            ctx.save(); draw(); ctx.sync();
+          });
+        });
+      };
       var anchorHtml = function (x) {
         var marks = ctx.marks ? ctx.marks() : [];
         var h = '';
@@ -135,13 +165,16 @@
       var draw = function () {
         var h = head('Тезисы', normCount(m.cards.length, NORM));
         m.cards.forEach(function (x, i) {
-          h += '<div class="mx-card' + (m.first === x.id ? ' is-first' : '') + '">' +
+          h += '<div class="mx-card' + (m.first === x.id ? ' is-first' : '') + '" data-card="' + x.id + '">' +
             '<div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span>' +
             '<div class="mx-acts">' +
               (m.first === x.id
-                ? '<span class="mx-flag">Самый тревожный симптом</span>'
                 // Метка-заголовок без стрелки и без глагола (лор §С1): «самым
                 // тревожным →» читалось командой, а это пометка, а не переход.
+                // Сама метка — КНОПКА: повторный клик её снимает, и об этом сказано
+                // в title, иначе обратимость есть, но невидима.
+                ? '<button type="button" class="s2-act is-on mx-flag" data-first="' + x.id +
+                  '" title="Нажмите ещё раз, чтобы снять метку">Самый тревожный симптом</button>'
                 : '<button type="button" class="s2-act" data-first="' + x.id + '">Самый тревожный симптом</button>') +
               (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + x.id + '">убрать</button>' : '') +
             '</div></div>' +
@@ -191,6 +224,7 @@
         }
         host.innerHTML = h;
 
+        dropWire(host);
         host.querySelectorAll('[data-text]').forEach(function (ta) {
           ta.addEventListener('input', function () { byId(Number(ta.dataset.text)).text = ta.value; ctx.save(); ctx.sync(); });
         });
@@ -224,7 +258,17 @@
       // пачками, а потом страница вставала. Поймано стендом, не глазом.
       host.addEventListener('click', function (e) {
           var t = e.target, a;
-          if ((a = t.getAttribute && t.getAttribute('data-first'))) { m.first = Number(a); ctx.save(); draw(); ctx.sync(); return; }
+          if ((a = t.getAttribute && t.getAttribute('data-first'))) {
+            // ПОВТОРНЫЙ КЛИК СНИМАЕТ МЕТКУ. Без этого поставленную по ошибке метку
+            // нельзя было убрать — только переставить на другую карточку, а если
+            // тревожным участник не считает ни одну из написанных, у него не было
+            // способа это показать. Гейт при снятой метке снова закроет шаг, и это
+            // правильно: лор требует отметить один симптом, но выбор обязан быть
+            // обратимым до фиксации.
+            var pick = Number(a);
+            m.first = (m.first === pick) ? null : pick;
+            ctx.save(); draw(); ctx.sync(); return;
+          }
           if ((a = t.getAttribute && t.getAttribute('data-del'))) {
             var id = Number(a);
             m.cards = m.cards.filter(function (x) { return x.id !== id; });

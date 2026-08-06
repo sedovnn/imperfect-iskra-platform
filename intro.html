@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Как проходить ассессмент — i(m)perfect · «Искра»</title>
+<meta name="description" content="Настройка на мышление перед стартом ассессмента «Искра»." />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- ШРИФТ ГРУЗИТСЯ НЕБЛОКИРУЮЩЕ. Обычный <link rel="stylesheet"> задерживает
+     ИСПОЛНЕНИЕ скриптов до ответа шрифтового CSS: если fonts.googleapis.com
+     отвечает медленно, страница висит пустой, хотя вся её логика уже загружена
+     (поймано 06.08 на переходе между экранами). media="print" снимает
+     блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/styles.css?v=119" />
+<style>
+  /* ЭКРАН 1 ИЗ ТРЁХ: настройка на мышление → введение в роль (role.html) →
+     материалы (assessment.html). Приглушённый FP-лист: экран настраивает, а не
+     оценивает. Своих размеров страница не заводит — только раскладка; всё, что
+     можно взять из системных ролей (.kicker, .section-lead, .btn), взято оттуда.
+     Стили общие для этого экрана и экрана роли живут в css/styles.css (.intro*). */
+  .intro-hero h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 800; text-transform: uppercase; letter-spacing: -.015em; line-height: 1.02; margin: 14px 0 0; }
+  .intro-hero .lead { margin-top: 16px; max-width: 58ch; }
+  .intro-hero .lead b { color: var(--ink); }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="intro" id="introBody">
+
+    <header class="intro-head">
+      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      <p class="kicker" style="margin:0;">Перед стартом · 1 из 2</p>
+    </header>
+
+    <div class="intro-hero">
+      <p class="kicker">Настройка на мышление</p>
+      <h1>Как проходить<br /><span style="color:var(--accent);">ассессмент</span></h1>
+      <p class="section-lead lead">Это не экзамен и не тест на «правильный ответ». Мы смотрим, <b>как вы думаете</b> над живым кейсом, а не решили ли вы его «верно». Пара минут на настройку — и начинаем.</p>
+    </div>
+
+    <div class="pgroup">
+      <p class="kicker">Как отвечать</p>
+      <!-- Из принципов убраны формулы навыков («охватите картину целиком» = АК-1,
+           «что рассмотрели, что отвергли» = ГА-1): они выдавались бы всем до старта,
+           а судья считает такое перечисление спонтанным. -->
+      <div class="prin"><span class="n">1</span><span class="t"><b>Правильного ответа нет — важно, как вы рассуждаете.</b> Не торопитесь с первым же ходом.</span></div>
+      <div class="prin"><span class="n">2</span><span class="t"><b>Думайте «вслух», своими словами:</b> нам важен ход мысли, а не только вывод.</span></div>
+      <!-- ⚠ ПО ФАКТУ. В v1 здесь стояло «если добавить нечего — оставляйте поле
+           пустым и идите дальше». С 03.08 это неправда: пустой ответ не фиксируется
+           ни в одном окне (гейт формы). -->
+      <div class="prin"><span class="n">3</span><span class="t"><b>Разговор идёт вперёд:</b> ответ фиксируется, вернуться и переиграть нельзя — как в настоящем разговоре. Пустым его оставить не получится: если сказать нечего или хочется спросить встречное — так и напишите, это будет засчитано.</span></div>
+    </div>
+
+    <div class="pgroup">
+      <p class="kicker">ИИ и источники</p>
+      <div class="prin accent"><span class="n">4</span><span class="t"><b>Отвечайте сами, без ИИ.</b> Смысл ассессмента — ваш собственный профиль: чужие ответы сделают его бессмысленным.</span></div>
+      <!-- ⚠ ПЕРЕПИСАНО, И ЭТО НЕ КОСМЕТИКА (решение владельца 06.08: оставить
+           нейтральную формулировку). В v1: «знаете релевантные сигналы, которых в
+           кейсе нет напрямую, — приносите, объясняя логику» — это дословно верхняя
+           граница АК-1 (выход за пределы кейса), выданная всем до старта и не
+           помеченная флагом элиситации. Разрешение осталось, инструкция снята. -->
+      <div class="prin"><span class="n">5</span><span class="t"><b>Опирайтесь на что считаете нужным:</b> материалы кейса, свой опыт, то, что знаете о рынке. Ограничение одно — думать и писать должны вы.</span></div>
+    </div>
+
+    <div class="pgroup">
+      <p class="kicker">Что ещё важно знать</p>
+      <!-- ⚠ «Шесть раундов, около 2 часов» → ход ассессмента v4.4.f, время из
+           одного источника (imp.deviceReq). Состав шагов назван общо: перечень
+           того, что именно предстоит делать, — карта ассессмента, а её не
+           показываем. -->
+      <div class="intro-note"><b>Формат.</b> Семь этапов: первый — материалы «Искры», дальше шесть разговоров. В каждом от вас ждут ответа: где-то текстом своими словами, где-то работой с материалом на экране. Всё пишется на платформе, и всё сказанное остаётся у вас под рукой до конца. Нужно 1,5–2 часа без отвлечений и компьютер, ноутбук или планшет: с телефона ассессмент не проходят.</div>
+      <!-- ⚠ «В отчёте вас представляет fp(id)» — такого обозначения в платформе
+           больше нет. Утверждение «оценка не смотрит на имя» оставлено, потому что
+           оно проверяемо: вход судьи собирается без номера и без имени вообще. -->
+      <div class="intro-note"><b>Что в итоге.</b> Профиль по пяти навыкам и сравнение с ИИ на том же кейсе, с рекомендациями по развитию. Разбор придёт отдельно — на самом ассессменте оценок нет. Оценка не смотрит на имя: судья получает только текст ответов, без имени и без номера.</div>
+      <!-- ⚠ ПЕРЕПИСАНО ЦЕЛИКОМ. В v1 описывался правый верхний угол с кнопками
+           «Мои ответы», «Кейс», «?» и «ⓘ» — ни одной из них в v2 нет. -->
+      <div class="intro-note"><b>Экран.</b> Три части: слева этапы ассессмента, посередине разговор и место для ответа, справа материалы — кейс, справка, ваши пометки и ваши ответы. Боковые части можно свернуть, если нужно место.</div>
+    </div>
+
+    <p class="intro-disclaimer"><i>Кейс вымышленный — любые совпадения случайны; не переносите в ответы факты о конкретных реальных компаниях, которые он может напоминать.</i></p>
+
+    <!-- Имя спрашиваем ЗДЕСЬ, а не репликой персонажа: знакомиться заново после
+         звонка и письма незачем.
+         ⚠ ПО ФАКТУ. В v1 сказано «так к вам будут обращаться в разговорах». На
+         маршруте v4.4.f подстановки {name} нет ни в одной реплике — по имени
+         участника не окликает никто, — поэтому сказано, зачем имя нужно на самом
+         деле. -->
+    <div class="pgroup intro-name">
+      <p class="kicker">Прежде чем начать</p>
+      <p>Как к вам обращаться? Имя нужно организатору — понимать, чей это прогон, — и вам, чтобы узнать свой разбор. На оценку оно не влияет: судья его не видит. Можно псевдоним.</p>
+      <input type="text" id="introName" maxlength="60" autocomplete="off" placeholder="Имя или как вам удобно" />
+    </div>
+
+    <div class="intro-cta">
+      <!-- ОДНА кнопка (решение владельца 06.08). Ведёт на экран роли, и подпись
+           говорит именно это, а не «начать»: дальше ещё один экран, и обещать
+           старт было бы неправдой. -->
+      <a class="btn btn-primary btn-block" id="startBtn" href="role.html">К введению в роль →</a>
+      <p class="intro-next">Дальше — кто вы в этой истории и как устроен ассессмент. Потом материалы.</p>
+    </div>
+
+    <footer class="intro-foot">© futureproof · ассессмент «Искра»</footer>
+
+  </div>
+</div>
+<script src="js/main.js?v=7"></script>
+<script>
+  // Экран открывают из входа (дальше — роль) и ссылкой «Как проходить» с экрана
+  // установки. Во втором случае возврат обязан вести туда, откуда пришли, иначе
+  // участник выбивается из середины ассессмента.
+  // Значению ?from= НЕ доверяем: переход только по белому списку своих страниц,
+  // иначе параметр в адресе стал бы открытой переадресацией.
+  (function () {
+    // ЗАПРЕТ С ТЕЛЕФОНА — как на входе и в ассессменте: экран настройки ведёт в
+    // ассессмент, и пускать сюда телефон значило бы обещать проход, которого нет.
+    if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('introBody')) return;
+
+    var ALLOWED = { 'assessment.html': 'к ассессменту', 'role.html': 'к введению в роль' };
+    var btn = document.getElementById('startBtn');
+    var from = '';
+    try { from = new URLSearchParams(location.search).get('from') || ''; } catch (e) {}
+    if (from && ALLOWED[from] && from !== 'role.html') {
+      btn.setAttribute('href', from);
+      btn.textContent = 'Вернуться ' + ALLOWED[from] + ' →';
+      var nx = document.querySelector('.intro-next');
+      if (nx) nx.style.display = 'none';
+    }
+    // Имя: префилл из сессии и сохранение при уходе. Пишем и в localStorage, и в
+    // sessionStorage — сессию читают оба (см. js/main.js loadSession).
+    var nameEl = document.getElementById('introName');
+    function readSession() {
+      try {
+        return JSON.parse(sessionStorage.getItem('imp_current_session')
+          || localStorage.getItem('imp_current_session') || 'null');
+      } catch (e) { return null; }
+    }
+    var sess = readSession();
+    if (nameEl && sess && sess.name) nameEl.value = sess.name;
+    function persistName() {
+      if (!nameEl) return;
+      var nm = (nameEl.value || '').trim();
+      var s = readSession();
+      if (!s || !s.bib || !nm) return;
+      s.name = nm;
+      try {
+        sessionStorage.setItem('imp_current_session', JSON.stringify(s));
+        localStorage.setItem('imp_current_session', JSON.stringify(s));
+      } catch (e) {}
+    }
+    if (nameEl) nameEl.addEventListener('change', persistName);
+
+    // Отметку «настройку показали» ставим ЗДЕСЬ, а не на экране роли: вход
+    // проверяет именно её, и участник, закрывший вкладку на экране роли, при
+    // следующем входе попадёт на роль, а не на второй проход настройки.
+    btn.addEventListener('click', function () {
+      persistName();
+      try {
+        var s = JSON.parse(localStorage.getItem('imp_current_session') || 'null');
+        if (s && s.bib) localStorage.setItem('imp_intro_seen_' + s.bib, '1');
+      } catch (e) {}
+    });
+  })();
+</script>
+<script src="js/typo.js?v=2"></script>
+</body>
+</html>

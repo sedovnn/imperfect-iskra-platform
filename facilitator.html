@@ -7,7 +7,13 @@
 <meta name="robots" content="noindex, nofollow" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
+<!-- ШРИФТ ГРУЗИТСЯ НЕБЛОКИРУЮЩЕ. Обычный <link rel="stylesheet"> задерживает
+     ИСПОЛНЕНИЕ скриптов до ответа шрифтового CSS: если fonts.googleapis.com
+     отвечает медленно, страница висит пустой, хотя вся её логика уже загружена
+     (поймано 06.08 на переходе между экранами). media="print" снимает
+     блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
 <link rel="stylesheet" href="css/styles.css?v=113" />
 </head>
 <body>

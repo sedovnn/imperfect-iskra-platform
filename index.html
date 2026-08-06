@@ -8,8 +8,14 @@
 <meta name="robots" content="noindex, nofollow" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" />
-<link rel="stylesheet" href="css/styles.css?v=115" />
+<!-- ШРИФТ ГРУЗИТСЯ НЕБЛОКИРУЮЩЕ. Обычный <link rel="stylesheet"> задерживает
+     ИСПОЛНЕНИЕ скриптов до ответа шрифтового CSS: если fonts.googleapis.com
+     отвечает медленно, страница висит пустой, хотя вся её логика уже загружена
+     (поймано 06.08 на переходе между экранами). media="print" снимает
+     блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/styles.css?v=119" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -134,7 +140,7 @@
   </div>
 </div>
 
-<script src="js/main.js?v=6"></script>
+<script src="js/main.js?v=7"></script>
 <script src="js/typo.js?v=2"></script>
 <script src="js/api.js?v=4"></script>
 <script>
@@ -167,6 +173,17 @@
     list.classList.toggle('open');
   });
   document.addEventListener('click', function () { list.classList.remove('open'); });
+
+  // ── КУДА ВЕСТИ ПОСЛЕ ВХОДА (решение владельца 06.08) ──
+  // Путь участника: настройка (intro.html) → роль (role.html) → материалы и дальше
+  // ассессмент (assessment.html). Настройку показываем ОДИН раз на номер: отметку
+  // ставит сама intro.html при нажатии кнопки. Кто уже её видел — попадает прямо в
+  // ассессмент, иначе вход с другого устройства заново читал бы инструкцию.
+  function afterLogin(bib) {
+    var seen = false;
+    try { seen = !!localStorage.getItem('imp_intro_seen_' + bib); } catch (e) {}
+    return seen ? 'assessment.html' : 'intro.html';
+  }
 
   var form = document.getElementById('entryForm');
   var codeEl = document.getElementById('entryCode');
@@ -236,7 +253,7 @@
             sessionStorage.setItem('imp_current_session', JSON.stringify(s));
             localStorage.setItem('imp_current_session', JSON.stringify(s));
           } catch (err) {}
-          window.location.href = 'assessment.html';
+          window.location.href = afterLogin(s.bib);
           return;
         }
         selfBtn.disabled = false;
@@ -308,10 +325,9 @@
           sessionStorage.setItem('imp_current_session', JSON.stringify(session));
           localStorage.setItem('imp_current_session', JSON.stringify(session));
         } catch (err) {}
-        // Один экран на весь день: установка → пакет материалов → шесть разговоров.
-        // Отдельных страниц установки и карты больше нет — маршрут линейный, и
-        // ветвиться участнику негде (платформа v2).
-        window.location.href = 'assessment.html';
+        // Три экрана до первого вопроса: настройка → роль → материалы. Карты
+        // по-прежнему нет — маршрут линейный, и ветвиться участнику негде.
+        window.location.href = afterLogin(code);
         return;
       }
       submitBtn.disabled = false;

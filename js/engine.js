@@ -98,6 +98,10 @@
       // решения, на маршруте его больше нет, и он остаётся пустым. Ветку не убираем
       // ради строк прежних прогонов: их читает тот же код кабинета.
       mech: {}, mechAt: {},
+      // Такт шага: участник отслушал реплики и нажал «приступаю». Отдельно от
+      // ответов — это не ответ, а место в шаге; без него перезагрузка возвращала бы
+      // к репликам, которые уже отслушаны.
+      entered: {},
       // Выписки из материалов. Собираем (владелец: «собирать максимум текста»),
       // но судьям не отдаём: выделение — вспомогательный инструмент, а не
       // инструмент оценки. Попасть в оценку не могут по построению.
@@ -123,6 +127,7 @@
           if (!p.answers) p.answers = {};
           if (!p.answersAt) p.answersAt = {};
           if (!p.picks) p.picks = {};
+          if (!p.entered) p.entered = {};
           if (!p.mech) p.mech = {};
           if (!p.mechAt) p.mechAt = {};
           if (!p.marks) p.marks = [];
@@ -486,9 +491,12 @@
       host.innerHTML = '<p class="bl-empty">Пока ничего. Выделите фрагмент в материалах — появится кнопка «В пометки».</p>';
       return;
     }
+    // draggable у цитаты: пометку можно перетащить на карточку тезиса (механика
+    // тезисов принимает drop). Клик-выбор из карточки остаётся вторым путём —
+    // перетаскивание недоступно с клавиатуры и на планшете.
     host.innerHTML = list.map(function (m) {
       return '<div class="mark-item" data-mark="' + m.id + '">' +
-        '<blockquote class="mark-quote">' + esc(m.quote) + '</blockquote>' +
+        '<blockquote class="mark-quote" draggable="true" data-dragmark="' + m.id + '">' + esc(m.quote) + '</blockquote>' +
         // data-answer здесь НЕТ сознательно: это не ответ, и в замер вставок и
         // набора поле не идёт. Именно из-за обратного пришлось убрать заметки.
         '<textarea class="mark-note" rows="2" data-note="' + m.id + '" placeholder="своя строка — если нужна">' + esc(m.note || '') + '</textarea>' +
@@ -516,18 +524,29 @@
     if (!found) {
       box.style.display = '';
       el('markBarQuote').textContent = 'Фрагмент не найден: материалы обновились. Выписка сохранена.';
-      el('markBarAdd').style.display = 'none';
       return;
     }
+    box.style.display = 'none';
     var target = found.parentElement;
+    // Раздел мог быть свёрнут: сначала раскрываем, иначе прокрутка приводит к
+    // закрытой полосе, и участник видит «ничего не произошло».
+    openCaseBlockOf(target);
     host.scrollTop += target.getBoundingClientRect().top - host.getBoundingClientRect().top - 10;
     target.classList.add('mark-flash');
     setTimeout(function () { target.classList.remove('mark-flash'); }, 1200);
   }
 
   function initMarks() {
-    var bar = el('markBar'), quoteEl = el('markBarQuote'), addBtn = el('markBarAdd');
+    var pop = el('markPop'), addBtn = el('markBarAdd'), host = el('supCaseText');
     var pending = '';
+
+    // ── КНОПКА ОТМЕТКИ У ВЫДЕЛЕНИЯ ─────────────────────────────────────────────
+    // Была полоса внизу панели: чтобы отметить фрагмент, надо было увести глаз и
+    // руку к краю экрана. Отметить стоило дороже, чем не отметить, — и участник не
+    // отмечал. Теперь кнопка встаёт над концом выделения, где рука уже есть.
+    // Позиция считается по прямоугольнику выделения и ставится fixed: панель
+    // прокручивается, и позиция внутри неё уехала бы при первом же колесе.
+    var hidePop = function () { pop.style.display = 'none'; pending = ''; };
 
     var onSelect = function () {
       var sel = window.getSelection ? window.getSelection() : null;
@@ -535,23 +554,44 @@
       var inside = false;
       if (sel && sel.rangeCount && txt) {
         var n = sel.getRangeAt(0).commonAncestorContainer;
-        inside = el('supCaseText').contains(n.nodeType === 1 ? n : n.parentNode);
+        inside = host.contains(n.nodeType === 1 ? n : n.parentNode);
       }
-      if (!inside || txt.length < 3) { bar.style.display = 'none'; pending = ''; return; }
+      if (!inside || txt.length < 3) { hidePop(); return; }
       pending = txt;
-      addBtn.style.display = '';
-      quoteEl.textContent = txt.length > 120 ? txt.slice(0, 120) + '…' : txt;
-      bar.style.display = '';
+      var rects = sel.getRangeAt(0).getClientRects();
+      var r = rects.length ? rects[rects.length - 1] : sel.getRangeAt(0).getBoundingClientRect();
+      pop.style.display = '';
+      // Ставим НАД концом выделения; если сверху места нет — под ним. Кнопка не
+      // должна закрывать сам фрагмент, иначе участник не видит, что отмечает.
+      var w = pop.offsetWidth || 96, h = pop.offsetHeight || 28;
+      var top = r.top - h - 6;
+      if (top < 8) top = r.bottom + 6;
+      var left = Math.min(Math.max(8, r.right - w / 2), window.innerWidth - w - 8);
+      pop.style.top = Math.round(top) + 'px';
+      pop.style.left = Math.round(left) + 'px';
     };
     document.addEventListener('selectionchange', onSelect);
-    el('supCaseText').addEventListener('mouseup', onSelect);
+    host.addEventListener('mouseup', onSelect);
+    // Прокрутка панели и уход со вкладки прячут кнопку: висящая кнопка над чужим
+    // местом хуже, чем её отсутствие.
+    host.addEventListener('scroll', hidePop);
 
     addBtn.addEventListener('click', function () {
       if (!pending) return;
       addMark(pending);
-      pending = '';
-      bar.style.display = 'none';
+      hidePop();
       try { window.getSelection().removeAllRanges(); } catch (e) {}
+    });
+
+    // Возврат из приложения на строку чтения.
+    var back = el('caseBackAct');
+    if (back) back.addEventListener('click', backToReading);
+    // Ссылки на приложения в тексте кейса.
+    host.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('[data-appx]');
+      if (!a) return;
+      e.preventDefault();
+      goToAppendix(a.getAttribute('data-appx'));
     });
 
     el('supMarksBody').addEventListener('click', function (e) {
@@ -565,6 +605,17 @@
         var m = (state.marks || []).filter(function (x) { return x.id === show; })[0];
         if (m) showMarkInCase(m.quote);
       }
+    });
+    el('supMarksBody').addEventListener('dragstart', function (e) {
+      var q = e.target.getAttribute && e.target.getAttribute('data-dragmark');
+      if (!q || !e.dataTransfer) return;
+      var m = (state.marks || []).filter(function (x) { return x.id === q; })[0];
+      if (!m) return;
+      // Два формата: свой — чтобы принимающая сторона знала, что это пометка, и
+      // text/plain — чтобы цитата не потерялась, если drop случится в поле ввода.
+      e.dataTransfer.setData('text/imp-mark', m.id);
+      e.dataTransfer.setData('text/plain', m.quote);
+      e.dataTransfer.effectAllowed = 'copy';
     });
     el('supMarksBody').addEventListener('input', function (e) {
       var id = e.target.getAttribute && e.target.getAttribute('data-note');
@@ -627,7 +678,7 @@
     var left = S.scenes.length - 1 - curSceneIx;
     if (left > 0) {
       html += '<p class="route-left">дальше — ещё ' +
-        left + ' ' + plural(left, 'разговор', 'разговора', 'разговоров') + '</p>';
+        left + ' ' + plural(left, 'этап', 'этапа', 'этапов') + '</p>';
     }
     host.innerHTML = html;
   }
@@ -643,14 +694,30 @@
   // Оглавление в НИЗУ левой колонки — оглавление ТЕКУЩЕЙ вкладки справа, а не
   // отдельный элемент: одна колонка, разное содержимое. Иначе получаются два
   // списка, спорящих за одно место.
+  // Показать/скрыть нижнюю половину левой колонки (оглавление текущей вкладки).
+  // Скрывается вместе с подписью: пустая подпись занимает место и обещает список,
+  // которого нет.
+  function setTocVisible(on) {
+    var sub = document.querySelector('.dayside-sub'), body = el('tocBody');
+    if (sub) sub.style.display = on ? '' : 'none';
+    if (body) body.style.display = on ? '' : 'none';
+  }
+
   function renderToc() {
     var kicker = el('tocKicker'), body = el('tocBody');
     if (!kicker || !body) return;
     if (supportTab === 'case') {
-      kicker.textContent = 'Разделы';
-      body.innerHTML = caseTocHtml || '<p class="bl-empty">Загружаю…</p>';
+      // ⚠ ОГЛАВЛЕНИЯ КЕЙСА ЗДЕСЬ БОЛЬШЕ НЕТ (решение владельца 06.08). Разделы
+      // сворачиваются в самом пакете, и свёрнутые заголовки и есть оглавление —
+      // список, который невозможно рассинхронизировать с текстом. Четвёртая зона на
+      // экране (этапы · работа · оглавление · кейс) была перебором.
+      // Нижняя половина колонки при этом СКРЫВАЕТСЯ целиком: подпись «Материалы» над
+      // строкой «разделы сворачиваются справа» — это зона, занятая объяснением
+      // отсутствия зоны.
+      setTocVisible(false);
       return;
     }
+    setTocVisible(true);
     if (supportTab === 'marks') {
       kicker.textContent = 'Пометки';
       var ms = state.marks || [];
@@ -719,6 +786,13 @@
       el('dayGrid').classList.add('is-tocon');
     });
 
+    // Сворачивание ПРАВОЙ колонки. Симметрично левой и по той же причине: рабочая
+    // область — то, что участник делает, и когда нужно место, место обязано
+    // находиться. Материалы при этом никуда не деваются: одна кнопка возвращает.
+    var mc = el('memCollapse'), mr = el('memRestore');
+    if (mc) mc.addEventListener('click', function () { el('dayGrid').classList.add('is-memoff'); });
+    if (mr) mr.addEventListener('click', function () { el('dayGrid').classList.remove('is-memoff'); });
+
     // Прокрутка по оглавлению: внутри колонки, не по хэшу — хэш увёл бы страницу.
     el('tocBody').addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('.toc-link');
@@ -729,7 +803,10 @@
         if (mk) showMarkInCase(mk.quote);
         return;
       }
-      if (b.dataset.target) { host = el('supCaseText'); target = host.querySelector('#' + b.dataset.target); }
+      if (b.dataset.target) {
+        host = el('supCaseText'); target = host.querySelector('#' + b.dataset.target);
+        if (target) openCaseBlockOf(target);
+      }
       else if (b.dataset.ref) { host = el('supRef'); target = host.querySelector('#' + b.dataset.ref); }
       else if (b.dataset.ans) {
         host = el('supRef') && supportTab === 'answers' ? el('supAnswers') : el('supAnswers');
@@ -785,6 +862,12 @@
     return out + '</div>';
   }
 
+  // ⚠ roleHtml() БОЛЬШЕ НЕ ВСТАВЛЯЕТСЯ В ПАКЕТ (решение владельца 06.08). Введение
+  // в роль стало отдельным экраном — role.html, вторым из трёх до старта. Функция
+  // оставлена и читается тем же S.system.lead, что и та страница: если роль
+  // когда-нибудь понадобится показать внутри ассессмента, второй реализации
+  // заводить не придётся. Экран материалов теперь только материалы — как просил
+  // владелец, «ничего лишнего».
   function loadCaseIntoSupport() {
     if (caseLoaded) return;
     var host = el('supCaseText');
@@ -794,45 +877,177 @@
     }
     window.imp.loadCaseHtml().then(function (html) {
       host.innerHTML = html;
-      // Введение в роль ставится ПЕРЕД пакетом и только после его загрузки: сам
-      // пакет приезжает как innerHTML и стёр бы любой узел, вставленный заранее.
-      host.insertAdjacentHTML('afterbegin', roleHtml());
+      // Шапка пакета переезжает ВНУТРЬ прокрутки первым узлом: снаружи она навсегда
+      // занимала 250px верха панели под инструкцию, которую читают один раз, и текст
+      // читался в остатке. Внутри — уезжает вместе с текстом, как и положено врезке.
+      var intro = el('caseIntro');
+      if (intro) host.insertBefore(intro, host.firstChild);
       caseLoaded = true;
-      buildCaseToc();
+      buildCaseAccordion();
+      linkAppendices();
       if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
     }, function () {
       host.innerHTML = '<p class="fac-detail-text">Не удалось загрузить материалы — проверьте соединение и обновите страницу.</p>';
     });
   }
 
-  // Оглавление собирается из самого пакета, а не задаётся списком: разъехаться
-  // с кейсом ему тогда нечем. Переход — прокруткой контейнера, а не по хэшу:
-  // хэш увёл бы всю страницу.
-  var caseTocHtml = '';
+  // ── ПАКЕТ КАК АККОРДЕОН, И ОГЛАВЛЕНИЕ ВНУТРИ НЕГО ───────────────────────────
+  // Решение владельца 06.08: отдельного оглавления кейса нет. Четвёртая зона на
+  // экране (этапы · работа · оглавление · кейс) — перебор, а свёрнутые заголовки
+  // разделов сами и есть оглавление: список, который нельзя рассинхронизировать с
+  // текстом, потому что он и есть текст.
+  //
+  // ЧТО ЗДЕСЬ ВАЖНО НЕ СЛОМАТЬ:
+  //  · КЕЙС НЕ ПРАВИТСЯ. Файл case-v8.html не тронут ни на символ — правится он
+  //    только новой версией (правило проекта). Аккордеон собирается из готовой
+  //    разметки в браузере: <article id> заворачивается в <details>, заголовок
+  //    переезжает в <summary>. Значит новая версия кейса ту же структуру получит
+  //    без правок здесь.
+  //  · ID ОСТАЮТСЯ РАБОЧИМИ. Переход по пометке и по ссылке на приложение ищет
+  //    элемент по id, поэтому id переносится на <details>, а не теряется.
+  //  · ПЕРВЫЙ РАЗДЕЛ ОТКРЫТ (решение владельца): закрытый целиком список на первом
+  //    экране чтения выглядел бы как пустой экран.
+  var caseTocHtml = '';   // остаётся для прочих вкладок; для кейса больше не строится
 
-  function buildCaseToc() {
+  function buildCaseAccordion() {
     var host = el('supCaseText');
-    var arts = host.querySelectorAll('article[id]');
+    var arts = [].slice.call(host.querySelectorAll('article[id]'));
     if (!arts.length) return;
-    var html = '', appxStarted = false;
-    for (var i = 0; i < arts.length; i++) {
-      var h = arts[i].querySelector('h2, h3');
-      var label = h ? h.textContent.trim() : '';
-      if (!label) {
-        // Заголовок может стоять разделителем ПЕРЕД статьёй, а не внутри неё.
-        // Без этого в оглавлении появлялся сырой id вида «appx-1».
-        var prev = arts[i].previousElementSibling;
-        while (prev && !prev.classList.contains('appx-divider')) prev = prev.previousElementSibling;
-        label = prev ? prev.textContent.trim() : arts[i].id;
+    arts.forEach(function (art, i) {
+      var h = art.querySelector('h2, h3');
+      var label = h ? h.textContent.trim() : art.id;
+      var det = document.createElement('details');
+      det.className = 'case-block';
+      det.id = art.id;
+      art.removeAttribute('id');
+      if (i === 0) det.open = true;
+      var sum = document.createElement('summary');
+      sum.className = 'case-sum';
+      sum.innerHTML = '<span class="case-sum-t"></span><span class="case-sum-mark" aria-hidden="true"></span>';
+      sum.querySelector('.case-sum-t').textContent = label;
+      // Заголовок внутри статьи убираем: на экране он теперь один — в свёртке.
+      // Двойной заголовок читался бы как повтор, а не как структура.
+      if (h) {
+        var head = h.parentNode;
+        h.parentNode.removeChild(h);
+        // .appx-doc-head без заголовка пустой — он рисует рамку, и пустая полоса
+        // осталась бы висеть над таблицей.
+        if (head && head.classList && head.classList.contains('appx-doc-head') && !head.children.length) {
+          head.parentNode.removeChild(head);
+        }
       }
-      if (!appxStarted && /^appx/.test(arts[i].id)) {
-        appxStarted = true;
-        html += '<p class="toc-group">Приложения</p>';
-      }
-      html += '<button type="button" class="toc-link" data-target="' + arts[i].id + '">' + esc(label) + '</button>';
+      art.parentNode.insertBefore(det, art);
+      det.appendChild(sum);
+      det.appendChild(art);
+    });
+
+    // Управление всеми сразу — готовая полоса из разметки, СНАРУЖИ прокрутки
+    // (см. комментарий там же). Здесь только включаем её и вешаем обработчик.
+    var bar = el('caseBar');
+    if (bar) {
+      bar.style.display = '';
+      bar.addEventListener('click', function (e) {
+        var v = e.target.getAttribute && e.target.getAttribute('data-caseall');
+        if (v === null || v === undefined) return;
+        var open = v === '1';
+        host.querySelectorAll('details.case-block').forEach(function (d) { d.open = open; });
+      });
     }
-    caseTocHtml = html;
+
+    caseTocHtml = '';
     renderToc();
+  }
+
+  // Раскрыть свёртку, внутри которой лежит узел: переход по пометке или по ссылке
+  // на приложение обязан довести до текста, а не до закрытой полосы.
+  function openCaseBlockOf(node) {
+    var n = node;
+    while (n && n !== document.body) {
+      if (n.tagName === 'DETAILS') n.open = true;
+      n = n.parentNode;
+    }
+  }
+
+  // ── ССЫЛКИ НА ПРИЛОЖЕНИЯ И ВОЗВРАТ НА СТРОКУ ЧТЕНИЯ ──────────────────────────
+  // В тексте кейса приложения упомянуты словами: «(детально — П1)», «(П1, сноска б)».
+  // Ссылками они не были — ни одной, проверено по файлу, — поэтому участник, дойдя до
+  // «см. П5», уходил искать П5 прокруткой и терял строку, на которой читал. Это налог
+  // на память и внимание, а ни одна способность его не мерит.
+  //
+  // КЕЙС ПРИ ЭТОМ НЕ ПРАВИТСЯ: ссылки навешиваются здесь, по тексту, уже загруженному
+  // в панель. Правило проекта — кейс правится только новой версией файла, — остаётся
+  // в силе, а новая версия получит ссылки тем же кодом.
+  // Трогаем ТОЛЬКО разделы (sec-*): в приложениях единственное упоминание «П1» — это
+  // их собственный заголовок, и ссылка на самого себя была бы бессмыслицей.
+  var caseReturn = null;   // { top, opened: [ids] } — куда вернуть и что мы раскрыли
+
+  function linkAppendices() {
+    var host = el('supCaseText');
+    var arts = host.querySelectorAll('.case-block[id^="sec-"] article');
+    if (!arts.length) return;
+    var nodes = [];
+    for (var a = 0; a < arts.length; a++) {
+      var w = document.createTreeWalker(arts[a], NodeFilter.SHOW_TEXT, null);
+      var n;
+      while ((n = w.nextNode())) {
+        if (!/П\d/.test(n.nodeValue)) continue;
+        if (n.parentNode && (n.parentNode.tagName === 'A' || n.parentNode.tagName === 'SUMMARY')) continue;
+        nodes.push(n);
+      }
+    }
+    nodes.forEach(function (node) {
+      // П10 в разборе идёт ПЕРВЫМ: иначе «П1» съест первую цифру и останется «0».
+      // (?!\d) не даёт зацепить будущие П11+ как «П1» с хвостом.
+      var parts = String(node.nodeValue).split(/(П(?:10|[1-9])(?!\d))/);
+      if (parts.length < 2) return;
+      var frag = document.createDocumentFragment();
+      parts.forEach(function (piece) {
+        if (/^П(?:10|[1-9])$/.test(piece)) {
+          var link = document.createElement('a');
+          link.className = 'appx-ref';
+          link.setAttribute('href', '#');
+          link.setAttribute('data-appx', piece.slice(1));
+          link.textContent = piece;
+          frag.appendChild(link);
+        } else if (piece) {
+          frag.appendChild(document.createTextNode(piece));
+        }
+      });
+      node.parentNode.replaceChild(frag, node);
+    });
+  }
+
+  // Уйти в приложение, запомнив строку чтения. Возврат — кнопкой, а не браузерным
+  // «назад»: назад увёл бы со страницы ассессмента целиком.
+  function goToAppendix(num) {
+    var host = el('supCaseText');
+    var target = host.querySelector('#appx-' + num);
+    if (!target) return;
+    var opened = [];
+    if (!target.open) { target.open = true; opened.push(target.id); }
+    caseReturn = { top: host.scrollTop, opened: opened };
+    host.scrollTop += target.getBoundingClientRect().top - host.getBoundingClientRect().top - 8;
+    showCaseReturn(true);
+  }
+
+  function showCaseReturn(on) {
+    var bar = el('caseBack');
+    if (!bar) return;
+    bar.style.display = on ? '' : 'none';
+  }
+
+  function backToReading() {
+    var host = el('supCaseText');
+    if (!caseReturn) { showCaseReturn(false); return; }
+    // Раскрытое приложение сворачиваем обратно ТОЛЬКО если открыли его мы: если
+    // участник сам его открывал раньше, закрывать за ним — правка его состояния.
+    (caseReturn.opened || []).forEach(function (id) {
+      var d = host.querySelector('#' + id);
+      if (d) d.open = false;
+    });
+    host.scrollTop = caseReturn.top;
+    caseReturn = null;
+    showCaseReturn(false);
   }
 
   // Вкладка «Мои ответы»: только зафиксированное. Незаполненное окно здесь не
@@ -1221,6 +1436,47 @@
     return d;
   }
 
+  // ── БЛОК «СЛУШАЮ»: реплики целиком и кнопка-реплика участника ──
+  // Кнопка сформулирована как ЕГО ответ («Спасибо, приступаю»), а не как команда
+  // интерфейса («Далее»): участник не листает экраны, он отвечает собеседнику.
+  // Текст кнопки и подпись свёртки — данные (act.fold в scenes.js), потому что это
+  // текст для участника, а такого текста вне scenes.js быть не может.
+  function listenBlock(act, speeches) {
+    var d = document.createElement('div');
+    d.className = 's2-block talk-listen';
+    d.innerHTML = speeches.map(speechHtml).join('') +
+      '<div class="win-foot">' +
+        '<span class="win-note">' + esc(act.fold.note || '') + '</span>' +
+        '<button class="btn btn-primary" id="listenBtn">' + esc(act.fold.cta) + '</button>' +
+      '</div>';
+    d.querySelector('#listenBtn').addEventListener('click', function () {
+      if (!state.entered) state.entered = {};
+      state.entered[act.id] = nowIso();
+      saveState();
+      render();
+    });
+    return d;
+  }
+
+  // ── СВЁРНУТЫЕ РЕПЛИКИ: одна строка вместо семи пузырей ──
+  // Раскрывается кликом и остаётся раскрытой до следующей перерисовки: перечитать
+  // сказанное надо уметь всегда — тот же принцип, по которому кейс открыт до конца.
+  function foldedSpeech(act, speeches) {
+    var foldCount = speeches.reduce(function (n, a) {
+      return n + ((a.bubbles || []).length || 1);
+    }, 0);
+    var det = document.createElement('details');
+    det.className = 's2-block talk-folded';
+    det.innerHTML = '<summary class="talk-folded-sum">' +
+        '<span class="talk-folded-t">' + esc(act.fold.label) + '</span>' +
+        // Считаем ПУЗЫРИ, а не акты: в сцене 1 один акт на семь пузырей, и «1
+        // реплика» противоречило бы тому, что участник только что прочитал.
+        '<span class="talk-folded-n">' + foldCount + ' ' +
+          plural(foldCount, 'реплика', 'реплики', 'реплик') + ' · показать</span>' +
+      '</summary><div class="talk-folded-body">' + speeches.map(speechHtml).join('') + '</div>';
+    return det;
+  }
+
   // Свод дня перед письмом: не вторая копия ответов в ленте, а переключение опоры
   // на вкладку «Мои ответы». Требование плана — «участник видит свой день перед
   // тем, как писать письмо» — выполняется, а 1600 пикселей дубля не появляется.
@@ -1251,8 +1507,22 @@
     var g = el('dayGrid');
     g.classList.toggle('is-reading', !!on);
     el('caseReadFoot').style.display = on ? '' : 'none';
+    var intro = el('caseIntro');
+    if (intro) intro.style.display = on ? '' : 'none';
     if (!on) return;
     setTab('case');
+    // Шапка пакета: что это за пакет (act.lead) и как работают пометки (act.marks).
+    // Только на экране чтения — в панели рядом с разговором эта строка была бы
+    // инструкцией, которую участник уже прочитал, на месте, где ему нужен текст.
+    // ⚠ act.lead до 06.08 не показывался ВООБЩЕ: он рисовался внутри введения в
+    // роль, а введение уехало на свой экран — строка про пакет уехала вместе с ним.
+    if (intro && !intro.dataset.filled) {
+      intro.innerHTML =
+        (act.lead ? '<p class="case-intro-lead">' + br(act.lead) + '</p>' : '') +
+        (act.marks ? '<p class="case-intro-marks">' + br(act.marks) + '</p>' : '');
+      intro.dataset.filled = '1';
+      if (window.imp && window.imp.typoDom) window.imp.typoDom(intro);
+    }
     el('hdrDayName').textContent = '«Искра» · материалы';
     // act.note у акта чтения снят 04.08 (строка уехала в установку), но поле
     // оставлено: подвал один на все акты этого вида, и если у следующего пакета
@@ -1273,11 +1543,28 @@
     box.style.display = on ? 'flex' : 'none';
     if (!on) return;
     var I = S.interlude || { lead: [], cta: 'Дальше →' };
+    var bridge = step.scene.bridge || {};
+    // Штамп берём по последнему СОСТОЯВШЕМУСЯ шагу, а не по свободным окнам: семь
+    // шагов из двенадцати — механики, и по одним answersAt на переходе из первого
+    // этапа штамп был пустым (первый шаг — механика тезисов).
     var lastAt = '';
-    S.windows().forEach(function (w) { if (state.answersAt[w.save]) lastAt = state.answersAt[w.save]; });
-    el('interludeMark').textContent = lastAt ? '✓ Ответ зафиксирован · ' + hhmm(lastAt) : '';
+    S.windows().forEach(function (w) {
+      var at = w.mech ? (state.mechAt && state.mechAt[w.mech]) : state.answersAt[w.save];
+      if (at) lastAt = at;
+    });
+    // Заголовок — данные: после первого этапа тезисы УХОДЯТ Агееву в мессенджер, и
+    // «ответ отправлен» там правда; на остальных переходах ничего никуда не уходит,
+    // и правда — «зафиксирован».
+    var sent = bridge.sent || I.sent || 'Ответ зафиксирован';
+    el('interludeMark').textContent = lastAt ? '✓ ' + sent + ' · ' + hhmm(lastAt) : '✓ ' + sent;
+    el('interludeBridge').innerHTML = (bridge.lead || []).map(function (p) {
+      return '<p class="interlude-bridge-p">' + br(p) + '</p>';
+    }).join('');
     el('interludeWhere').textContent = step.scene.name;
-    el('interludeWhen').textContent = 'Разговор ' + (step.sceneIx + 1) + ' из ' + S.scenes.length +
+    // «Этап N из 7», а не «Разговор N из 7»: у части ассессмента одно имя, и оно
+    // стоит в столбике слева (решение владельца 06.08). Материалы — тоже этап,
+    // поэтому знаменатель — все сцены, включая первую.
+    el('interludeWhen').textContent = 'Этап ' + (step.sceneIx + 1) + ' из ' + S.scenes.length +
       ' · ' + step.scene.where;
     el('interludeLead').innerHTML = (I.lead || []).map(function (p) { return '<p style="margin:0 0 6px;">' + br(p) + '</p>'; }).join('');
     var cta = el('interludeCta');
@@ -1313,7 +1600,7 @@
         return (a.kind === 'window' && state.answersAt[a.save]) ||
                (a.kind === 'mechanic' && state.mechAt && state.mechAt[a.mech]);
       }).length;
-      det.innerHTML = '<summary><span class="talk-past-mark">✓</span> Разговор ' + (si + 1) + ' · ' + esc(sc.name) +
+      det.innerHTML = '<summary><span class="talk-past-mark">✓</span> Этап ' + (si + 1) + ' · ' + esc(sc.name) +
         '<span class="talk-past-meta">' + (answered ? answered + (answered === 1 ? ' ответ' : ' ответа') : 'пройден') + '</span></summary>';
       var body = document.createElement('div');
       body.className = 'talk-past-body';
@@ -1336,25 +1623,64 @@
       hist.appendChild(det);
     });
 
-    // Текущий разговор: его акты до курсора включительно.
+    // ── ДВА ТАКТА ОДНОГО ШАГА: сначала слушаю, потом работаю ──────────────────
+    // Решение владельца 06.08. Раньше реплики и рабочая область стояли в одном
+    // потоке: участник читал семь пузырей и сразу под ними видел поле — и ни
+    // прочитанное, ни работа не занимали экран целиком. Теперь у шага с полем
+    // fold два такта:
+    //   1) реплики целиком + кнопка-РЕПЛИКА участника («Спасибо, приступаю»);
+    //   2) реплики свёрнуты в одну строку, рабочая область занимает экран.
+    // Свёрнутая строка раскрывается обратно кликом: перечитать сказанное надо
+    // уметь всегда, это тот же принцип, по которому кейс открыт до конца.
+    // Такт хранится в state.entered — иначе перезагрузка страницы возвращала бы
+    // участника к репликам, которые он уже отслушал.
     var scene = S.scenes[curSceneIx];
     now.insertAdjacentHTML('beforeend', sceneHead(scene));
+
+    // Проход по актам ТЕКУЩЕЙ сцены. Реплики накапливаются и отдаются тому шагу,
+    // перед которым стоят: у шага с полем fold они превращаются в один узел
+    // (свёрнутая строка или блок «слушаю»), у шага без fold — рисуются как были.
+    // ⚠ СВЁРТКА ДЕРЖИТСЯ И У ПРОЙДЕННЫХ ШАГОВ. Сначала она стояла только у текущего,
+    // и монолог, свёрнутый на своём шаге, разворачивался обратно, едва шаг уезжал в
+    // прошлое: лента снова становилась простыней, а участник видел, как то, что он
+    // убрал, вернулось само.
+    var pending = [];
+    var flush = function () {
+      pending.forEach(function (a) {
+        var b = document.createElement('div');
+        b.className = 's2-block';
+        b.innerHTML = speechHtml(a);
+        now.appendChild(b);
+      });
+      pending = [];
+    };
+
     for (var i = 0; i < route.length; i++) {
       var st = route[i];
       if (st.sceneIx !== curSceneIx) continue;
       if (!applies(st.act)) continue;
       var past = i < state.cursor, current = i === state.cursor;
       if (!past && !current) break;
-      if (st.act.kind === 'speech') {
-        var b = document.createElement('div');
-        b.className = 's2-block';
-        b.innerHTML = speechHtml(st.act);
-        now.appendChild(b);
-      } else if (st.act.kind === 'recap') now.appendChild(recapBlock(st.act));
+
+      if (st.act.kind === 'speech') { pending.push(st.act); continue; }
+
+      var fold = st.act.fold;
+      var entered = !fold || past || !!(state.entered && state.entered[st.act.id]);
+      if (fold && pending.length) {
+        now.appendChild(entered ? foldedSpeech(st.act, pending) : listenBlock(st.act, pending));
+        pending = [];
+      } else {
+        flush();
+      }
+      // Пока участник не нажал кнопку-реплику, рабочей области ещё нет.
+      if (fold && !entered) break;
+
+      if (st.act.kind === 'recap') now.appendChild(recapBlock(st.act));
       else if (st.act.kind === 'case') now.appendChild(caseDoneBlock(st.act));
       else if (st.act.kind === 'window') now.appendChild(windowBlock(st.act, past));
       else if (st.act.kind === 'mechanic') now.appendChild(mechanicBlock(st.act, past));
     }
+    flush();
 
     if (state.cursor >= route.length && !state.finished) {
       var fin = document.createElement('div');
@@ -1424,31 +1750,24 @@
     sync().then(showFinish, showFinish);
   }
 
-  // ---------- установка ----------
-
-  function initSetup() {
-    var host = el('setupBody'), sys = S.system;
-    // sys.lead СЮДА БОЛЬШЕ НЕ ИДЁТ (решение владельца 04.08). На одном экране
-    // стояли две разные вещи: история роли — кто вы, кто звонил, когда встреча — и
-    // технические правила прохождения. Роль переехала на страницу чтения пакета
-    // (roleHtml), здесь остался только порядок дня. Данные S.system не тронуты:
-    // модель по-прежнему получает весь блок в system.
-    // Заголовком, а не меткой: без двух абзацев истории карточка начиналась
-    // одиннадцатипиксельной надписью и списком, то есть без заголовка вообще.
-    host.innerHTML =
-      '<h2>' + esc(sys.title) + '</h2>' +
-      '<ul class="setup-rules">' + sys.rules.map(function (r) { return '<li>' + br(r) + '</li>'; }).join('') + '</ul>' +
-      '<p class="intro-note">' + br(sys.note) + '</p>';
-    if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
-    el('startDayBtn').addEventListener('click', function () {
-      state.started = true;
-      saveState();
-      showRoot();
-    });
+  // ---------- старт без своего экрана ----------
+  // ⚠ ЭКРАНА УСТАНОВКИ ВНУТРИ АССЕССМЕНТА БОЛЬШЕ НЕТ (решение владельца 06.08).
+  // Путь участника — ТРИ экрана, у каждого одна кнопка: настройка (intro.html) →
+  // роль и устройство ассессмента (role.html) → материалы. Гейт «Как устроен
+  // ассессмент» с кнопкой «Начать» был четвёртым и повторял второй: те же
+  // S.system.rules, то же примечание. Осознанное согласие на старт даёт кнопка
+  // «Приступить к ассессменту» на экране роли, и она приводит сюда с ?start=1.
+  //
+  // Кто попал сюда без этого признака и без начатого прогона — уезжает на первый
+  // экран пути. Так у входа один порядок, а не два: иначе участник, открывший
+  // адрес ассессмента из закладки, начинал бы без настройки и без роли.
+  function startedFromRole() {
+    try { return new URLSearchParams(location.search).get('start') === '1'; } catch (e) { return false; }
   }
 
   function showRoot() {
-    el('setupGate').style.display = 'none';
+    var g = el('setupGate');
+    if (g) g.style.display = 'none';
     el('assessRoot').style.display = '';
     render();
     if (state.finished) showFinish();
@@ -1522,10 +1841,17 @@
   }
 
   initSupport();
-  initSetup();
 
+  // Демо с витрины начинает сразу: там нет ни входа, ни экранов настройки, и
+  // отправлять посетителя витрины читать инструкцию значило бы прятать от него то,
+  // что он пришёл посмотреть.
+  if (!state.started && (startedFromRole() || isDemo)) {
+    state.started = true;
+    state.startedAt = state.startedAt || nowIso();
+    saveState();
+  }
   if (state.started) showRoot();
-  else el('setupGate').style.display = 'flex';
+  else location.replace('intro.html');
 
   window.imp.v2 = {
     state: function () { return state; },
