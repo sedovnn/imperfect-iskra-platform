@@ -4785,6 +4785,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
      Замер после правки: лого и «Разделы» на 56px, колонки 266/587/587 при 1440. */
   --toc-col: calc(var(--toc-w, 210px) + var(--frame-pad));
   grid-template-columns: var(--toc-col) minmax(0, 1fr) minmax(0, 1fr);
+  /* точка привязки для кнопки возврата столбика этапов (.toc-restore) */
+  position: relative;
   /* Строку задаём явно. Без неё единственный auto-ряд считался по содержимому, и
      колонка опоры получала 291 px из 694 доступных: на чтение пакета оставалась
      щель в 61 px. Ровно тот дефект, из-за которого кейс и выглядел «впаянным». */
@@ -4807,8 +4809,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    свёрнутом состоянии колонок должно стать ДВА, а не «0 + две»: иначе два
    оставшихся элемента встают в треки 1 и 2, и центру достаётся нулевая ширина.
    Поймано прототипом на 1280 — кейс был 0px, работа занимала половину экрана. */
-.day-grid.is-collapsed { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+/* В свёрнутом состоянии первый трек остаётся — РЕЛЬС 34px под кнопку возврата
+   (.toc-restore). Колонки при этом надо назвать явно: скрытая .dayside выпадает из
+   потока, и без grid-column работа встала бы в рельс шириной 34px. */
+.day-grid.is-collapsed { grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr); }
 .day-grid.is-collapsed > .dayside { display: none; }
+.day-grid.is-collapsed > .talk { grid-column: 2; }
+.day-grid.is-collapsed > .support { grid-column: 3; }
 /* ⚠ СВОРАЧИВАНИЯ ПРАВОЙ ПАНЕЛИ ЗДЕСЬ БОЛЬШЕ НЕТ (решение владельца 06.08). Я завёл
    его этапом B «симметрично левому», и получилось три «свернуть» в одном углу:
    у панели, у аккордеона («свернуть всё») и у каждого раздела. Панель с кейсом,
@@ -4824,8 +4831,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    320px, и он перестаёт читаться. Кнопка «свернуть» при этом остаётся: авто —
    отдельное правило, а не замена контрола участника. */
 @media (max-width: 1360px) {
-  .day-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .day-grid { grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr); }
   .day-grid > .dayside { display: none; }
+  .day-grid > .talk { grid-column: 2; }
+  .day-grid > .support { grid-column: 3; }
   /* ⚠ Здесь стояло .toc-restore { display: inline-flex } — и не работало. У этого
      правила и у базового .toc-restore { display: none } одна специфичность, а
      базовое объявлено НИЖЕ в файле, значит побеждало оно. То есть на ноутбуке
@@ -4854,8 +4863,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    бесполезна, а мера без места рядом выглядит случайной. */
 .day-grid.is-reading { grid-template-columns: var(--toc-col) minmax(0, 1fr) minmax(0, 1fr); }
 .day-grid.is-reading > .support { grid-column: 2; }
-.day-grid.is-reading.is-collapsed { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-.day-grid.is-reading.is-collapsed > .support { grid-column: 1; }
+.day-grid.is-reading.is-collapsed { grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr); }
+.day-grid.is-reading.is-collapsed > .support { grid-column: 2; }
 /* Шов справа от колонки чтения — там же, где на рабочих экранах шов «разговор |
    материалы»: он и есть край будущей панели. */
 .day-grid.is-reading > .support { border-right: 1px solid var(--hairline); }
@@ -4872,8 +4881,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   .day-grid.is-reading { grid-template-columns: var(--toc-col) minmax(0, 1fr); }
   .day-grid.is-reading > .support { grid-column: 2; border-right: none; }
   .day-grid.is-reading > .dayside { display: flex; }
-  .day-grid.is-reading.is-collapsed { grid-template-columns: minmax(0, 1fr); }
-  .day-grid.is-reading.is-collapsed > .support { grid-column: 1; }
+  .day-grid.is-reading.is-collapsed { grid-template-columns: 34px minmax(0, 1fr); }
+  .day-grid.is-reading.is-collapsed > .support { grid-column: 2; }
   .day-grid.is-reading.is-collapsed > .dayside { display: none; }
 }
 .day-grid.is-reading > .talk { display: none; }
@@ -4919,6 +4928,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .route-step.is-on { color: var(--ink); font-weight: 600; cursor: default; }
 .route-mark { flex: none; width: 10px; color: var(--muted-soft); }
 .route-step.is-on .route-mark { color: var(--ink); }
+/* ПРОЙДЕННОЕ — ВЕРМИЛИОННАЯ ГАЛОЧКА (решение владельца 06.08). Столбик этапов теперь
+   единственное место, где видно пройденное: дубль в рабочей колонке снят. Значит знак
+   должен читаться без чтения строки — цветом, как та же галочка в «✓ Пакет материалов
+   прочитан» и в отметке отправленного ответа (--accent-ink, один знак — один цвет). */
+.route-step.is-done .route-mark { color: var(--accent-ink); font-weight: 700; }
 .route-left { margin: 12px 0 0; font-size: var(--fs-util); color: var(--muted-soft); }
 /* Подпись оглавления ниже маршрута: та же линейка, что у .dayside-head, но без
    кнопки свёртки — она одна на колонку и живёт выше. */
@@ -4928,12 +4942,20 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .toc-group { margin: 16px 0 4px;
 }
-/* кнопка возврата оглавления — в шапке центральной колонки */
+/* ВОЗВРАТ СТОЛБИКА ЭТАПОВ — РЕЛЬС НА МЕСТЕ СВЁРНУТОЙ КОЛОНКИ, а не кнопка над кейсом.
+   До 06.08 кнопка лежала внутри правой панели и всплывала над пакетом: свернул слева
+   — разворачивай справа. Теперь в свёрнутом состоянии первым треком грида остаётся
+   рельс 34px, и рельс — это и есть кнопка: она стоит ровно там, откуда столбик уехал,
+   и ничего не перекрывает. Внутри колонки работы её держать нельзя — в режиме чтения
+   работа скрыта, и кнопка исчезла бы вместе с ней; поверх содержимого — тоже: при
+   left/top она ложилась на первую строку («Материалы · пятница, 6 февраля»).
+   Знак «⟩» вместо слова: 34px под слово не хватит, а название несёт aria-label. */
 .toc-restore {
-  /* радиус в системе один — sm 4px (DESIGN.md стр. 128); было 999px, пилюля */
-  display: none; align-items: center; border: 1px solid var(--hairline); background: var(--paper);
-  border-radius: var(--radius); cursor: pointer; font: inherit; font-size: var(--fs-util); color: var(--muted);
-  padding: 4px 10px; margin: 8px 10px 0 var(--frame-pad, 24px);
+  display: none; align-items: flex-start; justify-content: center;
+  position: absolute; z-index: 7; left: 0; top: 0; width: 34px; height: 100%;
+  border: 0; border-right: 1px solid var(--hairline); background: var(--soft);
+  cursor: pointer; font: inherit; font-size: var(--fs-util); line-height: 1;
+  color: var(--muted); padding: 12px 0 0;
 }
 .day-grid.is-collapsed .toc-restore { display: inline-flex; }
 /* Ниже 1360 колонку убирает медиазапрос, а не класс, поэтому кнопку возврата надо
@@ -5189,6 +5211,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
      предупреждение (СПЕК §4.1). */
   .day-grid { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 42%) minmax(0, 1fr); }
   .day-grid.is-collapsed { grid-template-rows: 0 minmax(0, 1fr); }
+  /* Колонка здесь одна, значит явные grid-column от рельса надо снять: иначе работа и
+     опора уезжают во ВТОРУЮ, неявную колонку и экран рассыпается. Рельса тоже нет —
+     столбика этапов на этой ширине нет вовсе, возвращать нечего. */
+  .day-grid > .talk, .day-grid > .support { grid-column: 1 !important; }
+  .toc-restore { display: none !important; }
   /* ⚠ ЗДЕСЬ ОПОРА ВОЗВРАЩАЕТСЯ НАВЕРХ — order, а не порядок узлов. Перестановка
      колонок 05.08 поставила работу перед опорой в DOM, и на узком экране это дало
      бы работу в первом ряду (42%), а опору во втором (58%): печатать в меньшей
@@ -5357,16 +5384,20 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    экране висела слева посреди текста: за один день участник видел действие то
    слева, то справа, то в середине и искал его заново на каждом шаге. */
 .interlude-body {
-  /* ⚠ ВЫКЛЮЧКА ПО ВЕРХУ, А НЕ ПО ЦЕНТРУ (правка 06.08). Текст перехода стоял по
-     центру рабочей области, и на 1030px это давало по 300px пустоты сверху и снизу,
-     а глаз прыгал: на всех остальных экранах содержимое начинается у верхнего края,
-     здесь — в середине. Ради «вдоха» между этапами достаточно короткого текста и
-     пустого места ПОД ним; прыжок глаза «вдоху» не помогает. */
+  /* ⚠ ПО ЦЕНТРУ — И ПО ВЕРТИКАЛИ, И ПО ГОРИЗОНТАЛИ. Утром 06.08 я поставил здесь
+     justify-content: flex-start, чтобы убрать пустоту сверху, — и получил текст в
+     левом верхнем углу пустого поля: при 2560 справа от него оставалось 556px, снизу
+     646px (замер). Владелец назвал это регрессией, и он прав: заглушка — не экран с
+     содержимым, а пауза между этапами, у неё пустота ВОКРУГ текста и есть форма.
+     Прыжок глаза здесь допустим именно потому, что это не рабочий экран.
+     Горизонтальное центрирование (margin-inline: auto у .interlude-in) добавлено
+     тогда же: без него мера 66 знаков жалась к левому краю, и пустота была
+     односторонней — она и читалась как поломка, а не как пауза. */
   flex: 1; min-height: 0; overflow-y: auto;
-  display: flex; flex-direction: column; justify-content: flex-start;
+  display: flex; flex-direction: column; justify-content: center;
   padding: 22px var(--frame-pad, 24px) 24px;
 }
-.interlude-in { max-width: var(--w-read); }
+.interlude-in { max-width: var(--w-read); margin-inline: auto; width: 100%; }
 .interlude-act {
   flex: none; display: flex; align-items: center; justify-content: flex-end;
   padding: 12px var(--frame-pad, 24px) 16px;

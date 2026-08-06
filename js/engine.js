@@ -814,22 +814,33 @@
       b.classList.add('is-on');
     });
 
-    // Клик по маршруту — ПРОКРУТКА к разговору в центральной колонке, и только.
-    // Пройденный разговор лежит свёрнутой строкой: раскрываем её и подводим к ней
-    // глаз. Ни курсор, ни зафиксированные ответы отсюда не двигаются — иначе
-    // маршрут стал бы способом переиграть день.
+    // Клик по маршруту. Текущий этап — прокрутка к нему в рабочей колонке. Пройденный
+    // — открываем вкладку «Мои ответы» и подводим глаз к его блоку: свёрнутых строк
+    // прошлых этапов в рабочей колонке больше нет (дубль столбика, снят 06.08), и без
+    // этой ветки клик по пройденному этапу молча не делал бы ничего. Ни курсор, ни
+    // зафиксированные ответы отсюда не двигаются — иначе маршрут стал бы способом
+    // переиграть день.
     el('routeBody').addEventListener('click', function (e) {
       var b = e.target.closest && e.target.closest('[data-rstep]');
       if (!b) return;
       var si = Number(b.getAttribute('data-rstep'));
-      var scroller = el('talkScroll');
       var cur = route[state.cursor];
-      var target = (cur && si === cur.sceneIx)
-        ? el('talkCurrent')
-        : el('talkHistory').querySelectorAll('.talk-past')[si];
-      if (!target) return;
-      if (target.tagName === 'DETAILS') target.open = true;
-      scroller.scrollTop += target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
+      if (cur && si === cur.sceneIx) {
+        var scroller = el('talkScroll'), target = el('talkCurrent');
+        if (!target) return;
+        scroller.scrollTop += target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
+        return;
+      }
+      setTab('answers');
+      var name = S.scenes[si] && S.scenes[si].name;
+      if (!name) return;
+      var host = el('supAnswersBody');
+      var hit = [].slice.call(host.querySelectorAll('.recap-q')).filter(function (q) {
+        return q.textContent.indexOf(name) === 0;
+      })[0];
+      if (!hit) return;
+      var sc2 = el('supAnswers');
+      sc2.scrollTop += hit.getBoundingClientRect().top - sc2.getBoundingClientRect().top - 8;
     });
 
     // Обработчика «Скрыть материалы» здесь больше нет: кнопка снята из шапки
@@ -1583,38 +1594,17 @@
 
     var curSceneIx = cur ? cur.sceneIx : S.scenes.length - 1;
 
-    // Прошлые разговоры — свёрнутыми строками. Двенадцать экранов прокрутки,
-    // чтобы вспомнить, что сказал в первом разговоре, — это налог на память.
-    S.scenes.forEach(function (sc, si) {
-      if (si >= curSceneIx) return;
-      var det = document.createElement('details');
-      det.className = 'talk-past';
-      var answered = sc.acts.filter(function (a) {
-        return (a.kind === 'window' && state.answersAt[a.save]) ||
-               (a.kind === 'mechanic' && state.mechAt && state.mechAt[a.mech]);
-      }).length;
-      det.innerHTML = '<summary><span class="talk-past-mark">✓</span> Этап ' + (si + 1) + ' · ' + esc(sc.name) +
-        '<span class="talk-past-meta">' + (answered ? answered + (answered === 1 ? ' ответ' : ' ответа') : 'пройден') + '</span></summary>';
-      var body = document.createElement('div');
-      body.className = 'talk-past-body';
-      sc.acts.forEach(function (a) {
-        if (!applies(a)) return;
-        if (a.kind === 'speech') body.innerHTML += speechHtml(a);
-        else if (a.kind === 'window' && state.answersAt[a.save]) {
-          body.innerHTML += '<div class="win-label-past">' + esc(a.label) + '</div>' +
-            meHtml(state.answers[a.save], state.answersAt[a.save]);
-        }
-        // Механики в свёрнутом разговоре — сводкой (locked), а не пустотой: до
-        // этой правки прошлый разговор с тремя механиками раскрывался в одни
-        // реплики Агеева, и участник не видел там ни своих тезисов, ни разбора.
-        else if (a.kind === 'mechanic' && state.mechAt && state.mechAt[a.mech]) {
-          body.innerHTML += '<div class="win-label-past">' + esc(mechTitle(a.mech)) + '</div>' +
-            '<div class="bl-locked">' + mechAnswerHtml(a.mech) + '</div>';
-        }
-      });
-      det.appendChild(body);
-      hist.appendChild(det);
-    });
+    // ⚠ СВЁРНУТЫХ СТРОК ПРОШЛЫХ ЭТАПОВ ЗДЕСЬ БОЛЬШЕ НЕТ (решение владельца 06.08:
+    // «эта информация дублирует этапы ассессмента — непонятно зачем»). Строка
+    // «✓ Этап 2 · Кабинет Агеева · 3 ответа» повторяла ровно то, что стоит в столбике
+    // этапов слева, только другими словами и в рабочей колонке, где место текущему
+    // разговору. Пройденное теперь помечено вермилионной галочкой в столбике, а
+    // зафиксированные ответы лежат во вкладке «Мои ответы» — по одному месту на
+    // каждый вид сведений вместо двух на один.
+    // Последствие названо владельцу: реплики персонажей из прошлых этапов
+    // перечитать больше нельзя — во «Моих ответах» лежат ответы участника, а не
+    // чужие слова. Если понадобится, им нужно отдельное место, а не возврат дубля.
+    hist.style.display = 'none';
 
     // ── ДВА ТАКТА ОДНОГО ШАГА: сначала слушаю, потом работаю ──────────────────
     // Решение владельца 06.08. Раньше реплики и рабочая область стояли в одном
