@@ -42,8 +42,10 @@ jobs:
             | python3 -c "import sys,json; a=[x for x in json.load(sys.stdin)['artifacts'] if x['name']=='github-pages']; print(a[0]['id'])")
           echo "артефакт: $art"
 
+          # Без явной audience: Pages ждёт аудиторию владельца (https://github.com/<owner>),
+          # с "github-pages" отвечает 400 Invalid audience.
           jwt=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=github-pages" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL" \
             | python3 -c "import sys,json; print(json.load(sys.stdin)['value'])")
 
           code=$(curl -sS -o resp.json -w '%{http_code}' -X POST \
