@@ -4862,41 +4862,34 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    Правило про «пакет во всю ширину» отсюда снято сознательно: ширина без меры
    бесполезна, а мера без места рядом выглядит случайной. */
 .day-grid.is-reading { grid-template-columns: var(--toc-col) minmax(0, 1fr) minmax(0, 1fr); }
-.day-grid.is-reading > .support { grid-column: 2; }
 .day-grid.is-reading.is-collapsed { grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr); }
-.day-grid.is-reading.is-collapsed > .support { grid-column: 2; }
-/* Шов справа от колонки чтения — там же, где на рабочих экранах шов «разговор |
-   материалы»: он и есть край будущей панели. */
-.day-grid.is-reading > .support { border-right: 1px solid var(--hairline); }
-/* ── ТРЕТЬЯ КОЛОНКА НА ЭКРАНЕ ЧТЕНИЯ: ПОМЕТКИ СВЕРХУ, СПРАВКА СНИЗУ ──
-   Существует только в режиме чтения: на рабочих экранах её место занимает панель
-   материалов, а оба списка возвращаются в свои вкладки (readSideMove в engine.js).
-   Ряды равные и каждый со своей прокруткой: пометок к концу чтения бывает десяток,
-   а справка длинная всегда, и общая прокрутка увезла бы одно вместе с другим. */
-.readside { display: none; }
-.day-grid.is-reading > .readside {
-  /* Верхний ряд — по содержимому, но не больше половины колонки: в начале чтения
-     пометок нет ни одной, и равные ряды дали бы пустую половину экрана под пустым
-     списком. Справка длинная всегда, поэтому остаток забирает она. */
-  display: grid; grid-template-rows: auto minmax(0, 1fr);
-  grid-column: 3; min-height: 0; min-width: 0; background: var(--paper);
+
+/* ── КЕЙС В СЕРЕДИНЕ, ПАНЕЛЬ СПРАВА (класс .is-casewide ставит engine.js) ──
+   Тело кейса и кнопка «Прочитал» переезжают в среднюю колонку, а правая панель
+   остаётся на своём месте со своими вкладками: справка, пометки и ответы работают
+   одинаково на ВСЕХ экранах. Первая версия (утро 06.08) складывала справку и пометки
+   в отдельную колонку с заголовками — тот же материал получал второй механизм, и
+   интерфейс приходилось учить дважды («почему логику не считал», владелец).
+   Вкладка «Кейс» здесь скрыта: пакет и так раскрыт слева от панели. */
+/* ⚠ padding: 0 — ОБЯЗАТЕЛЬНО. .casewide это тег <section>, и на него падает общее
+   лендинговое правило section { padding: 72px 0 }: замер дал 73px пустоты над
+   «Материалами «Искры»». Тем же болели .case-pane, .work-pane и .talk — третий раз
+   один и тот же капкан, поэтому написано здесь прямо. */
+.casewide { display: none; padding: 0; }
+.day-grid.is-casewide > .casewide {
+  display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  grid-column: 2; background: var(--paper);
+  /* шов «пакет | панель» — там же, где на рабочих экранах шов «разговор | материалы» */
+  border-right: 1px solid var(--hairline);
 }
-.readside > .readside-sec:first-child { max-height: 50%; }
-.readside-sec { display: flex; flex-direction: column; min-height: 0; }
-.readside-sec + .readside-sec { border-top: 1px solid var(--hairline); }
-.readside-head {
-  flex: none; padding: 10px var(--frame-pad, 24px) 8px;
-  border-bottom: 1px solid var(--hairline);
-}
-.readside-slot { display: flex; flex-direction: column; min-height: 0; flex: 1; }
-/* Ниже 1360 третьей колонки нет — пакету нужна вся ширина (см. правило выше), и
-   пометки со справкой остаются вкладками, как на рабочих экранах. Возврат вкладок
-   объявлен НЕ здесь, а сразу после базового `.day-grid.is-reading .support-tabs
-   { display: none }`: специфичность одинаковая, и побеждает то правило, что ниже в
-   файле. Ровно на этом уже спотыкались с .toc-restore 04.08. */
-@media (max-width: 1360px) {
-  .day-grid.is-reading > .readside { display: none; }
-}
+.day-grid.is-casewide > .support { grid-column: 3; }
+.day-grid.is-casewide.is-collapsed > .support { grid-column: 3; }
+/* Тело кейса внутри средней колонки видно всегда: правило .support-body:not(.is-on)
+   его бы спрятало, а вкладки «Кейс» на этом экране нет. */
+.day-grid.is-casewide > .casewide > .support-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.day-grid.is-casewide .support-tab[data-tab="case"] { display: none; }
+/* Ниже 1360 переезда нет (engine.js не переносит узел): третьей колонки не существует,
+   пакету нужна вся ширина, и кейс читается вкладкой «Кейс», как на рабочих экранах. */
 /* На ноутбуке оглавление в режиме чтения ОСТАЁТСЯ: колонки работы здесь нет, и
    266px из 1280 оставляют пакету 1014 — больше, чем он получает в три колонки на
    1920. Было grid-template-columns: 1fr, и на ≤1360 участник читал пакет из
@@ -5029,13 +5022,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .support-tab:hover { color: var(--ink); }
 .support-tab.is-on { color: var(--ink); font-weight: 600; border-bottom-color: var(--accent); }
-.day-grid.is-reading .support-tabs { display: none; }
-/* …но ниже 1360 третьей колонки нет, пометки со справкой остаются во вкладках, и
-   вкладки обязаны быть на месте. Правило стоит ЗДЕСЬ, после базового: специфичность
-   та же, решает порядок в файле. */
-@media (max-width: 1360px) {
-  .day-grid.is-reading .support-tabs { display: flex; }
-}
+/* ⚠ ЗДЕСЬ СТОЯЛО `.day-grid.is-reading .support-tabs { display: none }` — снято 06.08.
+   Вкладки на экране чтения нужны: справка, пометки и ответы лежат в панели справа, и
+   работают они там так же, как на рабочих экранах. Прятать ряд вкладок имело смысл
+   только пока панель на этом экране была одним кейсом во всю колонку. Скрыта теперь
+   одна вкладка — «Кейс», и только когда пакет раскрыт в середине (.is-casewide). */
 
 .support-body { display: none; min-height: 0; flex: 1; overflow: hidden; }
 .support-body.is-on { display: flex; flex-direction: column; }
@@ -5115,7 +5106,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    (обе колонки идут сразу за столбиком этапов). Пустота остаётся только справа — то
    есть ровно там, где на следующем экране появится панель материалов. Между экранами
    текст не прыгает, а пустое место заполняется. */
-#supCaseText > * { max-width: calc(66ch + 0px); margin-inline: 0; }
+#supCaseText > * { max-width: 80ch; margin-inline: 0; }
 /* Мера держится КОНТЕЙНЕРОМ, а не каждой статьёй: у .case-content article стоит
    max-width: var(--w-read) в 60ch, и внутри свёртки это давало вторую, более
    узкую рамку — заголовок свёртки шёл по одной ширине, текст по другой. */
@@ -5166,7 +5157,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    действия на экране дня одно — правый низ, — и прыгать между экранами оно не
    должно (решение владельца 04.08). Порядок в разметке [записка, кнопка], значит
    flex-end ставит кнопку у самого края, а записка читается слева от неё. */
-.support > .case-read-foot {
+/* Два селектора, потому что подвал переезжает вместе с телом кейса: выше 1360 он в
+   средней колонке (.casewide), ниже — в панели, где кейс остаётся вкладкой. */
+.support > .case-read-foot,
+.casewide > .case-read-foot {
   flex: none;
   position: static;
   justify-content: flex-end;
@@ -5174,7 +5168,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 14px var(--frame-pad, 56px) 18px;
   background: var(--paper);
 }
-.support > .case-read-foot .win-note { max-width: 340px; }
+.support > .case-read-foot .win-note,
+.casewide > .case-read-foot .win-note { max-width: 340px; }
 /* Пустое примечание не должно держать место и зазор рядом с кнопкой. */
 .win-note:empty { display: none; }
 
@@ -5189,9 +5184,18 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .who-h { margin: 18px 0 8px;
 }
 .who-h:first-child { margin-top: 0; }
-.who-row { display: grid; grid-template-columns: minmax(120px, 34%) 1fr; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--hairline); font-size: var(--fs-dense); line-height: 1.45; }
+/* ⚠ МЕРА СТРОКИ ОДНА НА ВСЮ ПЛАТФОРМУ (правка 06.08 по замечанию владельца: «почему
+   для справки ширина текста не важна, а для кейса важна?»). Было именно так: кейс
+   держал 66 знаков, а определения в справке, выписки в пометках и свои ответы
+   растягивались во всю панель — на 1920 это 880px и около 110 знаков в строке, то
+   есть выше границы WCAG 1.4.8 (80) и вдвое выше оптимума. Правило было в файле, но
+   применено только к кейсу — это и есть «где-то ставлю жёстко, где-то нарушаю».
+   Теперь мера на ВСЕХ бегущих строках панели; таблицы приложений в кейсе остаются
+   исключением и читаются во всю ширину — их читают глазом по столбцам, а не строкой.
+   Колонка терминов не трогается: мера нужна определению, а термин — это ярлык. */
+.who-row { display: grid; grid-template-columns: minmax(120px, 34%) minmax(0, 1fr); gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--hairline); font-size: var(--fs-dense); line-height: 1.45; }
 .who-row b { font-weight: 600; }
-.who-row span { color: var(--muted); }
+.who-row span { color: var(--muted); max-width: 80ch; }
 
 /* ── разговор (ЦЕНТРАЛЬНАЯ колонка с 05.08) ── */
 .talk {
@@ -5354,13 +5358,19 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   background: var(--soft); font-size: var(--fs-dense); line-height: 1.55; color: var(--muted);
 }
 
+/* Мера — та же, что у кейса и справки (см. .who-row): выписка и своя строка это
+   бегущий текст, и на широком окне они шли на 110 знаков в строке. Поле под выписку
+   не шире самой выписки: иначе оно обещает строку, которую неудобно читать. */
 .mark-item { padding: 12px 0; border-bottom: 1px solid var(--hairline); }
+/* ⚠ Мера ставится на САМИХ строках, а не на .mark-item: ch считается по кеглю
+   элемента, и 66ch у обёртки (16px) давали 75 знаков внутри выписки (14px) — замер.
+   Тот же капкан уже был у .appx-divider в кейсе. */
 .mark-quote {
   margin: 0 0 8px; padding-left: 12px; border-left: 2px solid var(--accent);
-  font-size: var(--fs-dense); line-height: 1.55; color: var(--ink);
+  font-size: var(--fs-dense); line-height: 1.55; color: var(--ink); max-width: 80ch;
 }
 .mark-note {
-  width: 100%; resize: vertical; padding: 8px 10px; border: 1px solid var(--hairline);
+  width: 100%; max-width: 80ch; resize: vertical; padding: 8px 10px; border: 1px solid var(--hairline);
   border-radius: var(--radius); font: inherit; font-size: var(--fs-dense); line-height: 1.5;
   background: var(--paper);
 }
@@ -5400,7 +5410,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .day-grid.is-reading #supCaseText article > ul,
 .day-grid.is-reading #supCaseText article > ol,
 .day-grid.is-reading #supCaseText article > blockquote {
-  max-width: var(--w-read);
+  max-width: 80ch;
 }
 
 /* ── действие: у нижнего края колонки, справа, вне прокрутки ──

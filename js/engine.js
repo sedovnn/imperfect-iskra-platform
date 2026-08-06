@@ -452,7 +452,6 @@
     });
     if (name === 'answers') renderAnswersTab();
     if (name === 'marks') renderMarks();
-    renderToc();
   }
 
   // ---------- пометки ----------
@@ -777,59 +776,15 @@
   // Показать/скрыть нижнюю половину левой колонки (оглавление текущей вкладки).
   // Скрывается вместе с подписью: пустая подпись занимает место и обещает список,
   // которого нет.
-  function setTocVisible(on) {
-    var sub = document.querySelector('.dayside-sub'), body = el('tocBody');
-    if (sub) sub.style.display = on ? '' : 'none';
-    if (body) body.style.display = on ? '' : 'none';
-  }
-
-  function renderToc() {
-    var kicker = el('tocKicker'), body = el('tocBody');
-    if (!kicker || !body) return;
-    if (supportTab === 'case') {
-      // ⚠ ОГЛАВЛЕНИЯ КЕЙСА ЗДЕСЬ БОЛЬШЕ НЕТ (решение владельца 06.08). Разделы
-      // сворачиваются в самом пакете, и свёрнутые заголовки и есть оглавление —
-      // список, который невозможно рассинхронизировать с текстом. Четвёртая зона на
-      // экране (этапы · работа · оглавление · кейс) была перебором.
-      // Нижняя половина колонки при этом СКРЫВАЕТСЯ целиком: подпись «Материалы» над
-      // строкой «разделы сворачиваются справа» — это зона, занятая объяснением
-      // отсутствия зоны.
-      setTocVisible(false);
-      return;
-    }
-    setTocVisible(true);
-    if (supportTab === 'marks') {
-      kicker.textContent = 'Пометки';
-      var ms = state.marks || [];
-      body.innerHTML = ms.length
-        ? ms.map(function (m, i) {
-            var t = m.quote.length > 46 ? m.quote.slice(0, 46) + '…' : m.quote;
-            return '<button type="button" class="toc-link" data-markjump="' + m.id + '">' + esc(t) + '</button>';
-          }).join('')
-        : '<p class="bl-empty">Пока ничего.</p>';
-      return;
-    }
-    if (supportTab === 'ref') {
-      kicker.textContent = 'Справка';
-      body.innerHTML =
-        '<button type="button" class="toc-link" data-ref="ref-terms">Термины</button>' +
-        '<button type="button" class="toc-link" data-ref="ref-people">Люди</button>' +
-        '<button type="button" class="toc-link" data-ref="ref-things">Компании и продукты</button>';
-      return;
-    }
-    kicker.textContent = 'Зафиксировано';
-    // ⚠ Механики считаются наравне с окнами: их семь из двенадцати, и по одному
-    // answersAt в этом списке было видно максимум пять записей из двенадцати —
-    // участник не находил во «Моих ответах» того, что только что сделал.
-    var links = '';
-    S.windows().forEach(function (w, i) {
-      var fixed = w.mech ? !!(state.mechAt && state.mechAt[w.mech]) : !!state.answersAt[w.save];
-      if (!fixed) return;
-      var title = w.mech ? mechTitle(w.mech) : w.label;
-      links += '<button type="button" class="toc-link" data-ans="' + i + '">' + esc(title) + '</button>';
-    });
-    body.innerHTML = links || '<p class="bl-empty">Пока ничего.</p>';
-  }
+  // ⚠ ОГЛАВЛЕНИЯ ОТКРЫТОЙ ВКЛАДКИ В ЛЕВОЙ КОЛОНКЕ БОЛЬШЕ НЕТ (решение владельца
+  // 06.08: «слева ТОЛЬКО этапы ассессмента»). Здесь были setTocVisible() и
+  // renderToc(), рисовавшие второй список — навигатор по вкладке, открытой справа
+  // («Пометки», «Справка», «Зафиксировано»). Этого никто не просил, и это то же
+  // смешение столбика этапов с оглавлением материалов, которое владелец запретил при
+  // разборе пути. Навигация не потеряна: по пакету — свёрнутые разделы в самом кейсе,
+  // по пометкам и ответам — сами списки в своей вкладке.
+  // Функции удалены целиком, а не оставлены пустыми: мёртвый код, который некому
+  // вызвать, дороже отсутствующего.
 
   function refHtml() {
     var R = S.reference || { terms: [], people: [], things: [] };
@@ -867,32 +822,8 @@
     });
 
 
-    // Прокрутка по оглавлению: внутри колонки, не по хэшу — хэш увёл бы страницу.
-    el('tocBody').addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('.toc-link');
-      if (!b) return;
-      var host = null, target = null;
-      if (b.dataset.markjump) {
-        var mk = (state.marks || []).filter(function (x) { return x.id === b.dataset.markjump; })[0];
-        if (mk) showMarkInCase(mk.quote);
-        return;
-      }
-      if (b.dataset.target) {
-        host = el('supCaseText'); target = host.querySelector('#' + b.dataset.target);
-        if (target) openCaseBlockOf(target);
-      }
-      else if (b.dataset.ref) { host = el('supRef'); target = host.querySelector('#' + b.dataset.ref); }
-      else if (b.dataset.ans) {
-        host = el('supRef') && supportTab === 'answers' ? el('supAnswers') : el('supAnswers');
-        var items = host.querySelectorAll('.recap-item');
-        target = b.dataset.ans === 'picks' ? items[items.length - 1] : items[Number(b.dataset.ans)];
-      }
-      if (!host || !target) return;
-      var scroller = host.classList.contains('support-body') ? host : host;
-      scroller.scrollTop += target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
-      el('tocBody').querySelectorAll('.toc-link').forEach(function (x) { x.classList.remove('is-on'); });
-      b.classList.add('is-on');
-    });
+    // Обработчика оглавления в левой колонке здесь больше нет: списка нет, кликать
+    // нечего (см. комментарий на месте renderToc выше).
 
     // Клик по маршруту. Текущий этап — прокрутка к нему в рабочей колонке. Пройденный
     // — открываем вкладку «Мои ответы» и подводим глаз к его блоку: свёрнутых строк
@@ -928,7 +859,6 @@
 
     loadCaseIntoSupport();
     initMarks();
-    renderToc();
   }
 
   // Введение в роль над пакетом. Текст берётся из S.system.lead — того же блока,
@@ -996,8 +926,6 @@
   //    элемент по id, поэтому id переносится на <details>, а не теряется.
   //  · ПЕРВЫЙ РАЗДЕЛ ОТКРЫТ (решение владельца): закрытый целиком список на первом
   //    экране чтения выглядел бы как пустой экран.
-  var caseTocHtml = '';   // остаётся для прочих вкладок; для кейса больше не строится
-
   function buildCaseAccordion() {
     var host = el('supCaseText');
     var arts = [].slice.call(host.querySelectorAll('article[id]'));
@@ -1043,8 +971,6 @@
       });
     }
 
-    caseTocHtml = '';
-    renderToc();
   }
 
   // Раскрыть свёртку, внутри которой лежит узел: переход по пометке или по ссылке
@@ -1591,54 +1517,71 @@
 
   // ---------- рендер ----------
 
-  // ── ПОМЕТКИ И СПРАВКА НА ЭКРАНЕ ЧТЕНИЯ: ПЕРЕЕЗД В ТРЕТЬЮ КОЛОНКУ ──────────────
-  // Решение владельца 06.08: пока рабочей области нет, третья колонка стояла пустой
-  // «под будущий разговор». Переносим САМИ узлы (#supMarks, #supRef), а не копии: на
-  // #supMarksBody висят обработчики удаления, заметки и перетаскивания пометки на
-  // карточку тезиса, и вторая копия разошлась бы с первой на первом же действии.
-  function readSideMove(on) {
-    var side = el('readSide'), sup = el('supportPane');
-    if (!side || !sup) return;
-    var marks = el('supMarks'), ref = el('supRef');
-    if (!marks || !ref) return;
-    // ⚠ Ниже 1360 третьей колонки на экране чтения НЕТ: пакету там нужна вся ширина
-    // (то же правило, по которому на ноутбуке исчезает колонка работы). Значит и
-    // переносить нечего — иначе оба списка уехали бы в скрытую колонку, а вкладки
-    // «Справка» и «Пометки» открывались бы пустыми. Порог один и тот же в CSS и здесь.
+  // ── ЭКРАН ЧТЕНИЯ: КЕЙС РАСКРЫВАЕТСЯ В СЕРЕДИНЕ, ПАНЕЛЬ ОСТАЁТСЯ СПРАВА ────────
+  // Решение владельца 06.08 и правка того же дня. Сначала я вынес справку и пометки в
+  // отдельную колонку с заголовками — и это была ошибка: на рабочих экранах то же
+  // содержимое живёт вкладками, то есть один материал получал два механизма, и
+  // интерфейс приходилось учить дважды. Правильно наоборот: правая панель со своими
+  // вкладками стоит на месте всегда, а на время чтения в середину переезжает ТЕЛО
+  // КЕЙСА (#supCase) вместе с кнопкой «Прочитал». Вкладка «Кейс» на этом экране
+  // скрыта — пакет и так перед глазами.
+  // Переносим сам узел, а не копию: на нём висят кнопка отметки у выделения, ссылки
+  // на приложения и подсветка выписок; вторая копия разошлась бы с первой сразу.
+  function caseWideMove(on) {
+    var wide = el('caseWide'), sup = el('supportPane'), g = el('dayGrid');
+    if (!wide || !sup) return;
+    var body = el('supCase'), foot = el('caseReadFoot');
+    if (!body) return;
+    // ⚠ Ниже 1360 третьей колонки нет: пакету нужна вся ширина (то же правило, по
+    // которому на ноутбуке исчезает колонка работы). Значит переезда тоже нет —
+    // кейс читается вкладкой «Кейс» в панели, как на рабочих экранах. Порог один и
+    // тот же здесь и в CSS.
     if (on && !window.matchMedia('(min-width: 1361px)').matches) on = false;
     if (on) {
-      el('readSlotMarks').appendChild(marks);
-      el('readSlotRef').appendChild(ref);
-    } else {
-      // Возврат на прежние места: пометки и справка стоят между кейсом и ответами,
-      // порядок вкладок (кейс · справка · пометки · ответы) обязан совпадать с
-      // порядком узлов — иначе tab и скринридер пойдут не так, как глаз.
-      var answers = el('supAnswers');
-      sup.insertBefore(ref, answers);
-      sup.insertBefore(marks, answers);
+      wide.appendChild(body);
+      if (foot) wide.appendChild(foot);
+    } else if (body.parentNode !== sup) {
+      // Возврат на место: тело кейса — первое в панели, порядок узлов обязан
+      // совпадать с порядком вкладок (кейс · справка · пометки · ответы), иначе tab
+      // и скринридер пойдут не так, как глаз. Подвал чтения — последним.
+      sup.insertBefore(body, el('supRef'));
+      if (foot) sup.appendChild(foot);
     }
-    // Класс, а не style: вкладочные тела прячутся правилом .support-body:not(.is-on),
-    // и в колонке чтения им нужно быть видимыми независимо от выбранной вкладки.
-    marks.classList.toggle('is-aside', !!on);
-    ref.classList.toggle('is-aside', !!on);
+    if (g) g.classList.toggle('is-casewide', !!on);
   }
 
   // Окно перетащили через порог 1360 посреди чтения — переезд надо пересобрать,
-  // иначе списки остаются в колонке, которой на этой ширине уже нет.
+  // иначе кейс остаётся в колонке, которой на этой ширине уже нет.
   window.addEventListener('resize', function () {
     var g = el('dayGrid');
-    if (g && g.classList.contains('is-reading')) readSideMove(true);
+    if (!g) return;
+    if (g.classList.contains('is-reading')) caseWideMove(true);
   });
+
+  var wasReading = false;
 
   function readingMode(on, act) {
     var g = el('dayGrid');
     g.classList.toggle('is-reading', !!on);
-    readSideMove(!!on);
+    caseWideMove(!!on);
     el('caseReadFoot').style.display = on ? '' : 'none';
     var intro = el('caseIntro');
     if (intro) intro.style.display = on ? '' : 'none';
-    if (!on) return;
-    setTab('case');
+    if (!on) {
+      // Уход с чтения в работу: при чтении открыты были пометки, а вкладка «Кейс»
+      // скрыта — теперь она вернулась, и открыть надо её. Ровно ОДИН раз на переходе:
+      // render() зовёт readingMode(false) на каждом шаге, и без флага выбор вкладки
+      // участника сбрасывался бы после каждого ответа.
+      if (wasReading) setTab('case');
+      wasReading = false;
+      return;
+    }
+    wasReading = true;
+    // Какая вкладка открыта в панели справа. Кейс переехал в середину, значит его
+    // вкладка на этом экране скрыта, и открытой должна быть та, что при чтении и
+    // нужна, — пометки: это единственное, что участник тут производит сам. Если
+    // переезда не было (ниже 1360), кейс читается вкладкой, и открыт он.
+    setTab(g.classList.contains('is-casewide') ? 'marks' : 'case');
     // Шапка пакета: что это за пакет (act.lead) и как работают пометки (act.marks).
     // Только на экране чтения — в панели рядом с разговором эта строка была бы
     // инструкцией, которую участник уже прочитал, на месте, где ему нужен текст.
@@ -1812,7 +1755,6 @@
     if (window.imp && window.imp.typoDom) window.imp.typoDom(now);
     if (supportTab === 'answers') renderAnswersTab();
     renderRoute();
-    renderToc();
     // Прокрутка: начало текущего разговора — к верху колонки. Считаем по rect'ам,
     // а не по offsetTop: offsetTop меряется от позиционированного предка, и первая
     // версия увозила шапку сцены за экран.
