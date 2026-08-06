@@ -4596,7 +4596,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .setup-card { max-width: 760px; text-align: left; }
 .setup-card p { text-align: left; }
 .setup-rules { margin: 18px 0 0; padding-left: 20px; }
-.setup-rules li { margin-bottom: 10px; font-size: var(--fs-read); line-height: 1.6; }
+.setup-rules li { margin-bottom: 10px; font-size: var(--fs-read); line-height: 1.6; max-width: 66ch; }
 
 /* Номер участника в шапке дня. Свой класс, а не общий .bib: тот рисует тёмную
    плашку с вермилионовым текстом — элемент брендированных экранов (DESIGN.md
@@ -4809,27 +4809,12 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    Поймано прототипом на 1280 — кейс был 0px, работа занимала половину экрана. */
 .day-grid.is-collapsed { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .day-grid.is-collapsed > .dayside { display: none; }
-/* СВЁРНУТАЯ ПРАВАЯ КОЛОНКА. Симметрично левой: колонка исчезает, а её место
-   забирает рабочая область — минус одна колонка в шаблоне, а не нулевая ширина
-   (нулевая оставляла бы шов и отступы). */
-.day-grid.is-memoff { grid-template-columns: var(--toc-col) minmax(0, 1fr); }
-.day-grid.is-memoff.is-collapsed { grid-template-columns: minmax(0, 1fr); }
-.day-grid.is-memoff > .support { display: none; }
-/* Пока материалы свёрнуты, шов справа у рабочей колонки не нужен: справа от неё
-   уже край окна. */
-.day-grid.is-memoff > .talk { border-right: none; }
-.mem-collapse {
-  margin-left: auto; border: none; background: none; cursor: pointer; padding: 2px 4px;
-  font: inherit; font-size: var(--fs-util); color: var(--muted-soft); align-self: center;
-}
-.mem-collapse:hover { color: var(--ink); }
-.mem-restore {
-  display: none; align-items: center; border: 1px solid var(--hairline); background: var(--paper);
-  border-radius: var(--radius); cursor: pointer; font: inherit; font-size: var(--fs-util); color: var(--muted);
-  padding: 4px 10px; margin: 8px var(--frame-pad, 24px) 0 auto;
-}
-.day-grid.is-memoff .mem-restore { display: inline-flex; }
-.day-grid.is-memoff .mem-restore:hover { color: var(--ink); }
+/* ⚠ СВОРАЧИВАНИЯ ПРАВОЙ ПАНЕЛИ ЗДЕСЬ БОЛЬШЕ НЕТ (решение владельца 06.08). Я завёл
+   его этапом B «симметрично левому», и получилось три «свернуть» в одном углу:
+   у панели, у аккордеона («свернуть всё») и у каждого раздела. Панель с кейсом,
+   справкой, пометками и ответами — то, ради чего экран и разделён; прятать её
+   незачем, а лишний повтор слова стоил внимания. Осталось одно сворачивание —
+   столбик этапов слева, — и «развернуть/свернуть всё» внутри пакета. */
 /* Класса .is-nomem больше нет: кнопка «Скрыть материалы» снята из шапки 04.08 по
    решению владельца — на этом этапе она не нужна, а середина (кейс, ответы,
    пометки, справка) обязана быть под рукой всегда. Правила скрытия середины
@@ -5150,6 +5135,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 
 /* ── разговор (ЦЕНТРАЛЬНАЯ колонка с 05.08) ── */
 .talk {
+  /* ⚠ ЛЕНДИНГОВЫЙ ОТСТУП СНЯТ. .talk — тег <section>, и на него падало общее правило
+     section { padding: 72px 0 } из лендинговой части системы: 72px пустоты над шапкой
+     сцены и 72px под рядом действия. Ровно от этого уже лечили .case-pane и
+     .work-pane (см. «снять лендинговый отступ» выше) — рабочую колонку тогда
+     пропустили, и владелец увидел это на снимке 06.08: «над словом материалами
+     пустота для кого» и «отправить Агееву отчерчено с огромной пустотой снизу». */
+  padding: 0;
   display: flex; flex-direction: column; min-height: 0; min-width: 0;
   /* Шов «работа | опора». Линию рисует левый сосед шва (см. .support): работа
      стоит между оглавлением и опорой, поэтому линия у неё справа. В режиме
@@ -5157,7 +5149,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
      «оглавление | опора» остаётся один, от .dayside. */
   border-right: 1px solid var(--hairline);
 }
-.talk-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 18px var(--frame-pad, 40px) 64px; }
+.talk-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 18px var(--frame-pad, 40px) 24px; }
+/* Первая шапка сцены в колонке не отбивается сверху: 38px нужны как РАЗДЕЛИТЕЛЬ
+   между разговорами, а над первым разговором отбивать нечего — там край колонки. */
+#talkCurrent > .sc-head:first-child { margin-top: 4px; }
 
 /* прошлые разговоры — строкой, а не двенадцатью экранами прокрутки */
 .talk-past { border-bottom: 1px solid var(--hairline); }
@@ -5362,9 +5357,14 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    экране висела слева посреди текста: за один день участник видел действие то
    слева, то справа, то в середине и искал его заново на каждом шаге. */
 .interlude-body {
-  flex: 1; min-height: 0;
-  display: flex; flex-direction: column; justify-content: center;
-  padding: 0 var(--frame-pad, 24px);
+  /* ⚠ ВЫКЛЮЧКА ПО ВЕРХУ, А НЕ ПО ЦЕНТРУ (правка 06.08). Текст перехода стоял по
+     центру рабочей области, и на 1030px это давало по 300px пустоты сверху и снизу,
+     а глаз прыгал: на всех остальных экранах содержимое начинается у верхнего края,
+     здесь — в середине. Ради «вдоха» между этапами достаточно короткого текста и
+     пустого места ПОД ним; прыжок глаза «вдоху» не помогает. */
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; flex-direction: column; justify-content: flex-start;
+  padding: 22px var(--frame-pad, 24px) 24px;
 }
 .interlude-in { max-width: var(--w-read); }
 .interlude-act {
@@ -5564,8 +5564,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Значок состояния — плюс/минус текстом, а не стрелка-глиф: стрелка в этой
    гарнитуре съезжает по базовой линии, а знак стоит ровно. */
 .case-sum-mark { margin-left: auto; flex: none; color: var(--muted-soft); font-size: var(--fs-util); }
-.case-sum-mark::before { content: 'развернуть  +'; }
-.case-block[open] > .case-sum .case-sum-mark::before { content: 'свернуть  −'; }
+/* Знак, а не слово: разделов семнадцать, и «развернуть» семнадцать раз — шум.
+   Словами это сказано один раз, в полосе управления над пакетом. */
+.case-sum-mark::before { content: '+'; }
+.case-block[open] > .case-sum .case-sum-mark::before { content: '−'; }
+.case-sum-mark { font-size: var(--fs-read); line-height: 1; }
 .case-block[open] > .case-sum { border-bottom: 1px solid var(--soft); }
 .case-sum:hover .case-sum-mark { color: var(--ink); }
 .case-block > article { padding: 4px 0 18px; }
@@ -5585,13 +5588,17 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--ink);
   font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
 }
-.prin .t { font-size: 15px; line-height: 1.5; color: var(--ink); }
+/* Мера строки на экранах перед стартом: страница 760px, и при кегле 15px строка
+   набегала на 76 знаков — на волосок выше нормы (45–75, потолок WCAG 80). Заголовкам
+   ширина нужна, бегущему тексту — нет, поэтому мера стоит на самом тексте. */
+.prin .t { font-size: 15px; line-height: 1.5; color: var(--ink); max-width: 68ch; }
 .prin .t b { font-weight: 700; }
 /* «про ИИ» — единственный акцент-блок: это важно проговорить прямо */
 .prin.accent .n { border-color: var(--accent); color: var(--accent); }
 /* Логистика — та же секция, но без нумерации: нумерованное = принципы,
    ненумерованное = справка. Различие намеренное, а не «дописали в конце». */
 .intro-note { padding: 13px 0; border-top: 1px solid var(--hairline); font-size: 15px; line-height: 1.5; color: var(--muted); }
+.intro-note > *, .intro-note { max-width: 68ch; }
 .intro-note:first-of-type { border-top: none; }
 .intro-note b { color: var(--ink); font-weight: 700; }
 .intro-disclaimer { margin-top: 28px; font-size: 15px; line-height: 1.5; color: var(--muted); }

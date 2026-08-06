@@ -786,12 +786,6 @@
       el('dayGrid').classList.add('is-tocon');
     });
 
-    // Сворачивание ПРАВОЙ колонки. Симметрично левой и по той же причине: рабочая
-    // область — то, что участник делает, и когда нужно место, место обязано
-    // находиться. Материалы при этом никуда не деваются: одна кнопка возвращает.
-    var mc = el('memCollapse'), mr = el('memRestore');
-    if (mc) mc.addEventListener('click', function () { el('dayGrid').classList.add('is-memoff'); });
-    if (mr) mr.addEventListener('click', function () { el('dayGrid').classList.remove('is-memoff'); });
 
     // Прокрутка по оглавлению: внутри колонки, не по хэшу — хэш увёл бы страницу.
     el('tocBody').addEventListener('click', function (e) {
@@ -1493,11 +1487,10 @@
   function caseDoneBlock(act) {
     var d = document.createElement('div');
     d.className = 's2-block case-done';
-    d.innerHTML = '<span class="case-done-mark">✓</span> ' + esc(act.done || 'Пакет материалов прочитан') +
-      ' · <button type="button" class="case-done-reopen" id="caseReopen">' + esc(act.reopen || 'открыть снова') + '</button>';
-    d.querySelector('#caseReopen').addEventListener('click', function () {
-      setTab('case');
-    });
+    // ⚠ ССЫЛКИ «ОТКРЫТЬ СНОВА» ЗДЕСЬ БОЛЬШЕ НЕТ (решение владельца 06.08). Она
+    // переключала правую панель на вкладку «Кейс» — а пакет и так открыт справа на
+    // этой самой вкладке. То есть кнопка предлагала сделать то, что уже сделано.
+    d.innerHTML = '<span class="case-done-mark">✓</span> ' + esc(act.done || 'Пакет материалов прочитан');
     return d;
   }
 
