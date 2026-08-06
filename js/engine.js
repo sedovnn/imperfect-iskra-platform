@@ -474,6 +474,7 @@
     saveState();
     renderMarks();
     markCount();
+    paintMarks();
   }
 
   function markCount() {
@@ -536,6 +537,83 @@
     setTimeout(function () { target.classList.remove('mark-flash'); }, 1200);
   }
 
+  // ── ОТМЕТКА ВИДНА В САМОМ ТЕКСТЕ ─────────────────────────────────────────────
+  // До 06.08 выписка появлялась в списке, а в кейсе не оставалось ничего: участник
+  // отмечал фрагмент и следа не видел («в самом кейсе ничего не отмечается» —
+  // владелец). Подсветка НЕ хранится и не якорится: она рисуется по тексту выписки
+  // при каждом показе. Так решение «пометка — выписка, а не указатель в текст»
+  // остаётся в силе — смена версии кейса ничего не ломает, ненайденный фрагмент
+  // просто не подсвечен, — а след при этом виден.
+  function unpaintMarks(host) {
+    var old = host.querySelectorAll('.case-mk');
+    for (var i = 0; i < old.length; i++) {
+      var m = old[i], p = m.parentNode;
+      while (m.firstChild) p.insertBefore(m.firstChild, m);
+      p.removeChild(m);
+      p.normalize();
+    }
+  }
+
+  function paintOneMark(host, m) {
+    var nodes = [], full = '';
+    var w = document.createTreeWalker(host, NodeFilter.SHOW_TEXT, null), n;
+    while ((n = w.nextNode())) {
+      var par = n.parentNode;
+      if (par && par.closest && par.closest('.case-mk')) continue;
+      nodes.push({ node: n, at: full.length });
+      full += n.nodeValue;
+    }
+    // В выписке пробелы нормализованы (одиночные), в разметке кейса — переводы строк
+    // и отступы. Поэтому ищем выражением, где любой пробел сходится с любым.
+    var re;
+    try {
+      re = new RegExp(String(m.quote).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\s+/g, '\\s+'));
+    } catch (e) { return; }
+    var hit = re.exec(full);
+    if (!hit) return;
+    var from = hit.index, to = from + hit[0].length;
+    // Красим КУСКАМИ и с конца: выделение могло пересечь ссылку или <b>, и один
+    // <mark> на весь диапазон surroundContents не пустит; идти назад обязательно,
+    // потому что splitText сдвигает всё, что после него.
+    for (var i = nodes.length - 1; i >= 0; i--) {
+      var it = nodes[i], s = it.at, e2 = s + it.node.nodeValue.length;
+      if (e2 <= from || s >= to) continue;
+      var a = Math.max(0, from - s), b = Math.min(it.node.nodeValue.length, to - s);
+      var node = it.node;
+      if (b < node.nodeValue.length) node.splitText(b);
+      if (a > 0) node = node.splitText(a);
+      var mk = document.createElement('mark');
+      mk.className = 'case-mk';
+      mk.setAttribute('data-mk', m.id);
+      node.parentNode.insertBefore(mk, node);
+      mk.appendChild(node);
+    }
+  }
+
+  function paintMarks() {
+    var host = el('supCaseText');
+    if (!host) return;
+    unpaintMarks(host);
+    var list = (state.marks || []).slice();
+    if (!list.length) return;
+    // Длинные выписки красим первыми: короткая внутри длинной иначе разрезала бы её,
+    // и вложенные <mark> дали бы двойной фон.
+    list.sort(function (a, b) { return String(b.quote).length - String(a.quote).length; });
+    list.forEach(function (m) { paintOneMark(host, m); });
+  }
+
+  // Клик по подсветке — путь обратно, от текста к своей выписке. На экране чтения
+  // пометки стоят в третьей колонке и уже видны, поэтому вкладку там не трогаем.
+  function focusMark(id) {
+    var item = document.querySelector('.mark-item[data-mark="' + id + '"]');
+    if (!el('dayGrid').classList.contains('is-reading')) setTab('marks');
+    item = document.querySelector('.mark-item[data-mark="' + id + '"]');
+    if (!item) return;
+    item.scrollIntoView({ block: 'nearest' });
+    item.classList.add('is-hit');
+    setTimeout(function () { item.classList.remove('is-hit'); }, 1400);
+  }
+
   function initMarks() {
     var pop = el('markPop'), addBtn = el('markBarAdd'), host = el('supCaseText');
     var pending = '';
@@ -586,8 +664,10 @@
     // Возврат из приложения на строку чтения.
     var back = el('caseBackAct');
     if (back) back.addEventListener('click', backToReading);
-    // Ссылки на приложения в тексте кейса.
+    // Ссылки на приложения в тексте кейса и путь от подсветки к своей выписке.
     host.addEventListener('click', function (e) {
+      var mk = e.target.closest && e.target.closest('.case-mk');
+      if (mk) { focusMark(mk.getAttribute('data-mk')); return; }
       var a = e.target.closest && e.target.closest('[data-appx]');
       if (!a) return;
       e.preventDefault();
@@ -599,7 +679,7 @@
       var show = e.target.getAttribute && e.target.getAttribute('data-show');
       if (del) {
         state.marks = (state.marks || []).filter(function (m) { return m.id !== del; });
-        saveState(); renderMarks(); markCount(); return;
+        saveState(); renderMarks(); markCount(); paintMarks(); return;
       }
       if (show) {
         var m = (state.marks || []).filter(function (x) { return x.id === show; })[0];
@@ -891,6 +971,10 @@
       buildCaseAccordion();
       linkAppendices();
       if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
+      // Подсветка выписок — ПОСЛЕ типографа: он переставляет пробелы и переносы, и
+      // покрашенные до него куски пришлось бы искать заново. Нужна и при возврате в
+      // начатый прогон: пометки в состоянии есть, а текст только что загружен.
+      paintMarks();
     }, function () {
       host.innerHTML = '<p class="fac-detail-text">Не удалось загрузить материалы — проверьте соединение и обновите страницу.</p>';
     });
@@ -1507,9 +1591,49 @@
 
   // ---------- рендер ----------
 
+  // ── ПОМЕТКИ И СПРАВКА НА ЭКРАНЕ ЧТЕНИЯ: ПЕРЕЕЗД В ТРЕТЬЮ КОЛОНКУ ──────────────
+  // Решение владельца 06.08: пока рабочей области нет, третья колонка стояла пустой
+  // «под будущий разговор». Переносим САМИ узлы (#supMarks, #supRef), а не копии: на
+  // #supMarksBody висят обработчики удаления, заметки и перетаскивания пометки на
+  // карточку тезиса, и вторая копия разошлась бы с первой на первом же действии.
+  function readSideMove(on) {
+    var side = el('readSide'), sup = el('supportPane');
+    if (!side || !sup) return;
+    var marks = el('supMarks'), ref = el('supRef');
+    if (!marks || !ref) return;
+    // ⚠ Ниже 1360 третьей колонки на экране чтения НЕТ: пакету там нужна вся ширина
+    // (то же правило, по которому на ноутбуке исчезает колонка работы). Значит и
+    // переносить нечего — иначе оба списка уехали бы в скрытую колонку, а вкладки
+    // «Справка» и «Пометки» открывались бы пустыми. Порог один и тот же в CSS и здесь.
+    if (on && !window.matchMedia('(min-width: 1361px)').matches) on = false;
+    if (on) {
+      el('readSlotMarks').appendChild(marks);
+      el('readSlotRef').appendChild(ref);
+    } else {
+      // Возврат на прежние места: пометки и справка стоят между кейсом и ответами,
+      // порядок вкладок (кейс · справка · пометки · ответы) обязан совпадать с
+      // порядком узлов — иначе tab и скринридер пойдут не так, как глаз.
+      var answers = el('supAnswers');
+      sup.insertBefore(ref, answers);
+      sup.insertBefore(marks, answers);
+    }
+    // Класс, а не style: вкладочные тела прячутся правилом .support-body:not(.is-on),
+    // и в колонке чтения им нужно быть видимыми независимо от выбранной вкладки.
+    marks.classList.toggle('is-aside', !!on);
+    ref.classList.toggle('is-aside', !!on);
+  }
+
+  // Окно перетащили через порог 1360 посреди чтения — переезд надо пересобрать,
+  // иначе списки остаются в колонке, которой на этой ширине уже нет.
+  window.addEventListener('resize', function () {
+    var g = el('dayGrid');
+    if (g && g.classList.contains('is-reading')) readSideMove(true);
+  });
+
   function readingMode(on, act) {
     var g = el('dayGrid');
     g.classList.toggle('is-reading', !!on);
+    readSideMove(!!on);
     el('caseReadFoot').style.display = on ? '' : 'none';
     var intro = el('caseIntro');
     if (intro) intro.style.display = on ? '' : 'none';

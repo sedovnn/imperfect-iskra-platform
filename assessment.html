@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=122" />
+<link rel="stylesheet" href="css/styles.css?v=123" />
 </head>
 <body>
 
@@ -278,6 +278,12 @@
 
         <!-- Виден только в режиме чтения пакета: день начинается с папки на столе,
              дальше та же папка остаётся в середине под рукой. -->
+        <!-- ⚠ Пометки и справка на экране чтения физически ПЕРЕЕЗЖАЮТ отсюда в
+             третью колонку (#readSide) и возвращаются назад на рабочих экранах.
+             Переносятся сами узлы, а не копии: обработчики висят на #supMarksBody
+             (удаление, заметка, перетаскивание на тезис), и вторая копия разошлась бы
+             с первой на первом же действии. -->
+
         <!-- Порядок [записка, кнопка], а не наоборот: ряд прижат вправо, и главное
              действие обязано стоять у самого края — на том же месте, где кнопка
              ответа в разговоре. См. .support > .case-read-foot в styles.css. -->
@@ -287,6 +293,24 @@
         </div>
       </aside>
 
+      <!-- ТРЕТЬЯ КОЛОНКА НА ЭКРАНЕ ЧТЕНИЯ (решение владельца 06.08). Раньше она стояла
+           пустой «под будущий разговор»: пакет читался в средней колонке, а справа было
+           поле, которое заполнится на следующем экране. Владелец предложил занять его
+           тем, что при чтении и нужно, — пометками и справкой. Теперь пустого места на
+           этом экране нет, а на рабочих экранах эта колонка исчезает: там её место
+           занимает панель материалов, и оба списка возвращаются в свои вкладки.
+           Порядок [пометки, справка]: пометки участник производит сам, читая, — им
+           верх; справка нужна по случаю, ей низ. -->
+      <aside class="readside" id="readSide">
+        <div class="readside-sec">
+          <div class="readside-head"><span class="dayside-kicker">Пометки</span></div>
+          <div class="readside-slot" id="readSlotMarks"></div>
+        </div>
+        <div class="readside-sec">
+          <div class="readside-head"><span class="dayside-kicker">Справка</span></div>
+          <div class="readside-slot" id="readSlotRef"></div>
+        </div>
+      </aside>
 
     </div>
   </div>
@@ -308,6 +332,6 @@
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
 <script src="js/mechanics.js?v=4"></script>
-<script src="js/engine.js?v=32"></script>
+<script src="js/engine.js?v=33"></script>
 </body>
 </html>
