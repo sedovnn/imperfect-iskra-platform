@@ -5502,6 +5502,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mx-card.is-first, .bl-card.mx-own { border-color: var(--jb-ink); background: var(--band); }
 .mx-card-top { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; }
 .mx-acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+/* ⚠ Ряд решений прижат к НИЗУ карточки (правка 07.08). Карточки в строке грида равны
+   по высоте, а текста в них разное количество: после того как заголовки перестали
+   обрезаться, кнопки «берём · не сейчас · не делаем» встали на разной высоте и прыгали
+   от карточки к карточке. margin-top: auto ставит их на одну линию. */
+.bl-card > .mx-acts { margin-top: auto; padding-top: 6px; }
 .mx-flag {
   font-size: var(--fs-util); font-weight: 700; color: var(--jb-ink);
   text-transform: uppercase; letter-spacing: var(--label-track);

@@ -1121,7 +1121,7 @@
     return '<div class="sc-head">' +
       '<span class="sc-head-name">' + esc(t) + '</span>' +
       '<span class="sc-head-sep">·</span>' +
-      '<span class="sc-head-where">' + esc(scene.name) + ', ' + esc(scene.where) + '</span>' +
+      '<span class="sc-head-where">' + esc(scene.place || scene.name) + ', ' + esc(scene.where) + '</span>' +
       '</div>';
   }
 
