@@ -5418,9 +5418,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .bl-card-title {
   /* 600, а не 500: в системе четыре веса — 400/600/700/800 (DESIGN.md стр. 116) */
   font-size: var(--fs-dense); line-height: 1.35; font-weight: 600;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  /* ⚠ Обрезки в две строки здесь БОЛЬШЕ НЕТ (решение владельца 07.08). Заголовок
+     заявки — то, по чему принимают решение; разворачивал его класс .bl-card.is-open,
+     который ставила ссылка «почему», а её сняли вместе с прятаньем обоснований. */
 }
-.bl-card.is-open .bl-card-title { -webkit-line-clamp: unset; overflow: visible; }
 .bl-card-who { font-size: var(--fs-util); color: var(--muted-soft); }
 .bl-card-arg { font-size: var(--fs-util); line-height: 1.45; color: var(--muted); margin: 0; }
 .bl-card-acts { display: flex; gap: 6px; align-items: center; }
