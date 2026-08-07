@@ -5654,7 +5654,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .intro-note:first-of-type { border-top: none; }
 /* «Чего платформа не умеет» — ОДИН текст, а не список: линейка между абзацами
    разделяла то, что читается подряд (замечание владельца 07.08). */
-#roleHow .intro-note { border-top: none; padding: 0 0 10px; }
+#roleHow .intro-note { border-top: none; padding: 0; margin: 0; }
 .intro-note b { color: var(--ink); font-weight: 700; }
 .intro-disclaimer { margin-top: 28px; font-size: var(--fs-read); line-height: 1.5; color: var(--muted); }
 .intro-name p { font-size: var(--fs-read); line-height: 1.5; color: var(--muted); margin: 0 0 10px; max-width: 68ch; }
