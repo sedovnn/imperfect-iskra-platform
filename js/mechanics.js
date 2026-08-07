@@ -530,9 +530,6 @@
             '</div>';
         };
 
-        h += '<div class="bl-list">' + (und.length
-          ? '<div class="bl-zone-h">не решено <b>' + und.length + '</b></div><div class="bl-grid">' + und.map(card).join('') + '</div>'
-          : '<div class="bl-zone-h">все ' + t.n + ' решены</div>') + '</div>';
 
         // Три столбика, не два: «не сейчас» и «не делаем» показаны раздельно и в
         // лицо — на печати (С3б) участник увидит ровно этот расклад.
@@ -581,9 +578,20 @@
                 '</div>';
             }).join('') || '<p class="bl-empty">пока ничего</p>') + '</div>';
         };
-        h += '<div class="bl-decided"><div class="bl-zone-h">решено</div><div class="bl-cols mx-cols3">' +
-          col('Берём', by('take'), 'take') + col('Не сейчас', by('later'), 'later') +
-          col('Не делаем', by('never'), 'never') + '</div></div>';
+        // ⚠ ПОРЯДОК: сначала СТОПКИ, потом нерешённое (решение владельца 07.08).
+        // Раньше решённое лежало под списком, и участник, нажав «берём», не видел,
+        // куда уехала карточка, — механика читалась как «карточка пропала». Стопки
+        // показываются, только когда решена первая: до этого показывать три пустые
+        // зоны значило бы занять экран обещанием.
+        if (t.n - und.length > 0) {
+          h += '<div class="bl-decided"><div class="bl-zone-h">решено</div><div class="bl-cols mx-cols3">' +
+            col('Берём', by('take'), 'take') + col('Не сейчас', by('later'), 'later') +
+            col('Не делаем', by('never'), 'never') + '</div></div>';
+        }
+
+        h += '<div class="bl-list">' + (und.length
+          ? '<div class="bl-zone-h">не решено <b>' + und.length + '</b></div><div class="bl-grid">' + und.map(card).join('') + '</div>'
+          : '<div class="bl-zone-h">все ' + t.n + ' решены</div>') + '</div>';
 
         h += '<div class="mx-card">' +
           field(ctx, { id: 'mxCrit', f: 'crit', label: 'Почему именно так', rows: 5, val: m.criteria }) + '</div>';

@@ -1361,10 +1361,9 @@ footer {
    ширины и в том же акценте, что и будущий пузырь ответа. Зафиксированный ответ
    рендерится обычным .chat-msg.me, поэтому переход «печатал → сказал» не меняет
    ни положение, ни цвет — меняется только рамка ввода на пузырь. */
-/* СВОЯ КАРТОЧКА: левая выключка, всё во всю её ширину (правка 07.08).
-   ⚠ Здесь стояла геометрия правостороннего пузыря — align-items: flex-end и
-   width: 76% у детей. Когда карточка стала голубой и во всю колонку, подпись и поле
-   поехали к правому краю и читались как случайно поставленные. */
+/* СВОЯ КАРТОЧКА: внутри — левая выключка, сама карточка прижата вправо и не шире
+   меры письма (--w-form). Мера, а не доля колонки: доля растёт вместе с экраном,
+   и на 2560 карточка снова была бы во всю ширину. */
 .s2-mine {
   display: flex;
   flex-direction: column;
@@ -1372,6 +1371,13 @@ footer {
   gap: 8px;
   /* Тот же ритм, что у .chat: 20px до следующей реплики, 8px внутри своей стороны. */
   margin: 0 0 20px;
+  /* 3/4 колонки, прижато вправо: своё видно как своё. Но доля ограничена с двух
+     сторон — мерой письма сверху (--w-form, шире строки не пишут) и 560px снизу
+     (на узкой колонке 3/4 — это 476px, писать стратегию в такой полосе нельзя). */
+  width: 75%;
+  min-width: min(100%, 560px);
+  max-width: var(--w-form);
+  margin-left: auto;
 }
 .s2-mine > * { width: 100%; max-width: none; }
 .s2-mine .chat-name { text-align: left; margin: 0 0 2px; }
@@ -4557,7 +4563,23 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   color: var(--muted);
   margin: 0 0 8px;
 }
-.win-input { min-height: 200px; }
+/* Поле ответа рисуется здесь целиком. ⚠ Раньше оно опиралось на `.s2-body textarea`,
+   но в раскладке разговора никакого .s2-body нет (assessment.html стр. 122–126) —
+   и поле оставалось браузерным: прямые углы, отступ 2px, кегль 13.33px.
+   Рецепт тот же, что у .mx-input, кегль — читаемый (--fs-read). */
+.win-input {
+  min-height: 200px;
+  width: 100%;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: var(--fs-read);
+  line-height: 1.6;
+  color: var(--ink);
+  background: var(--paper);
+  resize: vertical;
+}
 
 /* Номер позиции в СПИСКЕ (свод дня, «Мои ответы»): свой класс, потому что здесь
    номер стоит колонкой и должен выравниваться по ней — отсюда min-width. В
@@ -5178,6 +5200,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 
 .recap-pointer { border-top: 1px solid var(--hairline); padding-top: 18px; }
+/* Указатель, а не проза: 42ch резали одну строку на четыре куска по случайным
+   местам. Здесь строка идёт по ширине рабочей области. */
+.recap-pointer .section-lead { max-width: none; }
 .recap-cost { display: block; font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums; }
 
 /* остаток ресурса рядом с набранным: арифметику «сколько ещё влезает» участник не
@@ -5197,7 +5222,14 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
      ограничение, а не как решение: день рассчитан на компьютер. Блокировки нет —
      предупреждение (СПЕК §4.1). */
   .day-grid { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 42%) minmax(0, 1fr); }
-  .day-grid.is-collapsed { grid-template-rows: 0 minmax(0, 1fr); }
+  /* ⚠ Здесь стояло .is-collapsed { grid-template-rows: 0 minmax(0, 1fr) } — правило
+     писалось для колонки этапов, но на этой ширине колонки нет: первый ряд занимает
+     ОПОРА (order: -1), и свёрнутые этапы обнуляли высоту пакета. Экран чтения со
+     свёрнутыми этапами выглядел пустым: одна кнопка «Прочитал» на белом. */
+  /* На экране чтения колонка работы скрыта (.is-reading > .talk), значит рядов
+     остаётся два: пакет и этапы. Пакету — вся свободная высота, этапам — по
+     содержимому; иначе пакет читался в 42% окна, а под ним висела пустота. */
+  .day-grid.is-reading { grid-template-rows: minmax(0, 1fr) auto; }
   /* ⚠ Колонка одна: явные grid-column от рельса надо снять, иначе работа и опора
      уезжают во вторую, неявную колонку. */
   .day-grid > .talk, .day-grid > .support { grid-column: 1 !important; }
@@ -5401,7 +5433,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    палитры DESIGN.md на всём экране дня. Та же галочка в ленте разговора и в
    строке прочитанного пакета уже стоит --accent-ink (.talk-past-mark,
    .case-done-mark): один знак — один цвет. */
-.interlude-mark { font-size: var(--fs-util); font-weight: 600; color: var(--accent-ink); margin: 0 0 26px; }
+/* Размер — как у заголовка следующего этапа (--fs-place): отметка закрывает
+   предыдущий этап, а заголовок открывает следующий, и это одна пара. */
+.interlude-mark { font-size: var(--fs-place); font-weight: 600; color: var(--accent-ink); margin: 0 0 26px; }
 /* font-weight был не задан: дисплейная гарнитура наследовала 400 от body, то есть
    крупнейший текст экрана перехода рисовался светлым (DESIGN.md стр. 119: title — 700). */
 .interlude-where { font-family: var(--ff-display); font-weight: 700; font-size: var(--fs-place); line-height: 1.15; margin: 0 0 6px; }
@@ -5415,9 +5449,12 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    Замер: 2×10 с доводом под «почему» — 2,6 экрана прокрутки; 1×20 с доводами —
    5,5; подробный вариант во всю ширину — 3,0 и без кейса. Выиграл компактный. */
 .bl-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; }
+/* Карточка заявки — голубая, как поля ввода (решение владельца 07.08): всё, с чем
+   участник работает руками, читается одним цветом. Свой вариант отличается рамкой
+   (--jb-ink), а не заливкой. */
 .bl-card {
-  border: 1px solid var(--hairline); border-radius: var(--radius);
-  padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--paper);
+  border: 1px solid var(--band-line); border-radius: var(--radius);
+  padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--band);
 }
 .bl-card-top { display: flex; align-items: baseline; gap: 8px; }
 .bl-n { font-size: var(--fs-util); font-weight: 700; color: var(--muted-soft); font-variant-numeric: tabular-nums; }
@@ -5475,6 +5512,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .bl-zone-h b { font-size: var(--fs-util); letter-spacing: 0; text-transform: none; color: var(--ink); }
 .bl-empty { font-size: var(--fs-util); color: var(--muted-soft); padding: 8px 0; }
+/* «Почему именно так» после списка заявок: у .mx-card margin-top: 0, и карточка
+   прилипала к последней заявке. */
+.bl-list + .mx-card { margin-top: 18px; }
 /* причина отказа — под строкой в столбике «не сейчас», не в карточке */
 .bl-row-reason { grid-column: 2 / 4; margin-top: 4px; }
 
