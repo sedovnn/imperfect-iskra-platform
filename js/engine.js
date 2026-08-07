@@ -418,6 +418,13 @@
   // ремарка появляются целиком вместе со своим первым пузырём.
   var revealTimer = null;
   var REVEAL_MS = 620;
+  // ⚠ ПАМЯТЬ ПОКАЗАННЫХ ПУЗЫРЕЙ. Без неё render() помечал реплики текущего шага
+  // заново на КАЖДОЙ перерисовке, и после «Ответить» весь монолог проигрывался
+  // сначала (поймано владельцем 07.08). Живёт в памяти страницы, а не в состоянии:
+  // это не ответ и не место в маршруте, а факт «этот пузырь на экране уже был».
+  // После перезагрузки страницы монолог текущего шага покажется по одному ещё раз —
+  // и это правильнее, чем показать его сразу целиком.
+  var shownBubbles = {};
 
   // Идёт по помеченным узлам в порядке разметки и снимает метку с каждого через
   // REVEAL_MS. По окончании зовёт done — там открывается рабочая область.
@@ -429,6 +436,7 @@
       if (!n) { revealTimer = null; if (done) done(); return; }
       n.removeAttribute('data-reveal');
       n.classList.add('is-in');
+      if (n.dataset && n.dataset.rk) shownBubbles[n.dataset.rk] = 1;
       revealTimer = setTimeout(step, REVEAL_MS);
     };
     // Первый пузырь без задержки: пустой экран в ожидании первой реплики читается
@@ -436,16 +444,26 @@
     step();
   }
 
-  function speechHtml(act, staged) {
+  function speechHtml(act, staged, keyPrefix) {
     var out = '';
+    var pre = keyPrefix || act.id || act.who || 'sp';
     // Фильтр ДО перебора, а не внутри: имя говорящего и ремарка привязаны к первому
     // пузырю, и пропуск первого молча стирал бы подпись реплики.
     (act.bubbles || []).filter(bubbleShown).forEach(function (b, i) {
       var name = i === 0 ? (act.who || '') : '';
       var actLine = i === 0 ? (b.act || act.act || '') : (b.act || '');
+      // Уже показанный пузырь рисуется на месте и без анимации; новый ждёт очереди.
+      var rk = pre + ':' + i;
+      var cls = 'chat';
+      var attr = '';
+      if (staged) {
+        cls += ' is-staged';
+        if (shownBubbles[rk]) cls += ' is-in';
+        else attr = ' data-reveal="1" data-rk="' + esc(rk) + '"';
+      }
       // Ремарка — своей строкой курсивом ПОД именем (решение владельца 07.08): в
       // одну строку с именем она читалась как часть должности.
-      out += '<div class="chat' + (staged ? ' is-staged" data-reveal="1' : '') + '"><div class="chat-msg them"' + (act.who ? ' data-who="' + esc(act.who) + '"' : '') + '>' +
+      out += '<div class="' + cls + '"' + attr + '><div class="chat-msg them"' + (act.who ? ' data-who="' + esc(act.who) + '"' : '') + '>' +
         (name ? '<span class="chat-name">' + esc(name) + '</span>' : '') +
         (name && act.note ? '<span class="chat-note">' + esc(act.note) + '</span>' : '') +
         (actLine ? '<div class="chat-act">' + esc(actLine) + '</div>' : '') +
@@ -778,7 +796,10 @@
       });
       html += '</div>';
     });
-    var left = S.scenes.length - 1 - curSceneIx;
+    // Скрытый этап (Коридор) в счёт не идёт — как и на межсценовом экране: иначе
+    // столбик обещает восемь, а переход говорит «из 7».
+    var left = 0;
+    for (var li = curSceneIx + 1; li < S.scenes.length; li++) if (!S.scenes[li].hidden) left++;
     if (left > 0) {
       html += '<p class="route-left">дальше — ещё ' +
         left + ' ' + plural(left, 'этап', 'этапа', 'этапов') + '</p>';
@@ -1183,18 +1204,21 @@
       // (решение владельца 07.08): вопрос уже задан репликой, и подпись повторяла его
       // своими словами. act.label остаётся в данных — им подписана запись во вкладке
       // «Мои ответы» и строка, которую получает судья.
-      '<div class="s2-mine"><span class="chat-name">Вы</span>' +
+      // «ВЫ» над пузырём справа, кнопка под пузырём справа — оба ВНЕ голубого
+      // (правка владельца 07.08).
+      '<span class="chat-name chat-name-mine">Вы</span>' +
+      '<div class="s2-mine">' +
         // data-answer="1" — метка для сборщика телеметрии: он считает ТОЛЬКО поля
         // ответа. Без метки поле не попадёт в замер вставок и набора, то есть
         // маркер ИИ по этому окну не сработает.
         '<textarea id="winInput" class="win-input" data-answer="1" rows="9" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
-        // ⚠ Класс НЕ .win-foot: узел с этим классом render() уносит в подвал колонки,
-        // и «Ответить» уехала бы из пузыря туда же, к «Далее».
-        // .btn-sm, а не полный размер: в подвале колонки стоит «Далее» полным
-        // кеглем, и две кнопки одного веса на одном экране спорили бы за главную.
-        '<div class="mine-act">' +
-          '<button class="btn btn-primary btn-sm" id="commitBtn">Ответить →</button>' +
-        '</div>' +
+      '</div>' +
+      // ⚠ Класс НЕ .win-foot: узел с этим классом render() уносит в подвал колонки,
+      // и «Ответить» уехала бы туда же, к «Дальше».
+      // .btn-sm, а не полный размер: в подвале стоит «Дальше» полным кеглем, и две
+      // кнопки одного веса спорили бы за главную.
+      '<div class="mine-act">' +
+        '<button class="btn btn-primary btn-sm" id="commitBtn">Ответить →</button>' +
       '</div>' + footHtml;
     wireNext();
 
@@ -1280,6 +1304,9 @@
       // спрашивает «Почему уверены?» уже после подтверждения, и это его слова, а не
       // подпись поля. Рисует их сама механика — только она знает свой второй шаг.
       speech: function (sp) { return sp ? speechHtml({ who: sp.who, note: sp.note, bubbles: sp.bubbles }, false) : ''; },
+      // Пузырь участника — тот же, что у свободного ответа: если верстак кончается
+      // фразой, она обязана выглядеть как сказанное, а не как сводка.
+      mine: function (text) { return meHtml(text, null); },
       probe: (act && act.probe) || null,
       save: function () { saveState(); },
       sync: refreshGate || function () {},
@@ -1321,7 +1348,12 @@
     d.className = 's2-block bl-host';
     var m = mechState(act.mech, spec.init);
     if (locked) {
-      d.innerHTML = '<div class="bl-locked">' + spec.locked(m, mechCtx(null, act)) + '</div>';
+      // lockedBubble — для верстаков, которые кончаются РЕПЛИКОЙ: печать оставляет
+      // после себя фразу участника, и она показывается пузырём. Служебная сводка
+      // («утвердил под давлением») остаётся судье, но на экране её нет.
+      d.innerHTML = spec.lockedBubble
+        ? spec.lockedBubble(m, mechCtx(null, act))
+        : '<div class="bl-locked">' + spec.locked(m, mechCtx(null, act)) + '</div>';
       return d;
     }
     var mctx = function (refresh) { return mechCtx(refresh, act); };
@@ -1350,10 +1382,9 @@
     spec.render(d.querySelector('.mx-host'), m, mctx(refresh));
     // Кнопка inCard встаёт внутрь своей карточки, если механика её нарисовала:
     // «Ответить» — часть пузыря участника, а не отдельный ряд под ним.
-    if (foot.inCard) {
-      var mine = d.querySelector('.s2-mine'), row = d.querySelector('.mine-act');
-      if (mine && row) mine.appendChild(row);
-    }
+    // ⚠ Кнопка НЕ переезжает внутрь пузыря (правка владельца 07.08): она стоит ПОД
+    // пузырём и справа, как «ВЫ» стоит над ним и справа. Внутри пузыря она добавляла
+    // ему пустую полосу снизу.
     if (spec.footWire && d.querySelector('.win-foot')) spec.footWire(d.querySelector('.win-foot'), m, mctx(refresh));
     refresh();
     btn.addEventListener('click', function () {
@@ -1524,11 +1555,11 @@
   // Собеседник отвечает на сказанное, и только по последнему пузырю открывается
   // «Дальше» (решение владельца 07.08). Данные — в scenes.js, потому что это текст
   // участника; порядок групп задаётся полем then (Дарья, потом Брагин).
-  function afterBlock(after) {
+  function afterBlock(after, key) {
     var d = document.createElement('div');
     d.className = 's2-block';
-    var html = speechHtml({ who: after.who, note: after.note, bubbles: after.bubbles }, true);
-    if (after.then) html += speechHtml({ who: after.then.who, note: after.then.note, bubbles: after.then.bubbles }, true);
+    var html = speechHtml({ who: after.who, note: after.note, bubbles: after.bubbles }, true, key + '/after');
+    if (after.then) html += speechHtml({ who: after.then.who, note: after.then.note, bubbles: after.then.bubbles }, true, key + '/after2');
     d.innerHTML = html;
     return d;
   }
@@ -1612,7 +1643,9 @@
     } else if (body.parentNode !== sup) {
       // ⚠ Порядок узлов обязан совпадать с порядком вкладок: иначе tab и скринридер
       // пойдут не так, как глаз.
-      sup.insertBefore(body, el('supRef'));
+      // Первым узлом панели после язычков идёт «Пометки» (порядок 07.08), поэтому
+      // возвращаем кейс перед ним, а не перед справкой.
+      sup.insertBefore(body, el('supMarks') || el('supRef'));
       if (foot) sup.appendChild(foot);
     }
     if (g) g.classList.toggle('is-casewide', !!on);
@@ -1676,7 +1709,7 @@
     if (!box) return;
     box.style.display = on ? 'flex' : 'none';
     if (!on) return;
-    var I = S.interlude || { lead: [], cta: 'Дальше →' };
+    var I = S.interlude || { cta: 'Дальше →' };
     var bridge = step.scene.bridge || {};
     // Штамп берём по последнему СОСТОЯВШЕМУСЯ шагу, а не по свободным окнам: семь
     // шагов из двенадцати — механики, и по одним answersAt на переходе из первого
@@ -1702,7 +1735,7 @@
     if (nx) nx.textContent = 'Следующий этап ' + S.stageNo(step.sceneIx) + ' из ' + S.stageCount() + ':';
     el('interludeWhere').textContent = step.scene.name;
     el('interludeWhen').textContent = step.scene.where;
-    el('interludeLead').innerHTML = (I.lead || []).map(function (p) { return '<p style="margin:0 0 6px;">' + br(p) + '</p>'; }).join('');
+
     var cta = el('interludeCta');
     cta.textContent = I.cta || 'Дальше →';
     cta.onclick = function () { advance(); };
@@ -1797,7 +1830,7 @@
         if (current && !state.answersAt[st.act.save]) wb.classList.add('is-await');
         now.appendChild(wb);
         // Ответ зафиксирован — собеседник отвечает на него, и «Дальше» ждёт последнего пузыря.
-        if (current && state.answersAt[st.act.save] && st.act.after) now.appendChild(afterBlock(st.act.after));
+        if (current && state.answersAt[st.act.save] && st.act.after) now.appendChild(afterBlock(st.act.after, st.act.id));
       }
       else if (st.act.kind === 'mechanic') {
         var fixedAt = st.act.mech ? (state.mechAt && state.mechAt[st.act.mech]) : null;
@@ -1805,7 +1838,7 @@
         // и «Дальше». Так ведут себя только верстаки с act.after.
         if (current && fixedAt && st.act.after) {
           now.appendChild(mechanicBlock(st.act, true));
-          now.appendChild(afterBlock(st.act.after));
+          now.appendChild(afterBlock(st.act.after, st.act.id));
           var nf = document.createElement('div');
           nf.className = 's2-block';
           nf.innerHTML = '<div class="win-foot"><button class="btn btn-primary" id="nextBtn">' +
@@ -1834,17 +1867,23 @@
     // означала бы вторую реализацию фиксации ответа.
     // ⚠ ПОСЛЕ ПОКАЗА РЕПЛИК, а не сразу: пока собеседник говорит, действия ещё нет.
     // Отсюда же снимается .is-await с рабочей области.
+    // ⚠ Подвал переносим СРАЗУ, а не по окончании монолога: пока он оставался в
+    // прокрутке, кнопка стояла посреди колонки и уезжала вниз с каждым новым пузырём
+    // (поймано владельцем 07.08). Сам ряд до конца монолога скрыт.
+    var actHost = el('talkAct');
+    if (actHost) {
+      actHost.innerHTML = '';
+      var foot = now.querySelector('.win-foot');
+      if (foot) actHost.appendChild(foot);
+    }
+    var waiting = !!now.querySelector('[data-reveal="1"]');
+    if (waiting && actHost) actHost.classList.add('is-await');
     var openWork = function () {
       var waits = now.querySelectorAll('.is-await');
       for (var wi = 0; wi < waits.length; wi++) waits[wi].classList.remove('is-await');
-      var actHost = el('talkAct');
-      if (actHost) {
-        actHost.innerHTML = '';
-        var foot = now.querySelector('.win-foot');
-        if (foot) actHost.appendChild(foot);
-      }
+      if (actHost) actHost.classList.remove('is-await');
     };
-    if (now.querySelector('[data-reveal="1"]')) revealRun(now, openWork); else openWork();
+    if (waiting) revealRun(now, openWork); else openWork();
 
     if (window.imp && window.imp.typoDom) window.imp.typoDom(now);
     if (supportTab === 'answers') renderAnswersTab();

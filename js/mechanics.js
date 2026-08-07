@@ -36,10 +36,23 @@
   // участник пишет своими словами: сборщик телеметрии считает ТОЛЬКО такие поля,
   // и без метки набор в этом поле не попадёт в маркер ИИ. На числовых полях
   // вилки метки нет сознательно — там не текст, а выбор внутри чужих пределов.
+  // ── ДЕЛЕГИРОВАННЫЙ КЛИК — ОДИН РАЗ НА УЗЕЛ ──
+  // Если render() позовут по тому же host дважды (стенд механик так и делает:
+  // mount() при старте и mount() по клику в списке), слушателей станет два, и каждый
+  // клик обработается дважды: метка «самый тревожный симптом» ставилась и тут же
+  // снималась, а «+ тезис» добавлял две карточки. Поймано 07.08.
+  function wireClick(host, handler) {
+    if (host.dataset.impWired) return;
+    host.dataset.impWired = '1';
+    host.addEventListener('click', handler);
+  }
+
   function field(ctx, o) {
     var id = o.id;
-    return '<label class="mx-label" for="' + id + '">' + ctx.esc(o.label) +
-        (o.opt ? ' <span class="mx-opt">— необязательно</span>' : '') + '</label>' +
+    // Пустая подпись НЕ рисуется: пустой <label> держал строку и давал пустоту над
+    // полем (поймано владельцем на печати 07.08).
+    return (o.label ? '<label class="mx-label" for="' + id + '">' + ctx.esc(o.label) +
+        (o.opt ? ' <span class="mx-opt">— необязательно</span>' : '') + '</label>' : '') +
       (o.line
         ? '<input type="text" id="' + id + '" class="mx-input" data-answer="1"' +
           ' data-f="' + o.f + '"' + (o.i != null ? ' data-i="' + o.i + '"' : '') +
@@ -187,13 +200,12 @@
         });
         h += '<button type="button" class="mx-add" data-add="1">+ тезис</button>';
 
-        var f = m.first != null && byId(m.first) ? String(byId(m.first).text).trim() : '';
-        h += '<div class="mx-slot' + (f ? '' : ' is-empty') + '">' +
-          '<span class="mx-title">Самый тревожный симптом</span>' +
-          (f ? '<p class="mx-quote">' + ctx.br(f) + '</p>' +
-               field(ctx, { id: 'mxWhy', f: 'why', label: 'Почему именно это', rows: 2, ph: 'одна фраза', val: m.why })
-             : '<p class="mx-hint">Пока пусто. Отметьте один — без этого не продолжить.</p>') +
-          '</div>';
+        // ⚠ Слот и список выбора связок ЗАВИСЯТ ОТ ТЕКСТА КАРТОЧЕК, поэтому вынесены
+        // в отдельные узлы: при наборе перерисовывать весь верстак нельзя (каретка
+        // уедет), а не перерисовывать было нельзя тоже — цитата в слоте и карточки
+        // в списке связок появлялись только после следующей перерисовки, то есть
+        // когда участник добавлял ещё один тезис. Поймано владельцем 07.08.
+        h += '<div class="mx-slot-host"></div>';
 
         h += head('Свяжите карточки, где одно тянет другое', '<span class="mx-count">связок: ' + m.links.length + '</span>');
         m.links.forEach(function (lk, li) {
@@ -210,29 +222,62 @@
             field(ctx, { id: 'mxLc' + li, f: 'lconc', i: li, label: 'Что из этого следует для Агеева', rows: 2, val: lk.conclusion }) +
             '</div>';
         });
-        if (m.cards.length >= 2) {
-          h += '<p class="mx-hint">Отметьте от 2 до 4 карточек для новой связки</p>';
-          m.cards.forEach(function (x) {
-            if (!String(x.text).trim()) return;
-            h += '<label class="mx-pick"><input type="checkbox" data-pick="' + x.id + '"' +
+        h += '<div class="mx-pick-host"></div>';
+        host.innerHTML = h;
+
+        // Части, зависящие от текста карточек. Зовётся и из draw(), и на каждый ввод
+        // символа — но перерисовывает ТОЛЬКО себя, поэтому каретка не двигается.
+        var drawDerived = function () {
+          var slot = host.querySelector('.mx-slot-host');
+          if (slot) {
+            var f = m.first != null && byId(m.first) ? String(byId(m.first).text).trim() : '';
+            slot.innerHTML = '<div class="mx-slot' + (f ? '' : ' is-empty') + '">' +
+              '<span class="mx-title">Самый тревожный симптом</span>' +
+              (f ? '<p class="mx-quote">' + ctx.br(f) + '</p>' +
+                   field(ctx, { id: 'mxWhy', f: 'why', label: 'Почему именно это', rows: 2, ph: 'одна фраза', val: m.why })
+                 : '<p class="mx-hint">Пока пусто. Отметьте один — без этого не продолжить.</p>') +
+              '</div>';
+            var w2 = slot.querySelector('#mxWhy');
+            if (w2) w2.addEventListener('input', function () { m.why = w2.value; ctx.save(); });
+          }
+          var pick = host.querySelector('.mx-pick-host');
+          if (!pick) return;
+          var named = m.cards.filter(function (x) { return String(x.text).trim(); });
+          if (named.length < 2) { pick.innerHTML = ''; return; }
+          var ph = '<p class="mx-hint">Отметьте от 2 до 4 карточек для новой связки</p>';
+          named.forEach(function (x) {
+            ph += '<label class="mx-pick"><input type="checkbox" data-pick="' + x.id + '"' +
               (m.pending.indexOf(x.id) >= 0 ? ' checked' : '') + ' />' +
               '<span>' + ctx.esc(cut(x.text, 70)) + '</span></label>';
           });
           var bad = m.pending.length < 2 || m.pending.length > 4;
-          h += '<button type="button" class="mx-add" data-linkadd="1"' + (bad ? ' disabled' : '') + '>' +
+          ph += '<button type="button" class="mx-add" data-linkadd="1"' + (bad ? ' disabled' : '') + '>' +
             'Создать связь из выбранных (' + m.pending.length + ')' + (bad ? ' — нужно 2–4' : '') + '</button>';
-        }
-        host.innerHTML = h;
+          pick.innerHTML = ph;
+          pick.querySelectorAll('[data-pick]').forEach(function (chk) {
+            chk.addEventListener('change', function () {
+              var id = Number(chk.dataset.pick);
+              if (chk.checked) { if (m.pending.length < 4) m.pending.push(id); else chk.checked = false; }
+              else m.pending = m.pending.filter(function (p) { return p !== id; });
+              ctx.save(); drawDerived();
+            });
+          });
+        };
+        drawDerived();
 
         dropWire(host);
         host.querySelectorAll('[data-text]').forEach(function (ta) {
-          ta.addEventListener('input', function () { byId(Number(ta.dataset.text)).text = ta.value; ctx.save(); ctx.sync(); });
+          ta.addEventListener('input', function () {
+            byId(Number(ta.dataset.text)).text = ta.value;
+            ctx.save(); ctx.sync();
+            // Слот и список связок читают этот текст — обновляем их сразу, а не к
+            // следующей перерисовке верстака.
+            drawDerived();
+          });
         });
         host.querySelectorAll('[data-anchor]').forEach(function (i2) {
           i2.addEventListener('input', function () { byId(Number(i2.dataset.anchor)).anchor = i2.value; ctx.save(); });
         });
-        var w = host.querySelector('#mxWhy');
-        if (w) w.addEventListener('input', function () { m.why = w.value; ctx.save(); });
         // Селектор ровно такой, какой выдаёт field(): data-f="…" + data-i="…".
         // Было [data-lwhy] — атрибута с таким именем field() не ставит, поэтому
         // оба поля связки не подключались вовсе и текст в них терялся при
@@ -243,20 +288,12 @@
         host.querySelectorAll('[data-f="lconc"]').forEach(function (ta) {
           ta.addEventListener('input', function () { m.links[Number(ta.dataset.i)].conclusion = ta.value; ctx.save(); });
         });
-        host.querySelectorAll('[data-pick]').forEach(function (chk) {
-          chk.addEventListener('change', function () {
-            var id = Number(chk.dataset.pick);
-            if (chk.checked) { if (m.pending.length < 4) m.pending.push(id); else chk.checked = false; }
-            else m.pending = m.pending.filter(function (p) { return p !== id; });
-            ctx.save(); draw();
-          });
-        });
       };
       // ⚠ ДЕЛЕГИРОВАННЫЙ КЛИК ВЕШАЕТСЯ ОДИН РАЗ, СНАРУЖИ draw(). Внутри draw() он
       // копился: innerHTML меняет потомков, но слушатель сидит на самом host, и
       // после N перерисовок один клик обрабатывался N раз — карточки добавлялись
       // пачками, а потом страница вставала. Поймано стендом, не глазом.
-      host.addEventListener('click', function (e) {
+      wireClick(host, function (e) {
           var t = e.target, a;
           if ((a = t.getAttribute && t.getAttribute('data-first'))) {
             // ПОВТОРНЫЙ КЛИК СНИМАЕТ МЕТКУ. Без этого поставленную по ошибке метку
@@ -356,7 +393,7 @@
         });
       };
       // один раз, снаружи draw() — см. пояснение в M.theses
-      host.addEventListener('click', function (e) {
+      wireClick(host, function (e) {
         var a = e.target.getAttribute && e.target.getAttribute('data-del');
         if (a) { m.rays.splice(Number(a), 1); ctx.save(); draw(); ctx.sync(); return; }
         if (e.target.getAttribute && e.target.getAttribute('data-add')) {
@@ -616,7 +653,7 @@
         cr.addEventListener('input', function () { m.criteria = cr.value; ctx.save(); ctx.sync(); });
       };
       // один раз, снаружи draw() — см. пояснение в M.theses
-      host.addEventListener('click', function (e) {
+      wireClick(host, function (e) {
         var t2 = e.target;
         // Обработчика «почему» здесь больше нет: обоснование видно всегда.
         if (!(t2.getAttribute && t2.hasAttribute('data-key'))) return;
@@ -695,6 +732,10 @@
       // с кнопкой внутри (решение владельца 07.08).
       return { note: m.returned ? 'Возврат уже был — он у вас один.' : '', cta: 'Ответить →', inCard: true };
     },
+    // ⚠ На экране после фиксации — ПУЗЫРЬ С ФРАЗОЙ участника, а не сводка
+    // «утвердил под давлением» (правка владельца 07.08): сводка — техническая
+    // информация для судьи, участнику она ничего не говорит.
+    lockedBubble: function (m, ctx) { return ctx.mine(m.why); },
     footWire: function (foot, m, ctx) {
       var b = foot.querySelector('#sealBack');
       if (!b) return;
@@ -715,10 +756,10 @@
       return true;
     },
     locked: function (m, ctx) {
-      var what = m.returned
-        ? (sealChanged(m, ctx) ? 'вернулся и изменил' : 'вернулся и подтвердил')
-        : 'утвердил под давлением';
-      return '<b>' + what + '</b> <span class="bl-locked-hint">строка — во вкладке «Мои ответы»</span>';
+      // ⚠ «Утвердил под давлением» / «вернулся и изменил» участнику НЕ показывается
+      // (правка владельца 07.08): это словарь маркера. На экране вместо сводки стоит
+      // пузырь с его фразой (см. lockedBubble ниже), а поступок уходит судье фактом.
+      return 'ответ зафиксирован <span class="bl-locked-hint">строка — во вкладке «Мои ответы»</span>';
     },
     render: function (host, m, ctx) {
       var lm = ctx.mech('list');
@@ -749,7 +790,8 @@
               (t.over ? ' <span class="bl-over-tag">за рамкой</span>' : '');
           })() : '') + '</div>';
           h += ctx.speech(ctx.probe);
-          h += '<div class="s2-mine"><span class="chat-name">Вы</span>' +
+          h += '<span class="chat-name chat-name-mine">Вы</span>' +
+            '<div class="s2-mine">' +
             field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: 'одна фраза',
               label: m.returned ? 'Что поменяли и почему' : '',
               val: m.why }) + '</div>';
@@ -778,7 +820,6 @@
     locked: function (m) {
       var n = m.cards.filter(function (t) { return String(t).trim(); }).length;
       return '<b>' + n + '</b> ' + plural(n, 'вариант', 'варианта', 'вариантов') + ' будущего' +
-        (m.bet != null ? ' · наиболее вероятный отмечен' : ' · выбор не сделан') +
         ' <span class="bl-locked-hint">целиком — во вкладке «Мои ответы»</span>';
     },
     render: function (host, m, ctx) {
@@ -820,7 +861,7 @@
         var w = host.querySelector('#mxBw');
         if (w) w.addEventListener('input', function () { m.betWhy = w.value; ctx.save(); });
       };
-      host.addEventListener('click', function (e) {
+      wireClick(host, function (e) {
         var a = e.target.getAttribute && e.target.getAttribute('data-bet');
         if (a !== null && a !== undefined && a !== '') {
           var pick = Number(a);
@@ -860,11 +901,10 @@
     },
     foot: function () { return { note: '', cta: 'Ответил →' }; },
     locked: function (m) {
-      // «через не выбрано» — сломанная фраза; когда срока нет, так и говорим.
-      // Отсутствие срока само по себе наблюдение (МК-1), а не пропуск, поэтому
-      // в своде оно стоит наравне с выбранным, без укора.
-      return (m.years ? 'срок <b>' + yearsLabel(m.years) + '</b> лет' : '<b>срок не выбран</b>') +
-        ' · цена ' + (String(m.gave).trim() ? 'названа' : 'не названа') +
+      // ⚠ Ни «срок не выбран», ни «цена не названа» здесь больше НЕТ: и то и другое —
+      // оценка полноты ответа, то есть методология, сказанная участнику вслух
+      // (правка владельца 07.08). Что он назвал, а что нет, читает судья.
+      return (m.years ? 'срок <b>' + yearsLabel(m.years) + '</b> лет' : 'цель зафиксирована') +
         ' <span class="bl-locked-hint">целиком — во вкладке «Мои ответы»</span>';
     },
     render: function (host, m, ctx) {
@@ -998,12 +1038,12 @@
     return h;
   };
 
+  // ⚠ Служебного ярлыка («утвердил под давлением») здесь БОЛЬШЕ НЕТ (правка
+  // владельца 07.08): во вкладке участник читает то, что сказал, а не как это
+  // назвала платформа. Сам поступок никуда не делся — он машинный факт и уходит
+  // судье полем m.returned / сравнением слепка, а не строкой на экране.
   M.seal.answerHtml = function (m, ctx) {
-    var what = m.returned
-      ? (sealChanged(m, ctx) ? 'вернулся к списку и изменил его' : 'вернулся к списку и подтвердил')
-      : 'утвердил под давлением';
-    return '<p style="margin:0;">' + what + '</p>' +
-      (String(m.why).trim() ? p(m.returned ? 'Что поменяли и почему' : 'Почему уверены', ctx.br(m.why)) : '');
+    return String(m.why).trim() ? '<p style="margin:0;">' + ctx.br(m.why) + '</p>' : '';
   };
 
   M.futures.answerHtml = function (m, ctx) {
@@ -1014,9 +1054,9 @@
   };
 
   M.goal.answerHtml = function (m, ctx) {
-    return '<p style="margin:0;">' + (m.years ? 'через ' + yearsLabel(m.years) + ' лет' : 'срок не выбран') + '</p>' +
+    return (m.years ? '<p style="margin:0;">через ' + yearsLabel(m.years) + ' лет</p>' : '') +
       p('Чем стала компания', ctx.br(m.became)) +
-      (String(m.gave).trim() ? p('Что отдали', ctx.br(m.gave)) : '<p style="margin:8px 0 0;" class="mx-opt">цена не названа</p>');
+      (String(m.gave).trim() ? p('Что отдали', ctx.br(m.gave)) : '');
   };
 
   M.letter.answerHtml = function (m, ctx) {
