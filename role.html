@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=134" />
+<link rel="stylesheet" href="css/styles.css?v=135" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -55,6 +55,35 @@
     <div class="pgroup">
       <p class="kicker" id="screenKicker">Как устроен экран ассессмента</p>
       <ul class="setup-rules" id="roleScreen"><!-- S.system.screen --></ul>
+      <!-- СХЕМА ЭКРАНА, а не снимок (решение владельца 07.08: «посадим экран ассессмента,
+           обезличенный и не раскрывающий ответов и вопросов»). Схема ничего не раскрывает
+           по построению: в ней нет ни одного слова из маршрута — только полосы вместо
+           текста. Снимок пришлось бы переснимать после каждой правки экрана, и он бы
+           неизбежно тащил куски настоящих реплик. -->
+      <figure class="scr" aria-hidden="true">
+        <div class="scr-frame">
+          <div class="scr-top"><span class="scr-logo"></span><span class="scr-bar w40"></span></div>
+          <div class="scr-body">
+            <div class="scr-col scr-left">
+              <span class="scr-k">Этапы</span>
+              <span class="scr-bar w70"></span><span class="scr-bar w55"></span>
+              <span class="scr-bar w80"></span><span class="scr-bar w60"></span>
+            </div>
+            <div class="scr-col scr-mid">
+              <span class="scr-k">Разговор и ответ</span>
+              <span class="scr-bubble"><span class="scr-bar w80"></span><span class="scr-bar w60"></span></span>
+              <span class="scr-field"></span>
+              <span class="scr-btn"></span>
+            </div>
+            <div class="scr-col scr-right">
+              <span class="scr-tabs"><b>О компании</b><i>Справка</i><i>Пометки</i><i>Мои ответы</i></span>
+              <span class="scr-bar w90"></span><span class="scr-bar w75"></span><span class="scr-bar w85"></span>
+              <span class="scr-bar w65"></span><span class="scr-bar w80"></span><span class="scr-bar w50"></span>
+            </div>
+          </div>
+        </div>
+        <figcaption>Так устроен экран: слева этапы, посередине работа, справа материалы.</figcaption>
+      </figure>
     </div>
 
     <!-- Отдельной группой, а не пунктом в списке правил: это не порядок действий, а
@@ -67,35 +96,6 @@
 
     </div><!-- /intro-cols -->
 
-    <!-- СХЕМА ЭКРАНА, а не снимок (решение владельца 07.08: «посадим экран ассессмента,
-         обезличенный и не раскрывающий ответов и вопросов»). Схема ничего не раскрывает
-         по построению: в ней нет ни одного слова из маршрута — только полосы вместо
-         текста. Снимок пришлось бы переснимать после каждой правки экрана, и он бы
-         неизбежно тащил куски настоящих реплик. -->
-    <figure class="scr" aria-hidden="true">
-      <div class="scr-frame">
-        <div class="scr-top"><span class="scr-logo"></span><span class="scr-bar w40"></span></div>
-        <div class="scr-body">
-          <div class="scr-col scr-left">
-            <span class="scr-k">Этапы</span>
-            <span class="scr-bar w70"></span><span class="scr-bar w55"></span>
-            <span class="scr-bar w80"></span><span class="scr-bar w60"></span>
-          </div>
-          <div class="scr-col scr-mid">
-            <span class="scr-k">Разговор и ответ</span>
-            <span class="scr-bubble"><span class="scr-bar w80"></span><span class="scr-bar w60"></span></span>
-            <span class="scr-field"></span>
-            <span class="scr-btn"></span>
-          </div>
-          <div class="scr-col scr-right">
-            <span class="scr-tabs"><b>О компании</b><i>Справка</i><i>Пометки</i><i>Мои ответы</i></span>
-            <span class="scr-bar w90"></span><span class="scr-bar w75"></span><span class="scr-bar w85"></span>
-            <span class="scr-bar w65"></span><span class="scr-bar w80"></span><span class="scr-bar w50"></span>
-          </div>
-        </div>
-      </div>
-      <figcaption>Так устроен экран: слева этапы, посередине работа, справа материалы.</figcaption>
-    </figure>
 
     <p class="intro-disclaimer" id="roleNote"><!-- S.system.note --></p>
 

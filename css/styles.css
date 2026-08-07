@@ -1357,23 +1357,29 @@ footer {
    ширины и в том же акценте, что и будущий пузырь ответа. Зафиксированный ответ
    рендерится обычным .chat-msg.me, поэтому переход «печатал → сказал» не меняет
    ни положение, ни цвет — меняется только рамка ввода на пузырь. */
+/* СВОЯ КАРТОЧКА: левая выключка, всё во всю её ширину (правка 07.08).
+   ⚠ Здесь стояла геометрия правостороннего пузыря — align-items: flex-end и
+   width: 76% у детей. Когда карточка стала голубой и во всю колонку, подпись и поле
+   поехали к правому краю и читались как случайно поставленные. */
 .s2-mine {
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
+  align-items: stretch;
   gap: 8px;
-  /* Тот же ритм, что у .chat: 20px до следующей реплики, 8px внутри своей
-     стороны. Иначе поля отбивались от подписи иначе, чем пузырь от имени. */
+  /* Тот же ритм, что у .chat: 20px до следующей реплики, 8px внутри своей стороны. */
   margin: 0 0 20px;
 }
-.s2-mine > * { width: 76%; max-width: 76%; }
-/* Подпись своей стороны — та же .chat-name, что у Агеева, только справа:
-   иначе непонятно, кто говорит, и правая сторона читается как форма. */
-.s2-mine .chat-name { text-align: right; margin: 0 2px 0 0; }
+.s2-mine > * { width: 100%; max-width: none; }
+.s2-mine .chat-name { text-align: left; margin: 0 0 2px; }
+/* ⚠ Вермилионной рамки у поля ответа больше НЕТ. Она осталась от прежнего дизайна,
+   где своё метили акцентом; сегодня своё метится голубым, и оранжевый контур на белом
+   поле внутри голубой карточки читался как ошибка ввода. Акцент в системе помечает
+   действие (DESIGN.md стр. 101), а не место для письма. */
 .s2-mine textarea {
-  border-color: var(--accent);
-  background: var(--accent-tint);
+  border-color: var(--hairline);
+  background: var(--paper);
 }
+.s2-mine textarea:focus { outline: none; border-color: var(--jb-ink); }
 .s2-mine .s2-radio {
   justify-content: flex-start;
   margin: 0;
@@ -5821,7 +5827,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* ── СХЕМА ЭКРАНА НА СТРАНИЦЕ РОЛИ ──
    Обезличенная: полосы вместо текста, ни одного слова из маршрута. Служит одному —
    показать, где что лежит, до того как участник туда попадёт. */
-.scr { margin: 34px 0 0; }
+.scr { margin: 18px 0 0; }
 .scr-frame {
   border: 1px solid var(--hairline); border-radius: var(--radius);
   background: var(--paper); overflow: hidden;
@@ -5831,8 +5837,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 8px 12px; border-bottom: 1px solid var(--hairline); background: var(--soft);
 }
 .scr-logo { width: 46px; height: 8px; border-radius: 2px; background: var(--ink); opacity: .75; }
-.scr-body { display: grid; grid-template-columns: 0.8fr 1.6fr 1.6fr; min-height: 208px; }
-.scr-col { display: flex; flex-direction: column; gap: 8px; padding: 12px; min-width: 0; }
+/* Схема живёт в столбике страницы (≈700px), а не во всю ширину: пропорции колонок
+   те же, что на экране, но полосы короче и ряд ниже. */
+.scr-body { display: grid; grid-template-columns: 0.75fr 1.4fr 1.4fr; min-height: 170px; }
+.scr-col { display: flex; flex-direction: column; gap: 7px; padding: 10px; min-width: 0; }
 .scr-left { background: var(--soft); border-right: 1px solid var(--hairline); }
 .scr-mid { border-right: 1px solid var(--hairline); }
 .scr-k {
@@ -5851,7 +5859,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 /* поле ответа — голубое, как всё, что делает участник */
 .scr-field {
-  height: 46px; border-radius: var(--radius);
+  height: 38px; border-radius: var(--radius);
   background: var(--band); border: 1px solid var(--band-line);
 }
 .scr-btn { align-self: flex-end; width: 96px; height: 20px; border-radius: var(--radius); background: var(--accent); }
