@@ -5606,7 +5606,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .intro-hero { padding: 40px 0 6px; }
 /* Кегль заголовка ОДИН на обеих страницах. Было: 46px на настройке (инлайновый стиль
    в intro.html) и 76px на роли (общее правило h1) — один шаблон с двумя голосами. */
-.intro-hero h1 { font-size: clamp(34px, 4.4vw, 60px); font-weight: 800; text-transform: uppercase; letter-spacing: -.015em; line-height: 1.02; margin: 14px 0 0; }
+/* Отступ ПОСЛЕ заголовка больше, чем до него: заголовок принадлежит тому, что за ним.
+   Замер 07.08: до h1 было 14px, после — 0 (правило #roleLead .lead { margin: 0 }
+   затирало отступ, и лид стоял вплотную к 60px заголовку). Ниже — 0,4 кегля. */
+.intro-hero h1 { font-size: clamp(34px, 4.4vw, 60px); font-weight: 800; text-transform: uppercase; letter-spacing: -.015em; line-height: 1.02; margin: 10px 0 0.4em; }
 .intro-hero .lead { margin-top: 16px; max-width: 62ch; }
 .intro-hero .lead b { color: var(--ink); }
 .pgroup { margin-top: 34px; }
@@ -5650,7 +5653,12 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .intro-back { color: var(--muted); text-decoration: none; }
 .intro-back:hover { color: var(--ink); text-decoration: underline; }
 /* Роль на своём экране: абзацы истории читаются как проза, а не как лид-врезка. */
-#roleLead .lead { max-width: 62ch; margin: 0 0 12px; }
+/* Введение в роль — ДВА СТОЛБИКА на широком окне (решение владельца 07.08: «текста
+   много, пусть растягивается»). Во всю ширину растянуть нельзя: 1472px это 160 знаков
+   в строке при норме 80. Два столбика заполняют ширину и держат меру в каждом. */
+#roleLead { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 clamp(24px, 4vw, 56px); }
+@media (min-width: 1100px) { #roleLead { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+#roleLead .lead { max-width: none; margin: 0 0 12px; }
 
 .mx-input-thin { margin-top: 6px; }
 /* ── ОПОРА ТЕЗИСА НА ВЫПИСКУ ──
