@@ -5589,31 +5589,47 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    пункты нумерованными кружками. Своих цветов и кеглей здесь нет — только те же
    токены; из v1 (intro2.html) стили переехали в общий файл, потому что теперь их
    два экрана, а не один, и копия разъехалась бы при первой же правке. */
-.intro { max-width: 760px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 40px); min-height: 100vh; display: flex; flex-direction: column; }
+/* Настройка и роль — один шаблон и одна шкала (решение владельца 07.08). Рамка та же,
+   что у остальных страниц (var(--maxw)), а не 760px: заголовок здесь был уже, чем на
+   входе и в кабинете. Мера строки при этом держится не рамкой, а колонками внутри. */
+.intro { max-width: var(--maxw); margin: 0 auto; padding: 0 clamp(18px, 4vw, 40px); min-height: 100vh; display: flex; flex-direction: column; }
+/* Группы принципов — в два столбика от 1100px: ширину рамки заполняет содержимое, а
+   мера строки в каждом столбике остаётся своей. Заголовок и лид всегда во всю ширину. */
+.intro-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 clamp(24px, 4vw, 56px); align-items: start; }
+@media (min-width: 1100px) {
+  .intro-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .intro-cols > .pgroup:first-child { margin-top: 34px; }
+}
 .intro-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
 .intro-hero { padding: 40px 0 6px; }
+/* Кегль заголовка ОДИН на обеих страницах. Было: 46px на настройке (инлайновый стиль
+   в intro.html) и 76px на роли (общее правило h1) — один шаблон с двумя голосами. */
+.intro-hero h1 { font-size: clamp(34px, 4.4vw, 60px); font-weight: 800; text-transform: uppercase; letter-spacing: -.015em; line-height: 1.02; margin: 14px 0 0; }
+.intro-hero .lead { margin-top: 16px; max-width: 62ch; }
+.intro-hero .lead b { color: var(--ink); }
 .pgroup { margin-top: 34px; }
 .prin { display: flex; gap: 14px; padding: 13px 0; border-top: 1px solid var(--hairline); }
 .prin:first-of-type { border-top: none; }
 .prin .n {
+  /* номер принципа — служебный кегль, не свой */
   flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--ink);
-  font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-util); font-weight: 700; display: flex; align-items: center; justify-content: center;
 }
 /* Мера строки на экранах перед стартом: страница 760px, и при кегле 15px строка
    набегала на 76 знаков — на волосок выше нормы (45–75, потолок WCAG 80). Заголовкам
    ширина нужна, бегущему тексту — нет, поэтому мера стоит на самом тексте. */
-.prin .t { font-size: 15px; line-height: 1.5; color: var(--ink); max-width: 68ch; }
+.prin .t { font-size: var(--fs-read); line-height: 1.5; color: var(--ink); max-width: 68ch; }
 .prin .t b { font-weight: 700; }
 /* «про ИИ» — единственный акцент-блок: это важно проговорить прямо */
 .prin.accent .n { border-color: var(--accent); color: var(--accent); }
 /* Логистика — та же секция, но без нумерации: нумерованное = принципы,
    ненумерованное = справка. Различие намеренное, а не «дописали в конце». */
-.intro-note { padding: 13px 0; border-top: 1px solid var(--hairline); font-size: 15px; line-height: 1.5; color: var(--muted); }
+.intro-note { padding: 13px 0; border-top: 1px solid var(--hairline); font-size: var(--fs-read); line-height: 1.5; color: var(--muted); }
 .intro-note > *, .intro-note { max-width: 68ch; }
 .intro-note:first-of-type { border-top: none; }
 .intro-note b { color: var(--ink); font-weight: 700; }
-.intro-disclaimer { margin-top: 28px; font-size: 15px; line-height: 1.5; color: var(--muted); }
-.intro-name p { font-size: 15px; line-height: 1.5; color: var(--muted); margin: 0 0 10px; }
+.intro-disclaimer { margin-top: 28px; font-size: var(--fs-read); line-height: 1.5; color: var(--muted); }
+.intro-name p { font-size: var(--fs-read); line-height: 1.5; color: var(--muted); margin: 0 0 10px; }
 .intro-name input {
   width: 100%; max-width: 380px; border: 1px solid var(--hairline); border-radius: var(--radius);
   padding: 11px 12px; font: inherit; font-size: var(--fs-read); color: var(--ink); background: var(--paper);
@@ -5623,7 +5639,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Строка под кнопкой: куда именно она ведёт. Кнопка обещает один шаг, эта строка
    говорит, что будет за ним, — без неё «К введению в роль» читается как «начали». */
 .intro-next { margin: 10px 0 0; font-size: var(--fs-util); line-height: 1.5; color: var(--muted-soft); }
-.intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: 13px; color: var(--muted-soft); }
+.intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: var(--fs-util); color: var(--muted-soft); }
 .intro-back { color: var(--muted); text-decoration: none; }
 .intro-back:hover { color: var(--ink); text-decoration: underline; }
 /* Роль на своём экране: абзацы истории читаются как проза, а не как лид-врезка. */
@@ -5741,3 +5757,36 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .dayside .setup-links { flex: none; text-align: left; margin: 0; padding: 10px 8px 16px var(--frame-pad); }
 .setup-links a { color: var(--muted); text-decoration: none; }
 .setup-links a:hover { color: var(--ink); text-decoration: underline; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   КОНТРАСТ: РАБОТА ЧЁРНЫМ, ОПОРА ТИШЕ (решение владельца 07.08)
+   Было наоборот, и это считано: в рабочей колонке преобладал --muted-soft
+   (11 узлов против 8 чёрных), а в панели материалов — чёрный (272 против 98).
+   То есть глаз вело туда, где участник ничего не делает. Логика теперь одна:
+   где работают — полный контраст; что рядом для справки — на ступень тише.
+   Опора остаётся читаемой: --muted это ≈5.4:1 на белом, выше порога WCAG 1.4.3.
+   ══════════════════════════════════════════════════════════════════════════ */
+/* --- опора: тише --- */
+.support-body { color: var(--muted); }
+#supCaseText, #supCaseText p, #supCaseText li, #supCaseText td { color: var(--muted); }
+#supCaseText h2, #supCaseText h3, #supCaseText b, #supCaseText strong,
+.case-sum-t, .who-row b, .recap-q, .mark-quote { color: var(--ink); }
+/* --- работа: полный контраст --- */
+.talk .win-label, .casewide .win-label,
+.talk .mx-label, .talk .mx-title, .talk .bl-card-title, .talk .bl-zone-h,
+.talk .sc-head, .talk .chat-name { color: var(--ink); }
+.talk .win-input, .talk .mx-input, .talk textarea { color: var(--ink); }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   ГОЛУБОЙ = «ВЫ» (решение 04.08, приведено к одному стандарту 07.08)
+   Голубым помечено ВСЁ, что участник произвёл: своя реплика, поле ответа,
+   карточки, которые он пишет, и его выписки в тезисах. До этого правило
+   работало только у двух отметок — самого тревожного симптома и самого
+   вероятного варианта, — и голубой читался как «выбранное», а не как «моё».
+   Отметка внутри своей зоны различается не заливкой, а рамкой (--jb-ink).
+   ══════════════════════════════════════════════════════════════════════════ */
+.s2-mine { background: var(--band); border: 1px solid var(--band-line); border-radius: var(--radius); padding: 14px 16px; }
+.s2-mine .win-input, .s2-mine textarea { background: var(--paper); }
+.mx-card { background: var(--band); border-color: var(--band-line); }
+.mx-card .mx-input, .mx-card textarea, .mx-card input { background: var(--paper); }
+.mx-card.is-first, .bl-card.mx-own { border-color: var(--jb-ink); background: var(--band); }
