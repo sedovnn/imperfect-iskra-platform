@@ -108,6 +108,12 @@
   --fs-op: 13px;
   --fs-op-sm: 11px;
   --label-size: 11px; /* метка — и только метка, см. рецепт ниже */
+  /* ПОДЗАГОЛОВОК РАЗДЕЛА («КАК ОТВЕЧАТЬ», «ТЕЗИСЫ», «СЛЕДУЮЩИЙ ЭТАП 3 ИЗ 7»).
+     Отдельный токен, хотя число сейчас совпадает с --fs-read: у подзаголовка своя
+     роль, и менять его надо будет отдельно от прозы. Решение владельца 07.08:
+     подзаголовки обязаны читаться крупнее основного текста — прописными и жирным
+     на 16px они и читаются, оставаясь тише заголовка этапа (26px). */
+  --fs-sub: 16px;
   --label-weight: 600;
   --label-track: 0.1em;
 
@@ -214,6 +220,23 @@ a { color: inherit; }
   text-transform: uppercase;
   color: var(--muted-soft);
 }
+
+/* ⚠ РАЗДЕЛЕНИЕ РОЛЕЙ (решение владельца 07.08). Рецепт выше держит СЛУЖЕБНЫЕ отметки
+   («ВЫ», «№ 000900», «✓ зафиксировано») — им 11px. Подзаголовки разделов — другая
+   роль: они называют кусок экрана и обязаны читаться крупнее прозы под ними. */
+.kicker,
+.recap-q,
+.dayside-kicker,
+.toc-title,
+.who-h,
+.toc-group,
+.bl-zone-h,
+.mx-title,
+.interlude-next {
+  font-size: var(--fs-sub);
+}
+/* Числа внутри подзаголовка зон портфеля остаются служебными. */
+.bl-zone-h b { font-size: var(--fs-util); }
 
 /* ---------- nav ---------- */
 
@@ -418,7 +441,8 @@ h2 {
   border-top: 1px solid var(--lime-line);
   font-size: 13px;
   color: var(--muted);
-}.intro-note {
+}
+.intro-note {
   display: block;
   margin-top: 10px;
   font-size: var(--fs-dense);
@@ -650,11 +674,13 @@ footer {
   font-size: 12.5px;
   color: var(--muted); /* 7.13:1 — подпись поля должна проходить AA (используется и на register) */
   margin-top: 6px;
-}.links-intro p:not(.kicker) {
+}
+.links-intro p:not(.kicker) {
   font-size: 15px;
   line-height: 1.65;
   max-width: var(--w-read);
-}.tag-pill.is-active {
+}
+.tag-pill.is-active {
   background: var(--ink);
   color: var(--lime);
   border-color: var(--ink);
@@ -709,13 +735,15 @@ footer {
 .bl-sum-item.is-over b { color: var(--accent-ink); }
 .bl-sum-item.is-over { color: var(--accent-ink); }
 .bl-sum-left { margin-left: auto; color: var(--muted-soft); }
-.bl-sum.is-over { border-bottom-color: var(--accent); }.bl-actions .s2-act {
+.bl-sum.is-over { border-bottom-color: var(--accent); }
+.bl-actions .s2-act {
   font-size: var(--fs-dense);
   padding: 8px 14px;
   min-width: 92px;
   text-align: center;
   border-radius: var(--radius);
-}.bl-mini {
+}
+.bl-mini {
   display: grid;
   grid-template-columns: 1fr auto auto;
   gap: 6px 12px;
@@ -723,7 +751,8 @@ footer {
   padding: 8px 0;
   border-bottom: 1px solid var(--hairline);
   font-size: var(--fs-dense);
-}.bl-mini.is-open .bl-mini-title { color: var(--ink); font-weight: 600; }/* Пояснение живёт внутри строки отказа — второй копии списка нет. */
+}
+.bl-mini.is-open .bl-mini-title { color: var(--ink); font-weight: 600; }/* Пояснение живёт внутри строки отказа — второй копии списка нет. */
 .bl-mini .bl-reason { grid-column: 1 / -1; margin-top: 2px; }/* «Моя» сторона разговора в раунде 2: пока шаг открыт — поля справа, той же
    ширины и в том же акценте, что и будущий пузырь ответа. Зафиксированный ответ
    рендерится обычным .chat-msg.me, поэтому переход «печатал → сказал» не меняет
@@ -771,7 +800,8 @@ footer {
   border-color: var(--jb-ink);
   background: var(--band);
   font-weight: 600;
-}@media (max-width: 700px) {
+}
+@media (max-width: 700px) {
   .s2-mine > * { width: 100%; max-width: 100%; }
 }
 
@@ -797,7 +827,8 @@ footer {
   border-radius: var(--radius);
   font-size: 14px;
   line-height: 1.5;
-}.pp-type-btn.is-on { background: var(--accent-tint); border-color: var(--accent); font-weight: 600; }
+}
+.pp-type-btn.is-on { background: var(--accent-tint); border-color: var(--accent); font-weight: 600; }
 @media (max-width: 900px) {}
 /* .gate-card.* (не просто .finalize-card/.dossier-card): .gate-card задаёт
    свой max-width:420px ниже по файлу — при равной специфичности выигрывало
@@ -851,7 +882,8 @@ footer {
   padding-bottom: 14px;
   margin-bottom: 18px;
   border-bottom: 1px solid var(--hairline);
-}.finalize-top .station-sep { color: var(--hairline); }
+}
+.finalize-top .station-sep { color: var(--hairline); }
 .finalize-top .finalize-screen-name { font-size: 15px; font-weight: 700; margin: 0; }
 
 /* «Ваша линия» — полоса решений под шапкой (spine.js), одинаковая на ст.2/3 и в
@@ -867,7 +899,8 @@ footer {
   border-bottom: 1px solid var(--hairline);
   background: #fafafa;
   font-size: 12.5px;
-}@media (max-width: 600px) {}
+}
+@media (max-width: 600px) {}
 
 /* «Мои ответы» и «Кейс» — обычные кнопки ШАПКИ (case-ref.js кладёт их первыми
    в .station-header-right). Прежний вариант — вертикальные язычки плавающим
@@ -941,7 +974,8 @@ footer {
   display: flex;
   justify-content: flex-end;
   pointer-events: none;
-}.round-fab .btn { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
+}
+.round-fab .btn { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); }
 
 /* Справочные кнопки доступны на ВСЕХ рабочих страницах, включая фазу чтения
    раунда 1 (решение 2026-07-27: одинаковые функции — одинаковая механика на
@@ -1056,8 +1090,10 @@ body.imp-drawer-open .dock-rail { display: none; }
   overflow-y: auto;
   padding: 0;
   margin-top: 18px;
-}@media (max-width: 860px) { }/* единое видимое фокус-кольцо для клавиатурной навигации (WCAG 2.4.7) — доборка к точечным :focus-visible */
-.btn:focus-visible, a.hub-room-card:focus-visible, .fac-tab-btn:focus-visible, .fac-table tbody tr:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }.finalize-actions .btn-primary { flex: 1; }
+}
+@media (max-width: 860px) { }/* единое видимое фокус-кольцо для клавиатурной навигации (WCAG 2.4.7) — доборка к точечным :focus-visible */
+.btn:focus-visible, a.hub-room-card:focus-visible, .fac-tab-btn:focus-visible, .fac-table tbody tr:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.finalize-actions .btn-primary { flex: 1; }
 
 @media (max-width: 600px) {  .finalize-actions .btn { width: 100%; }
 }
@@ -1193,7 +1229,8 @@ body.imp-drawer-open .dock-rail { display: none; }
   color: var(--muted);
 }
 
-.axis .axis-opts b { color: var(--ink); font-weight: 600; }.timing-row .t-min { font-weight: 700; font-family: var(--ff-display); }
+.axis .axis-opts b { color: var(--ink); font-weight: 600; }
+.timing-row .t-min { font-weight: 700; font-family: var(--ff-display); }
 /* Номер участника. Базовое правило осталось с до-редизайна (30px, радиус 12px,
    рамка 3px) и переопределялось только в шапках раундов и Р6 — а в карточке
    кабинета применялось как есть: номер шёл огромным блоком и наезжал на
@@ -1339,7 +1376,8 @@ body.imp-drawer-open .dock-rail { display: none; }
   /* Счётчик участников на мобиле избыточен (то же видно в списке) —
      убираем, чтобы логотип и «Обновить» уместились в одну строку. */
   #facCount { display: none; }
-}.station-intro-inner .kicker { margin-bottom: 10px; }
+}
+.station-intro-inner .kicker { margin-bottom: 10px; }
 
 .station-body {
   flex: 1;
@@ -2665,7 +2703,8 @@ p, li, .section-lead, .chat-bubble, .chat-act, .chat-after, label {
    документ, выравнивание строк только мешает попадать в свою же строку. */
 textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .appx-doc li {
   text-wrap: wrap;
-}.wchip-num.is-active { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-tint); }
+}
+.wchip-num.is-active { color: var(--accent-ink); border-color: var(--accent); background: var(--accent-tint); }
 .deep { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 12px 14px; margin-top: 10px; }
 .deep textarea { width: 100%; min-height: 68px; }
 /* Левое поле навигации: было var(--frame-pad) = 56px, чтобы «Материалы» стояли
@@ -2778,7 +2817,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    только действие (DESIGN.md стр. 101). Метка держится кеглем и разрядкой. */
 .bl-over-tag {
   color: var(--ink);
-}.recap-item { margin: 0 0 22px; }
+}
+.recap-item { margin: 0 0 22px; }
 .recap-q {
   margin-bottom: 6px;
 }
@@ -2816,7 +2856,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   flex-direction: column;
   min-height: 0;
   padding: 0 var(--frame-pad, 56px);
-}.case-read-head .kicker { margin: 0 0 8px; }
+}
+.case-read-head .kicker { margin: 0 0 8px; }
 .case-read-head .section-lead { margin: 0 0 6px; }
 .case-read #caseReadHost { padding-bottom: 28px; }
 /* Кнопка перехода липнет к низу: пакет длинный, и «дальше» не должно требовать
@@ -2888,7 +2929,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   display: inline-block; width: 7px; height: 7px; margin-right: 3px;
   border-radius: 50%; border: 1px solid #d8dadd; vertical-align: middle;
 }
-.cab-dot.is-done { background: var(--ink); border-color: var(--ink); }.cab-dot-picks.is-done { background: var(--accent); border-color: var(--accent); }
+.cab-dot.is-done { background: var(--ink); border-color: var(--ink); }
+.cab-dot-picks.is-done { background: var(--accent); border-color: var(--accent); }
 .cab-fin { color: var(--accent-ink); font-weight: 700; }
 
 .cab-skill { display: inline-block; margin-right: 9px; font-size: var(--fs-op-sm); color: var(--muted-soft); }
@@ -3182,7 +3224,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    восемь людей и девять продуктов упирались в край и обрезались снизу. Поймано
    04.08, когда владелец поставил справку второй вкладкой. */
 #supAnswers.is-on, #supRef.is-on { overflow-y: auto; padding: 16px var(--frame-pad, 24px) 28px; }
-.support-note { font-size: var(--fs-util); line-height: 1.5; color: var(--muted-soft); margin: 0 0 14px; max-width: var(--w-read); }.toc-link {
+.support-note { font-size: var(--fs-util); line-height: 1.5; color: var(--muted-soft); margin: 0 0 14px; max-width: var(--w-read); }
+.toc-link {
   display: block; width: 100%; text-align: left; border: none; background: none;
   padding: 4px 0; font: inherit; font-size: var(--fs-util); color: var(--muted); cursor: pointer;
 }
@@ -3288,7 +3331,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* ── разговор (ЦЕНТРАЛЬНАЯ колонка с 05.08) ── */
 .talk {
   /* ⚠ padding: 0 обязателен: .talk это <section>, и на него падает лендинговое
-     section { padding: 72px 0 }. */
+     section { padding: 72px 0 }
+. */
   padding: 0;
   display: flex; flex-direction: column; min-height: 0; min-width: 0;
   /* Шов «работа | опора». Линию рисует левый сосед шва (см. .support): работа
@@ -3555,7 +3599,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* «Следующий этап N из 7:» — служебная строка над названием этапа (правка
    владельца 07.08). Тем же рецептом метки, что и остальные служебные строки. */
 .interlude-next {
-  font-family: var(--ff-body); font-size: var(--label-size); font-weight: var(--label-weight);
+  font-family: var(--ff-body); font-weight: var(--label-weight);
   letter-spacing: var(--label-track); text-transform: uppercase; color: var(--muted-soft);
   margin: 0 0 6px;
 }
@@ -3650,7 +3694,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    ═════════════════════════════════════════════════════════════════════════ */
 .mx-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 18px 0 8px; }
 .mx-title {
-  font-family: var(--ff-body); font-size: var(--label-size); font-weight: var(--label-weight);
+  font-family: var(--ff-body); font-weight: var(--label-weight);
   letter-spacing: var(--label-track); text-transform: uppercase; color: var(--muted-soft);
 }
 .mx-count { font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums; }
@@ -3816,8 +3860,14 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    разделяла то, что читается подряд (замечание владельца 07.08). */
 #roleHow .intro-note { border-top: none; padding: 0; margin: 0; }
 .intro-note b { color: var(--ink); font-weight: 700; }
+/* Первый вопрос в абзаце — жирным (правка владельца 07.08): он и есть то, что
+   спрашивают, остальное — пояснение. */
+.intro-name p b { color: var(--ink); font-weight: 700; }
 .intro-disclaimer { margin-top: 28px; font-size: var(--fs-read); line-height: 1.5; color: var(--muted); }
-.intro-name p { font-size: var(--fs-read); line-height: 1.5; color: var(--muted); margin: 0 0 10px; max-width: 68ch; }
+/* ⚠ :not(.kicker) обязателен: без него это правило перебивало рецепт метки — у
+   «.intro-name p» специфичность выше, — и «ПРЕЖДЕ ЧЕМ НАЧАТЬ» шёл 16px против 11px
+   у соседних меток. Поймано владельцем 07.08. */
+.intro-name p:not(.kicker) { font-size: var(--fs-read); font-weight: 400; line-height: 1.5; color: var(--muted); margin: 0 0 10px; max-width: 68ch; }
 .intro-name input {
   width: 100%; max-width: 380px; border: 1px solid var(--hairline); border-radius: var(--radius);
   padding: 11px 12px; font: inherit; font-size: var(--fs-read); color: var(--ink); background: var(--paper);
@@ -3835,7 +3885,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    широком окне до бесконечности и не совпадала ни с одним другим экраном. */
 .intro-cta { margin: 40px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 16px; }
 .intro-cta .intro-next { margin: 0; max-width: 62ch; flex: 1 1 260px; }
-.intro-cta .btn { flex: none; }.intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: var(--fs-util); color: var(--muted-soft); }
+.intro-cta .btn { flex: none; }
+.intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: var(--fs-util); color: var(--muted-soft); }
 .intro-back { color: var(--muted); text-decoration: none; }
 .intro-back:hover { color: var(--ink); text-decoration: underline; }
 /* Роль на своём экране: абзацы истории читаются как проза, а не как лид-врезка. */
