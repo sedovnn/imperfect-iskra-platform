@@ -764,7 +764,8 @@
     render: function (host, m, ctx) {
       var lm = ctx.mech('list');
       var draw = function () {
-        var h = '';
+        // Реплика перед таблицей: «Дайте посмотрю, что получилось» (scenes.js).
+        var h = ctx.speech(ctx.before);
         if (lm) {
           var all = M.list.rows(lm, ctx), t = M.list.sums(lm, ctx);
           var by = function (d) { return all.filter(function (r) { return lm.decided[r.key] === d; }); };
@@ -781,6 +782,8 @@
                 : '<p class="bl-empty">пока ничего</p>');
           });
         }
+        // Реплики после таблицы: «Ну что, с этим к ним идти? / Финализируем?»
+        if (m.confirmed == null) h += ctx.speech(ctx.ask);
         if (m.confirmed != null) {
           // ⚠ Список выше СВЁРНУТ до итоговой строки: участник его только что
           // подтвердил, и повторять три стопки под вопросом Агеева незачем.
@@ -966,7 +969,8 @@
     foot: function () { return { note: 'Агеев зачитает письмо дословно.', cta: 'Отправить →' }; },
     locked: function () { return '<b>письмо отправлено</b> <span class="bl-locked-hint">все четыре поля — во вкладке «Мои ответы»</span>'; },
     render: function (host, m, ctx) {
-      host.innerHTML = '<div class="mx-card">' + LETTER.map(function (f) {
+      host.innerHTML = (ctx.lead ? '<p class="mx-hint">' + ctx.esc(ctx.lead) + '</p>' : '') +
+        '<div class="mx-card">' + LETTER.map(function (f) {
         return field(ctx, { id: 'mxL_' + f[0], f: f[0], label: f[1], rows: 4, val: m[f[0]] });
       }).join('') + '</div>';
       LETTER.forEach(function (f) {

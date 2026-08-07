@@ -45,7 +45,6 @@
   var state = null;
   var route = null;
   var caseLoaded = false;
-  var recapShown = false;
 
   // ---------- утилиты ----------
 
@@ -1240,9 +1239,14 @@
       var go = function () {
         state.answers[act.save] = ta.value;
         state.answersAt[act.save] = nowIso();
-        // Не advance(): ответ зафиксирован, но шаг остаётся текущим — участник
-        // видит свой пузырь и сам делает ход кнопкой «Далее».
         saveState();
+        // ⚠ act.flow — РАЗГОВОР ПРОДОЛЖАЕТСЯ САМ (правка владельца 07.08). В кофейне
+        // идёт одна беседа на четыре голоса: после ответа собеседники говорят дальше
+        // и спрашивают снова, и кнопка «Дальше» между репликами резала бы её на куски.
+        // Где шаг действительно кончает встречу, flow нет: там ход делает участник.
+        if (act.flow) { advance(); return; }
+        // Иначе: ответ зафиксирован, но шаг остаётся текущим — участник видит свой
+        // пузырь и сам делает ход кнопкой «Дальше».
         render();
       };
       // ПУСТОЙ ОТВЕТ НЕ ФИКСИРУЕТСЯ. Это гейт формы, а не настойка: план стр. 471
@@ -1308,6 +1312,11 @@
       // фразой, она обязана выглядеть как сказанное, а не как сводка.
       mine: function (text) { return meHtml(text, null); },
       probe: (act && act.probe) || null,
+      // Реплики вокруг верстака: before — над рабочей областью, ask — под ней.
+      before: (act && act.before) || null,
+      // Строка-указатель над верстаком (act.lead в scenes.js).
+      lead: (act && act.lead) || '',
+      ask: (act && act.ask) || null,
       save: function () { saveState(); },
       sync: refreshGate || function () {},
       // Доступ к соседней ветке: список инициатив (С3) обязан видеть варианты,
@@ -1607,18 +1616,8 @@
     return det;
   }
 
-  // Свод дня перед письмом: не вторая копия ответов в ленте, а переключение опоры
-  // на вкладку «Мои ответы». Требование плана — «участник видит свой день перед
-  // тем, как писать письмо» — выполняется, а 1600 пикселей дубля не появляется.
-  function recapBlock(act) {
-    var d = document.createElement('div');
-    d.className = 's2-block recap-pointer';
-    d.innerHTML = '<p class="kicker">' + esc(act.title) + '</p>' +
-      // «справа», а не «слева»: опора переехала вправо 05.08 вместе с обменом колонок.
-      '<p class="section-lead" style="margin:0;">' + esc(act.lead) + ' Всё, что вы сказали, — во вкладке «Мои ответы» справа.</p>';
-    if (!recapShown) { recapShown = true; setTab('answers'); }
-    return d;
-  }
+  // ⚠ recapBlock удалён 07.08 вместе с актом «свод дня» (правка владельца):
+  // его строка переехала к четырём полям письма (act.lead у sc7.letter).
 
 
   // ---------- рендер ----------
@@ -1820,7 +1819,6 @@
 
       if (awaitEnter) { now.appendChild(enterBlock(st.act)); break; }
 
-      if (st.act.kind === 'recap') now.appendChild(recapBlock(st.act));
       // ⚠ Строки «✓ Пакет материалов прочитан» здесь больше нет (решение владельца
       // 07.08): пройденный шаг помечен галочкой в столбике этапов, и вторая отметка
       // над репликами повторяла её же.
@@ -1855,8 +1853,10 @@
     if (state.cursor >= route.length && !state.finished) {
       var fin = document.createElement('div');
       fin.className = 's2-block';
+      // Записки «ассессмент закроется…» здесь больше нет (правка владельца 07.08):
+      // о необратимости сказано на экране роли, и повторять её у последней кнопки —
+      // пугать на ровном месте.
       fin.innerHTML = '<div class="win-foot">' +
-        '<span class="win-note">Ассессмент закроется: письмо уйдёт Агееву, ответы менять будет нельзя.</span>' +
         '<button class="btn btn-primary" id="finishBtn">Закончить ассессмент →</button></div>';
       fin.querySelector('#finishBtn').addEventListener('click', finish);
       now.appendChild(fin);
