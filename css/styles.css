@@ -1074,7 +1074,9 @@ footer {
 }
 
 .s2-block {
-  margin-bottom: 44px;
+  /* 44px было лендинговым ритмом: на рабочем экране блоки идут подряд, и такой шаг
+     разрывал один разговор на несвязанные куски (замечание владельца 07.08). */
+  margin-bottom: 26px;
 }
 
 .s2-ageev {
@@ -4510,7 +4512,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   flex-wrap: wrap;
   align-items: baseline;
   gap: 6px 14px;
-  margin: 38px 0 20px;
+  margin: 24px 0 16px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--hairline);
 }

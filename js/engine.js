@@ -1104,11 +1104,24 @@
   // он превращает ответ в норматив. Место и день остаются: без них участник не
   // понимает, где он, а «где» ни одной способностью не измеряется.
   // Прогресс дня остался ровно в одном месте — interludeWhen.
-  function sceneHead(scene) {
+  // Заголовок рабочей колонки называет ТЕКУЩИЙ ШАГ (решение владельца 07.08): участник
+  // видит, что он сейчас делает, а не в какой сцене находится. Место и время — второй
+  // строкой: они ситуируют разговор, но это не название работы.
+  function stepTitle(act) {
+    if (!act) return '';
+    if (act.kind === 'mechanic') return mechTitle(act.mech);
+    if (act.kind === 'window') return act.label || '';
+    if (act.kind === 'case') return 'Материалы';
+    return '';
+  }
+
+  function sceneHead(scene, act) {
+    var t = stepTitle(act);
+    t = t ? t.charAt(0).toUpperCase() + t.slice(1) : esc(scene.name);
     return '<div class="sc-head">' +
-      '<span class="sc-head-name">' + esc(scene.name) + '</span>' +
+      '<span class="sc-head-name">' + esc(t) + '</span>' +
       '<span class="sc-head-sep">·</span>' +
-      '<span class="sc-head-where">' + esc(scene.where) + '</span>' +
+      '<span class="sc-head-where">' + esc(scene.name) + ', ' + esc(scene.where) + '</span>' +
       '</div>';
   }
 
@@ -1483,15 +1496,6 @@
     return d;
   }
 
-  function caseDoneBlock(act) {
-    var d = document.createElement('div');
-    d.className = 's2-block case-done';
-    // ⚠ ССЫЛКИ «ОТКРЫТЬ СНОВА» ЗДЕСЬ БОЛЬШЕ НЕТ (решение владельца 06.08). Она
-    // переключала правую панель на вкладку «Кейс» — а пакет и так открыт справа на
-    // этой самой вкладке. То есть кнопка предлагала сделать то, что уже сделано.
-    d.innerHTML = '<span class="case-done-mark">✓</span> ' + esc(act.done || 'Пакет материалов прочитан');
-    return d;
-  }
 
   // ---------- рендер ----------
 
@@ -1644,7 +1648,7 @@
     // Такт хранится в state.entered — иначе перезагрузка страницы возвращала бы
     // участника к репликам, которые он уже отслушал.
     var scene = S.scenes[curSceneIx];
-    now.insertAdjacentHTML('beforeend', sceneHead(scene));
+    now.insertAdjacentHTML('beforeend', sceneHead(scene, cur && cur.act));
 
     // Проход по актам ТЕКУЩЕЙ сцены. Реплики накапливаются и отдаются тому шагу,
     // перед которым стоят: у шага с полем fold они превращаются в один узел
@@ -1685,7 +1689,10 @@
       if (fold && !entered) break;
 
       if (st.act.kind === 'recap') now.appendChild(recapBlock(st.act));
-      else if (st.act.kind === 'case') now.appendChild(caseDoneBlock(st.act));
+      // ⚠ Строки «✓ Пакет материалов прочитан» здесь больше нет (решение владельца
+      // 07.08): пройденный шаг помечен галочкой в столбике этапов, и вторая отметка
+      // над репликами повторяла её же.
+      else if (st.act.kind === 'case') { /* отметка не рисуется */ }
       else if (st.act.kind === 'window') now.appendChild(windowBlock(st.act, past));
       else if (st.act.kind === 'mechanic') now.appendChild(mechanicBlock(st.act, past));
     }
