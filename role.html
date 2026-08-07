@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=139" />
+<link rel="stylesheet" href="css/styles.css?v=141" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -47,14 +47,14 @@
     <div class="intro-cols">
     <div class="pgroup">
       <p class="kicker" id="rulesKicker">Как устроен ассессмент</p>
-      <ul class="setup-rules" id="roleRules"><!-- S.system.rules --></ul>
+      <div id="roleRules"><!-- S.system.rules --></div>
     </div>
 
     <!-- Устройство экрана — своя группа: правила говорят, как идёт ассессмент, а это
          где что лежит (решение владельца 07.08). -->
     <div class="pgroup">
       <p class="kicker" id="screenKicker">Как устроен экран ассессмента</p>
-      <ul class="setup-rules" id="roleScreen"><!-- S.system.screen --></ul>
+      <div id="roleScreen"><!-- S.system.screen --></div>
       <!-- СХЕМА ЭКРАНА, а не снимок (решение владельца 07.08: «посадим экран ассессмента,
            обезличенный и не раскрывающий ответов и вопросов»). Схема ничего не раскрывает
            по построению: в ней нет ни одного слова из маршрута — только полосы вместо
@@ -113,7 +113,7 @@
 </div>
 
 <script src="js/main.js?v=7"></script>
-<script src="js/scenes.js?v=24"></script>
+<script src="js/scenes.js?v=25"></script>
 <script>
   (function () {
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('roleBody')) return;
@@ -141,11 +141,18 @@
     document.getElementById('roleLead').innerHTML =
       (sys.lead || []).map(function (p) { return '<p class="section-lead lead">' + br(subst(p)) + '</p>'; }).join('');
     document.getElementById('rulesKicker').textContent = sys.title || 'Как устроен ассессмент';
-    document.getElementById('roleRules').innerHTML =
-      (sys.rules || []).map(function (r) { return '<li>' + br(r) + '</li>'; }).join('');
+    // Пункты нумерованы так же, как принципы на настройке (.prin), и нумерация
+    // СКВОЗНАЯ через оба блока: «как устроен ассессмент» и «как устроен экран» —
+    // один список из семи пунктов, разделённый заголовком (решение владельца 07.08).
+    var prin = function (r, i) {
+      return '<div class="prin"><span class="n">' + (i + 1) + '</span>' +
+             '<span class="t">' + br(r) + '</span></div>';
+    };
+    var rules = sys.rules || [], screen = sys.screen || [];
+    document.getElementById('roleRules').innerHTML = rules.map(prin).join('');
     document.getElementById('screenKicker').textContent = sys.screenTitle || 'Как устроен экран ассессмента';
     document.getElementById('roleScreen').innerHTML =
-      (sys.screen || []).map(function (r) { return '<li>' + br(r) + '</li>'; }).join('');
+      screen.map(function (r, i) { return prin(r, rules.length + i); }).join('');
     document.getElementById('roleHow').innerHTML =
       (sys.howItWorks || []).map(function (p) { return '<p class="intro-note">' + br(p) + '</p>'; }).join('');
     document.getElementById('roleNote').innerHTML = '<i>' + br(sys.note || '') + '</i>';

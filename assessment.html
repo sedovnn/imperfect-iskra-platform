@@ -14,9 +14,9 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=139" />
+<link rel="stylesheet" href="css/styles.css?v=141" />
 </head>
-<body>
+<body class="p-assess">
 
 <!-- У body был класс .frame-narrow — снят 04.08. Он пришпиливал --maxw к 1120, а
      тело дня (.day-grid) на --maxw не сидит вообще, поэтому шапка оказывалась
@@ -256,7 +256,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=24"></script>
+<script src="js/scenes.js?v=25"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -265,6 +265,6 @@
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
 <script src="js/mechanics.js?v=8"></script>
-<script src="js/engine.js?v=36"></script>
+<script src="js/engine.js?v=37"></script>
 </body>
 </html>

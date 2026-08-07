@@ -27,6 +27,13 @@
                           сам --jb на бумаге даёт ≈2:1, ниже порога 3:1 (WCAG 1.4.11) */
   --ink: #181818;
   --paper: #ffffff;
+  /* ⚠ ВЕРМИЛИОНА ВНУТРИ АССЕССМЕНТА НЕТ (решение владельца 07.08). Он остаётся на
+     двух экранах до старта — настройка и введение в роль; начиная с кейса всё,
+     что было вермилионом, голубое. Правило одно и живёт в токенах: подменяем всю
+     семью акцента на странице (body.p-assess ниже), а не тридцать правил по одному.
+     Последствие названо владельцу: голубой внутри дня несёт два смысла — «моё»
+     (бледная заливка --band) и «действие» (залитая кнопка --jb-ink); различает их
+     заливка, а не оттенок. */
   --muted: #6b6e73;
   --muted-soft: #71747a; /* затемнён с #9a9da2 до ≈4.8:1 на белом (WCAG 1.4.3): читаемый текст/плейсхолдеры/хинты */
   --hairline: #e7e7e7;
@@ -98,6 +105,22 @@
   --lime-tint: #fff2ec;
   --lime-line: #ffd7c7;
   --line: #181818;
+}
+
+/* СТРАНИЦА АССЕССМЕНТА: вся семья акцента — голубая. Правило стоит сразу за :root,
+   потому что подменяет только значения токенов; ни одно правило ниже про это не
+   знает и знать не должно. Обе семьи (--accent* и легаси --lime*) — иначе
+   тридцать мест на --lime остались бы вермилионовыми. */
+body.p-assess {
+  --accent: #2f6bb0;        /* = --jb-ink */
+  --accent-dim: #24558c;    /* ховер залитой кнопки */
+  --accent-ink: #2f6bb0;
+  --accent-tint: #eaf3fb;   /* = --band */
+  --accent-line: #bcd9f2;   /* = --band-line */
+  --lime: #2f6bb0;
+  --lime-dim: #24558c;
+  --lime-tint: #eaf3fb;
+  --lime-line: #bcd9f2;
 }
 
 /* Диалоговые раунды (3/4/5): рабочая зона — узкая колонка чтения/письма, широкая
@@ -4603,8 +4626,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   border-bottom: 1px solid var(--hairline);
 }
 .bl-locked b { color: var(--ink); font-variant-numeric: tabular-nums; }
+/* «За рамкой» — состояние разбора, а не действие: вермилион в системе помечает
+   только действие (DESIGN.md стр. 101). Метка держится кеглем и разрядкой. */
 .bl-over-tag {
-  color: var(--accent-ink);
+  color: var(--ink);
 }
 
 /* Свод дня перед последним окном и панель «Мои ответы» — один и тот же рендер.
@@ -5578,8 +5603,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .interlude-bridge { margin: 10px 0 18px; }
 .interlude-bridge-p { margin: 0 0 6px; font-size: var(--fs-read); line-height: 1.6; color: var(--ink); }
 
-/* ── ДВА ТАКТА ШАГА: слушаю → работаю ── */
-.talk-listen .win-foot { margin-top: 6px; }
+/* ── СВЁРНУТЫЙ МОНОЛОГ ПРОЙДЕННОГО ШАГА ── */
+/* .talk-listen убран вместе с тактом «слушаю» (07.08). */
+/* Ряд «Ответить» внутри своей карточки: прижат вправо, как и подвал колонки, —
+   действие всегда у правого края, где бы оно ни стояло. */
+.mine-act { display: flex; justify-content: flex-end; margin-top: 10px; }
 .talk-folded { border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--soft); }
 .talk-folded-sum {
   display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none;
@@ -5669,7 +5697,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Отступ ПОСЛЕ заголовка больше, чем до него: заголовок принадлежит тому, что за ним.
    Замер 07.08: до h1 было 14px, после — 0 (правило #roleLead .lead { margin: 0 }
    затирало отступ, и лид стоял вплотную к 60px заголовку). Ниже — 0,4 кегля. */
-.intro-hero h1 { font-size: clamp(34px, 4.4vw, 60px); font-weight: 800; text-transform: uppercase; letter-spacing: -.015em; line-height: 1.02; margin: 10px 0 0.4em; }
+/* ⚠ max-width: none обязателен: у лендингового h1 стоит max-width: 16ch (стр. 311),
+   а «Как проходить ассессмент» — 24 знака, и заголовок рвался на две строки при
+   свободных 900px справа. Кегль я правил 07.08, а рвал строку не кегль, а этот
+   потолок. */
+.intro-hero h1 { font-size: clamp(34px, 4.4vw, 60px); font-weight: 800; text-transform: uppercase; letter-spacing: -.015em; line-height: 1.02; margin: 10px 0 0.4em; max-width: none; }
 .intro-hero .lead { margin-top: 16px; max-width: 62ch; }
 .intro-hero .lead b { color: var(--ink); }
 .pgroup { margin-top: 34px; }
@@ -5738,18 +5770,20 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .mx-anchor-pick:hover { border-color: var(--accent); color: var(--ink); }
 .mx-anchor-open { margin-top: 6px; }
+/* Пунктир — место под то, что напишет участник, значит он голубой, как и всё
+   его: и в покое, и под курсором. Вермилион здесь помечал бы действие платформы. */
 .mx-add {
-  border: 1px dashed var(--hairline); background: var(--paper); color: var(--muted);
+  border: 1px dashed var(--band-line); background: var(--paper); color: var(--muted);
   border-radius: var(--radius); font: inherit; font-size: var(--fs-dense);
   padding: 7px 12px; cursor: pointer; width: 100%; text-align: left;
 }
-.mx-add:hover:not(:disabled) { border-color: var(--accent); color: var(--ink); }
+.mx-add:hover:not(:disabled) { border-color: var(--jb-ink); color: var(--ink); }
 .mx-add:disabled { opacity: .45; cursor: default; }
 .mx-hint { font-size: var(--fs-util); color: var(--muted-soft); margin: 8px 0 3px; }
 
 /* слот симптома: метка-заголовок, без стрелки и без глагола (лор §С1) */
 .mx-slot {
-  border: 1px dashed var(--hairline); border-radius: var(--radius);
+  border: 1px dashed var(--band-line); border-radius: var(--radius);
   padding: 10px 12px; background: var(--band); margin: 12px 0 0;
 }
 .mx-quote { font-size: var(--fs-dense); line-height: 1.55; margin: 6px 0 0; }
@@ -5821,7 +5855,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* слайдер срока (С5). Дефолта нет: пока не сдвинут, значение «не выбрано» —
    обязательный срок стирал наблюдение «сам ли человек привязал цель ко времени» */
 .mx-years { display: flex; align-items: center; gap: 14px; margin: 0 0 4px; }
-.mx-years input[type="range"] { flex: 1; accent-color: var(--accent); }
+/* Ползунок — то, что двигает участник, значит голубой; вермилион остаётся кнопкам. */
+.mx-years input[type="range"] { flex: 1; accent-color: var(--jb-ink); }
 .mx-years-val {
   font-size: var(--fs-place); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 5.2em;
 }
@@ -5911,7 +5946,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   height: 38px; border-radius: var(--radius);
   background: var(--band); border: 1px solid var(--band-line);
 }
-.scr-btn { align-self: flex-end; width: 96px; height: 20px; border-radius: var(--radius); background: var(--accent); }
+/* Схема показывает экран ассессмента, а там действие голубое — цвет берём оттуда,
+   а не со страницы роли, где вермилион ещё живёт. */
+.scr-btn { align-self: flex-end; width: 96px; height: 20px; border-radius: var(--radius); background: var(--jb-ink); }
 .scr-tabs { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 4px; font-size: var(--fs-util); }
 .scr-tabs b { font-weight: 600; color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
 .scr-tabs i { font-style: normal; color: var(--muted-soft); }

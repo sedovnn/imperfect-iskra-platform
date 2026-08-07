@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=139" />
+<link rel="stylesheet" href="css/styles.css?v=141" />
 <style>
   /* ЭКРАН 1 ИЗ ТРЁХ: настройка на мышление → введение в роль (role.html) →
      материалы (assessment.html). Приглушённый FP-лист: экран настраивает, а не
@@ -87,7 +87,7 @@
          Штерн ({name} в scenes.js). Незнакомые — Брагин, Дарья, Северова — нет. -->
     <div class="pgroup intro-name">
       <p class="kicker">Прежде чем начать</p>
-      <p>Как к вам обращаться? Так к вам обратятся в разговорах те, кто вас уже знает; имя нужно и организатору — понимать, чей это прогон. На оценку оно не влияет: судья его не видит. Можно псевдоним.</p>
+      <p>Как к вам обращаться? Так к вам будут обращаться в разговорах герои ассессмента. На оценку это не влияет. Можно псевдоним.</p>
       <input type="text" id="introName" maxlength="60" autocomplete="off" placeholder="Имя или как вам удобно" />
     </div>
 
@@ -95,7 +95,8 @@
          ассессменте (.win-foot): записка слева, кнопка справа, по размеру своей
          подписи. Во всю ширину она тянулась до бесконечности на широком окне. -->
     <div class="intro-cta">
-      <p class="intro-next">Дальше — кто вы в этой истории и как устроен ассессмент. Потом материалы.</p>
+      <!-- Записки «дальше — кто вы в этой истории…» здесь нет (решение владельца
+           07.08): она пересказывала следующий экран, а он и так следующий. -->
       <a class="btn btn-primary" id="startBtn" href="role.html">К введению в роль →</a>
     </div>
 
@@ -122,8 +123,6 @@
     if (from && ALLOWED[from] && from !== 'role.html') {
       btn.setAttribute('href', from);
       btn.textContent = 'Вернуться ' + ALLOWED[from] + ' →';
-      var nx = document.querySelector('.intro-next');
-      if (nx) nx.style.display = 'none';
     }
     // Имя: префилл из сессии и сохранение при уходе. Пишем и в localStorage, и в
     // sessionStorage — сессию читают оба (см. js/main.js loadSession).
