@@ -678,7 +678,9 @@
         return {
           note: 'Вернуться можно один раз.',
           cta: 'Утверждаю →',
-          extra: m.returned ? '' : '<button type="button" class="btn btn-ghost" id="sealBack">Вернуться и изменить</button>'
+          // Обе кнопки вермилионом и рядом, стрелки в разные стороны (решение владельца
+          // 07.08): это два равноправных хода — назад или утвердить.
+          extra: m.returned ? '' : '<button type="button" class="btn btn-primary" id="sealBack">← Вернуться и изменить</button>'
         };
       }
       return { note: m.returned ? 'Возврат уже был — он у вас один.' : 'Ответ зафиксируется.', cta: 'Отправить →' };
