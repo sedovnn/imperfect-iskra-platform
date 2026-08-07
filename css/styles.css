@@ -5735,6 +5735,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 11px 12px; font: inherit; font-size: var(--fs-read); color: var(--ink); background: var(--paper);
 }
 .intro-name input:focus { outline: none; border-color: var(--jb-ink); }
+/* Поле имени прижато к правому краю своего столбца — там же, где стоит кнопка
+   «К введению в роль» (.intro-cta прижимает её вправо). Так поле и кнопка стоят на
+   одной вертикали; по центру кнопки поле выровнять нельзя — оно шире её и вылезло
+   бы за рамку. */
+@media (min-width: 1100px) {
+  .intro-cols > .intro-name input { margin-left: auto; }
+}
 /* Ряд действия — та же геометрия, что у ответа в ассессменте (.win-foot): записка
    слева, кнопка справа и по размеру своей подписи. Кнопка во всю ширину тянулась на
    широком окне до бесконечности и не совпадала ни с одним другим экраном. */

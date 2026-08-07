@@ -433,7 +433,10 @@
     var t = String(text == null ? '' : text).trim();
     return '<div class="chat"><div class="chat-msg me"><span class="chat-name">Вы</span>' +
       '<div class="chat-bubble">' + (t ? br(t) : '<i>промолчали</i>') + '</div></div></div>' +
-      (at ? '<div class="win-fixed">✓ зафиксировано · ' + hhmm(at) + '</div>' : '');
+      // ⚠ БЕЗ ЧАСОВ (решение владельца 07.08): реальное время сбивает относительно
+      // времени лора — участник видит «14:27» там, где в истории «понедельник, 10:00».
+      // Сам штамп в состоянии остаётся: answersAt уходит на сервер и нужен судейству.
+      (at ? '<div class="win-fixed">✓ зафиксировано</div>' : '');
   }
 
   // ---------- опора ----------
@@ -503,7 +506,6 @@
         '<div class="mark-acts">' +
           '<button type="button" class="mark-act" data-show="' + m.id + '">показать в кейсе</button>' +
           '<button type="button" class="mark-act" data-del="' + m.id + '">убрать</button>' +
-          '<span class="mark-when">' + hhmm(m.at) + '</span>' +
         '</div></div>';
     }).join('');
   }
@@ -1159,8 +1161,10 @@
         '<textarea id="winInput" class="win-input" data-answer="1" rows="9" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
         // ⚠ Класс НЕ .win-foot: узел с этим классом render() уносит в подвал колонки,
         // и «Ответить» уехала бы из пузыря туда же, к «Далее».
+        // .btn-sm, а не полный размер: в подвале колонки стоит «Далее» полным
+        // кеглем, и две кнопки одного веса на одном экране спорили бы за главную.
         '<div class="mine-act">' +
-          '<button class="btn btn-primary" id="commitBtn">Ответить →</button>' +
+          '<button class="btn btn-primary btn-sm" id="commitBtn">Ответить →</button>' +
         '</div>' +
       '</div>' + footHtml;
     wireNext();
@@ -1600,7 +1604,8 @@
     // «ответ отправлен» там правда; на остальных переходах ничего никуда не уходит,
     // и правда — «зафиксирован».
     var sent = bridge.sent || I.sent || 'Ответ зафиксирован';
-    el('interludeMark').textContent = lastAt ? '✓ ' + sent + ' · ' + hhmm(lastAt) : '✓ ' + sent;
+    // Без часов, как и отметка под ответом: время лора и время браузера спорят.
+    el('interludeMark').textContent = '✓ ' + sent;
     el('interludeBridge').innerHTML = (bridge.lead || []).map(function (p) {
       return '<p class="interlude-bridge-p">' + br(p) + '</p>';
     }).join('');
