@@ -534,7 +534,7 @@
     if (!host) return;
     var list = state.marks || [];
     if (!list.length) {
-      host.innerHTML = '<p class="bl-empty">Пока ничего. Выделите фрагмент в материалах — появится кнопка «В пометки».</p>';
+      host.innerHTML = '<p class="bl-empty">Пока ничего. Выделите фрагмент в материалах — появится кнопка «отметить».</p>';
       return;
     }
     // draggable у цитаты: пометку можно перетащить на карточку тезиса (механика
@@ -545,7 +545,7 @@
         '<blockquote class="mark-quote" draggable="true" data-dragmark="' + m.id + '">' + esc(m.quote) + '</blockquote>' +
         // data-answer здесь НЕТ сознательно: это не ответ, и в замер вставок и
         // набора поле не идёт. Именно из-за обратного пришлось убрать заметки.
-        '<textarea class="mark-note" rows="2" data-note="' + m.id + '" placeholder="своя строка — если нужна">' + esc(m.note || '') + '</textarea>' +
+        '<textarea class="mark-note" rows="2" data-note="' + m.id + '" placeholder="личный комментарий, не идёт в оценку">' + esc(m.note || '') + '</textarea>' +
         '<div class="mark-acts">' +
           '<button type="button" class="mark-act" data-show="' + m.id + '">показать в кейсе</button>' +
           '<button type="button" class="mark-act" data-del="' + m.id + '">убрать</button>' +
@@ -688,8 +688,26 @@
       pop.style.top = Math.round(top) + 'px';
       pop.style.left = Math.round(left) + 'px';
     };
-    document.addEventListener('selectionchange', onSelect);
-    host.addEventListener('mouseup', onSelect);
+    // ⚠ КНОПКА ПОЯВЛЯЕТСЯ, КОГДА ВЫДЕЛЕНИЕ ОТПУЩЕНО, а не пока его тянут (правка
+    // владельца 07.08). На selectionchange она прыгала за курсором всё время
+    // протяжки — механика читалась дёрганой. Теперь selectionchange только ПРЯЧЕТ
+    // кнопку (выделение поехало — прежняя кнопка неверна), а показывает её отпускание
+    // мыши, клавиатурное выделение (keyup с Shift) и касание.
+    document.addEventListener('selectionchange', function () {
+      if (dragging) { hidePop(); return; }
+      onSelect();
+    });
+    var dragging = false;
+    host.addEventListener('mousedown', function () { dragging = true; hidePop(); });
+    document.addEventListener('mouseup', function () {
+      if (!dragging) return;
+      dragging = false;
+      // Отпускание мыши приходит РАНЬШЕ, чем браузер обновит выделение при клике по
+      // уже выделенному тексту, — отсюда таймаут в один кадр.
+      setTimeout(onSelect, 0);
+    });
+    host.addEventListener('touchend', function () { setTimeout(onSelect, 0); });
+    host.addEventListener('keyup', function (e) { if (e.shiftKey || e.key === 'Shift') onSelect(); });
     // Прокрутка панели и уход со вкладки прячут кнопку: висящая кнопка над чужим
     // местом хуже, чем её отсутствие.
     host.addEventListener('scroll', hidePop);

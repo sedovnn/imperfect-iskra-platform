@@ -1538,7 +1538,9 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
   padding: 10px 0;
   margin: 10px 0 26px;
   border-top: 2px solid var(--ink);
-  border-bottom: 1px solid #ececec;
+  /* ⚠ border-bottom снят (правка владельца 07.08): под разделителем сразу идёт
+     первый раздел со своей верхней линейкой — получались две линии с пустотой
+     между ними. Линия у разделителя одна, и она сверху. */
 }
 
 /* appendices read as distinct attached documents you open on purpose —

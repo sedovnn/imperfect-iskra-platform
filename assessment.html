@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=149" />
+<link rel="stylesheet" href="css/styles.css?v=150" />
 </head>
 <body class="p-assess">
 
@@ -170,7 +170,7 @@
         <!-- Порядок вкладок задан владельцем 04.08: кейс, справка, пометки, мои ответы. -->
         <nav class="support-tabs" id="supportTabs">
           <button type="button" class="support-tab is-on" data-tab="case">О компании</button>
-          <button type="button" class="support-tab" data-tab="marks">Пометки<span class="tab-count" id="marksCount"></span></button>
+          <button type="button" class="support-tab" data-tab="marks">Мои заметки<span class="tab-count" id="marksCount"></span></button>
           <button type="button" class="support-tab" data-tab="ref">Справка</button>
           <button type="button" class="support-tab" data-tab="answers">Мои ответы</button>
         </nav>
@@ -212,11 +212,11 @@
           </div>
         </div>
 
-        <!-- Порядок язычков и узлов: О компании · Пометки · Справка · Мои ответы
+        <!-- Порядок язычков и узлов: О компании · Мои заметки · Справка · Мои ответы
              (правка владельца 07.08). Порядок УЗЛОВ обязан повторять порядок
              язычков — иначе tab и скринридер идут не так, как глаз. -->
         <div class="support-body" id="supMarks">
-          <p class="support-note">Ваши выписки из материалов. Доступны на любом шаге ассессмента, в оценке не участвуют.</p>
+          <p class="support-note">Ваши заметки по материалам. Доступны на любом шаге ассессмента, в оценке не участвуют.</p>
           <div id="supMarksBody"></div>
         </div>
         <!-- Справка: девять терминов приехали из кейса v7, «кто есть кто» — указатель
@@ -255,7 +255,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=32"></script>
+<script src="js/scenes.js?v=33"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -263,7 +263,7 @@
 <!-- mechanics.js ДО engine.js: движок спрашивает window.imp.mechanics[act.mech] в
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
-<script src="js/mechanics.js?v=14"></script>
-<script src="js/engine.js?v=45"></script>
+<script src="js/mechanics.js?v=15"></script>
+<script src="js/engine.js?v=46"></script>
 </body>
 </html>

@@ -164,11 +164,11 @@
                 return '<button type="button" class="mx-anchor-pick" data-anchorset="' + x.id +
                   '" data-mid="' + mk.id + '">' + ctx.esc(cut(mk.quote, 90)) + '</button>';
               }).join('')
-            : '<p class="mx-hint">Выписок пока нет. Выделите фрагмент в материалах справа — появится кнопка «В пометки».</p>') +
+            : '<p class="mx-hint">Заметок пока нет. Выделите фрагмент в материалах справа — появится кнопка «отметить».</p>') +
             '<button type="button" class="s2-act" data-anchorclose="' + x.id + '">скрыть</button></div>';
         } else {
           h += '<button type="button" class="s2-act mx-anchor-open" data-anchoropen="' + x.id + '">' +
-            'Подтвердить пометкой в материалах' + (marks.length ? ' (' + marks.length + ')' : '') + '</button>';
+            'Подтвердить заметкой в материалах' + (marks.length ? ' (' + marks.length + ')' : '') + '</button>';
         }
         h += '<input type="text" class="mx-input mx-input-thin" data-answer="1" data-anchor="' + x.id + '"' +
           ' placeholder="или словами: если ссылаетесь на материалы — где именно (необязательно)" value="' +
