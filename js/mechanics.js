@@ -329,7 +329,7 @@
         ? '' : 'Нужен хотя бы один вариант с непустой сутью.';
     },
     foot: function () {
-      return { note: 'Варианты перейдут в список инициатив.', cta: 'Разложил →' };
+      return { note: '', cta: 'Разложил →' };
     },
     locked: function (m) {
       var n = m.rays.filter(function (r) { return String(r.name + r.gist).trim(); }).length;
@@ -471,7 +471,7 @@
       if (!String(m.criteria).trim()) return 'Критерии обязательны: на чём стоит этот выбор.';
       return '';
     },
-    foot: function () { return { note: 'Разбор зафиксируется: переиграть его нельзя.', cta: 'Зафиксировать разбор →' }; },
+    foot: function () { return { note: '', cta: 'Зафиксировать разбор →' }; },
     locked: function (m, ctx) {
       var t = sums(m, ctx);
       return '<b>' + t.take + '</b> берём · <b>' + t.later + '</b> не сейчас · <b>' + t.never + '</b> не делаем · ' +
@@ -685,13 +685,15 @@
       if (m.confirmed == null) {
         return {
           note: 'Вернуться можно один раз.',
-          cta: 'Утверждаю →',
+          cta: 'Подтвердить →',
           // Обе кнопки вермилионом и рядом, стрелки в разные стороны (решение владельца
           // 07.08): это два равноправных хода — назад или утвердить.
           extra: m.returned ? '' : '<button type="button" class="btn btn-primary" id="sealBack">← Вернуться и изменить</button>'
         };
       }
-      return { note: m.returned ? 'Возврат уже был — он у вас один.' : 'Ответ зафиксируется.', cta: 'Отправить →' };
+      // Второй шаг — разговор, а не форма: реплика Агеева и ответ в своей карточке
+      // с кнопкой внутри (решение владельца 07.08).
+      return { note: m.returned ? 'Возврат уже был — он у вас один.' : '', cta: 'Ответить →', inCard: true };
     },
     footWire: function (foot, m, ctx) {
       var b = foot.querySelector('#sealBack');
@@ -739,9 +741,17 @@
           });
         }
         if (m.confirmed != null) {
-          h += '<div class="mx-card" style="margin-top:16px;">' +
+          // ⚠ Список выше СВЁРНУТ до итоговой строки: участник его только что
+          // подтвердил, и повторять три стопки под вопросом Агеева незачем.
+          h = '<div class="mx-seal-total">' + (lm ? (function () {
+            var t = M.list.sums(lm, ctx);
+            return t.people + ' человек · ' + ctx.num(t.money) + ' млрд' +
+              (t.over ? ' <span class="bl-over-tag">за рамкой</span>' : '');
+          })() : '') + '</div>';
+          h += ctx.speech(ctx.probe);
+          h += '<div class="s2-mine"><span class="chat-name">Вы</span>' +
             field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: 'одна фраза',
-              label: m.returned ? 'Что поменяли и почему' : 'Одной фразой — почему уверены',
+              label: m.returned ? 'Что поменяли и почему' : '',
               val: m.why }) + '</div>';
         }
         host.innerHTML = h;
@@ -764,7 +774,7 @@
       if (ctx.isDemo) return '';
       return m.cards.some(function (t) { return String(t).trim(); }) ? '' : 'Нужна хотя бы одна карточка.';
     },
-    foot: function () { return { note: 'Ответ зафиксируется.', cta: 'Разложил →' }; },
+    foot: function () { return { note: '', cta: 'Разложил →' }; },
     locked: function (m) {
       var n = m.cards.filter(function (t) { return String(t).trim(); }).length;
       return '<b>' + n + '</b> ' + plural(n, 'вариант', 'варианта', 'вариантов') + ' будущего' +
@@ -848,7 +858,7 @@
       if (ctx.isDemo) return '';
       return String(m.became).trim() ? '' : '«Чем стала компания» — обязательно. Срок и цена по желанию.';
     },
-    foot: function () { return { note: 'Срок и цена — по желанию.', cta: 'Ответил →' }; },
+    foot: function () { return { note: '', cta: 'Ответил →' }; },
     locked: function (m) {
       // «через не выбрано» — сломанная фраза; когда срока нет, так и говорим.
       // Отсутствие срока само по себе наблюдение (МК-1), а не пропуск, поэтому

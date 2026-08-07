@@ -1403,7 +1403,9 @@ footer {
   margin-left: auto;
 }
 .s2-mine > * { width: 100%; max-width: none; }
-.s2-mine .chat-name { text-align: left; margin: 0 0 2px; }
+/* «ВЫ» — над пузырём и справа (решение владельца 07.08): своя сторона разговора
+   помечена там же, где стоит и сам пузырь. */
+.s2-mine .chat-name { text-align: right; margin: 0 0 6px; }
 /* ⚠ Вермилионной рамки у поля ответа больше НЕТ. Она осталась от прежнего дизайна,
    где своё метили акцентом; сегодня своё метится голубым, и оранжевый контур на белом
    поле внутри голубой карточки читался как ошибка ввода. Акцент в системе помечает
@@ -4342,7 +4344,9 @@ tr.fac-row-ai td { background: var(--band); }
   line-height: 1.45;
   color: var(--muted);
 }
-.chat-note { text-transform: none; letter-spacing: 0; font-weight: 400; }
+/* Ремарка — своя строка курсивом под именем (решение владельца 07.08). Скобок
+   больше нет: строка отделена сама собой, и скобки внутри курсива читались шумом. */
+.chat-note { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; font-style: italic; margin: 0 0 6px 2px; }
 .chat-act { font-style: italic; margin: 0 0 4px 2px; }
 .chat-after { font-family: var(--ff-body); font-size: var(--fs-dense); font-style: italic; color: var(--muted-soft); margin: 4px 0 0 2px; }
 .chat-bubble {
@@ -5465,6 +5469,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    крупнейший текст экрана перехода рисовался светлым (DESIGN.md стр. 119: title — 700). */
 .interlude-where { font-family: var(--ff-display); font-weight: 700; font-size: var(--fs-place); line-height: 1.15; margin: 0 0 6px; }
 .interlude-when { font-size: var(--fs-dense); color: var(--muted-soft); margin: 0 0 26px; }
+/* «Следующий этап N из 7:» — служебная строка над названием этапа (правка
+   владельца 07.08). Тем же рецептом метки, что и остальные служебные строки. */
+.interlude-next {
+  font-family: var(--ff-body); font-size: var(--label-size); font-weight: var(--label-weight);
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--muted-soft);
+  margin: 0 0 6px;
+}
 .interlude-lead {
   margin: 0 0 30px; padding-left: 14px; border-left: 2px solid var(--accent);
   font-size: var(--fs-read); line-height: 1.6;
@@ -5961,3 +5972,22 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .scr-tabs i { font-style: normal; color: var(--muted-soft); }
 .scr figcaption { margin-top: 8px; font-size: var(--fs-util); color: var(--muted-soft); }
 @media (max-width: 700px) { .scr-body { grid-template-columns: 1fr; } .scr-left, .scr-mid { border-right: none; } }
+
+/* ── РЕПЛИКИ ПОЯВЛЯЮТСЯ ПО ОДНОЙ (решение владельца 07.08) ──
+   Реплика ждёт своей очереди скрытой и въезжает снизу; рабочая область до конца
+   монолога тоже скрыта (.is-await), и её действие в подвал колонки не переносится.
+   Ни одного нового цвета и размера — только прозрачность и сдвиг. */
+.chat.is-staged { opacity: 0; transform: translateY(6px); }
+.chat.is-staged.is-in {
+  opacity: 1; transform: none;
+  transition: opacity .32s ease, transform .32s ease;
+}
+.s2-block.is-await, .is-await { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .chat.is-staged { opacity: 1; transform: none; }
+  .chat.is-staged.is-in { transition: none; }
+}
+
+/* Записка верстака над серой линией: та же роль, что у .win-note, но своё место —
+   в рабочей области, а не в ряду действия (решение владельца 07.08). */
+.mx-foot-note { margin: 14px 0 0; font-size: var(--fs-util); line-height: 1.5; color: var(--muted-soft); max-width: 880px; }

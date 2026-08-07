@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=142" />
+<link rel="stylesheet" href="css/styles.css?v=145" />
 </head>
 <body class="p-assess">
 
@@ -65,7 +65,7 @@
   <div class="gate-card">
     <p class="kicker">✓ Ассессмент закончен</p>
     <h2>Письмо ушло Агееву</h2>
-    <p class="section-lead" style="margin:0 0 24px;">Ответы записаны. Разбор придёт отдельно — здесь оценок нет и не будет.</p>
+    <p class="section-lead" style="margin:0 0 24px;">Спасибо за уделённое время. Отчёт придёт вам отдельным письмом.</p>
     <a class="btn btn-primary btn-block" href="index.html">На главную →</a>
   </div>
 </div>
@@ -145,6 +145,7 @@
                    где ждут. Из scenes.js (scene.bridge) — только календарь и место,
                    ничего о предмете следующего разговора. -->
               <div class="interlude-bridge" id="interludeBridge"></div>
+              <p class="interlude-next" id="interludeNext"></p>
               <p class="interlude-where" id="interludeWhere"></p>
               <p class="interlude-when" id="interludeWhen"></p>
               <div class="interlude-lead" id="interludeLead"></div>
@@ -256,7 +257,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=25"></script>
+<script src="js/scenes.js?v=27"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -264,7 +265,7 @@
 <!-- mechanics.js ДО engine.js: движок спрашивает window.imp.mechanics[act.mech] в
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
-<script src="js/mechanics.js?v=8"></script>
-<script src="js/engine.js?v=38"></script>
+<script src="js/mechanics.js?v=10"></script>
+<script src="js/engine.js?v=41"></script>
 </body>
 </html>
