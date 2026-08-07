@@ -5027,6 +5027,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .toc-link:hover { color: var(--ink); }
 .toc-link.is-on { color: var(--ink); font-weight: 600; }
 
+/* Точка привязки для плавающей кнопки «вернуться к чтению» (.case-back). */
+#supCase { position: relative; }
 #supCaseText { flex: 1; min-height: 0; overflow-y: auto; padding: 20px var(--frame-pad, 24px) 40px; }
 /* Одна колонка документа. DESIGN.md стр. 148: всё влево внутри колонки, сама колонка —
    по центру окна. Таблицы приложений лежат в .tbl-wrap со своей прокруткой. */
@@ -5252,16 +5254,19 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* ── ВОЗВРАТ ИЗ ПРИЛОЖЕНИЯ НА СТРОКУ ЧТЕНИЯ ──
    Липнет к верху панели: после прыжка в приложение глаз наверху, и кнопка должна
    быть там же, а не в конце документа. */
+/* Возврат к чтению — ПЛАВАЮЩАЯ КНОПКА У НИЖНЕГО КРАЯ, поверх текста (решение
+   владельца 06.08). Микрополоса вверху колонки этой работы не делала: уводила глаз
+   от места, где он читает, и не читалась как действие. Кнопка не в потоке, поэтому
+   текст под ней не сдвигается; position: sticky здесь не годится — прокручивается
+   колонка целиком, и липкий низ ей недоступен. */
 .case-back {
-  position: sticky; top: 0; z-index: 3; flex: none;
-  padding: 8px var(--frame-pad, 24px);
-  background: var(--accent-tint); border-bottom: 1px solid var(--accent-line);
+  position: absolute; z-index: 6; left: 0; right: 0; bottom: 18px;
+  display: flex; justify-content: center; pointer-events: none;
 }
 .case-back-act {
-  border: none; background: none; padding: 0; cursor: pointer;
-  font: inherit; font-size: var(--fs-util); font-weight: 600; color: var(--accent-ink);
+  pointer-events: auto;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18);
 }
-.case-back-act:hover { text-decoration: underline; }
 
 /* Ссылка на приложение в тексте кейса. Начертание то же, что задумано в самом
    кейсе (.appx-ref там уже описан), здесь только курсор и поведение ссылки без

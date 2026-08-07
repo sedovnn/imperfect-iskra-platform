@@ -480,7 +480,6 @@
         ' <span class="bl-locked-hint">разбор целиком — во вкладке «Мои ответы»</span>';
     },
     render: function (host, m, ctx) {
-      var open = {};
       var draw = function () {
         var all = rows(m, ctx), t = sums(m, ctx);
         var by = function (d) { return all.filter(function (r) { return m.decided[r.key] === d; }); };
@@ -518,15 +517,16 @@
             '<textarea id="mxO' + r.key + '" class="mx-input" data-answer="1" rows="2" data-obj="' + r.key +
               '" placeholder="необязательно">' + ctx.esc(m.obj[r.key] || '') + '</textarea>';
         };
+        // Обоснование заявки видно СРАЗУ (решение владельца 06.08). Прятать его за
+        // ссылкой «почему» смысла не было: это единственное, из чего участник понимает,
+        // за что просят людей и деньги, и решение без него принимать нечем.
         var card = function (r) {
-          var o = open[r.key];
           return '<div class="bl-card' + (r.own ? ' mx-own' : '') + '">' +
             '<div class="bl-card-top"><span class="bl-n">' + (r.own ? 'ваш' : ctx.blNum(r.id)) + '</span>' + priceOf(r) + '</div>' +
             '<div class="bl-card-title">' + ctx.esc(r.title) + '</div>' +
             (r.who ? '<div class="bl-card-who">' + ctx.esc(r.who) + '</div>' : '') +
-            (o && r.argument ? '<p class="bl-card-arg">' + ctx.esc(r.argument) + '</p>' : '') +
+            (r.argument ? '<p class="bl-card-arg">' + ctx.esc(r.argument) + '</p>' : '') +
             acts(r) +
-            (r.argument ? '<button type="button" class="bl-why" data-why="' + r.key + '">' + (o ? 'скрыть' : 'почему') + '</button>' : '') +
             '</div>';
         };
 
@@ -610,8 +610,7 @@
       // один раз, снаружи draw() — см. пояснение в M.theses
       host.addEventListener('click', function (e) {
         var t2 = e.target;
-        var why = t2.getAttribute && t2.getAttribute('data-why');
-        if (why) { open[why] = !open[why]; draw(); return; }
+        // Обработчика «почему» здесь больше нет: обоснование видно всегда.
         if (!(t2.getAttribute && t2.hasAttribute('data-key'))) return;
         var key = t2.getAttribute('data-key'), d = t2.getAttribute('data-set');
         // Повторный клик по уже выбранному решению НИЧЕГО не делает: решить надо
@@ -770,8 +769,12 @@
           // предлагала бы отметить ничто. «Наиболее вероятным», не «как вероятный»
           // — при нескольких вариантах второе читалось так, будто пометить можно
           // несколько, а выбор здесь один.
+          // Метка обратима до фиксации — тем же повторным кликом, что у самого
+          // тревожного симптома в тезисах: пометка, поставленная по ошибке, снимается,
+          // а не только переставляется.
           var ctrl = m.bet === i
-            ? '<span class="mx-flag">наиболее вероятный</span>'
+            ? '<button type="button" class="s2-act is-on mx-flag" data-bet="' + i +
+              '" title="Нажмите ещё раз, чтобы снять метку">наиболее вероятный</button>'
             : (String(t).trim() ? '<button type="button" class="s2-act" data-bet="' + i + '">отметить наиболее вероятным</button>' : '');
           h += '<div class="mx-card' + (m.bet === i ? ' is-first' : '') + '">' +
             '<div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span><div class="mx-acts">' + ctrl +
@@ -799,7 +802,11 @@
       };
       host.addEventListener('click', function (e) {
         var a = e.target.getAttribute && e.target.getAttribute('data-bet');
-        if (a) { m.bet = Number(a); ctx.save(); draw(); ctx.sync(); return; }
+        if (a !== null && a !== undefined && a !== '') {
+          var pick = Number(a);
+          m.bet = (m.bet === pick) ? null : pick;
+          ctx.save(); draw(); ctx.sync(); return;
+        }
         a = e.target.getAttribute && e.target.getAttribute('data-del');
         if (a) {
           var i = Number(a); m.cards.splice(i, 1);

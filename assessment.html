@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=125" />
+<link rel="stylesheet" href="css/styles.css?v=126" />
 </head>
 <body>
 
@@ -176,10 +176,12 @@
         </nav>
 
         <div class="support-body is-on" id="supCase">
-          <!-- Ушли в приложение по ссылке в тексте — эта строка возвращает на строку
-               чтения. Липнет к верху панели: после прыжка глаз там. -->
+          <!-- Ушли в приложение по ссылке в тексте — эта кнопка возвращает на строку
+               чтения. Плавает над текстом у нижнего края колонки: там рука, и там же
+               живёт главное действие на всех экранах ассессмента. Полосой сверху она
+               быть не должна — решение владельца 06.08. -->
           <div class="case-back" id="caseBack" style="display:none;">
-            <button type="button" class="case-back-act" id="caseBackAct">← вернуться к чтению</button>
+            <button type="button" class="btn btn-primary case-back-act" id="caseBackAct">← Вернуться к чтению</button>
           </div>
           <!-- Управление свёртками пакета. СНАРУЖИ прокручиваемой области: внутри она
                была sticky и оставляла зазор в верхнем отступе прокрутки, через который
@@ -254,7 +256,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=19"></script>
+<script src="js/scenes.js?v=20"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -262,7 +264,7 @@
 <!-- mechanics.js ДО engine.js: движок спрашивает window.imp.mechanics[act.mech] в
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
-<script src="js/mechanics.js?v=4"></script>
+<script src="js/mechanics.js?v=5"></script>
 <script src="js/engine.js?v=34"></script>
 </body>
 </html>
