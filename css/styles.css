@@ -32,7 +32,11 @@
   --hairline: #e7e7e7;
   --soft: #f5f5f6;
   --frame: 0px;
-  --radius: 4px;
+  /* ⚠ 8px, а не 4 (решение владельца 07.08). DESIGN.md стр. 128 задаёт sm 4px, но
+     один и тот же радиус на маленьком пузыре читается скруглением, а на большом поле
+     ответа — почти прямым углом, и стиль расходился на глаз при одинаковом коде.
+     Радиус остаётся ОДИН на всю платформу — меняется только его значение. */
+  --radius: 8px;
 
   /* ---- масштаб раскладки (DESIGN.md → spacing / Layout) ----
      Одна шкала на всю платформу: ширины больше НЕ задаются литералами по месту.
@@ -606,7 +610,7 @@ h2 {
   font-size: 15px;
   background: var(--paper);
 }
-.intro-name input:focus { outline: none; border-color: var(--accent); }
+.intro-name input:focus { outline: none; border-color: var(--jb-ink); }
 
 /* ---------- steps / format ---------- */
 
@@ -1389,8 +1393,8 @@ footer {
   background: var(--paper);
 }
 .s2-mine .s2-radio:has(input:checked) {
-  border-color: var(--accent);
-  background: var(--accent-tint);
+  border-color: var(--jb-ink);
+  background: var(--band);
   font-weight: 600;
 }
 .s2-mine-label {
@@ -5526,7 +5530,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 7px 9px; font-family: inherit; font-size: var(--fs-dense); line-height: 1.55;
   color: var(--ink); background: var(--paper); resize: vertical;
 }
-.mx-input:focus { outline: none; border-color: var(--accent); background: var(--accent-tint); }
+/* ⚠ Акцент помечает ДЕЙСТВИЕ (кнопку), а не поле (DESIGN.md стр. 101). Поля
+   участника — голубые, как всё, что он производит; фокус голубой рамкой. */
+.mx-input:focus { outline: none; border-color: var(--jb-ink); background: var(--paper); }
 /* Логистика перехода на межэтапном экране: крупнее строки настроя, но тише места и
    времени — это рассказ о том, что произошло между этапами. */
 .interlude-bridge { margin: 10px 0 18px; }
@@ -5551,7 +5557,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 
 /* Карточка тезиса как цель перетаскивания пометки. Подсветка только пока курсор
    над ней: постоянная рамка обещала бы приём там, где ничего не тащат. */
-.mx-card.is-drop { border-color: var(--accent); background: var(--accent-tint); }
+.mx-card.is-drop { border-color: var(--jb-ink); background: var(--band); }
 .mark-quote[draggable="true"] { cursor: grab; }
 .mark-quote[draggable="true"]:active { cursor: grabbing; }
 
@@ -5653,7 +5659,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   width: 100%; max-width: 380px; border: 1px solid var(--hairline); border-radius: var(--radius);
   padding: 11px 12px; font: inherit; font-size: var(--fs-read); color: var(--ink); background: var(--paper);
 }
-.intro-name input:focus { outline: none; border-color: var(--accent); }
+.intro-name input:focus { outline: none; border-color: var(--jb-ink); }
 /* Ряд действия — та же геометрия, что у ответа в ассессменте (.win-foot): записка
    слева, кнопка справа и по размеру своей подписи. Кнопка во всю ширину тянулась на
    широком окне до бесконечности и не совпадала ни с одним другим экраном. */
@@ -5720,7 +5726,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 4px 6px; font: inherit; font-size: var(--fs-util);
   text-align: right; font-variant-numeric: tabular-nums;
 }
-.mx-num:focus { outline: none; border-color: var(--accent); background: var(--accent-tint); }
+.mx-num:focus { outline: none; border-color: var(--jb-ink); background: var(--paper); }
 
 /* Взятый свой вариант в столбике «Берём» остаётся с полями вилки: строка
    раскрывается на всю ширину и отдаёт третий ряд под пределы и два числа. Без
