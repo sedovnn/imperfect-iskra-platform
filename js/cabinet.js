@@ -189,7 +189,7 @@
         '<p><b>' + f.take.length + '</b> берём · <b>' + f.later.length + '</b> не сейчас · ' +
         '<b>' + f.never.length + '</b> не делаем · ' +
         f.people + ' человек из ' + lim.people + ' · ' + f.money + ' млрд из ' + lim.money +
-        (f.fitsFrame === false ? ' — <b>за рамкой</b>' : ' — в рамке') + '</p>' +
+        (f.fitsFrame === false ? ' — <b>вне бюджета</b>' : ' — в бюджете') + '</p>' +
         (f.undecided.length ? '<p><b>не решено: ' + f.undecided.length + '</b> — разбор неполный</p>' : '') +
         zone('Берём', f.take) + zone('Не сейчас', f.later) + zone('Не делаем', f.never) +
       '</div></div>';
@@ -204,7 +204,7 @@
       '<div class="cab-answer-text">' +
         '<p><b>' + (p.taken || []).length + '</b> берём · <b>' + (p.dropped || []).length + '</b> не сейчас · ' +
         p.people + ' человек из ' + lim.people + ' · ' + p.money + ' млрд из ' + lim.money +
-        (p.fitsFrame === false ? ' — <b>за рамкой</b>' : ' — в рамке') + '</p>' +
+        (p.fitsFrame === false ? ' — <b>вне бюджета</b>' : ' — в бюджете') + '</p>' +
         '<p><span class="cab-k">Взято:</span> ' + esc((p.taken || []).join(', ')) + '</p>' +
         '<p><span class="cab-k">Отложено:</span> ' + esc((p.dropped || []).join(', ')) + '</p>' +
       '</div></div>';

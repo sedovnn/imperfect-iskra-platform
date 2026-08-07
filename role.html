@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=150" />
+<link rel="stylesheet" href="css/styles.css?v=152" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -45,14 +45,13 @@
     </div>
 
     <div class="intro-cols">
-    <div class="pgroup">
+    <!-- Ряд подзаголовков: линия над ним идёт через оба столбца. -->
+    <div class="intro-row">
+<div class="pgroup">
       <p class="kicker" id="rulesKicker">Как устроен ассессмент</p>
       <div id="roleRules"><!-- S.system.rules --></div>
     </div>
-
-    <!-- Устройство экрана — своя группа: правила говорят, как идёт ассессмент, а это
-         где что лежит (решение владельца 07.08). -->
-    <div class="pgroup">
+<div class="pgroup">
       <p class="kicker" id="screenKicker">Как устроен экран ассессмента</p>
       <div id="roleScreen"><!-- S.system.screen --></div>
       <!-- СХЕМА ЭКРАНА, а не снимок (решение владельца 07.08: «посадим экран ассессмента,
@@ -84,13 +83,14 @@
         </div>
       </figure>
     </div>
+    </div>
 
-    <!-- Отдельной группой, а не пунктом в списке правил: это не порядок действий, а
-         граница возможностей платформы, и участник должен наткнуться на неё здесь, а
-         не посреди разговора. -->
-    <div class="pgroup">
+    <!-- Ряд подзаголовков: линия над ним идёт через оба столбца. -->
+    <div class="intro-row">
+<div class="pgroup">
       <p class="kicker">Чего платформа не умеет</p>
       <div id="roleHow"><!-- S.system.howItWorks --></div>
+    </div>
     </div>
 
     </div><!-- /intro-cols -->
@@ -113,7 +113,7 @@
 </div>
 
 <script src="js/main.js?v=7"></script>
-<script src="js/scenes.js?v=33"></script>
+<script src="js/scenes.js?v=35"></script>
 <script>
   (function () {
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('roleBody')) return;

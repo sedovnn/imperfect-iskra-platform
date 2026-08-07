@@ -430,17 +430,52 @@
   function revealRun(host, done) {
     if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
     var q = [].slice.call(host.querySelectorAll('[data-reveal="1"]'));
+    // ⚠ КОЛОНКА ЕДЕТ ЗА РЕПЛИКОЙ (правка владельца 07.08). В кофейне разговор длинный,
+    // и новые пузыри появлялись НИЖЕ видимой части: участник читал пустой экран, пока
+    // сам не прокрутит. Догоняем только вниз и только если реплика вышла за нижний
+    // край — если человек сам ушёл читать выше, экран у него не отнимаем.
+    var follow = function (n) {
+      var sc = el('talkScroll');
+      if (!sc) return;
+      var pull = function () {
+        var nb = n.getBoundingClientRect(), sb = sc.getBoundingClientRect();
+        var below = nb.bottom - (sb.bottom - 12);
+        if (below > 0) sc.scrollTop += below;
+      };
+      pull();
+      // ⚠ Второй заход после анимации: пузырь въезжает со сдвигом на 6px и
+      // раскрывается до своей высоты уже после первого замера — без этого прохода
+      // последняя реплика оставалась на полстроки под краем (замер: до 59px).
+      setTimeout(pull, 340);
+    };
     var step = function () {
       var n = q.shift();
       if (!n) { revealTimer = null; if (done) done(); return; }
       n.removeAttribute('data-reveal');
       n.classList.add('is-in');
       if (n.dataset && n.dataset.rk) shownBubbles[n.dataset.rk] = 1;
+      follow(n);
       revealTimer = setTimeout(step, REVEAL_MS);
     };
     // Первый пузырь без задержки: пустой экран в ожидании первой реплики читается
     // как «не загрузилось».
     step();
+  }
+
+  // ── КРУЖОК С ЛИЦОМ СОБЕСЕДНИКА ──
+  // Файл кладётся в platform/assets/faces/<id>.jpg (96×96, круг рисует CSS). Пока
+  // файла нет, в кружке стоят инициалы — это не заглушка «на потом», а честный
+  // вид: имя всё равно написано рядом. Соответствие «имя → файл и стиль» лежит в
+  // scenes.js (S.faces), потому что это данные о героях, а не логика движка.
+  function faceHtml(who) {
+    if (!who) return '';
+    var f = (S.faces && S.faces[who]) || null;
+    var ini = who.split(/\s+/).map(function (w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
+    var cls = 'chat-face' + (f && f.mood ? ' is-' + f.mood : '');
+    if (f && f.src) {
+      return '<span class="' + cls + '" style="background-image:url(' + esc(f.src) + ')" aria-hidden="true"></span>';
+    }
+    return '<span class="' + cls + '" aria-hidden="true">' + esc(ini) + '</span>';
   }
 
   function speechHtml(act, staged, keyPrefix) {
@@ -463,8 +498,10 @@
       // Ремарка — своей строкой курсивом ПОД именем (решение владельца 07.08): в
       // одну строку с именем она читалась как часть должности.
       out += '<div class="' + cls + '"' + attr + '><div class="chat-msg them"' + (act.who ? ' data-who="' + esc(act.who) + '"' : '') + '>' +
-        (name ? '<span class="chat-name">' + esc(name) + '</span>' : '') +
-        (name && act.note ? '<span class="chat-note">' + esc(act.note) + '</span>' : '') +
+        (name ? '<span class="chat-name">' + faceHtml(act.who) + esc(name) + '</span>' : '') +
+        // ⚠ Ремарка рисуется и БЕЗ имени: у реплики «обращаясь к Дарье» говорящий тот
+        // же, поэтому имени нет, а ремарка есть — и раньше она пропадала совсем.
+        (i === 0 && act.note ? '<span class="chat-note">' + esc(act.note) + '</span>' : '') +
         (actLine ? '<div class="chat-act">' + esc(actLine) + '</div>' : '') +
         '<div class="chat-bubble">' + br(subst(b.text)) + '</div>' +
         '</div></div>';
@@ -1148,7 +1185,7 @@
         '<div class="recap-q">Кабинет Агеева · разбор портфеля</div>' +
         '<div class="recap-a">' +
           '<p style="margin:0 0 8px;">' + t.people + ' человек из ' + LIM.people + ' · ' + num(t.money) + ' млрд из ' + LIM.money +
-          (t.over ? ' — за рамкой' : ' — в рамке') + '</p>' +
+          (t.over ? ' — вне бюджета' : ' — в бюджете') + '</p>' +
           '<p style="margin:10px 0 4px;"><b>Берём (' + p.taken.length + ')</b></p><ul class="recap-list">' + line(p.taken) + '</ul>' +
           '<p style="margin:10px 0 4px;"><b>Не сейчас (' + p.dropped.length + ')</b></p><ul class="recap-list">' + line(p.dropped) + '</ul>' +
         '</div></div>';
@@ -1330,6 +1367,7 @@
       // фразой, она обязана выглядеть как сказанное, а не как сводка.
       mine: function (text) { return meHtml(text, null); },
       probe: (act && act.probe) || null,
+      probeReturn: (act && act.probeReturn) || null,
       // Реплики вокруг верстака: before — над рабочей областью, ask — под ней.
       before: (act && act.before) || null,
       // Строка-указатель над верстаком (act.lead в scenes.js).
@@ -1354,11 +1392,28 @@
       // Возврат ровно один, его считает сама механика печати; движок лишь двигает
       // курсор на акт с нужной механикой и снимает отметку фиксации, иначе список
       // отрисовался бы запертым.
+      // Прыжок на шаг с нужной механикой в любую сторону: возврат к списку и
+      // возврат ВПЕРЁД к печати после правки списка (правка владельца 07.08).
+      jumpToMech: function (mechName) {
+        for (var j = 0; j < route.length; j++) {
+          if (route[j] && route[j].act && route[j].act.mech === mechName) {
+            state.cursor = j;
+            if (state.entered) state.entered[route[j].act.id] = nowIso();
+            saveState(); render();
+            return true;
+          }
+        }
+        return false;
+      },
       jumpBackTo: function (mechName) {
         for (var i = state.cursor; i >= 0; i--) {
           if (route[i] && route[i].act && route[i].act.mech === mechName) {
             state.cursor = i;
             if (state.mechAt) delete state.mechAt[mechName];
+            // Такт «приступить» на этом шаге уже пройден: монолог участник слушал,
+            // и заставлять слушать заново значит гонять его по кругу.
+            if (!state.entered) state.entered = {};
+            state.entered[route[i].act.id] = nowIso();
             saveState(); render();
             return true;
           }
@@ -1444,7 +1499,7 @@
       var tl = totals();
       d.innerHTML = '<div class="bl-locked"><b>' + tl.taken + '</b> берём · <b>' + tl.dropped + '</b> не сейчас · ' +
         tl.people + ' человек из ' + LIM.people + ' · ' + num(tl.money) + ' млрд из ' + LIM.money +
-        (tl.over ? ' <span class="bl-over-tag">за рамкой</span>' : '') +
+        (tl.over ? ' <span class="bl-over-tag">вне бюджета</span>' : '') +
         ' <span class="bl-locked-hint">разбор целиком — во вкладке «Мои ответы»</span></div>';
       return d;
     }
@@ -1900,6 +1955,25 @@
       var waits = now.querySelectorAll('.is-await');
       for (var wi = 0; wi < waits.length; wi++) waits[wi].classList.remove('is-await');
       if (actHost) actHost.classList.remove('is-await');
+      // Открывшееся поле ответа тоже подтягиваем в видимую часть — оно появляется
+      // последним, ниже всех реплик.
+      // ⚠ Ряд действия появляется ПОСЛЕ монолога и забирает у колонки ~77px высоты —
+      // последняя реплика уходила под край уже после того, как за ней «догнали»
+      // (замер: 59px). Поэтому подтягиваем ещё раз, уже по новой высоте: рабочую
+      // область, если она есть, иначе последнюю реплику.
+      var sc2 = el('talkScroll');
+      var chats = now.querySelectorAll('.chat.is-in');
+      var tgt = now.querySelector('.s2-mine') || now.querySelector('.mx-host') ||
+                (chats.length ? chats[chats.length - 1] : null);
+      if (sc2 && tgt) {
+        var pull2 = function () {
+          var mb = tgt.getBoundingClientRect(), sb2 = sc2.getBoundingClientRect();
+          var below2 = mb.bottom - (sb2.bottom - 12);
+          if (below2 > 0) sc2.scrollTop += below2;
+        };
+        pull2();
+        setTimeout(pull2, 60);
+      }
     };
     if (waiting) revealRun(now, openWork); else openWork();
 

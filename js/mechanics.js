@@ -176,7 +176,10 @@
         return h;
       };
       var draw = function () {
-        var h = head('Тезисы', normCount(m.cards.length, NORM));
+        // ⚠ Слот отмеченного стоит ПЕРВЫМ и появляется только когда симптом отмечен
+        // (правка владельца 07.08): пустая рамка «пока ничего» внизу занимала экран
+        // обещанием, а отмеченное — то, ради чего Агеев просил отметить отдельно.
+        var h = '<div class="mx-slot-host"></div>' + head('Тезисы', normCount(m.cards.length, NORM));
         m.cards.forEach(function (x, i) {
           h += '<div class="mx-card' + (m.first === x.id ? ' is-first' : '') + '" data-card="' + x.id + '">' +
             '<div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span>' +
@@ -205,9 +208,8 @@
         // уедет), а не перерисовывать было нельзя тоже — цитата в слоте и карточки
         // в списке связок появлялись только после следующей перерисовки, то есть
         // когда участник добавлял ещё один тезис. Поймано владельцем 07.08.
-        h += '<div class="mx-slot-host"></div>';
 
-        h += head('Свяжите карточки, где одно тянет другое', '<span class="mx-count">связок: ' + m.links.length + '</span>');
+        h += head('Как тезисы связаны друг с другом', '<span class="mx-count">связок: ' + m.links.length + '</span>');
         m.links.forEach(function (lk, li) {
           var refs = lk.ids.map(function (id) {
             var x = byId(id); return x ? '«' + ctx.esc(cut(x.text, 40)) + '»' : '';
@@ -231,12 +233,13 @@
           var slot = host.querySelector('.mx-slot-host');
           if (slot) {
             var f = m.first != null && byId(m.first) ? String(byId(m.first).text).trim() : '';
-            slot.innerHTML = '<div class="mx-slot' + (f ? '' : ' is-empty') + '">' +
-              '<span class="mx-title">Самый тревожный симптом</span>' +
-              (f ? '<p class="mx-quote">' + ctx.br(f) + '</p>' +
-                   field(ctx, { id: 'mxWhy', f: 'why', label: 'Почему именно это', rows: 2, ph: 'одна фраза', val: m.why })
-                 : '<p class="mx-hint">Пока пусто. Отметьте один — без этого не продолжить.</p>') +
-              '</div>';
+            slot.innerHTML = f
+              ? '<div class="mx-slot">' +
+                  '<span class="mx-title">Самый тревожный симптом</span>' +
+                  '<p class="mx-quote">' + ctx.br(f) + '</p>' +
+                  field(ctx, { id: 'mxWhy', f: 'why', label: 'Почему именно это', rows: 2, ph: 'одна фраза', val: m.why }) +
+                '</div>'
+              : '';
             var w2 = slot.querySelector('#mxWhy');
             if (w2) w2.addEventListener('input', function () { m.why = w2.value; ctx.save(); });
           }
@@ -419,49 +422,17 @@
   // померился. Но и точки система не ставит: правило «ближайшая заявка того же
   // класса» нечёткое, у человека и модели вышли бы разные цены — паритет ломается.
   // Финансисты дают пределы, участник выбирает число ВНУТРИ и обосновывает.
-  var VAR_FALLBACK = { people: 250, money: 5 };
-  var STOPW = ['который', 'которая', 'которое', 'которые', 'через', 'между', 'своего',
-    'своей', 'своих', 'нужно', 'можно', 'после', 'более', 'внутри', 'сейчас'];
-
-  // ⚠ ЗАГЛУШКА, А НЕ МАППИНГ КЛАССОВ. Проверка №5 лора требует, чтобы вилки жили
-  // в ДАННЫХ: класс варианта → вилка «низ–верх», правило отнесения
-  // детерминированное и одинаковое у человека и модели. В backlog.js нет ни одного
-  // тега класса, поэтому здесь вилка получена совпадением значимых слов с
-  // заголовками заявок (±35% вокруг цены похожей). Пока классы не заведены в
-  // данные, это честная временная опора: она держит дефицит и не выдаёт ложной
-  // точности. Непопадание ни в одну заявку даёт ШИРОКУЮ осторожную вилку
-  // (0,4×–2,0×) и пишется событием в протокол — самоцены участника нет ни в каком
-  // случае (правка v4.4.f: fallback-самоцена возвращала ровно ту дыру).
-  function rangeFor(text, BACKLOG) {
-    var words = String(text || '').toLowerCase().replace(/[«»"'.,:;!?()]/g, ' ').split(/\s+/)
-      .filter(function (w) { return w.length >= 4 && STOPW.indexOf(w) < 0; });
-    var best = null, score = 0;
-    BACKLOG.forEach(function (it) {
-      var t = String(it.title).toLowerCase(), s = 0;
-      words.forEach(function (w) { if (t.indexOf(w) >= 0) s++; });
-      if (s > score) { score = s; best = it; }
-    });
-    var r1 = function (n) { return Math.round(n * 10) / 10; };
-    if (best) {
-      var lo = function (n) { return Math.max(1, Math.round(n * 0.65)); };
-      var hi = function (n) { return Math.max(lo(n) + 1, Math.round(n * 1.35)); };
-      return { pLow: lo(best.people), pHigh: hi(best.people),
-               mLow: r1(lo(best.money)), mHigh: r1(hi(best.money)), matched: best.title, wide: false };
-    }
-    return { pLow: Math.round(VAR_FALLBACK.people * 0.4), pHigh: Math.round(VAR_FALLBACK.people * 2),
-             mLow: r1(VAR_FALLBACK.money * 0.4), mHigh: r1(VAR_FALLBACK.money * 2), matched: null, wide: true };
-  }
+  // ⚠ VAR_FALLBACK и rangeFor удалены 07.08 вместе с вилкой финансистов: свои
+  // варианты в разбор заявок больше не попадают, и оценивать их платформе нечем.
 
   // Позиции списка: заявки кейса (цена зашита) + варианты участника из С2 (вилка).
+  // ⚠ ВАРИАНТЫ УЧАСТНИКА СЮДА НЕ ПОПАДАЮТ (правка владельца 07.08). Раньше они
+  // приезжали в список отдельными карточками с вилкой финансистов, и участник
+  // расставлял им цену сам. Теперь разбор — только заявки кейса; свои варианты
+  // живут в своём шаге и уходят судье оттуда. Вместе с ними ушли вилка (rangeFor),
+  // поля цены у своей карточки и гейт «укажите число внутри вилки».
   function rows(m, ctx) {
     var out = [];
-    var fan = ctx.mech('variants');
-    ((fan && fan.rays) || []).forEach(function (r, i) {
-      var t = String(r.name || '').trim() || String(r.gist || '').trim();
-      if (!t) return;
-      var rng = rangeFor(t + ' ' + (r.gist || ''), ctx.BACKLOG);
-      out.push({ key: 'p' + i, own: true, title: cut(t, 140), range: rng });
-    });
     ctx.BACKLOG.forEach(function (it) {
       out.push({ key: 'a' + it.id, own: false, id: it.id, title: it.title, who: it.who,
                  people: Number(it.people) || 0, money: Number(it.money) || 0, argument: it.argument });
@@ -469,12 +440,6 @@
     return out;
   }
 
-  function chosenOk(m, r) {
-    var c = m.chosen[r.key];
-    if (!c || c.people == null || c.money == null) return false;
-    return c.people >= r.range.pLow && c.people <= r.range.pHigh &&
-           c.money >= r.range.mLow && c.money <= r.range.mHigh;
-  }
   // Своё считается по ВЫБРАННОМУ числу, а не по вилке: пока число не выбрано,
   // вклад в шкалы ноль — не по низу и не по верху, иначе платформа выбрала бы за
   // участника то самое, что мы у него и спрашиваем.
@@ -486,9 +451,8 @@
       if (!d) { t.undecided++; return; }
       t[d]++;
       if (d !== 'take') return;
-      var c = m.chosen[r.key];
-      t.people += r.own ? Number((c && c.people) || 0) : r.people;
-      t.money += r.own ? Number((c && c.money) || 0) : r.money;
+      t.people += r.people;
+      t.money += r.money;
     });
     t.money = Math.round(t.money * 10) / 10;
     t.over = t.people > ctx.LIM.people || t.money > ctx.LIM.money;
@@ -503,17 +467,31 @@
       var t = sums(m, ctx);
       if (t.undecided) return 'Отметьте по каждой — осталось ' + t.undecided + '.';
       if (!t.take) return 'Агеев просил разобрать заявки, а не отклонить их целиком: возьмите хотя бы одно.';
-      var bad = rows(m, ctx).filter(function (r) { return r.own && m.decided[r.key] === 'take' && !chosenOk(m, r); });
-      if (bad.length) return 'У взятых своих вариантов укажите число внутри вилки финансистов.';
       if (!String(m.criteria).trim()) return 'Критерии обязательны: на чём стоит этот выбор.';
       return '';
     },
-    foot: function () { return { note: '', cta: 'Зафиксировать разбор →' }; },
+    foot: function (m, ctx) {
+      var sm = ctx.mech('seal') || {};
+      return { note: '', cta: sm.returned && sm.confirmed == null ? 'Продолжить →' : 'Зафиксировать разбор →' };
+    },
+    // ⚠ ВТОРОЙ ПРОХОД НЕ ГОНЯЕТ ПО КРУГУ (правка владельца 07.08). После «Вернуться
+    // и изменить» участник правит карточки и жмёт «Продолжить» — и попадает сразу к
+    // вопросу Агеева «Что поменяли и почему?», а не в монолог, перебор и печать
+    // заново. Признак второго прохода — печать уже возвращалась и ещё не подтверждена.
+    onCta: function (m, ctx) {
+      var sm = ctx.mech('seal');
+      if (sm && sm.returned && sm.confirmed == null) {
+        sm.confirmed = true;
+        ctx.save();
+        if (ctx.jumpToMech('seal')) return false;
+      }
+      return true;
+    },
     locked: function (m, ctx) {
       var t = sums(m, ctx);
       return '<b>' + t.take + '</b> берём · <b>' + t.later + '</b> не сейчас · <b>' + t.never + '</b> не делаем · ' +
         t.people + ' человек из ' + ctx.LIM.people + ' · ' + ctx.num(t.money) + ' млрд из ' + ctx.LIM.money +
-        (t.over ? ' <span class="bl-over-tag">за рамкой</span>' : '') +
+        (t.over ? ' <span class="bl-over-tag">вне бюджета</span>' : '') +
         ' <span class="bl-locked-hint">разбор целиком — во вкладке «Мои ответы»</span>';
     },
     render: function (host, m, ctx) {
@@ -523,12 +501,12 @@
         var und = all.filter(function (r) { return !m.decided[r.key]; });
 
         // Счётчик спокойный (СПЕК 03.08): числа без красного и без слова «перебор».
-        var h = '<div class="bl-sum-host"><div class="bl-sum">' +
-          '<span class="bl-sum-item"><b>' + t.take + '</b> берём</span>' +
-          '<span class="bl-sum-item"><b>' + t.people + '</b> из ' + ctx.LIM.people + ' человек</span>' +
-          '<span class="bl-sum-item"><b>' + ctx.num(t.money) + '</b> из ' + ctx.LIM.money + ' млрд</span>' +
-          (t.undecided ? '<span class="bl-sum-left">осталось решить: ' + t.undecided + '</span>' : '') +
-          '</div></div>';
+        // ⚠ КРУПНОГО СЧЁТЧИКА БОЛЬШЕ НЕТ (правка владельца 07.08). Он стоял липкой
+        // полосой над списком и считал за участника: «1602 из 500» читалось как
+        // приговор ещё до того, как разбор закончен. Сумма взятого осталась — но в
+        // подписи стопки «Берём», рядом с тем, из чего она сложилась. Перебор
+        // участник прикидывает сам: рамка названа в монологе Агеева.
+        var h = '';
 
         var acts = function (r) {
           return '<div class="mx-acts">' +
@@ -539,27 +517,14 @@
             }).join('') + '</div>';
         };
         var priceOf = function (r) {
-          if (!r.own) return '<span class="bl-card-cost">' + r.people + ' чел. · ' + ctx.num(r.money) + ' млрд</span>';
-          var c = m.chosen[r.key] || {};
-          return '<span class="bl-card-cost mx-band">Оценка финансистов: ' + r.range.pLow + '–' + r.range.pHigh +
-            ' чел. · ' + ctx.num(r.range.mLow) + '–' + ctx.num(r.range.mHigh) + ' млрд' +
-            (r.range.wide ? ' <span class="mx-opt">(широкая: класс не определён)</span>' : '') + '</span>' +
-            '<div class="mx-pair"><span>Ваша цифра в этих пределах:</span>' +
-              '<input type="number" class="mx-num" data-chp="' + r.key + '" min="' + r.range.pLow + '" max="' + r.range.pHigh +
-                '" placeholder="чел." value="' + (c.people != null ? c.people : '') + '" />' +
-              '<input type="number" class="mx-num" data-chm="' + r.key + '" min="' + r.range.mLow + '" max="' + r.range.mHigh +
-                '" step="0.1" placeholder="млрд" value="' + (c.money != null ? c.money : '') + '" /></div>' +
-            '<label class="mx-label" for="mxO' + r.key + '">Считаете, что финансисты промахнулись с вилкой? Скажите почему' +
-              ' <span class="mx-opt">— необязательно</span></label>' +
-            '<textarea id="mxO' + r.key + '" class="mx-input" data-answer="1" rows="2" data-obj="' + r.key +
-              '" placeholder="необязательно">' + ctx.esc(m.obj[r.key] || '') + '</textarea>';
+          return '<span class="bl-card-cost">' + r.people + ' чел. · ' + ctx.num(r.money) + ' млрд</span>';
         };
         // Обоснование заявки видно СРАЗУ (решение владельца 06.08). Прятать его за
         // ссылкой «почему» смысла не было: это единственное, из чего участник понимает,
         // за что просят людей и деньги, и решение без него принимать нечем.
         var card = function (r) {
-          return '<div class="bl-card' + (r.own ? ' mx-own' : '') + '">' +
-            '<div class="bl-card-top"><span class="bl-n">' + (r.own ? 'ваш' : ctx.blNum(r.id)) + '</span>' + priceOf(r) + '</div>' +
+          return '<div class="bl-card">' +
+            '<div class="bl-card-top"><span class="bl-n">' + ctx.blNum(r.id) + '</span>' + priceOf(r) + '</div>' +
             '<div class="bl-card-title">' + ctx.esc(r.title) + '</div>' +
             (r.who ? '<div class="bl-card-who">' + ctx.esc(r.who) + '</div>' : '') +
             (r.argument ? '<p class="bl-card-arg">' + ctx.esc(r.argument) + '</p>' : '') +
@@ -577,41 +542,33 @@
         // места: карточка уезжала обратно в «не решено» и искалась заново.
         var OTHER = { take: 'берём', later: 'не сейчас', never: 'не делаем' };
         var col = function (title, arr, d) {
+          // Сумма — только у «Берём»: в шкалы идёт взятое, у остальных стопок
+          // складывать нечего.
+          var sum = d === 'take' && arr.length
+            ? ' <span class="bl-pile-sum">' + t.people + ' чел. · ' + ctx.num(t.money) + ' млрд</span>'
+            : '';
           // .mx-pile — стопка как ОТДЕЛЬНЫЙ предмет: рамка, подпись, счёт. Без
           // рамки три зоны в узкой колонке (474px на 1440) читались одним плоским
           // списком с подзаголовками — «раскладывания по стопкам» не было видно, а
           // именно оно здесь и есть поступок. Полосой во всю ширину, а не
           // столбиком: почему — в styles.css у .bl-cols.mx-cols3, там замер.
           return '<div class="mx-pile mx-pile-' + d + '">' +
-            '<div class="bl-col-head">' + title + ' <span>· ' + arr.length + '</span></div>' +
+            '<div class="bl-col-head">' + title + ' <span>· ' + arr.length + '</span>' + sum + '</div>' +
             (arr.map(function (r) {
-              // ⚠ У ВЗЯТОГО СВОЕГО ВАРИАНТА ПОЛЯ ВИЛКИ ОСТАЮТСЯ ЗДЕСЬ. Пока их не
-              // было, участник попадал в тупик: карточка уходила из «не решено» в
-              // «Берём» вместе с полями, а гейт продолжал требовать число внутри
-              // вилки — вписать его было физически негде. Поймано стендом механик.
-              // В «не сейчас» и «не делаем» полей нет: там число ни на что не влияет
-              // (в шкалы идёт только взятое), и спрашивать его значило бы просить
-              // работу впустую.
-              var needBand = r.own && d === 'take';
-              // Автор и цена в строке решённого — как в прежнем разборе: без них
-              // стопка превращается в список заголовков, и участник, чтобы понять,
-              // из чего сложились 1 602 человека, обязан помнить цены наизусть.
-              var meta = r.own
-                ? 'ваш вариант' + (d === 'take' && m.chosen[r.key]
-                    ? ' · ' + ((m.chosen[r.key].people || 0) + ' чел. · ' + ctx.num(m.chosen[r.key].money || 0) + ' млрд')
-                    : '')
-                : ctx.esc(r.who) + ' · ' + r.people + ' чел. · ' + ctx.num(r.money) + ' млрд';
+              // Автор и цена в строке решённого: без них стопка превращается в
+              // список заголовков, и участник, чтобы понять, из чего сложилась
+              // сумма, обязан помнить цены наизусть.
+              var meta = ctx.esc(r.who) + ' · ' + r.people + ' чел. · ' + ctx.num(r.money) + ' млрд';
               var moves = Object.keys(OTHER).filter(function (k) { return k !== d; })
                 .map(function (k) {
                   return '<button type="button" class="bl-row-back" data-set="' + k +
                     '" data-key="' + r.key + '">' + OTHER[k] + '</button>';
                 }).join('');
-              return '<div class="bl-row' + (needBand ? ' mx-row-wide' : '') + '">' +
-                '<span class="bl-n">' + (r.own ? 'ваш' : ctx.blNum(r.id)) + '</span>' +
+              return '<div class="bl-row">' +
+                '<span class="bl-n">' + ctx.blNum(r.id) + '</span>' +
                 '<span class="bl-row-t">' + ctx.esc(r.title) +
                   '<span class="bl-mini-who">' + meta + '</span></span>' +
                 '<span class="mx-row-moves">' + moves + '</span>' +
-                (needBand ? '<div class="mx-row-band">' + priceOf(r) + '</div>' : '') +
                 '</div>';
             }).join('') || '<p class="bl-empty">пока ничего</p>') + '</div>';
         };
@@ -630,27 +587,20 @@
           ? '<div class="bl-zone-h">не решено <b>' + und.length + '</b></div><div class="bl-grid">' + und.map(card).join('') + '</div>'
           : '<div class="bl-zone-h">все ' + t.n + ' решены</div>') + '</div>';
 
-        h += '<div class="mx-card">' +
-          field(ctx, { id: 'mxCrit', f: 'crit', label: 'Почему именно так', rows: 5, val: m.criteria }) + '</div>';
+        // На втором проходе критерии не спрашиваются заново: участник вернулся
+        // править карточки, а не переписывать основание (правка владельца 07.08).
+        var sm2 = ctx.mech('seal') || {};
+        if (!(sm2.returned && sm2.confirmed == null)) {
+          h += '<div class="mx-card">' +
+            field(ctx, { id: 'mxCrit', f: 'crit', label: 'Почему именно так', rows: 5, val: m.criteria }) + '</div>';
+        }
         host.innerHTML = h;
 
-        host.querySelectorAll('[data-chp]').forEach(function (i2) {
-          i2.addEventListener('input', function () {
-            var k = i2.dataset.chp; m.chosen[k] = m.chosen[k] || {};
-            m.chosen[k].people = i2.value === '' ? null : Number(i2.value); ctx.save(); ctx.sync();
-          });
-        });
-        host.querySelectorAll('[data-chm]').forEach(function (i2) {
-          i2.addEventListener('input', function () {
-            var k = i2.dataset.chm; m.chosen[k] = m.chosen[k] || {};
-            m.chosen[k].money = i2.value === '' ? null : Number(i2.value); ctx.save(); ctx.sync();
-          });
-        });
-        host.querySelectorAll('[data-obj]').forEach(function (ta) {
-          ta.addEventListener('input', function () { m.obj[ta.dataset.obj] = ta.value; ctx.save(); });
-        });
+        // ⚠ Обработчиков полей вилки и возражения здесь больше нет: свои варианты в
+        // разбор заявок не попадают (правка владельца 07.08).
+        // Поля критериев на втором проходе нет — проверка обязательна.
         var cr = host.querySelector('#mxCrit');
-        cr.addEventListener('input', function () { m.criteria = cr.value; ctx.save(); ctx.sync(); });
+        if (cr) cr.addEventListener('input', function () { m.criteria = cr.value; ctx.save(); ctx.sync(); });
       };
       // один раз, снаружи draw() — см. пояснение в M.theses
       wireClick(host, function (e) {
@@ -730,7 +680,7 @@
       }
       // Второй шаг — разговор, а не форма: реплика Агеева и ответ в своей карточке
       // с кнопкой внутри (решение владельца 07.08).
-      return { note: m.returned ? 'Возврат уже был — он у вас один.' : '', cta: 'Ответить →', inCard: true };
+      return { note: '', cta: 'Ответить →', inCard: true };
     },
     // ⚠ На экране после фиксации — ПУЗЫРЬ С ФРАЗОЙ участника, а не сводка
     // «утвердил под давлением» (правка владельца 07.08): сводка — техническая
@@ -772,7 +722,7 @@
           // Список крупно и раздельно, «в лицо»: участник видит ровно то, что
           // Агеев положит на стол правления.
           h += '<div class="mx-seal-total">' + t.people + ' человек · ' + ctx.num(t.money) + ' млрд' +
-            (t.over ? ' <span class="bl-over-tag">за рамкой</span>' : '') + '</div>';
+            (t.over ? ' <span class="bl-over-tag">вне бюджета</span>' : '') + '</div>';
           [['Берём', 'take'], ['Не делаем', 'never'], ['Не сейчас', 'later']].forEach(function (p) {
             var arr = by(p[1]);
             h += '<div class="bl-col-head" style="margin-top:14px;">' + p[0] + ' <span>· ' + arr.length + '</span></div>' +
@@ -790,13 +740,14 @@
           h = '<div class="mx-seal-total">' + (lm ? (function () {
             var t = M.list.sums(lm, ctx);
             return t.people + ' человек · ' + ctx.num(t.money) + ' млрд' +
-              (t.over ? ' <span class="bl-over-tag">за рамкой</span>' : '');
+              (t.over ? ' <span class="bl-over-tag">вне бюджета</span>' : '');
           })() : '') + '</div>';
-          h += ctx.speech(ctx.probe);
+          // После возврата Агеев спрашивает не «почему уверены», а «что поменяли»:
+          // вопрос обязан относиться к тому, что участник только что сделал.
+          h += ctx.speech(m.returned && ctx.probeReturn ? ctx.probeReturn : ctx.probe);
           h += '<span class="chat-name chat-name-mine">Вы</span>' +
             '<div class="s2-mine">' +
-            field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: 'одна фраза',
-              label: m.returned ? 'Что поменяли и почему' : '',
+            field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: 'одна фраза', label: '',
               val: m.why }) + '</div>';
         }
         host.innerHTML = h;
@@ -966,7 +917,7 @@
       var left = LETTER.filter(function (f) { return !String(m[f[0]]).trim(); });
       return left.length ? 'Осталось заполнить: ' + left.map(function (f) { return '«' + f[1] + '»'; }).join(', ') + '.' : '';
     },
-    foot: function () { return { note: 'Агеев зачитает письмо дословно.', cta: 'Отправить →' }; },
+    foot: function () { return { note: '', cta: 'Отправить →' }; },
     locked: function () { return '<b>письмо отправлено</b> <span class="bl-locked-hint">все четыре поля — во вкладке «Мои ответы»</span>'; },
     render: function (host, m, ctx) {
       host.innerHTML = (ctx.lead ? '<p class="mx-hint">' + ctx.esc(ctx.lead) + '</p>' : '') +
@@ -1020,25 +971,17 @@
     var by = function (d) { return all.filter(function (r) { return m.decided[r.key] === d; }); };
     var li = function (arr, withCost) {
       return '<ul class="recap-list">' + arr.map(function (r) {
-        var cost = r.own
-          ? ((m.chosen[r.key] && m.chosen[r.key].people) || 0) + ' чел. · ' + ctx.num((m.chosen[r.key] && m.chosen[r.key].money) || 0) + ' млрд' +
-            ' <i>(вилка ' + r.range.pLow + '–' + r.range.pHigh + ' / ' + ctx.num(r.range.mLow) + '–' + ctx.num(r.range.mHigh) + ')</i>'
-          : r.people + ' чел. · ' + ctx.num(r.money) + ' млрд';
-        return '<li><span class="bl-num">' + (r.own ? 'ваш' : ctx.blNum(r.id)) + '</span> ' + ctx.esc(r.title) +
+        var cost = r.people + ' чел. · ' + ctx.num(r.money) + ' млрд';
+        return '<li><span class="bl-num">' + ctx.blNum(r.id) + '</span> ' + ctx.esc(r.title) +
           (withCost ? '<span class="recap-cost">' + cost + '</span>' : '') + '</li>';
       }).join('') + '</ul>';
     };
     var h = '<p style="margin:0 0 8px;">' + t.people + ' человек из ' + ctx.LIM.people + ' · ' +
-      ctx.num(t.money) + ' млрд из ' + ctx.LIM.money + (t.over ? ' — за рамкой' : ' — в рамке') + '</p>';
+      ctx.num(t.money) + ' млрд из ' + ctx.LIM.money + (t.over ? ' — вне бюджета' : ' — в бюджете') + '</p>';
     h += p('Берём (' + t.take + ')', '') + li(by('take'), true);
     h += p('Не делаем (' + t.never + ')', '') + li(by('never'), false);
     h += p('Не сейчас (' + t.later + ')', '') + li(by('later'), false);
     if (String(m.criteria).trim()) h += p('Почему именно так', ctx.br(m.criteria));
-    var objs = all.filter(function (r) { return r.own && String(m.obj[r.key] || '').trim(); });
-    if (objs.length) {
-      h += p('Возражения оценке финансистов', '');
-      objs.forEach(function (r) { h += '<p style="margin:2px 0;">«' + ctx.esc(r.title) + '» — ' + ctx.br(m.obj[r.key]) + '</p>'; });
-    }
     return h;
   };
 
