@@ -4916,12 +4916,14 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    цвета и кегли, что у оглавления. */
 .dayside-route { flex: none; padding: 10px 8px 12px var(--frame-pad); }
 .route-scene + .route-scene { margin-top: 12px; }
-.route-where { font-size: var(--fs-util); color: var(--muted-soft); }
-.route-name { font-size: var(--fs-util); color: var(--muted); font-weight: 600; margin-bottom: 2px; }
+/* Столбик этапов — --fs-dense (14px), следующая ступень шкалы после служебных 12px.
+   На 12px навигация по дню читалась мельче, чем всё остальное на экране. */
+.route-where { font-size: var(--fs-dense); color: var(--muted-soft); }
+.route-name { font-size: var(--fs-dense); color: var(--muted); font-weight: 600; margin-bottom: 2px; }
 .route-scene.is-now .route-name { color: var(--ink); }
 .route-step {
   display: flex; gap: 6px; width: 100%; text-align: left; border: none; background: none;
-  padding: 3px 0; font: inherit; font-size: var(--fs-util); color: var(--muted-soft); cursor: pointer;
+  padding: 3px 0; font: inherit; font-size: var(--fs-dense); color: var(--muted-soft); cursor: pointer;
 }
 .route-step:hover { color: var(--ink); }
 .route-step.is-done { color: var(--muted); }
@@ -4933,7 +4935,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Пройденное — вермилионная галочка (решение владельца 06.08): столбик этапов —
    единственное место, где видно пройденное. */
 .route-step.is-done .route-mark { color: var(--accent-ink); font-weight: 700; }
-.route-left { margin: 12px 0 0; font-size: var(--fs-util); color: var(--muted-soft); }
+.route-left { margin: 12px 0 0; font-size: var(--fs-dense); color: var(--muted-soft); }
 /* Подпись оглавления ниже маршрута: та же линейка, что у .dayside-head, но без
    кнопки свёртки — она одна на колонку и живёт выше. */
 .dayside-sub {
@@ -5629,13 +5631,18 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .intro-note:first-of-type { border-top: none; }
 .intro-note b { color: var(--ink); font-weight: 700; }
 .intro-disclaimer { margin-top: 28px; font-size: var(--fs-read); line-height: 1.5; color: var(--muted); }
-.intro-name p { font-size: var(--fs-read); line-height: 1.5; color: var(--muted); margin: 0 0 10px; }
+.intro-name p { font-size: var(--fs-read); line-height: 1.5; color: var(--muted); margin: 0 0 10px; max-width: 68ch; }
 .intro-name input {
   width: 100%; max-width: 380px; border: 1px solid var(--hairline); border-radius: var(--radius);
   padding: 11px 12px; font: inherit; font-size: var(--fs-read); color: var(--ink); background: var(--paper);
 }
 .intro-name input:focus { outline: none; border-color: var(--accent); }
-.intro-cta { margin: 40px 0; }
+/* Ряд действия — та же геометрия, что у ответа в ассессменте (.win-foot): записка
+   слева, кнопка справа и по размеру своей подписи. Кнопка во всю ширину тянулась на
+   широком окне до бесконечности и не совпадала ни с одним другим экраном. */
+.intro-cta { margin: 40px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 16px; }
+.intro-cta .intro-next { margin: 0; max-width: 62ch; flex: 1 1 260px; }
+.intro-cta .btn { flex: none; }
 /* Строка под кнопкой: куда именно она ведёт. Кнопка обещает один шаг, эта строка
    говорит, что будет за ним, — без неё «К введению в роль» читается как «начали». */
 .intro-next { margin: 10px 0 0; font-size: var(--fs-util); line-height: 1.5; color: var(--muted-soft); }
@@ -5769,8 +5776,12 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* --- опора: тише --- */
 .support-body { color: var(--muted); }
 #supCaseText, #supCaseText p, #supCaseText li, #supCaseText td { color: var(--muted); }
-#supCaseText h2, #supCaseText h3, #supCaseText b, #supCaseText strong,
-.case-sum-t, .who-row b, .recap-q, .mark-quote { color: var(--ink); }
+/* Заголовки внутри опоры тоже приглушены (правка владельца 07.08): иерархию здесь
+   держит начертание, а не контраст, — «это вспомогательный блок, он не должен быть
+   таким контрастным». Чёрным в опоре остаётся только выделение внутри текста (b) и
+   выписка участника: она его, а не материала. */
+#supCaseText h2, #supCaseText h3, .case-sum-t, .who-row b, .recap-q { color: var(--muted); }
+#supCaseText b, #supCaseText strong, .mark-quote { color: var(--ink); }
 /* --- работа: полный контраст --- */
 .talk .win-label, .casewide .win-label,
 .talk .mx-label, .talk .mx-title, .talk .bl-card-title, .talk .bl-zone-h,

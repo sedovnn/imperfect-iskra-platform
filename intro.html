@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=127" />
+<link rel="stylesheet" href="css/styles.css?v=128" />
 <style>
   /* ЭКРАН 1 ИЗ ТРЁХ: настройка на мышление → введение в роль (role.html) →
      материалы (assessment.html). Приглушённый FP-лист: экран настраивает, а не
@@ -35,7 +35,7 @@
 
     <div class="intro-hero">
       <p class="kicker">Настройка на мышление</p>
-      <h1>Как проходить<br /><span style="color:var(--accent);">ассессмент</span></h1>
+      <h1>Как проходить <span style="color:var(--accent);">ассессмент</span></h1>
       <p class="section-lead lead">Это не экзамен и не тест на «правильный ответ». Мы смотрим, <b>как вы думаете</b> над живым кейсом, а не решили ли вы его «верно». Пара минут на настройку — и начинаем.</p>
     </div>
 
@@ -91,12 +91,12 @@
       <input type="text" id="introName" maxlength="60" autocomplete="off" placeholder="Имя или как вам удобно" />
     </div>
 
+    <!-- ОДНА кнопка (решение владельца 06.08), и геометрия та же, что у действия в
+         ассессменте (.win-foot): записка слева, кнопка справа, по размеру своей
+         подписи. Во всю ширину она тянулась до бесконечности на широком окне. -->
     <div class="intro-cta">
-      <!-- ОДНА кнопка (решение владельца 06.08). Ведёт на экран роли, и подпись
-           говорит именно это, а не «начать»: дальше ещё один экран, и обещать
-           старт было бы неправдой. -->
-      <a class="btn btn-primary btn-block" id="startBtn" href="role.html">К введению в роль →</a>
       <p class="intro-next">Дальше — кто вы в этой истории и как устроен ассессмент. Потом материалы.</p>
+      <a class="btn btn-primary" id="startBtn" href="role.html">К введению в роль →</a>
     </div>
 
     <footer class="intro-foot">© futureproof · ассессмент «Искра»</footer>

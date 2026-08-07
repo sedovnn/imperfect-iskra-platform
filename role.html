@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=127" />
+<link rel="stylesheet" href="css/styles.css?v=128" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -40,7 +40,7 @@
 
     <div class="intro-hero">
       <p class="kicker">Ваша роль</p>
-      <h1 id="roleTitle">Вы — независимый<br /><span style="color:var(--accent);">консультант</span></h1>
+      <h1 id="roleTitle">Вы — независимый <span style="color:var(--accent);">консультант</span></h1>
       <div id="roleLead"><!-- S.system.lead --></div>
     </div>
 
@@ -62,11 +62,12 @@
 
     <p class="intro-disclaimer" id="roleNote"><!-- S.system.note --></p>
 
+    <!-- ?start=1 — признак «участник прошёл оба экрана до старта». Без него
+         ассессмент отправляет на первый экран пути: порядок входа один, а не два.
+         Геометрия ряда — как у действия в ассессменте: записка слева, кнопка справа. -->
     <div class="intro-cta">
-      <!-- ?start=1 — признак «участник прошёл оба экрана до старта». Без него
-           ассессмент отправляет на первый экран пути: порядок входа один, а не два. -->
-      <a class="btn btn-primary btn-block" id="roleCta" href="assessment.html?start=1">Приступить к ассессменту →</a>
       <p class="intro-next">Дальше — материалы «Искры». Читать их можно сколько нужно: они останутся с вами до конца.</p>
+      <a class="btn btn-primary" id="roleCta" href="assessment.html?start=1">Приступить к ассессменту →</a>
     </div>
 
     <footer class="intro-foot">
