@@ -5812,3 +5812,46 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mx-card { background: var(--band); border-color: var(--band-line); }
 .mx-card .mx-input, .mx-card textarea, .mx-card input { background: var(--paper); }
 .mx-card.is-first, .bl-card.mx-own { border-color: var(--jb-ink); background: var(--band); }
+
+/* ── СХЕМА ЭКРАНА НА СТРАНИЦЕ РОЛИ ──
+   Обезличенная: полосы вместо текста, ни одного слова из маршрута. Служит одному —
+   показать, где что лежит, до того как участник туда попадёт. */
+.scr { margin: 34px 0 0; }
+.scr-frame {
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--paper); overflow: hidden;
+}
+.scr-top {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; border-bottom: 1px solid var(--hairline); background: var(--soft);
+}
+.scr-logo { width: 46px; height: 8px; border-radius: 2px; background: var(--ink); opacity: .75; }
+.scr-body { display: grid; grid-template-columns: 0.8fr 1.6fr 1.6fr; min-height: 208px; }
+.scr-col { display: flex; flex-direction: column; gap: 8px; padding: 12px; min-width: 0; }
+.scr-left { background: var(--soft); border-right: 1px solid var(--hairline); }
+.scr-mid { border-right: 1px solid var(--hairline); }
+.scr-k {
+  font-size: var(--label-size); font-weight: var(--label-weight); letter-spacing: var(--label-track);
+  text-transform: uppercase; color: var(--muted-soft); margin-bottom: 2px;
+}
+.scr-bar { height: 7px; border-radius: 3px; background: var(--hairline); }
+.scr-bar.w40 { width: 40% } .scr-bar.w50 { width: 50% } .scr-bar.w55 { width: 55% }
+.scr-bar.w60 { width: 60% } .scr-bar.w65 { width: 65% } .scr-bar.w70 { width: 70% }
+.scr-bar.w75 { width: 75% } .scr-bar.w80 { width: 80% } .scr-bar.w85 { width: 85% }
+.scr-bar.w90 { width: 90% }
+/* реплика — как на экране: серый пузырь у левого края */
+.scr-bubble {
+  display: flex; flex-direction: column; gap: 6px; width: 76%;
+  padding: 10px; border-radius: var(--radius); background: var(--soft);
+}
+/* поле ответа — голубое, как всё, что делает участник */
+.scr-field {
+  height: 46px; border-radius: var(--radius);
+  background: var(--band); border: 1px solid var(--band-line);
+}
+.scr-btn { align-self: flex-end; width: 96px; height: 20px; border-radius: var(--radius); background: var(--accent); }
+.scr-tabs { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 4px; font-size: var(--fs-util); }
+.scr-tabs b { font-weight: 600; color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
+.scr-tabs i { font-style: normal; color: var(--muted-soft); }
+.scr figcaption { margin-top: 8px; font-size: var(--fs-util); color: var(--muted-soft); }
+@media (max-width: 700px) { .scr-body { grid-template-columns: 1fr; } .scr-left, .scr-mid { border-right: none; } }
