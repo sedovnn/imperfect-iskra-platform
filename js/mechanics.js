@@ -732,7 +732,13 @@
             h += '<div class="bl-col-head" style="margin-top:14px;">' + p[0] + ' <span>· ' + arr.length + '</span></div>' +
               (arr.length
                 ? '<ul class="off-list">' + arr.map(function (r) {
-                    return '<li>' + ctx.esc(r.title) + '</li>'; }).join('') + '</ul>'
+                    // ⚠ Автор и цена ОБЯЗАТЕЛЬНЫ (решение владельца 09.08). Одни
+                    // заголовки не давали взвесить, с тем ли списком идти к правлению:
+                    // из чего сложились люди и деньги в строке сверху, было не видно,
+                    // а помнить цены наизусть — не работа участника.
+                    return '<li>' + ctx.esc(r.title) +
+                      '<span class="off-cost">' + ctx.esc(r.who) + ' · ' + r.people + ' чел. · ' +
+                      ctx.num(r.money) + ' млрд</span></li>'; }).join('') + '</ul>'
                 : '<p class="bl-empty">пока ничего</p>');
           });
         }

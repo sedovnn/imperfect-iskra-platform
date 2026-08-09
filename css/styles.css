@@ -4028,6 +4028,19 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   font-size: var(--fs-place); font-weight: 700; font-variant-numeric: tabular-nums;
   padding: 0 0 4px;
 }
+/* Строка списка на печати повторяет строку стопки: заголовок, под ним автор и
+   цена. Заказ владельца 09.08 — участник должен видеть, из чего сложился итог,
+   а не сверять заголовки с памятью. */
+.off-list { list-style: none; margin: 0; padding: 0; }
+.off-list li {
+  padding: 8px 0; border-bottom: 1px solid var(--soft);
+  font-size: var(--fs-dense); line-height: 1.4;
+}
+.off-list li:last-child { border-bottom: 0; }
+.off-cost {
+  display: block; margin-top: 2px;
+  font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums;
+}
 
 /* слайдер срока (С5). Дефолта нет: пока не сдвинут, значение «не выбрано» —
    обязательный срок стирал наблюдение «сам ли человек привязал цель ко времени» */
