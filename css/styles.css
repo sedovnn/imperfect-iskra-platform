@@ -3492,10 +3492,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    границам, и это видно глазом (снимок 06.08: расхождение 20px). */
 .case-intro-lead, .case-intro-marks { max-width: none; }
 .case-intro-lead { margin: 0 0 10px; font-size: var(--fs-read); line-height: 1.6; color: var(--ink); }
+/* Рамка-напоминание: во вкладке заметок и над письмом. Кегль читаемый, не
+   служебный (правка владельца 07.08): её читают, а не сверяются с ней. */
 .case-intro-marks {
-  margin: 0; padding: 10px 12px; border: 1px solid var(--hairline); border-radius: var(--radius);
-  background: var(--soft); font-size: var(--fs-dense); line-height: 1.55; color: var(--muted);
+  margin: 0 0 14px; padding: 14px 16px; border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--soft); font-size: var(--fs-read); line-height: 1.55; color: var(--muted);
 }
+.case-intro-marks:empty { display: none; }
 
 /* Мера — та же, что у кейса и справки (см. .who-row): выписка и своя строка это
    бегущий текст, и на широком окне они шли на 110 знаков в строке. Поле под выписку
@@ -4141,3 +4144,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .chat-face.is-casual { border-color: var(--band-line); background-color: var(--band); }
 .chat-msg .chat-name { display: inline-flex; align-items: center; }
+
+/* Галочка у прочитанного приложения: голубая, потому что это отметка участника,
+   а не платформы (правка владельца 07.08). Ставится, когда приложение открыто и
+   его низ побывал на экране. */
+.case-block.is-read > .case-sum .case-sum-mark::after {
+  content: '✓'; color: var(--jb-ink); font-weight: 700; margin-left: 8px;
+}

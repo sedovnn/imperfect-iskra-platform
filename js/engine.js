@@ -105,6 +105,9 @@
       // но судьям не отдаём: выделение — вспомогательный инструмент, а не
       // инструмент оценки. Попасть в оценку не могут по построению.
       marks: [],
+      // Прочитанные приложения: {appx-id: время}. Не ответ и не оценка — отметка
+      // «этот документ участник дочитал», нужна только для галочки в списке.
+      read: {},
       cursor: 0, started: false, finished: false,
       startedAt: nowIso(), finishedAt: ''
     };
@@ -130,6 +133,7 @@
           if (!p.mech) p.mech = {};
           if (!p.mechAt) p.mechAt = {};
           if (!p.marks) p.marks = [];
+          if (!p.read) p.read = {};
           // Гейт версии защищает ОТВЕТЫ, а не факт открытия страницы. Поэтому
           // блокируем только когда есть что терять: зафиксированный ответ или
           // разобранный портфель. Прежнее условие включало p.started, и участник,
@@ -439,7 +443,11 @@
       if (!sc) return;
       var pull = function () {
         var nb = n.getBoundingClientRect(), sb = sc.getBoundingClientRect();
-        var below = nb.bottom - (sb.bottom - 12);
+        // ⚠ Не «лишь бы влезла», а В ЗОНУ ЧТЕНИЯ: под новой репликой остаётся пятая
+        // часть колонки. Иначе она выскакивала ровно у нижнего края — там, где глаз
+        // читать не привык, и разговор выглядел рваным (правка владельца 07.08).
+        var pad = Math.max(28, Math.round(sc.clientHeight * 0.2));
+        var below = nb.bottom - (sb.bottom - pad);
         if (below > 0) sc.scrollTop += below;
       };
       pull();
@@ -1018,7 +1026,13 @@
       det.className = 'case-block';
       det.id = art.id;
       art.removeAttribute('id');
-      if (i === 0) det.open = true;
+      // ⚠ РАЗДЕЛЫ КЕЙСА РАСКРЫТЫ, ПРИЛОЖЕНИЯ СВЁРНУТЫ (правка владельца 07.08).
+      // Приложение отличаем по идентификатору: у приложений он начинается с appx.
+      // Раньше открыт был только первый раздел, и участник открывал семь свёрток
+      // подряд, прежде чем начать читать.
+      var isAppx = /^appx/i.test(det.id || '');
+      det.open = !isAppx;
+      if (isAppx) det.classList.add('is-appx');
       var sum = document.createElement('summary');
       sum.className = 'case-sum';
       sum.innerHTML = '<span class="case-sum-t"></span><span class="case-sum-mark" aria-hidden="true"></span>';
@@ -1038,6 +1052,39 @@
       det.appendChild(sum);
       det.appendChild(art);
     });
+
+    // ── ГАЛОЧКА У ПРОЧИТАННОГО ПРИЛОЖЕНИЯ (правка владельца 07.08) ──
+    // Условие честное: приложение открыто И его низ побывал в видимой части. Не
+    // «открыл» — открыть можно и не читая; и не «долистал до конца страницы» —
+    // короткое приложение помещается целиком и должно засчитываться сразу.
+    // Признак живёт в состоянии (state.read), поэтому переживает перезагрузку.
+    var markRead = function () {
+      var sc = el('supCaseText');
+      if (!sc) return;
+      var sb = sc.getBoundingClientRect();
+      var changed = false;
+      sc.querySelectorAll('details.is-appx[open]').forEach(function (d) {
+        if (!state.read) state.read = {};
+        if (state.read[d.id]) { d.classList.add('is-read'); return; }
+        var r = d.getBoundingClientRect();
+        if (r.bottom <= sb.bottom + 4) {
+          state.read[d.id] = nowIso();
+          d.classList.add('is-read');
+          changed = true;
+        }
+      });
+      if (changed) saveState();
+    };
+    host.addEventListener('scroll', markRead);
+    host.addEventListener('toggle', function () { setTimeout(markRead, 60); }, true);
+    setTimeout(markRead, 200);
+    // Уже прочитанное из прошлой сессии помечаем сразу.
+    if (state.read) {
+      Object.keys(state.read).forEach(function (id) {
+        var d = document.getElementById(id);
+        if (d) d.classList.add('is-read');
+      });
+    }
 
     // Управление всеми сразу — готовая полоса из разметки, СНАРУЖИ прокрутки
     // (см. комментарий там же). Здесь только включаем её и вешаем обработчик.
@@ -1757,8 +1804,12 @@
     // роль, а введение уехало на свой экран — строка про пакет уехала вместе с ним.
     if (intro && !intro.dataset.filled) {
       intro.innerHTML =
-        (act.lead ? '<p class="case-intro-lead">' + br(act.lead) + '</p>' : '') +
-        (act.marks ? '<p class="case-intro-marks">' + br(act.marks) + '</p>' : '');
+        (act.lead ? '<p class="case-intro-lead">' + br(act.lead) + '</p>' : '');
+      // ⚠ Объяснение заметок уехало ВО ВКЛАДКУ «Мои заметки» (правка владельца
+      // 07.08): оно про неё, и место ему там, а над пакетом оно занимало экран,
+      // который участник открыл, чтобы читать пакет.
+      var mn = el('marksNote');
+      if (mn && act.marks) mn.innerHTML = br(act.marks);
       intro.dataset.filled = '1';
       if (window.imp && window.imp.typoDom) window.imp.typoDom(intro);
     }
@@ -1950,11 +2001,24 @@
       if (foot) actHost.appendChild(foot);
     }
     var waiting = !!now.querySelector('[data-reveal="1"]');
-    if (waiting && actHost) actHost.classList.add('is-await');
+    // ⚠ РЯД ДЕЙСТВИЯ НЕ ПРЯЧЕТСЯ, ПОКА ИДЁТ МОНОЛОГ (правка владельца 07.08). Раньше
+    // он появлялся и исчезал на каждом шаге, и кнопка мигала. Теперь он стоит на
+    // месте, а кнопки на время монолога выключены — видно, что действие будет, но
+    // сделать его пока нельзя. Помечаем только то, что выключили сами: у «Дальше»
+    // и у гейта механики своя причина быть выключенными, и её нельзя затирать.
+    if (waiting && actHost) {
+      var bs = actHost.querySelectorAll('button');
+      for (var bi = 0; bi < bs.length; bi++) {
+        if (!bs[bi].disabled) { bs[bi].disabled = true; bs[bi].setAttribute('data-wait-off', '1'); }
+      }
+    }
     var openWork = function () {
       var waits = now.querySelectorAll('.is-await');
       for (var wi = 0; wi < waits.length; wi++) waits[wi].classList.remove('is-await');
-      if (actHost) actHost.classList.remove('is-await');
+      if (actHost) {
+        var bs2 = actHost.querySelectorAll('[data-wait-off]');
+        for (var bj = 0; bj < bs2.length; bj++) { bs2[bj].disabled = false; bs2[bj].removeAttribute('data-wait-off'); }
+      }
       // Открывшееся поле ответа тоже подтягиваем в видимую часть — оно появляется
       // последним, ниже всех реплик.
       // ⚠ Ряд действия появляется ПОСЛЕ монолога и забирает у колонки ~77px высоты —
@@ -1968,8 +2032,11 @@
       if (sc2 && tgt) {
         var pull2 = function () {
           var mb = tgt.getBoundingClientRect(), sb2 = sc2.getBoundingClientRect();
-          var below2 = mb.bottom - (sb2.bottom - 12);
-          if (below2 > 0) sc2.scrollTop += below2;
+          // ⚠ Тянем ВЕРХ рабочей области, а не низ: у разбора заявок низ на две
+          // тысячи пикселей ниже, и «показать низ» означало прыжок в конец списка
+          // (поймано владельцем 07.08). Если верх уже виден — не двигаем ничего.
+          var over = mb.top - (sb2.bottom - 80);
+          if (over > 0) sc2.scrollTop += over;
         };
         pull2();
         setTimeout(pull2, 60);

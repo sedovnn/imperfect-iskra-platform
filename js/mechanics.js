@@ -97,7 +97,7 @@
       return '';
     },
     foot: function () {
-      return { note: 'Тезис написан и один отмечен самым тревожным. Связки — по желанию.', cta: 'Отправить Агееву →' };
+      return { note: '', cta: 'Отправить Агееву →' };
     },
     locked: function (m, ctx) {
       var n = m.cards.filter(function (c) { return String(c.text).trim(); }).length;
@@ -237,7 +237,7 @@
               ? '<div class="mx-slot">' +
                   '<span class="mx-title">Самый тревожный симптом</span>' +
                   '<p class="mx-quote">' + ctx.br(f) + '</p>' +
-                  field(ctx, { id: 'mxWhy', f: 'why', label: 'Почему именно это', rows: 2, ph: 'одна фраза', val: m.why }) +
+                  field(ctx, { id: 'mxWhy', f: 'why', label: 'Почему именно это', rows: 2, ph: 'ваш ответ', val: m.why }) +
                 '</div>'
               : '';
             var w2 = slot.querySelector('#mxWhy');
@@ -747,7 +747,7 @@
           h += ctx.speech(m.returned && ctx.probeReturn ? ctx.probeReturn : ctx.probe);
           h += '<span class="chat-name chat-name-mine">Вы</span>' +
             '<div class="s2-mine">' +
-            field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: 'одна фраза', label: '',
+            field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: 'ваш ответ', label: '',
               val: m.why }) + '</div>';
         }
         host.innerHTML = h;
@@ -801,7 +801,7 @@
         h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
         if (m.bet != null) {
           h += '<div class="mx-slot"><span class="mx-title">Лемех: «А сами какой считаете вероятнее?»</span>' +
-            field(ctx, { id: 'mxBw', f: 'betwhy', label: 'Почему — одной фразой', rows: 2, ph: 'одна фраза', val: m.betWhy }) +
+            field(ctx, { id: 'mxBw', f: 'betwhy', label: 'Почему — одной фразой', rows: 2, ph: 'ваш ответ', val: m.betWhy }) +
             '</div>';
         }
         host.innerHTML = h;
@@ -874,7 +874,7 @@
           '<p class="mx-hint">от года до пятнадцати, крайнее деление — «15+». Дефолта нет: пока не сдвинете, срок не выбран.</p>' +
           '<div class="mx-card">' +
             field(ctx, { id: 'mxGb', f: 'became', label: 'Чем стала компания', rows: 5, val: m.became }) +
-            field(ctx, { id: 'mxGg', f: 'gave', label: 'Что отдали', opt: 1, rows: 4, ph: 'необязательно', val: m.gave }) +
+            field(ctx, { id: 'mxGg', f: 'gave', label: 'Чем пришлось пожертвовать', opt: 1, rows: 4, ph: 'необязательно', val: m.gave }) +
           '</div>';
         var y = host.querySelector('#mxY'), v = host.querySelector('#mxYv');
         y.addEventListener('input', function () {
@@ -920,7 +920,9 @@
     foot: function () { return { note: '', cta: 'Отправить →' }; },
     locked: function () { return '<b>письмо отправлено</b> <span class="bl-locked-hint">все четыре поля — во вкладке «Мои ответы»</span>'; },
     render: function (host, m, ctx) {
-      host.innerHTML = (ctx.lead ? '<p class="mx-hint">' + ctx.esc(ctx.lead) + '</p>' : '') +
+      // Напоминание — рамкой и читаемым кеглем, а не служебной строкой: оно про то,
+      // чем пользоваться, пока пишешь письмо (правка владельца 07.08).
+      host.innerHTML = (ctx.lead ? '<p class="case-intro-marks">' + ctx.esc(ctx.lead) + '</p>' : '') +
         '<div class="mx-card">' + LETTER.map(function (f) {
         return field(ctx, { id: 'mxL_' + f[0], f: f[0], label: f[1], rows: 4, val: m[f[0]] });
       }).join('') + '</div>';
@@ -1003,7 +1005,7 @@
   M.goal.answerHtml = function (m, ctx) {
     return (m.years ? '<p style="margin:0;">через ' + yearsLabel(m.years) + ' лет</p>' : '') +
       p('Чем стала компания', ctx.br(m.became)) +
-      (String(m.gave).trim() ? p('Что отдали', ctx.br(m.gave)) : '');
+      (String(m.gave).trim() ? p('Чем пришлось пожертвовать', ctx.br(m.gave)) : '');
   };
 
   M.letter.answerHtml = function (m, ctx) {
