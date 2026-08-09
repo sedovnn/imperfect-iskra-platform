@@ -4173,7 +4173,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 
 /* Сумма взятого — в подписи стопки «Берём», а не крупной полосой над списком
    (правка владельца 07.08). Служебный кегль: это справка, а не приговор. */
-.bl-pile-sum { font-size: var(--fs-util); color: var(--muted-soft); font-weight: 400; letter-spacing: 0; text-transform: none; }
+/* Сумма стопки уходит ВПРАВО, к краю рамки (решение владельца 09.08). Счёт
+   карточек и число людей стояли встык, и разделитель на этом кегле их не
+   разводил: «Берём · 2 460 чел.» читалось как одно число. Разводит расстояние.
+   Класс, а не :has() — правило обязано держать и там, где :has не поддержан:
+   без flex сумма встала бы обратно встык к счёту, то есть ровно в ту ошибку. */
+.bl-col-head.has-sum { display: flex; align-items: baseline; gap: 6px; }
+.bl-pile-sum { margin-left: auto; font-size: var(--fs-util); color: var(--muted-soft); font-weight: 400; letter-spacing: 0; text-transform: none; }
 
 /* ── ЛИЦО СОБЕСЕДНИКА ──
    Кружок слева от имени. Пока картинки нет — инициалы на подложке; размер и цвет
