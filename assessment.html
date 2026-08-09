@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=153" />
+<link rel="stylesheet" href="css/styles.css?v=155" />
 </head>
 <body class="p-assess">
 
@@ -93,7 +93,12 @@
 
       <!-- Возврат свёрнутого столбика этапов — рельс на его месте, прямой ребёнок грида.
            ⚠ Не внутри колонки работы: в режиме чтения работа скрыта. -->
-      <button type="button" class="toc-restore" id="tocRestore" title="Показать этапы" aria-label="Показать этапы">⟩</button>
+      <!-- Свёрнутый столбик: стрелка и под ней вертикальная подпись — участник
+           видит, что здесь было, не разворачивая (правка владельца 09.08). -->
+      <button type="button" class="toc-restore" id="tocRestore" title="Показать этапы" aria-label="Показать этапы">
+        <span class="toc-rail-arrow" aria-hidden="true">›</span>
+        <span class="toc-rail-label" aria-hidden="true">Этапы ассессмента</span>
+      </button>
 
       <!-- ЛЕВАЯ КОЛОНКА — ТОЛЬКО ЭТАПЫ АССЕССМЕНТА (решение владельца 06.08).
            Сворачивается кнопкой участника; ниже 1360 уезжает сама. -->
@@ -103,7 +108,9 @@
              оставшихся: список того, что спросят, это карта дня, и мы её не показываем. -->
         <div class="dayside-head">
           <span class="dayside-kicker">Этапы ассессмента</span>
-          <button type="button" class="toc-collapse" id="tocCollapse" title="Свернуть колонку">свернуть</button>
+          <!-- Стрелка, а не слово: сворачивание и разворачивание — одно действие в
+               две стороны, и обозначаться должно одинаково (правка владельца 09.08). -->
+          <button type="button" class="toc-collapse" id="tocCollapse" title="Свернуть столбик этапов" aria-label="Свернуть столбик этапов">‹</button>
         </div>
         <div class="dayside-route" id="routeBody"></div>
         <!-- ⚠ Оглавления открытой вкладки здесь нет (решение владельца 06.08: «слева ТОЛЬКО
@@ -257,7 +264,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=2"></script>
-<script src="js/scenes.js?v=36"></script>
+<script src="js/scenes.js?v=37"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -265,7 +272,7 @@
 <!-- mechanics.js ДО engine.js: движок спрашивает window.imp.mechanics[act.mech] в
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
-<script src="js/mechanics.js?v=18"></script>
-<script src="js/engine.js?v=49"></script>
+<script src="js/mechanics.js?v=21"></script>
+<script src="js/engine.js?v=51"></script>
 </body>
 </html>

@@ -3119,10 +3119,16 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 12px 14px 10px var(--frame-pad);
   border-bottom: 1px solid var(--hairline);
 }
+/* Стрелка сворачивания — пара к стрелке возврата на рельсе: одно действие в две
+   стороны, один знак (правка владельца 09.08). Слово «свернуть» стояло рядом с
+   двухстрочным заголовком и читалось его частью. */
 .toc-collapse {
-  margin-left: auto; border: none; background: none; cursor: pointer; padding: 2px 4px;
-  font: inherit; font-size: var(--fs-util); color: var(--muted-soft);
+  margin-left: auto; border: none; background: none; cursor: pointer;
+  width: 26px; height: 26px; border-radius: 50%; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; font-size: var(--fs-read); line-height: 1; color: var(--muted-soft);
 }
+.toc-collapse:hover { background: var(--hairline); }
 .toc-collapse:hover { color: var(--ink); }
 .dayside-body { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 8px 24px var(--frame-pad); }
 
@@ -3164,11 +3170,21 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Возврат столбика этапов — рельс 34px на месте свёрнутой колонки, он же и кнопка.
    ⚠ Не внутри колонки работы: в режиме чтения работа скрыта, кнопка исчезла бы с ней. */
 .toc-restore {
-  display: none; align-items: flex-start; justify-content: center;
+  display: none; flex-direction: column; align-items: center; justify-content: flex-start;
+  gap: 12px;
   position: absolute; z-index: 7; left: 0; top: 0; width: 34px; height: 100%;
   border: 0; border-right: 1px solid var(--hairline); background: var(--soft);
-  cursor: pointer; font: inherit; font-size: var(--fs-util); line-height: 1;
+  cursor: pointer; font: inherit; line-height: 1;
   color: var(--muted); padding: 12px 0 0;
+}
+.toc-rail-arrow { font-size: var(--fs-read); }
+/* Подпись читается снизу вверх — как на корешке книги: так её читают, не наклоняя
+   голову к экрану, и она не спорит с направлением самой колонки. */
+.toc-rail-label {
+  writing-mode: vertical-rl; transform: rotate(180deg);
+  font-size: var(--label-size); font-weight: var(--label-weight);
+  letter-spacing: var(--label-track); text-transform: uppercase; color: var(--muted-soft);
+  white-space: nowrap;
 }
 .day-grid.is-collapsed .toc-restore { display: inline-flex; }
 /* Ниже 1360 колонку убирает медиазапрос, а не класс, поэтому кнопку возврата надо
@@ -4008,13 +4024,34 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 
 /* слайдер срока (С5). Дефолта нет: пока не сдвинут, значение «не выбрано» —
    обязательный срок стирал наблюдение «сам ли человек привязал цель ко времени» */
-.mx-years { display: flex; align-items: center; gap: 14px; margin: 0 0 4px; }
+/* ⚠ РЯД СРОКА НЕ ДВИГАЕТСЯ (правка владельца 09.08). Дёргали его три вещи разом:
+   у числа менялся кегль между «не выбрано» и «8», ширина была задана в em (то есть
+   тоже менялась вместе с кеглем), а кнопка «сбросить» появлялась только после
+   первого движения. Теперь это сетка с постоянными колонками: ползунок тянется,
+   число стоит в своей колонке фиксированной ширины, кнопка на месте всегда. */
+/* ── ШКАЛА СРОКА (решение владельца 09.08, вариант 3) ──
+   Крупного числа рядом с ползунком нет: оно меняло ширину и кегль на каждом
+   движении и дёргало весь блок. Вместо него подписанные деления под ползунком —
+   они стоят на своих местах всегда, — и строка выбора ниже, постоянной высоты. */
+.mx-years { margin: 0 0 6px; }
 /* Ползунок — то, что двигает участник, значит голубой; вермилион остаётся кнопкам. */
-.mx-years input[type="range"] { flex: 1; accent-color: var(--jb-ink); }
-.mx-years-val {
-  font-size: var(--fs-place); font-weight: 700; font-variant-numeric: tabular-nums; min-width: 5.2em;
+.mx-years input[type="range"] { display: block; width: 100%; accent-color: var(--jb-ink); }
+.mx-years-scale { position: relative; height: 18px; margin-top: 2px; }
+.mx-tick {
+  position: absolute; top: 0; transform: translateX(-50%);
+  font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums;
 }
-.mx-years-val.is-empty { font-size: var(--fs-dense); font-weight: 400; color: var(--muted-soft); }
+.mx-tick[data-tick="1"] { transform: none; }
+.mx-tick[data-tick="15"] { transform: translateX(-100%); }
+.mx-tick.is-on { color: var(--jb-ink); font-weight: 700; }
+/* Ряд выбора: слева срок, справа сброс. Высота фиксирована, положение кнопки не
+   зависит от длины строки — двигаться нечему. */
+.mx-years-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 28px; margin: 0 0 4px;
+}
+.mx-years-pick { font-size: var(--fs-dense); font-weight: 600; color: var(--ink); }
+.mx-years-pick.is-empty { font-weight: 400; color: var(--muted-soft); }
 
 /* Тихие ссылки под главной кнопкой экрана установки: перечитать настройку и роль.
    Служебный кегль и приглушённый цвет — это не действие экрана, а выход из него. */
@@ -4146,8 +4183,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .chat-msg .chat-name { display: inline-flex; align-items: center; }
 
 /* Галочка у прочитанного приложения: голубая, потому что это отметка участника,
-   а не платформы (правка владельца 07.08). Ставится, когда приложение открыто и
-   его низ побывал на экране. */
-.case-block.is-read > .case-sum .case-sum-mark::after {
-  content: '✓'; color: var(--jb-ink); font-weight: 700; margin-left: 8px;
+   а не платформы. Ставится, когда приложение открыто и его низ побывал на экране.
+   ⚠ СЛЕВА ОТ НАЗВАНИЯ, а не в конце строки (правка владельца 09.08): во всей
+   платформе галочка стоит перед тем, что отмечает, — так же в столбике этапов. */
+.case-block.is-read > .case-sum .case-sum-t::before {
+  content: '✓'; color: var(--jb-ink); font-weight: 700; margin-right: 8px;
 }

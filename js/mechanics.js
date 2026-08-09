@@ -770,7 +770,13 @@
       if (ctx.isDemo) return '';
       return m.cards.some(function (t) { return String(t).trim(); }) ? '' : 'Нужна хотя бы одна карточка.';
     },
-    foot: function () { return { note: '', cta: 'Разложил →' }; },
+    // Отметил наиболее вероятный — ход называется «Ответить» и стоит под своей
+    // карточкой; не отметил — обычный «Разложил» в подвале колонки.
+    foot: function (m) {
+      return m.bet != null
+        ? { note: '', cta: 'Ответить →', inCard: true }
+        : { note: '', cta: 'Разложил →' };
+    },
     locked: function (m) {
       var n = m.cards.filter(function (t) { return String(t).trim(); }).length;
       return '<b>' + n + '</b> ' + plural(n, 'вариант', 'варианта', 'вариантов') + ' будущего' +
@@ -799,9 +805,14 @@
             '</div>';
         });
         h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
+        // ⚠ Вопрос Лемеха — РЕПЛИКА, а не подпись поля (правка владельца 09.08).
+        // Устроено так же, как вопрос Агеева в печати: пузырь собеседника, под ним
+        // своя карточка с полем, кнопка «Ответить» — под карточкой (foot.inCard).
         if (m.bet != null) {
-          h += '<div class="mx-slot"><span class="mx-title">Лемех: «А сами какой считаете вероятнее?»</span>' +
-            field(ctx, { id: 'mxBw', f: 'betwhy', label: 'Почему — одной фразой', rows: 2, ph: 'ваш ответ', val: m.betWhy }) +
+          h += ctx.speech(ctx.probe) +
+            '<span class="chat-name chat-name-mine">Вы</span>' +
+            '<div class="s2-mine">' +
+              field(ctx, { id: 'mxBw', f: 'betwhy', label: '', rows: 2, ph: 'ваш ответ', val: m.betWhy }) +
             '</div>';
         }
         host.innerHTML = h;
@@ -820,7 +831,9 @@
         if (a !== null && a !== undefined && a !== '') {
           var pick = Number(a);
           m.bet = (m.bet === pick) ? null : pick;
-          ctx.save(); draw(); ctx.sync(); return;
+          // ⚠ redraw, а не draw: от метки зависит ПОДВАЛ (кнопка «Разложил» меняется
+          // на «Ответить» под карточкой), а подвал собирает движок, не механика.
+          ctx.save(); ctx.redraw(); return;
         }
         a = e.target.getAttribute && e.target.getAttribute('data-del');
         if (a) {
@@ -846,6 +859,9 @@
   // ═════════════════════════════════════════════════════════════════════════
   var YMAX = 16;   // 16-е деление читается как «15+»
   function yearsLabel(y) { return y ? (y === YMAX ? '15+' : String(y)) : 'не выбрано'; }
+  // Деления шкалы: концы и две опоры внутри. Не варианты выбора — выбор остаётся
+  // непрерывным от 1 до 15, деления только называют шкалу.
+  var YTICKS = [1, 5, 10, YMAX];
   M.goal = {
     init: function () { return { years: null, became: '', gave: '' }; },
     yearsLabel: yearsLabel,
@@ -865,26 +881,59 @@
       var draw = function () {
         host.innerHTML =
           head('Через сколько лет', '<span class="mx-count mx-opt">по желанию — можно не отвечать</span>') +
+          // ⚠ КРУПНОГО ЧИСЛА НЕТ (решение владельца 09.08, вариант 3). Оно меняло
+          // ширину и кегль на каждом движении и дёргало ряд. Вместо него шкала
+          // подписана делениями, а выбранное деление подсвечивается; точный срок
+          // стоит строкой ниже, в ряду постоянной высоты, — там двигаться нечему.
           '<div class="mx-years">' +
             '<input type="range" id="mxY" min="1" max="' + YMAX + '" step="1" value="' + (m.years || 8) + '" ' +
               'aria-label="Через сколько лет" />' +
-            '<span class="mx-years-val' + (m.years ? '' : ' is-empty') + '" id="mxYv">' + yearsLabel(m.years) + '</span>' +
-            (m.years ? '<button type="button" class="s2-act" id="mxYc">сбросить</button>' : '') +
+            '<div class="mx-years-scale" id="mxYs">' +
+              YTICKS.map(function (t) {
+                return '<span class="mx-tick" data-tick="' + t + '" style="left:' +
+                  Math.round(1000 * (t - 1) / (YMAX - 1)) / 10 + '%">' + (t === YMAX ? '15+' : t) + '</span>';
+              }).join('') +
+            '</div>' +
           '</div>' +
-          '<p class="mx-hint">от года до пятнадцати, крайнее деление — «15+». Дефолта нет: пока не сдвинете, срок не выбран.</p>' +
+          '<div class="mx-years-foot">' +
+            '<span class="mx-years-pick' + (m.years ? '' : ' is-empty') + '" id="mxYv">' +
+              (m.years ? 'срок: ' + yearsLabel(m.years) + ' ' + plural(m.years === YMAX ? 15 : m.years, 'год', 'года', 'лет') : 'срок не выбран') +
+            '</span>' +
+            '<button type="button" class="s2-act" id="mxYc"' + (m.years ? '' : ' disabled') + '>сбросить</button>' +
+          '</div>' +
+          // Диапазон и «15+» теперь подписаны на самой шкале — в подсказке
+          // остаётся только то, чего на шкале не видно: дефолта нет.
+          '<p class="mx-hint">Дефолта нет: пока не сдвинете, срок не выбран.</p>' +
           '<div class="mx-card">' +
             field(ctx, { id: 'mxGb', f: 'became', label: 'Чем стала компания', rows: 5, val: m.became }) +
             field(ctx, { id: 'mxGg', f: 'gave', label: 'Чем пришлось пожертвовать', opt: 1, rows: 4, ph: 'необязательно', val: m.gave }) +
           '</div>';
         var y = host.querySelector('#mxY'), v = host.querySelector('#mxYv');
+        // Подсветка деления — только точное совпадение. Подсветка «ближайшего»
+        // врала: на трёх годах жирнела единица. Где участник на шкале, показывает
+        // сам ползунок, точный срок — строка ниже; деление лишь подтверждает,
+        // когда он встал ровно на него.
+        var paintTicks = function () {
+          host.querySelectorAll('.mx-tick').forEach(function (el2) {
+            el2.classList.toggle('is-on', !!m.years && Number(el2.dataset.tick) === m.years);
+          });
+        };
+        paintTicks();
         y.addEventListener('input', function () {
           m.years = Number(y.value);
-          v.textContent = yearsLabel(m.years);
+          v.textContent = 'срок: ' + yearsLabel(m.years) + ' ' +
+            plural(m.years === YMAX ? 15 : m.years, 'год', 'года', 'лет');
           v.classList.remove('is-empty');
+          paintTicks();
+          // Кнопка уже на месте — включаем её, а не дорисовываем: перерисовка на
+          // каждое движение ползунка и была тем самым «дёргается».
+          var cb = host.querySelector('#mxYc');
+          if (cb) cb.disabled = false;
           ctx.save();
         });
-        // Сброс перерисовывает: кнопка «сбросить» должна исчезнуть вместе с выбором.
-        y.addEventListener('change', function () { draw(); });
+        // Перерисовка после ползунка — только по «сбросить». На отпускании
+        // (change) её нет: она пересоздавала поля цели и сбивала каретку, если
+        // участник уже писал «чем стала», а потом двинул срок.
         var c = host.querySelector('#mxYc');
         if (c) c.addEventListener('click', function () { m.years = null; ctx.save(); draw(); });
         var bb = host.querySelector('#mxGb'), gg = host.querySelector('#mxGg');

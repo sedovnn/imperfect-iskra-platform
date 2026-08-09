@@ -360,7 +360,12 @@
              : t.replace(/,\s*\{name\}/g, '').replace(/\{name\}\s*,\s*/g, '').split('{name}').join('');
     }
     if (t.indexOf('{people}') >= 0 || t.indexOf('{money}') >= 0) {
-      var tt = totals();
+      // ⚠ ЧИСЛА БЕРУТСЯ ИЗ НОВОГО СПИСКА (правка 09.08). Здесь стоял старый
+      // totals(), который считает по state.picks — модели, которой на маршруте
+      // v4.4.f больше нет. Поэтому Агеев говорил «Так. 0 человек — при пятистах»
+      // ровно там, где участник вышел за рамку. Ветвление шага (applies) давно
+      // считает по listSums(); теперь и реплика читает тот же счёт.
+      var tt = listSums() || totals();
       t = t.split('{people}').join(String(tt.people)).split('{money}').join(num(tt.money));
     }
     if (t.indexOf('{drop1}') >= 0 || t.indexOf('{drop2}') >= 0) {
@@ -434,6 +439,19 @@
   function revealRun(host, done) {
     if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
     var q = [].slice.call(host.querySelectorAll('[data-reveal="1"]'));
+    // ⚠ СНАЧАЛА ОСВОБОЖДАЕМ ЭКРАН, ПОТОМ ГОВОРИМ (правка владельца 09.08). Прежде
+    // чем показать первую новую реплику, уводим прочитанное вверх: первый пузырь
+    // встаёт примерно на трети экрана, под ним пусто, и разговор идёт сверху вниз
+    // по чистому месту. Раньше каждая реплика появлялась у нижнего края и толкала
+    // колонку — отсюда «рывками». Если содержимого выше мало, браузер упрёт
+    // прокрутку в начало сам, и ничего не сдвинется.
+    var sc0 = el('talkScroll');
+    if (sc0 && q.length) {
+      var first = q[0];
+      var ft = first.getBoundingClientRect().top - sc0.getBoundingClientRect().top;
+      var want = Math.round(sc0.clientHeight * 0.3);
+      if (ft - want > 4) sc0.scrollTop += (ft - want);
+    }
     // ⚠ КОЛОНКА ЕДЕТ ЗА РЕПЛИКОЙ (правка владельца 07.08). В кофейне разговор длинный,
     // и новые пузыри появлялись НИЖЕ видимой части: участник читал пустой экран, пока
     // сам не прокрутит. Догоняем только вниз и только если реплика вышла за нижний
