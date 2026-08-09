@@ -3949,6 +3949,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 .mx-add:hover:not(:disabled) { border-color: var(--jb-ink); color: var(--ink); }
 .mx-add:disabled { opacity: .45; cursor: default; }
+/* Реплика собеседника ВНУТРИ верстака (вопрос Лемеха под карточками будущего,
+   вопрос Агеева в чате правления) начинается с отступа: вплотную к полю пузырь
+   читался как подпись последнего поля, а не как сказанное вслух. */
+.mx-add + .chat,
+.mx-card + .chat,
+.mx-seal-total + .chat,
+.s2-mine + .chat { margin-top: 18px; }
 .mx-hint { font-size: var(--fs-util); color: var(--muted-soft); margin: 8px 0 3px; }
 
 /* слот симптома: метка-заголовок, без стрелки и без глагола (лор §С1) */
