@@ -2897,7 +2897,18 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 
 /* ── Кабинет оценок v2 (cabinet.html + js/cabinet.js) ────────────────────── */
+/* ⚠ ТЕЛО ЖИВЁТ В ТЕХ ЖЕ КООРДИНАТАХ, ЧТО ШАПКА. У .station-header стоит
+   max-width: var(--maxw) с margin:0 auto, а у тела ограничения не было — на широком
+   мониторе шапка оставалась колонкой по центру, а таблица растекалась во всю ширь
+   экрана. Выглядело как две разные страницы, и колонки раздувались до бессмыслицы:
+   «Николай» и «не начинал» уезжали друг от друга на пол-экрана. */
+.cab-body, .cab-tabs {
+  max-width: var(--maxw);
+  width: 100%;
+  margin: 0 auto;
+}
 .cab-body { padding: 22px var(--frame-pad, 56px) 64px; }
+.cab-tabs { padding: 0 var(--frame-pad, 56px); }
 .cab-status { font-size: var(--fs-op-sm); color: var(--muted-soft); }
 .cab-status.is-bad { color: var(--accent-ink); font-weight: 600; }
 
@@ -2912,7 +2923,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 0 12px 8px 0;
   border-bottom: 1px solid var(--hairline);
 }
-.cab-table td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+.cab-table td { padding: 12px 12px 12px 0; border-bottom: 1px solid var(--hairline); vertical-align: middle; text-align: left; }
+/* Служебные колонки не переносятся и не тянутся: номер, поток, полоска шагов,
+   навыки и итог занимают ровно свою ширину, а свободное место достаётся «Сейчас»
+   и «Нужен человек» — единственным двум колонкам со связным текстом. Без этого
+   таблица делила ширину поровну и короткие значения расползались по пол-экрана. */
+.cab-table td:first-child, .cab-table th:first-child { white-space: nowrap; }
+.cab-table .cab-progress, .cab-table .cab-col-tight { white-space: nowrap; width: 1%; }
 .cab-table tbody tr { cursor: pointer; }
 .cab-table tbody tr:hover { background: var(--soft); }
 .cab-row-ai td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
@@ -2955,12 +2972,16 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   font-size: var(--fs-op); color: var(--muted-soft); cursor: pointer; user-select: none;
 }
 .cab-filter input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+.cab-filters { display: flex; flex-wrap: wrap; gap: 22px; margin: 0 0 4px; }
+.cab-filters .cab-filter { margin: 0; }
 
 /* ── один кабинет: день и ростер вкладками ──
    Ростер, волны и пароли переехали из facilitator.html: там они лежали рядом с
    показом хода по станционным листам прежнего маршрута, и участник, проходящий
    день сейчас, выглядел бездействующим. */
-.cab-tabs { display: flex; gap: 4px; margin: 0 0 4px; border-bottom: 1px solid var(--hairline); }
+/* margin здесь только снизу: центрирование по колонке шапки задано выше вместе
+   с .cab-body, и полный margin его бы затёр. */
+.cab-tabs { display: flex; gap: 4px; margin-bottom: 4px; border-bottom: 1px solid var(--hairline); }
 .cab-tab {
   appearance: none; background: none; border: 0; cursor: pointer;
   padding: 10px 14px; margin-bottom: -1px;

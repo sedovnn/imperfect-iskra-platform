@@ -1,13 +1,11 @@
-// i(m)perfect — кабинет оценок платформы v2 («шесть открытых вопросов»).
+// i(m)perfect — кабинет фасилитатора. ЕДИНСТВЕННЫЙ.
 //
-// Почему это отдельный экран, а не вкладка в facilitator.html. Кабинет v1
-// построен насквозь на станциях: строка участника собирается из p.station1…
-// p.station3, «Ход» считает шесть точек по листам Round1…Round5, карточка
-// разложена по заданиям старого маршрута. Это 1861 строка, читающая ДРУГИЕ листы.
-// Те листы никуда не делись и остаются архивом (потоки 004/008), поэтому старый
-// кабинет продолжает их показывать — а этот экран читает Answers и Scores.
-// Разные данные, разные экраны; общего источника текста у них нет, так что и
-// расходиться нечему.
+// facilitator.html (кабинет v1, 1861 строка на станционных листах Round1…Round5)
+// удалён с платформы 10.08. До этого экранов было два, и функции фасилитатора между
+// ними разорваны: администрация — волны, выдача номеров, пароли, сброс — жила только
+// в v1, а живой день только здесь. Хуже того, ручную правку оценки читал только v1,
+// и два экрана говорили про одного человека разное. Станционные листы остались в
+// таблице, файлы — в истории git; если прежние потоки понадобятся, смотреть их там.
 //
 // Что здесь есть: список с ходом по двенадцати шагам маршрута v4.4.f, колонкой
 // «Сейчас» словами и колонкой «Нужен человек» с причиной, карточка из четырёх
@@ -282,12 +280,20 @@
     // полном списке, и пересчёт индексов при каждом переключении был бы ровно тем
     // местом, где кабинет однажды покажет чужую карточку.
     var onlyNeed = !!(filterEl && filterEl.checked);
+    // Прежние прогоны и номера архивных волн по умолчанию не показываем: это
+    // история, а кабинет открывают, чтобы увидеть идущий день. Скрытое считаем и
+    // называем — молча пропасть строки не должны.
+    var oldEl = document.getElementById('cabShowOld');
+    var withOld = !!(oldEl && oldEl.checked);
+    var isOld = function (p) { return !!p.waveArchived || (!p.answered && !!p.legacyAnswered); };
+    var hiddenOld = withOld ? 0 : rows.filter(isOld).length;
     var shown = 0;
     var html = '<table class="cab-table"><thead><tr>' +
       '<th>Номер</th><th>ФИО</th><th>Поток</th><th>Ход</th><th>Сейчас</th>' +
       '<th>Нужен человек</th><th>Навыки</th><th>Итог</th>' +
       '</tr></thead><tbody>';
     rows.forEach(function (p, i) {
+      if (!withOld && isOld(p)) return;
       if (onlyNeed && !attention(p).length) return;
       shown++;
       html += '<tr data-ix="' + i + '"' + (p.isAi ? ' class="cab-row-ai"' : '') + (p.noScore ? ' style="opacity:.5"' : '') + '>' +
@@ -302,8 +308,14 @@
         '</tr>';
     });
     html += '</tbody></table>';
-    if (onlyNeed && !shown) {
-      html += '<p class="section-lead">Ни одной строки, которая ждёт человека. Снимите отметку, чтобы увидеть весь лист.</p>';
+    if (!shown) {
+      html += '<p class="cab-dim">' + (onlyNeed
+        ? 'Ни одной строки, которая ждёт человека.'
+        : 'Показывать нечего: все строки — прежние прогоны.') + '</p>';
+    }
+    if (hiddenOld) {
+      html += '<p class="cab-dim">Скрыто прежних прогонов: ' + hiddenOld +
+        '. Это история прошлых потоков и архивных волн.</p>';
     }
     if (filterCount) {
       var need = rows.filter(function (p) { return attention(p).length; }).length;
@@ -345,25 +357,47 @@
     return window.imp.alert('Не вышло: ' + msg).then(function () {});
   }
 
+  // Архивные волны скрыты по умолчанию: живая волна не должна тонуть среди прежних
+  // потоков. Пометка снимается той же кнопкой, ничего не удаляется.
+  function showArchived() {
+    var el = document.getElementById('cabShowArchived');
+    return !!(el && el.checked);
+  }
+
   function renderWaves() {
     var host = document.getElementById('cabWaves');
     if (!host) return;
     if (!waves.length) { host.innerHTML = '<p class="cab-dim">Ни одной волны. Добавьте ниже.</p>'; return; }
+    var vis = waves.filter(function (w) { return showArchived() || !w.archived; });
+    var hidden = waves.length - vis.length;
+    if (!vis.length) {
+      host.innerHTML = '<p class="cab-dim">Все волны в архиве. Поставьте отметку выше, чтобы увидеть их.</p>';
+      fillWaveSelect(vis);
+      return;
+    }
     host.innerHTML = '<table class="cab-table cab-table-tight"><thead><tr>' +
       '<th>Номер</th><th>Название</th><th>Прогон модели</th><th></th></tr></thead><tbody>' +
-      waves.map(function (w, i) {
-        return '<tr data-wix="' + i + '">' +
+      vis.map(function (w, i) {
+        return '<tr data-wix="' + i + '"' + (w.archived ? ' style="opacity:.55"' : '') + '>' +
           '<td><input type="text" class="cab-inp cab-w-num" maxlength="3" value="' + esc(w.num) + '" /></td>' +
-          '<td><input type="text" class="cab-inp cab-w-name" value="' + esc(w.name) + '" /></td>' +
+          '<td><input type="text" class="cab-inp cab-w-name" value="' + esc(w.name) + '" />' +
+            (w.archived ? ' <span class="cab-dim">в архиве</span>' : '') + '</td>' +
           '<td><input type="checkbox" class="cab-w-ai"' + (w.isAi ? ' checked' : '') + ' /></td>' +
           '<td class="cab-row-acts">' +
             '<button type="button" class="btn btn-ghost btn-xs cab-w-save">Сохранить</button> ' +
+            '<button type="button" class="btn btn-ghost btn-xs cab-w-arch">' +
+              (w.archived ? 'Вернуть из архива' : 'В архив') + '</button> ' +
             '<button type="button" class="btn btn-ghost btn-xs cab-w-del">Удалить</button>' +
           '</td></tr>';
-      }).join('') + '</tbody></table>';
+      }).join('') + '</tbody></table>' +
+      (hidden ? '<p class="cab-dim">Скрыто в архиве: ' + hidden + '</p>' : '');
 
     host.querySelectorAll('tr[data-wix]').forEach(function (tr) {
-      var w = waves[Number(tr.getAttribute('data-wix'))];
+      var w = vis[Number(tr.getAttribute('data-wix'))];
+      tr.querySelector('.cab-w-arch').addEventListener('click', function () {
+        call('setWaveMeta', { id: w.id, archived: w.archived ? '' : '1' })
+          .then(function (r) { return after(r, w.archived ? 'волна вернулась из архива' : 'волна убрана в архив'); });
+      });
       tr.querySelector('.cab-w-save').addEventListener('click', function () {
         call('setWaveMeta', { id: w.id, num: tr.querySelector('.cab-w-num').value.trim(),
           name: tr.querySelector('.cab-w-name').value.trim(),
@@ -378,12 +412,18 @@
       });
     });
 
+    fillWaveSelect(vis);
+  }
+
+  // Номера выдаём только в неархивные волны: выдать номер в прошлый поток —
+  // это ошибка, которую потом не видно.
+  function fillWaveSelect(vis) {
     var sel = document.getElementById('cabIssueWave');
-    if (sel) {
-      sel.innerHTML = waves.map(function (w) {
-        return '<option value="' + esc(w.id) + '">' + esc((w.num || '—') + ' · ' + (w.name || 'без названия')) + '</option>';
-      }).join('');
-    }
+    if (!sel) return;
+    var live = (vis || waves).filter(function (w) { return !w.archived; });
+    sel.innerHTML = live.map(function (w) {
+      return '<option value="' + esc(w.id) + '">' + esc((w.num || '—') + ' · ' + (w.name || 'без названия')) + '</option>';
+    }).join('');
   }
 
   function renderRoster() {
@@ -391,10 +431,16 @@
     if (!host) return;
     if (!roster.length) { host.innerHTML = '<p class="cab-dim">Ни одного номера. Выдайте выше.</p>'; return; }
     var showPw = !!(document.getElementById('cabRosterShowPw') || {}).checked;
+    var vis = roster.filter(function (r) { return showArchived() || !r.waveArchived; });
+    var hidden = roster.length - vis.length;
+    if (!vis.length) {
+      host.innerHTML = '<p class="cab-dim">Все номера в архивных волнах. Поставьте отметку «показать архивные» выше.</p>';
+      return;
+    }
     host.innerHTML = '<table class="cab-table cab-table-tight"><thead><tr>' +
       '<th>Номер</th><th>Имя</th><th>Волна</th><th>Пароль</th><th>День</th>' +
       '<th>Не оценивать</th><th></th></tr></thead><tbody>' +
-      roster.map(function (r, i) {
+      vis.map(function (r, i) {
         return '<tr data-rix="' + i + '"' + (r.noScore ? ' style="opacity:.55"' : '') + '>' +
           '<td>' + esc(bib6(r.bib)) + '</td>' +
           '<td><input type="text" class="cab-inp cab-r-name" value="' + esc(r.firstName) + '" placeholder="имя" /></td>' +
@@ -408,10 +454,11 @@
             (r.started ? '<button type="button" class="btn btn-ghost btn-xs cab-r-reset">Сбросить день</button> ' : '') +
             '<button type="button" class="btn btn-ghost btn-xs cab-r-del">Удалить</button>' +
           '</td></tr>';
-      }).join('') + '</tbody></table>';
+      }).join('') + '</tbody></table>' +
+      (hidden ? '<p class="cab-dim">Скрыто номеров архивных волн: ' + hidden + '</p>' : '');
 
     host.querySelectorAll('tr[data-rix]').forEach(function (tr) {
-      var r = roster[Number(tr.getAttribute('data-rix'))];
+      var r = vis[Number(tr.getAttribute('data-rix'))];
       var q = function (c) { return tr.querySelector(c); };
       q('.cab-r-save').addEventListener('click', function () {
         call('setParticipantName', { bib: r.bib, firstName: q('.cab-r-name').value.trim() })
@@ -821,6 +868,10 @@
   // Фильтр перерисовывает уже полученный список, не дёргая сервер: решение
   // «показать только ждущих» — про глаза, а не про данные.
   if (filterEl) filterEl.addEventListener('change', function () { render(); });
+  var oldEl = document.getElementById('cabShowOld');
+  if (oldEl) oldEl.addEventListener('change', function () { render(); });
+  var archEl = document.getElementById('cabShowArchived');
+  if (archEl) archEl.addEventListener('change', function () { renderWaves(); renderRoster(); });
 
   // ── вкладки ──
   (function () {

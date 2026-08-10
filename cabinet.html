@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=161" />
+<link rel="stylesheet" href="css/styles.css?v=162" />
 </head>
 <body>
 
@@ -23,7 +23,7 @@
   <div class="gate-card">
     <p class="kicker">Кабинет</p>
     <h2>Оценки</h2>
-    <p class="section-lead" style="margin:0 0 20px;">Пароль вам передаст команда. Здесь всё: ход дня, оценки, ростер, волны и пароли. Прогоны прежнего маршрута — в <a href="facilitator.html">архиве</a>.</p>
+    <p class="section-lead" style="margin:0 0 20px;">Пароль вам передаст команда.</p>
     <div class="field">
       <label for="cabPass">Пароль</label>
       <input type="password" id="cabPass" autocomplete="current-password" />
@@ -55,16 +55,17 @@
     </nav>
 
     <div class="cab-body" id="cabViewDay">
-      <p class="section-lead" style="max-width:var(--w-read);">Один день, двенадцать шагов, десять способностей. Итог по §9 методологии — сумма пяти навыков из 25, и он показывается только когда оценены все десять способностей. Прогоны прежнего маршрута стоят здесь же, помеченные как исторические.</p>
-      <label class="cab-filter"><input type="checkbox" id="cabOnlyNeed" /> Только те, кто ждёт человека <span class="bib" id="cabNeedCount">0</span></label>
+      <div class="cab-filters">
+        <label class="cab-filter"><input type="checkbox" id="cabOnlyNeed" /> Только те, кто ждёт человека <span class="bib" id="cabNeedCount">0</span></label>
+        <label class="cab-filter"><input type="checkbox" id="cabShowOld" /> Показать прежние прогоны</label>
+      </div>
       <div id="cabList"><p class="fac-detail-loading">Загружаю…</p></div>
     </div>
 
     <div class="cab-body" id="cabViewRoster" style="display:none;">
-      <p class="section-lead" style="max-width:var(--w-read);">Волны, выдача номеров и пароли. Всё, что здесь есть, работает по живому листу <code>Registrations</code>: изменения видны участникам сразу.</p>
-
       <section class="cab-admin">
         <h3>Волны</h3>
+        <label class="cab-filter"><input type="checkbox" id="cabShowArchived" /> Показать архивные</label>
         <div id="cabWaves"><p class="cab-dim">Загружаю…</p></div>
         <div class="cab-form">
           <label class="field-inline"><span>Номер</span><input type="text" id="cabWaveNum" inputmode="numeric" maxlength="3" placeholder="021" /></label>
@@ -120,6 +121,6 @@
 <script src="js/backlog.js?v=3"></script>
 <script src="js/scenes.js?v=37"></script>
 <script src="js/mechanics.js?v=25"></script>
-<script src="js/cabinet.js?v=5"></script>
+<script src="js/cabinet.js?v=6"></script>
 </body>
 </html>
