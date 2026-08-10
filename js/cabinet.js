@@ -338,11 +338,6 @@
   // «ничего не делает». Данные администрации при этом живые: лист Registrations
   // один и тот же. Поэтому переносим сюда, а v1 остаётся смотрелкой прежних прогонов.
 
-  function say2(el, msg, kind) {
-    if (!el) return;
-    el.innerHTML = msg ? '<p class="cab-note' + (kind ? ' is-' + kind : '') + '">' + esc(msg) + '</p>' : '';
-  }
-
   function call(action, extra) {
     var p = { password: pw };
     Object.keys(extra || {}).forEach(function (k) { p[k] = extra[k]; });
@@ -357,36 +352,116 @@
     return window.imp.alert('Не вышло: ' + msg).then(function () {});
   }
 
-  // Архивные волны скрыты по умолчанию: живая волна не должна тонуть среди прежних
-  // потоков. Пометка снимается той же кнопкой, ничего не удаляется.
+  // ── ВОЛНЫ ────────────────────────────────────────────────────────────────────
+  // Волна — единица дня, а не строка справочника. Поэтому в её строке стоит всё,
+  // что с ней делают: сколько номеров выдано и докуда дошли люди, выдача новых
+  // номеров, ссылка самозаписи, уход в архив. Прежде выдача жила отдельной формой
+  // с выпадающим списком волн — волну приходилось выбирать второй раз и вслепую,
+  // глядя не на ту таблицу, в которой только что смотрел числа.
+  //
+  // Поля правятся без кнопки «Сохранить»: значение уезжает по уходу из поля, если
+  // оно изменилось. Кнопка на каждую строку делала ряд действий рваным — у одних
+  // строк её было четыре, у других три, и колонка действий не выравнивалась ни по
+  // одной границе.
   function showArchived() {
     var el = document.getElementById('cabShowArchived');
     return !!(el && el.checked);
   }
 
+  function bibKey(b) { return String(parseInt(String(b).replace(/\D/g, ''), 10) || 0); }
+
+  // Сколько людей в волне и докуда дошли. Считаем по ростеру и листу Answers:
+  // выдано — сколько номеров, начали — у кого есть работа, закончили — кто закрыл день.
+  function waveStats(w) {
+    var mine = {}, issued = 0, started = 0, finished = 0;
+    roster.forEach(function (r) {
+      if (String(r.waveId) !== String(w.id)) return;
+      issued++; mine[bibKey(r.bib)] = true;
+      if (r.started) started++;
+    });
+    rows.forEach(function (p) { if (mine[bibKey(p.bib)] && p.finished) finished++; });
+    return { issued: issued, started: started, finished: finished };
+  }
+
+  function selfEnrollLink(num) {
+    try { return new URL('index.html?w=' + encodeURIComponent(num), location.href).href; }
+    catch (e) { return 'index.html?w=' + num; }
+  }
+
+  // Копирование с отходным путём: на file:// и без защищённого протокола
+  // navigator.clipboard недоступен, и молчаливый отказ выглядел бы как «нажал и
+  // ничего». Тогда показываем текст, чтобы его можно было выделить руками.
+  function copyText(text, okMsg) {
+    var done = function () { say(okMsg || 'скопировано'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text).then(done, function () {
+        window.imp.alert('Скопировать не дал браузер. Вот текст:\n\n' + text);
+      });
+    }
+    window.imp.alert('Скопировать не дал браузер. Вот текст:\n\n' + text);
+    return Promise.resolve();
+  }
+
+  // Правка поля по уходу из него. Пустое значение и значение без изменений на
+  // сервер не уезжают: лишний вызов на каждый случайный клик — это тоже правка.
+  function onCommit(input, was, fn) {
+    var send = function () {
+      var val = input.value.trim();
+      if (val === String(was == null ? '' : was).trim()) return;
+      fn(val);
+    };
+    input.addEventListener('blur', send);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    });
+  }
+
   function renderWaves() {
     var host = document.getElementById('cabWaves');
     if (!host) return;
-    if (!waves.length) { host.innerHTML = '<p class="cab-dim">Ни одной волны. Добавьте ниже.</p>'; return; }
+    if (!waves.length) {
+      host.innerHTML = '<p class="cab-empty">Ни одной волны. Волна — это один день с одной группой: ' +
+        'номер волны становится первыми тремя цифрами номеров участников. Добавьте волну ниже, ' +
+        'потом выдайте в неё номера.</p>';
+      return;
+    }
     var vis = waves.filter(function (w) { return showArchived() || !w.archived; });
     var hidden = waves.length - vis.length;
     if (!vis.length) {
-      host.innerHTML = '<p class="cab-dim">Все волны в архиве. Поставьте отметку выше, чтобы увидеть их.</p>';
-      fillWaveSelect(vis);
+      host.innerHTML = '<p class="cab-empty">Все волны в архиве. Поставьте отметку «показать архивные», чтобы увидеть их.</p>';
       return;
     }
-    host.innerHTML = '<table class="cab-table cab-table-tight"><thead><tr>' +
-      '<th>Номер</th><th>Название</th><th>Прогон модели</th><th></th></tr></thead><tbody>' +
+    host.innerHTML = '<table class="cab-table cab-table-tight cab-waves">' +
+      '<thead><tr>' +
+        '<th class="cab-col-num">Номер</th><th>Название</th>' +
+        '<th class="cab-col-tight">Прогон ИИ</th>' +
+        '<th class="cab-col-tight">Люди</th>' +
+        '<th class="cab-col-tight">Вход по ссылке</th>' +
+        '<th class="cab-col-acts">Действия</th>' +
+      '</tr></thead><tbody>' +
       vis.map(function (w, i) {
-        return '<tr data-wix="' + i + '"' + (w.archived ? ' style="opacity:.55"' : '') + '>' +
-          '<td><input type="text" class="cab-inp cab-w-num" maxlength="3" value="' + esc(w.num) + '" /></td>' +
-          '<td><input type="text" class="cab-inp cab-w-name" value="' + esc(w.name) + '" />' +
-            (w.archived ? ' <span class="cab-dim">в архиве</span>' : '') + '</td>' +
-          '<td><input type="checkbox" class="cab-w-ai"' + (w.isAi ? ' checked' : '') + ' /></td>' +
-          '<td class="cab-row-acts">' +
-            '<button type="button" class="btn btn-ghost btn-xs cab-w-save">Сохранить</button> ' +
-            '<button type="button" class="btn btn-ghost btn-xs cab-w-arch">' +
-              (w.archived ? 'Вернуть из архива' : 'В архив') + '</button> ' +
+        var s = waveStats(w);
+        return '<tr data-wix="' + i + '"' + (w.archived ? ' class="is-archived"' : '') + '>' +
+          '<td class="cab-col-num"><input type="text" class="cab-inp cab-inp-num cab-w-num" maxlength="3" value="' + esc(w.num) + '" aria-label="Номер волны" /></td>' +
+          '<td><input type="text" class="cab-inp cab-inp-wide cab-w-name" value="' + esc(w.name) + '" placeholder="без названия" aria-label="Название волны" />' +
+            (w.archived ? ' <span class="cab-tag">в архиве</span>' : '') + '</td>' +
+          '<td class="cab-col-tight cab-center"><input type="checkbox" class="cab-w-ai"' + (w.isAi ? ' checked' : '') + ' aria-label="Прогон модели" /></td>' +
+          '<td class="cab-col-tight cab-nums">' +
+            (s.issued
+              ? '<b>' + s.issued + '</b> выдано<br /><span class="cab-dim">' + s.started + ' начали · ' + s.finished + ' закончили</span>'
+              : '<span class="cab-dim">никого</span>') +
+          '</td>' +
+          '<td class="cab-col-tight">' +
+            '<label class="cab-inline-check"><input type="checkbox" class="cab-w-se"' + (w.selfEnroll ? ' checked' : '') + ' />' +
+              (w.selfEnroll ? 'открыт' : 'закрыт') + '</label>' +
+            (w.selfEnroll && w.num ? ' <button type="button" class="btn btn-ghost btn-xs cab-w-link">Ссылка</button>' : '') +
+          '</td>' +
+          '<td class="cab-col-acts">' +
+            '<span class="cab-issue">' +
+              '<input type="number" class="cab-inp cab-inp-num cab-w-count" min="1" max="300" value="1" aria-label="Сколько номеров выдать" />' +
+              '<button type="button" class="btn btn-ghost btn-xs cab-w-issue"' + (w.archived ? ' disabled' : '') + '>Выдать</button>' +
+            '</span>' +
+            '<button type="button" class="btn btn-ghost btn-xs cab-w-arch">' + (w.archived ? 'Из архива' : 'В архив') + '</button>' +
             '<button type="button" class="btn btn-ghost btn-xs cab-w-del">Удалить</button>' +
           '</td></tr>';
       }).join('') + '</tbody></table>' +
@@ -394,74 +469,162 @@
 
     host.querySelectorAll('tr[data-wix]').forEach(function (tr) {
       var w = vis[Number(tr.getAttribute('data-wix'))];
-      tr.querySelector('.cab-w-arch').addEventListener('click', function () {
+      var q = function (c) { return tr.querySelector(c); };
+
+      onCommit(q('.cab-w-num'), w.num, function (val) {
+        if (!/^\d{3}$/.test(val)) { window.imp.alert('Номер волны — ровно три цифры, например 021.'); return; }
+        call('setWaveMeta', { id: w.id, num: val }).then(function (r) { return after(r, 'номер волны сохранён'); });
+      });
+      onCommit(q('.cab-w-name'), w.name, function (val) {
+        call('setWaveMeta', { id: w.id, name: val }).then(function (r) { return after(r, 'название сохранено'); });
+      });
+      q('.cab-w-ai').addEventListener('change', function () {
+        call('setWaveMeta', { id: w.id, isAi: this.checked ? '1' : '' })
+          .then(function (r) { return after(r, 'отметка сохранена'); });
+      });
+      q('.cab-w-se').addEventListener('change', function () {
+        var on = this.checked;
+        call('setWaveMeta', { id: w.id, selfEnroll: on ? '1' : '' })
+          .then(function (r) { return after(r, on ? 'вход по ссылке открыт' : 'вход по ссылке закрыт'); });
+      });
+      if (q('.cab-w-link')) {
+        q('.cab-w-link').addEventListener('click', function () {
+          copyText(selfEnrollLink(w.num), 'ссылка на волну ' + w.num + ' скопирована');
+        });
+      }
+      q('.cab-w-issue').addEventListener('click', function () {
+        var count = Number(q('.cab-w-count').value);
+        if (!(count > 0 && count <= 300)) { window.imp.alert('Количество — от 1 до 300.'); return; }
+        issue(w, count);
+      });
+      q('.cab-w-arch').addEventListener('click', function () {
         call('setWaveMeta', { id: w.id, archived: w.archived ? '' : '1' })
           .then(function (r) { return after(r, w.archived ? 'волна вернулась из архива' : 'волна убрана в архив'); });
       });
-      tr.querySelector('.cab-w-save').addEventListener('click', function () {
-        call('setWaveMeta', { id: w.id, num: tr.querySelector('.cab-w-num').value.trim(),
-          name: tr.querySelector('.cab-w-name').value.trim(),
-          isAi: tr.querySelector('.cab-w-ai').checked ? '1' : '' })
-          .then(function (r) { return after(r, 'волна сохранена'); });
-      });
-      tr.querySelector('.cab-w-del').addEventListener('click', function () {
-        window.imp.confirm('Удалить волну ' + (w.num || w.id) + '? Выданные в ней номера останутся.',
+      q('.cab-w-del').addEventListener('click', function () {
+        var s = waveStats(w);
+        window.imp.confirm('Удалить волну ' + (w.num || w.id) + '?' +
+          (s.issued ? ' Выданные в ней номера (' + s.issued + ') останутся в ростере без волны.' : ''),
           { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
             if (yes) call('removeWave', { id: w.id }).then(function (r) { return after(r, 'волна удалена'); });
           });
       });
     });
-
-    fillWaveSelect(vis);
   }
 
-  // Номера выдаём только в неархивные волны: выдать номер в прошлый поток —
-  // это ошибка, которую потом не видно.
-  function fillWaveSelect(vis) {
-    var sel = document.getElementById('cabIssueWave');
+  // Выдача номеров прямо из строки волны. Выданное показываем сразу и списком:
+  // это единственный момент, когда номер и пароль нужны вместе, чтобы их раздать.
+  function issue(w, count) {
+    var out = document.getElementById('cabIssueOut');
+    say('выдаю…');
+    call('createParticipants', { wave: w.id, count: count }).then(function (r) {
+      if (!r || !r.ok) return after(r);
+      var made = r.created || [];
+      var text = made.map(function (c) { return c.bib + '\t' + c.password; }).join('\n');
+      out.innerHTML = '<div class="cab-issued">' +
+        '<div class="cab-issued-head"><b>Выдано в волну ' + esc(w.num || w.id) + ': ' + made.length + '</b>' +
+          '<button type="button" class="btn btn-ghost btn-xs" id="cabIssuedCopy">Скопировать</button></div>' +
+        '<table class="cab-table cab-table-tight"><thead><tr><th>Номер</th><th>Пароль</th></tr></thead><tbody>' +
+        made.map(function (c) {
+          return '<tr><td>' + esc(bib6(c.bib)) + '</td><td class="cab-pw">' + esc(c.password) + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      document.getElementById('cabIssuedCopy').addEventListener('click', function () {
+        copyText(text, 'номера и пароли скопированы');
+      });
+      return refresh();
+    });
+  }
+
+  // ── НОМЕРА И ПАРОЛИ ──────────────────────────────────────────────────────────
+  // Список людей, а не список полей. Слово «ростер» из подписи убрано: оно пришло из
+  // прежнего экрана и ничего не объясняет тому, кто открыл кабинет впервые. Имена
+  // элементов (cabRoster*, renderRoster) оставлены как есть — они не видны глазу, а
+  // переименование ради переименования только рвёт историю правок.
+  // Что с этим списком делают: находят человека по номеру
+  // или имени, отбирают одну волну, раздают номера с паролями, правят имя, гасят
+  // «без оценки», сбрасывают день. Ряд действий у всех строк ОДИН И ТОТ ЖЕ: там,
+  // где действие невозможно, кнопка выключена, а не убрана — иначе колонка
+  // действий скачет от строки к строке.
+  function rosterFind() {
+    var el = document.getElementById('cabRosterFind');
+    return el ? el.value.trim().toLowerCase() : '';
+  }
+
+  function rosterWave() {
+    var el = document.getElementById('cabRosterWave');
+    return el ? el.value : '';
+  }
+
+  function fillRosterWaveSelect() {
+    var sel = document.getElementById('cabRosterWave');
     if (!sel) return;
-    var live = (vis || waves).filter(function (w) { return !w.archived; });
-    sel.innerHTML = live.map(function (w) {
+    var keep = sel.value;
+    var list = waves.filter(function (w) { return showArchived() || !w.archived; });
+    sel.innerHTML = '<option value="">все волны</option>' + list.map(function (w) {
       return '<option value="' + esc(w.id) + '">' + esc((w.num || '—') + ' · ' + (w.name || 'без названия')) + '</option>';
     }).join('');
+    if (keep) sel.value = keep;
+  }
+
+  function rosterVisible() {
+    var find = rosterFind(), wave = rosterWave();
+    return roster.filter(function (r) {
+      if (!showArchived() && r.waveArchived) return false;
+      if (wave && String(r.waveId) !== String(wave)) return false;
+      if (find) {
+        var hay = (String(r.bib) + ' ' + (r.fio || '') + ' ' + (r.firstName || '')).toLowerCase();
+        if (hay.indexOf(find) < 0) return false;
+      }
+      return true;
+    });
   }
 
   function renderRoster() {
     var host = document.getElementById('cabRoster');
     if (!host) return;
-    if (!roster.length) { host.innerHTML = '<p class="cab-dim">Ни одного номера. Выдайте выше.</p>'; return; }
-    var showPw = !!(document.getElementById('cabRosterShowPw') || {}).checked;
-    var vis = roster.filter(function (r) { return showArchived() || !r.waveArchived; });
-    var hidden = roster.length - vis.length;
-    if (!vis.length) {
-      host.innerHTML = '<p class="cab-dim">Все номера в архивных волнах. Поставьте отметку «показать архивные» выше.</p>';
+    fillRosterWaveSelect();
+    if (!roster.length) {
+      host.innerHTML = '<p class="cab-empty">Ни одного номера. Номера выдаются в волне: ' +
+        'откройте «Волны» и нажмите «Выдать» в её строке.</p>';
       return;
     }
-    host.innerHTML = '<table class="cab-table cab-table-tight"><thead><tr>' +
-      '<th>Номер</th><th>Имя</th><th>Волна</th><th>Пароль</th><th>День</th>' +
-      '<th>Не оценивать</th><th></th></tr></thead><tbody>' +
+    var vis = rosterVisible();
+    var hidden = roster.length - vis.length;
+    if (!vis.length) {
+      host.innerHTML = '<p class="cab-empty">Под этот отбор никто не подходит. Снимите поиск или выберите другую волну.</p>';
+      return;
+    }
+    var showPw = !!(document.getElementById('cabRosterShowPw') || {}).checked;
+    host.innerHTML = '<table class="cab-table cab-table-tight cab-roster">' +
+      '<thead><tr>' +
+        '<th class="cab-col-num">Номер</th><th>Имя</th><th>Волна</th>' +
+        '<th class="cab-col-tight">Пароль</th>' +
+        '<th class="cab-col-tight">День</th>' +
+        '<th class="cab-col-tight cab-center">Без оценки</th>' +
+        '<th class="cab-col-acts">Действия</th>' +
+      '</tr></thead><tbody>' +
       vis.map(function (r, i) {
-        return '<tr data-rix="' + i + '"' + (r.noScore ? ' style="opacity:.55"' : '') + '>' +
-          '<td>' + esc(bib6(r.bib)) + '</td>' +
-          '<td><input type="text" class="cab-inp cab-r-name" value="' + esc(r.firstName) + '" placeholder="имя" /></td>' +
-          '<td>' + (esc(r.wave) || '<span class="cab-dim">—</span>') + '</td>' +
-          '<td class="cab-pw">' + (showPw ? esc(r.password) : '<span class="cab-dim">••••••</span>') + '</td>' +
-          '<td>' + (r.started ? 'начат' : '<span class="cab-dim">не начинал</span>') + '</td>' +
-          '<td><input type="checkbox" class="cab-r-nos"' + (r.noScore ? ' checked' : '') + ' /></td>' +
-          '<td class="cab-row-acts">' +
-            '<button type="button" class="btn btn-ghost btn-xs cab-r-save">Имя</button> ' +
-            '<button type="button" class="btn btn-ghost btn-xs cab-r-pw">Новый пароль</button> ' +
-            (r.started ? '<button type="button" class="btn btn-ghost btn-xs cab-r-reset">Сбросить день</button> ' : '') +
+        return '<tr data-rix="' + i + '"' + (r.noScore ? ' class="is-off"' : '') + '>' +
+          '<td class="cab-col-num">' + esc(bib6(r.bib)) + '</td>' +
+          '<td><input type="text" class="cab-inp cab-inp-wide cab-r-name" value="' + esc(r.firstName) + '" placeholder="без имени" aria-label="Имя участника" /></td>' +
+          '<td>' + (esc(r.wave) || '<span class="cab-dim">—</span>') +
+            (r.waveArchived ? ' <span class="cab-tag">архив</span>' : '') + '</td>' +
+          '<td class="cab-col-tight cab-pw">' + (showPw ? esc(r.password) : '<span class="cab-dim">скрыт</span>') + '</td>' +
+          '<td class="cab-col-tight">' + (r.started ? 'начат' : '<span class="cab-dim">не начинал</span>') + '</td>' +
+          '<td class="cab-col-tight cab-center"><input type="checkbox" class="cab-r-nos"' + (r.noScore ? ' checked' : '') + ' aria-label="Не оценивать" /></td>' +
+          '<td class="cab-col-acts">' +
+            '<button type="button" class="btn btn-ghost btn-xs cab-r-pw">Новый пароль</button>' +
+            '<button type="button" class="btn btn-ghost btn-xs cab-r-reset"' + (r.started ? '' : ' disabled title="День не начат — сбрасывать нечего"') + '>Сбросить день</button>' +
             '<button type="button" class="btn btn-ghost btn-xs cab-r-del">Удалить</button>' +
           '</td></tr>';
       }).join('') + '</tbody></table>' +
-      (hidden ? '<p class="cab-dim">Скрыто номеров архивных волн: ' + hidden + '</p>' : '');
+      (hidden ? '<p class="cab-dim">Не попало под отбор: ' + hidden + '</p>' : '');
 
     host.querySelectorAll('tr[data-rix]').forEach(function (tr) {
       var r = vis[Number(tr.getAttribute('data-rix'))];
       var q = function (c) { return tr.querySelector(c); };
-      q('.cab-r-save').addEventListener('click', function () {
-        call('setParticipantName', { bib: r.bib, firstName: q('.cab-r-name').value.trim() })
+      onCommit(q('.cab-r-name'), r.firstName, function (val) {
+        call('setParticipantName', { bib: r.bib, firstName: val })
           .then(function (res) { return after(res, 'имя сохранено'); });
       });
       q('.cab-r-nos').addEventListener('change', function () {
@@ -474,23 +637,23 @@
             if (!yes) return;
             call('regeneratePassword', { bib: r.bib }).then(function (res) {
               if (res && res.ok) {
-                document.getElementById('cabRosterShowPw').checked = true;
+                var pwEl = document.getElementById('cabRosterShowPw');
+                if (pwEl) pwEl.checked = true;
                 return after(res, 'пароль заменён');
               }
               return after(res);
             });
           });
       });
-      if (q('.cab-r-reset')) {
-        q('.cab-r-reset').addEventListener('click', function () {
-          window.imp.confirm('Стереть день у ' + bib6(r.bib) + '? Ответы, оценки и ручные правки уровней ' +
-            'по этому номеру исчезнут. Отменить это нельзя.',
-            { confirmLabel: 'Стереть', danger: true }).then(function (yes) {
-              if (yes) call('resetProgress', { bib: r.bib, confirm: 'RESET' })
-                .then(function (res) { return after(res, 'день стёрт'); });
-            });
-        });
-      }
+      q('.cab-r-reset').addEventListener('click', function () {
+        if (this.disabled) return;
+        window.imp.confirm('Стереть день у ' + bib6(r.bib) + '? Ответы, оценки и ручные правки уровней ' +
+          'по этому номеру исчезнут. Отменить это нельзя.',
+          { confirmLabel: 'Стереть', danger: true }).then(function (yes) {
+            if (yes) call('resetProgress', { bib: r.bib, confirm: 'RESET' })
+              .then(function (res) { return after(res, 'день стёрт'); });
+          });
+      });
       q('.cab-r-del').addEventListener('click', function () {
         window.imp.confirm('Удалить номер ' + bib6(r.bib) + ' вместе с ответами и оценками? Отменить нельзя.',
           { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
@@ -875,61 +1038,46 @@
 
   // ── вкладки ──
   (function () {
-    var tabDay = document.getElementById('cabTabDay');
-    var tabRos = document.getElementById('cabTabRoster');
-    var viewDay = document.getElementById('cabViewDay');
-    var viewRos = document.getElementById('cabViewRoster');
-    if (!tabDay || !tabRos) return;
-    var show = function (isDay) {
-      viewDay.style.display = isDay ? '' : 'none';
-      viewRos.style.display = isDay ? 'none' : '';
-      tabDay.classList.toggle('is-on', isDay);
-      tabRos.classList.toggle('is-on', !isDay);
-      tabDay.setAttribute('aria-selected', isDay ? 'true' : 'false');
-      tabRos.setAttribute('aria-selected', isDay ? 'false' : 'true');
+    var tabs = [].slice.call(document.querySelectorAll('.cab-tab[data-view]'));
+    var views = { day: 'cabViewDay', waves: 'cabViewWaves', roster: 'cabViewRoster' };
+    if (!tabs.length) return;
+    var show = function (name) {
+      Object.keys(views).forEach(function (k) {
+        var el = document.getElementById(views[k]);
+        if (el) el.style.display = (k === name) ? '' : 'none';
+      });
+      tabs.forEach(function (t) {
+        var on = t.getAttribute('data-view') === name;
+        t.classList.toggle('is-on', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
     };
-    tabDay.addEventListener('click', function () { show(true); });
-    tabRos.addEventListener('click', function () { show(false); });
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () { show(t.getAttribute('data-view')); });
+    });
   })();
 
-  // ── волны, номера, пароли ──
+  // ── новая волна, пароли, раздача ──
   (function () {
     var add = document.getElementById('cabWaveAdd');
     if (add) add.addEventListener('click', function () {
-      var num = (document.getElementById('cabWaveNum').value || '').trim();
-      if (!/^\d{3}$/.test(num)) { window.imp.alert('Номер волны — ровно три цифры, например 021.'); return; }
+      var numEl = document.getElementById('cabWaveNum');
+      var num = (numEl.value || '').trim();
+      if (!/^\d{3}$/.test(num)) {
+        window.imp.alert('Номер волны — ровно три цифры, например 021. Он становится первыми тремя цифрами номеров участников.');
+        numEl.focus();
+        return;
+      }
       call('addWave', { num: num, name: (document.getElementById('cabWaveName').value || '').trim(),
                         isAi: document.getElementById('cabWaveAi').checked ? '1' : '' })
         .then(function (r) {
           if (r && r.ok) {
-            document.getElementById('cabWaveNum').value = '';
+            numEl.value = '';
             document.getElementById('cabWaveName').value = '';
             document.getElementById('cabWaveAi').checked = false;
           }
           return after(r, 'волна добавлена');
         });
-    });
-
-    var issue = document.getElementById('cabIssueBtn');
-    if (issue) issue.addEventListener('click', function () {
-      var wave = document.getElementById('cabIssueWave').value;
-      var count = Number(document.getElementById('cabIssueCount').value);
-      if (!wave) { window.imp.alert('Сначала добавьте волну.'); return; }
-      if (!(count > 0 && count <= 300)) { window.imp.alert('Количество — от 1 до 300.'); return; }
-      var out = document.getElementById('cabIssueOut');
-      say2(out, 'выдаю…');
-      call('createParticipants', { wave: wave, count: count }).then(function (r) {
-        if (!r || !r.ok) { say2(out, ''); return after(r); }
-        // Выданные номера с паролями показываем СРАЗУ и здесь: это единственный
-        // момент, когда они нужны все вместе, чтобы раздать их в зале.
-        say2(out, '');
-        out.innerHTML = '<p class="cab-note">Выдано: ' + (r.created || []).length + '</p>' +
-          '<table class="cab-table cab-table-tight"><thead><tr><th>Номер</th><th>Пароль</th></tr></thead><tbody>' +
-          (r.created || []).map(function (c) {
-            return '<tr><td>' + esc(bib6(c.bib)) + '</td><td class="cab-pw">' + esc(c.password) + '</td></tr>';
-          }).join('') + '</tbody></table>';
-        return refresh();
-      });
     });
 
     var gen = document.getElementById('cabGenPass');
@@ -940,8 +1088,22 @@
       });
     });
 
+    // Раздача: номер и пароль по строке на человека, ровно по текущему отбору —
+    // то, что видишь на экране, то и уедет в буфер.
+    var copy = document.getElementById('cabRosterCopy');
+    if (copy) copy.addEventListener('click', function () {
+      var vis = rosterVisible();
+      if (!vis.length) { window.imp.alert('Копировать нечего: под текущий отбор никто не подходит.'); return; }
+      copyText(vis.map(function (r) { return r.bib + '\t' + r.password; }).join('\n'),
+        'скопировано строк: ' + vis.length);
+    });
+
     var showPw = document.getElementById('cabRosterShowPw');
     if (showPw) showPw.addEventListener('change', renderRoster);
+    var find = document.getElementById('cabRosterFind');
+    if (find) find.addEventListener('input', renderRoster);
+    var wsel = document.getElementById('cabRosterWave');
+    if (wsel) wsel.addEventListener('change', renderRoster);
   })();
   document.getElementById('cabDetailClose').addEventListener('click', closeCard);
   detail.addEventListener('click', function (e) { if (e.target === detail) closeCard(); });

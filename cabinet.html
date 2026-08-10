@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=162" />
+<link rel="stylesheet" href="css/styles.css?v=164" />
 </head>
 <body>
 
@@ -49,9 +49,15 @@
       </div>
     </header>
 
+    <!-- Порядок вкладок — порядок работы: сначала смотрят, как идёт день и что ждёт
+         человека; потом ищут участника и раздают доступ; волны настраивают до дня и
+         трогают реже всего, поэтому они последние.
+         «Ростер» из подписи убран: слово пришло из прежнего экрана и ничего не
+         объясняет тому, кто открыл кабинет впервые. -->
     <nav class="cab-tabs" role="tablist">
-      <button type="button" class="cab-tab is-on" id="cabTabDay" role="tab" aria-selected="true">День</button>
-      <button type="button" class="cab-tab" id="cabTabRoster" role="tab" aria-selected="false">Ростер и волны</button>
+      <button type="button" class="cab-tab is-on" data-view="day" role="tab" aria-selected="true">Оценка участников</button>
+      <button type="button" class="cab-tab" data-view="roster" role="tab" aria-selected="false">Номера и пароли</button>
+      <button type="button" class="cab-tab" data-view="waves" role="tab" aria-selected="false">Волны</button>
     </nav>
 
     <div class="cab-body" id="cabViewDay">
@@ -63,34 +69,35 @@
     </div>
 
     <div class="cab-body" id="cabViewRoster" style="display:none;">
-      <section class="cab-admin">
-        <h3>Волны</h3>
+      <div class="cab-filters">
+        <label class="cab-filter cab-search">
+          <span class="cab-vh">Поиск по номеру или имени</span>
+          <input type="search" id="cabRosterFind" class="cab-inp" placeholder="номер или имя" />
+        </label>
+        <label class="cab-filter"><span class="cab-vh">Волна</span><select id="cabRosterWave" class="cab-inp"></select></label>
+        <label class="cab-filter"><input type="checkbox" id="cabRosterShowPw" /> Пароли</label>
+        <button type="button" class="btn btn-ghost btn-sm" id="cabRosterCopy">Скопировать для раздачи</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="cabGenPass">Дописать пароли, где их нет</button>
+      </div>
+      <div id="cabRoster"><p class="cab-dim">Загружаю…</p></div>
+    </div>
+
+    <div class="cab-body" id="cabViewWaves" style="display:none;">
+      <div class="cab-filters">
         <label class="cab-filter"><input type="checkbox" id="cabShowArchived" /> Показать архивные</label>
-        <div id="cabWaves"><p class="cab-dim">Загружаю…</p></div>
+      </div>
+      <div id="cabWaves"><p class="cab-dim">Загружаю…</p></div>
+      <div id="cabIssueOut" aria-live="polite"></div>
+
+      <details class="cab-more">
+        <summary>Новая волна</summary>
         <div class="cab-form">
-          <label class="field-inline"><span>Номер</span><input type="text" id="cabWaveNum" inputmode="numeric" maxlength="3" placeholder="021" /></label>
-          <label class="field-inline"><span>Название</span><input type="text" id="cabWaveName" placeholder="внутреннее, видно только вам" /></label>
+          <label class="field-inline"><span>Номер</span><input type="text" class="cab-inp" id="cabWaveNum" inputmode="numeric" maxlength="3" placeholder="021" /></label>
+          <label class="field-inline"><span>Название</span><input type="text" class="cab-inp cab-inp-wide" id="cabWaveName" placeholder="видно только вам" /></label>
           <label class="field-inline field-check"><input type="checkbox" id="cabWaveAi" /><span>прогон модели</span></label>
-          <button type="button" class="btn btn-ghost btn-sm" id="cabWaveAdd">Добавить волну</button>
+          <button type="button" class="btn btn-primary btn-sm" id="cabWaveAdd">Добавить</button>
         </div>
-      </section>
-
-      <section class="cab-admin">
-        <h3>Выдать номера</h3>
-        <div class="cab-form">
-          <label class="field-inline"><span>Волна</span><select id="cabIssueWave"></select></label>
-          <label class="field-inline"><span>Сколько</span><input type="number" id="cabIssueCount" min="1" max="300" value="1" /></label>
-          <button type="button" class="btn btn-primary btn-sm" id="cabIssueBtn">Выдать</button>
-          <button type="button" class="btn btn-ghost btn-sm" id="cabGenPass">Дописать пароли, где их нет</button>
-        </div>
-        <div id="cabIssueOut"></div>
-      </section>
-
-      <section class="cab-admin">
-        <h3>Ростер</h3>
-        <label class="cab-filter"><input type="checkbox" id="cabRosterShowPw" /> Показать пароли</label>
-        <div id="cabRoster"><p class="cab-dim">Загружаю…</p></div>
-      </section>
+      </details>
     </div>
 
   </div>
@@ -121,6 +128,6 @@
 <script src="js/backlog.js?v=3"></script>
 <script src="js/scenes.js?v=37"></script>
 <script src="js/mechanics.js?v=25"></script>
-<script src="js/cabinet.js?v=6"></script>
+<script src="js/cabinet.js?v=8"></script>
 </body>
 </html>
