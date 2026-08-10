@@ -56,6 +56,8 @@
   })();
 
   function cap(s) { return String(s).charAt(0).toUpperCase() + String(s).slice(1); }
+  // Бэкенд отдаёт поток как «020 · Тест по ссылке»: номер до разделителя.
+  function waveNumOf(w) { return String(w || '').split(' · ')[0]; }
   function num(n) { return String(Math.round(Number(n) * 10) / 10).replace('.', ','); }
   function plural(n, one, few, many) {
     var a = Math.abs(n) % 100, b = a % 10;
@@ -297,9 +299,17 @@
       if (onlyNeed && !attention(p).length) return;
       shown++;
       html += '<tr data-ix="' + i + '"' + (p.isAi ? ' class="cab-row-ai"' : '') + (p.noScore ? ' style="opacity:.5"' : '') + '>' +
-        '<td>' + esc(bib6(p.bib)) + (p.isRunner ? ' <span class="cab-runner" title="Прогон модели (runnerJson заполнен)">⚙</span>' : '') + '</td>' +
+        // Значок ⚙ убран: он сообщал, что с этим номером что-то не так, но не что
+        // именно, — та же беда, что была у флажка ⚑ в «Итоге». Слово вместо значка.
+        '<td>' + esc(bib6(p.bib)) +
+          (p.isRunner ? ' <span class="cab-tag" title="День прошёл харнесс модели, а не человек: в строке заполнен runnerJson">модель</span>' : '') + '</td>' +
         '<td>' + (esc(p.fio) || '<span class="cab-dim">—</span>') + '</td>' +
-        '<td>' + (esc(p.wave) || '<span class="cab-dim">—</span>') + (p.isAi ? ' <span class="cab-ai">ИИ</span>' : '') + '</td>' +
+        // В «Оценке участников» поток — это контекст, а не содержание: показываем
+        // номер, полное название держим в подсказке. Целиком оно занимало столько,
+        // что «Итог» уезжал за край экрана, а он тут главное.
+        '<td class="cab-col-tight"' + (p.wave ? ' title="' + esc(p.wave) + '"' : '') + '>' +
+          (esc(waveNumOf(p.wave)) || '<span class="cab-dim">—</span>') +
+          (p.isAi ? ' <span class="cab-ai">ИИ</span>' : '') + '</td>' +
         '<td class="cab-progress">' + progressCell(p) + '</td>' +
         '<td>' + nowCell(p) + '</td>' +
         '<td>' + attentionCell(p) + '</td>' +

@@ -2920,16 +2920,18 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   letter-spacing: .06em;
   text-transform: uppercase;
   color: var(--muted-soft);
-  padding: 0 14px 8px;
+  /* Верхний отступ обязателен: без него подписи колонок прилипали к тому, что
+     стоит над таблицей, — к ряду отметок или к вкладкам. */
+  padding: 12px 12px 8px;
   border-bottom: 1px solid var(--hairline);
 }
-.cab-table td { padding: 12px 14px; border-bottom: 1px solid var(--hairline); vertical-align: middle; text-align: left; }
-/* ⚠ ОТСТУП С ДВУХ СТОРОН, А НЕ ТОЛЬКО СПРАВА. Стояло padding-left: 0 — чтобы первая
-   колонка совпадала с лого в шапке, — и из-за этого содержимое каждой ячейки
-   начиналось ровно на границе колонки: вплотную к рамке поля ввода в соседней.
-   Заподлицо с колонкой страницы теперь только внешние края таблицы. */
-.cab-table th:first-child, .cab-table td:first-child { padding-left: 0; }
-.cab-table th:last-child, .cab-table td:last-child { padding-right: 0; }
+.cab-table td { padding: 12px 12px; border-bottom: 1px solid var(--hairline); vertical-align: middle; text-align: left; }
+/* ⚠ ОТСТУП У ВСЕХ ЯЧЕЕК, ВКЛЮЧАЯ ПЕРВУЮ И ПОСЛЕДНЮЮ. Сначала стояло
+   padding-left: 0 на всех ячейках — содержимое начиналось ровно на границе колонки,
+   вплотную к рамке поля в соседней. Потом ноль остался у крайних, чтобы таблица
+   вставала заподлицо с лого в шапке, — и номер в первой колонке всё равно оказывался
+   прижат к краю. Выравнивание по лого того не стоит: таблица — блок с воздухом
+   внутри, а не сетка, натянутая на края страницы. */
 /* Служебные колонки не переносятся и не тянутся: номер, поток, полоска шагов,
    навыки и итог занимают ровно свою ширину, а свободное место достаётся «Сейчас»
    и «Нужен человек» — единственным двум колонкам со связным текстом. Без этого
@@ -2943,7 +2945,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-total { font-size: var(--fs-op-h); font-variant-numeric: tabular-nums; }
 /* .cab-flag убран вместе со значком ⚑ в «Итоге»: о флагах теперь говорит словом
    колонка «Нужен человек», и второй язык для того же только заставлял сверять. */
-.cab-ai, .cab-runner, .cab-stale {
+/* .cab-runner убран вместе со значком ⚙: прогон модели помечен словом «модель». */
+.cab-ai, .cab-stale {
   font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
 }
 .cab-ai { color: var(--accent-ink); }
@@ -3008,9 +3011,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   font-size: var(--fs-op); color: var(--ink); background: #fff; min-width: 90px;
 }
 .cab-inp:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-.cab-table-tight th, .cab-table-tight td { padding: 8px 12px; }
-.cab-table-tight th:first-child, .cab-table-tight td:first-child { padding-left: 0; }
-.cab-table-tight th:last-child, .cab-table-tight td:last-child { padding-right: 0; }
+.cab-table-tight th { padding: 10px 12px 8px; }
+.cab-table-tight td { padding: 8px 12px; }
 
 /* ── ДИСЦИПЛИНА КОЛОНОК ──
    У таблицы auto-раскладка, и без явных ширин браузер делил место поровну: у волн
