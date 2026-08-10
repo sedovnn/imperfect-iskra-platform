@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=158" />
+<link rel="stylesheet" href="css/styles.css?v=159" />
 </head>
 <body>
 
@@ -40,7 +40,7 @@
       <div class="station-header-left">
         <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
         <span class="station-sep">/</span>
-        <h1 class="station-name">Оценки · шесть открытых вопросов</h1>
+        <h1 class="station-name">Оценки · день «Искры»</h1>
       </div>
       <div class="station-header-right" data-no-refs="1">
         <span class="cab-status" id="cabStatus"></span>
@@ -51,7 +51,8 @@
     </header>
 
     <div class="cab-body">
-      <p class="section-lead" style="max-width:var(--w-read);">Один день, восемь окон, десять способностей. Итог по §9 методологии — сумма пяти навыков из 25, и он показывается только когда оценены все десять способностей. Старые прогоны по маршруту из восемнадцати полей остались в <a href="facilitator.html">кабинете фасилитатора</a>.</p>
+      <p class="section-lead" style="max-width:var(--w-read);">Один день, двенадцать шагов, десять способностей. Итог по §9 методологии — сумма пяти навыков из 25, и он показывается только когда оценены все десять способностей. Прогоны прежнего маршрута стоят здесь же, помеченные как исторические.</p>
+      <label class="cab-filter"><input type="checkbox" id="cabOnlyNeed" /> Только те, кто ждёт человека <span class="bib" id="cabNeedCount">0</span></label>
       <div id="cabList"><p class="fac-detail-loading">Загружаю…</p></div>
     </div>
 
@@ -75,6 +76,14 @@
 <script src="js/typo.js?v=2"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/api.js?v=5"></script>
-<script src="js/cabinet.js?v=2"></script>
+<!-- МАРШРУТ И МЕХАНИКИ ГРУЗЯТСЯ ЗДЕСЬ РОВНО ТЕМИ ЖЕ ФАЙЛАМИ, что на экране
+     участника. Кабинет берёт из них названия и порядок шагов (scenes.js →
+     S.windows()) и читаемый вид верстаков (mechanics.js → answerHtml): своего
+     списка шагов и своего уплощателя у него нет, иначе один и тот же ответ
+     назывался бы и выглядел бы в двух местах по-разному. -->
+<script src="js/backlog.js?v=3"></script>
+<script src="js/scenes.js?v=37"></script>
+<script src="js/mechanics.js?v=25"></script>
+<script src="js/cabinet.js?v=4"></script>
 </body>
 </html>

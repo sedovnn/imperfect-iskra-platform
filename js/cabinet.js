@@ -9,10 +9,18 @@
 // Разные данные, разные экраны; общего источника текста у них нет, так что и
 // расходиться нечему.
 //
-// Что здесь есть: список с ходом по восьми окнам и итогом по §9, карточка из
-// четырёх блоков (ответы · оценка · флаги · процесс), кнопки «оценить» и
-// «пересудить». Чего здесь нет: признака, кто отвечал, доступного судье, —
-// принадлежность прогона видна из волны и живёт только тут.
+// Что здесь есть: список с ходом по двенадцати шагам маршрута v4.4.f, колонкой
+// «Сейчас» словами и колонкой «Нужен человек» с причиной, карточка из четырёх
+// блоков (ответы · оценка · флаги · процесс), кнопки «оценить» и «пересудить».
+// Чего здесь нет: признака, кто отвечал, доступного судье, — принадлежность
+// прогона видна из волны и живёт только тут.
+//
+// Правка 10.08: до неё кабинет спрашивал у бэкенда ход по q1…q8 — окнам ПРЕЖНЕГО
+// маршрута, в которые нынешний фронт не пишет ничего. Двенадцать точек были пусты
+// у каждого участника, семь верстаков (основной измеряемый материал) не показывались
+// вовсе, а готовый factsHtml ждал форму, которая никогда не приезжала. Теперь
+// названия и порядок шагов приходят из scenes.js, вид верстаков — из mechanics.js,
+// а doV2List/doV2Detail отдают шаги, верстаки и факты разбора.
 
 (function () {
   var PW_KEY = 'imp_cabinet_pw';
@@ -30,6 +38,65 @@
     '1to2': 'граница 1→2', '2to3': 'граница 2→3', '3to4': 'граница 3→4', '4to5': 'граница 4→5'
   };
 
+  // ── МАРШРУТ ДНЯ: ОДИН ИСТОЧНИК ───────────────────────────────────────────────
+  // Порядок и названия двенадцати шагов кабинет читает из scenes.js (S.windows())
+  // и реестра механик (window.imp.mechTitles) — тех же файлов, что рисуют день
+  // участнику. Своего списка здесь НЕТ и быть не может: он стал бы вторым, и
+  // расхождение с маршрутом мы бы увидели не проверкой, а глазами на разборе.
+  // До 10.08 кабинет рисовал двенадцать безымянных точек по числу заполненных
+  // окон q1…q8 — окон ПРЕЖНЕГО маршрута, в которые нынешний фронт не пишет
+  // ничего. Точек было двенадцать пустых у каждого, независимо от того, где человек.
+  var STEPS = (function () {
+    var S = window.imp.scenes;
+    if (!S || !S.windows) return [];
+    var T = window.imp.mechTitles || {};
+    return S.windows().map(function (w) {
+      return { key: w.save, mech: w.mech, conditional: w.conditional,
+               label: w.mech ? (T[w.mech] || w.mech) : (w.label || w.save),
+               scene: (w.scene && w.scene.name) ? w.scene.name : '' };
+    });
+  })();
+
+  function cap(s) { return String(s).charAt(0).toUpperCase() + String(s).slice(1); }
+  function num(n) { return String(Math.round(Number(n) * 10) / 10).replace('.', ','); }
+  function plural(n, one, few, many) {
+    var a = Math.abs(n) % 100, b = a % 10;
+    if (a > 10 && a < 20) return many;
+    if (b > 1 && b < 5) return few;
+    if (b === 1) return one;
+    return many;
+  }
+
+  // Спрашивали ли условный шаг. Правило ровно то же, что у движка в applies():
+  // перебор — если разбор не уложился в рамку года; Северова — если «Миру»
+  // отложена или отклонена. Считаем по фактам верстака, которые отдаёт бэкенд, и
+  // по window.imp.severovaId — тому же значению, по которому ветвится день.
+  // Возвращает null, когда судить не о чем: верстак ещё не заполнен.
+  function conditionalAsked(key, lf) {
+    if (!lf) return null;
+    if (key === 'overspend') return lf.fitsFrame === false;
+    if (key === 'severova') {
+      var id = window.imp.severovaId;
+      return (lf.deferred || []).some(function (x) { return String(x) === String(id); });
+    }
+    return true;
+  }
+
+  // Состояние шага. Четыре, и «не спрашивали» отличается от «не дошёл» намеренно:
+  // условный шаг, который не сработал, читался бы как пропуск, и фасилитатор шёл
+  // бы искать несуществующую проблему.
+  function stepState(step, at, lf) {
+    if (at && at[step.key] !== undefined) return { state: 'done', at: at[step.key] };
+    if (step.conditional) {
+      var asked = conditionalAsked(step.key, lf);
+      if (asked === false) return { state: 'skipped', at: '' };
+      if (asked === null) return { state: 'wait', at: '' };
+    }
+    return { state: 'wait', at: '' };
+  }
+
+  var STATE_WORDS = { done: 'зафиксирован', skipped: 'не спрашивали', wait: 'не дошёл' };
+
   var pw = '';
   var rows = [];
   var gate = document.getElementById('cabGate');
@@ -38,6 +105,8 @@
   var detail = document.getElementById('cabDetail');
   var detailBody = document.getElementById('cabDetailBody');
   var statusEl = document.getElementById('cabStatus');
+  var filterEl = document.getElementById('cabOnlyNeed');
+  var filterCount = document.getElementById('cabNeedCount');
 
   function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
   function br(s) { return esc(s).replace(/\n/g, '<br />'); }
@@ -102,46 +171,128 @@
       return '<span class="cab-dim">' + (p.judged ? '… (' + p.judged + '/10)' : '—') + '</span>';
     }
     // Итог показываем только когда оценены все десять — иначе это не балл.
+    // Флажок ⚑ убран: о флагах словом говорит колонка «Нужен человек», а два
+    // языка для одного и того же заставляли сверять значок с колонкой.
     return '<b class="cab-total">' + p.total + '</b><span class="cab-dim"> / 25</span>' +
-      (p.stale ? ' <span class="cab-stale" title="Оценка вынесена по другому тексту ответа">устарело</span>' : '') +
-      (p.flags ? ' <span class="cab-flag" title="' + p.flags + ' флаг(ов) — открыть карточку">⚑</span>' : '');
+      (p.stale ? ' <span class="cab-stale" title="Оценка вынесена по другому тексту ответа">устарело</span>' : '');
   }
 
-  // Ход: точка на шаг. Маршрут v4.4.f — двенадцать необратимых шагов (семь механик
-  // и пять свободных окон), из них два условных: у участника, которого не спросили
-  // про перебор и про Северову, точек честно десять, а не «двух не хватает».
-  // Отдельной точки портфеля больше нет — портфель стал разбором заявок и считается
-  // среди двенадцати.
+  // Ход: клетка на шаг, по маршруту. Двенадцать шагов, из них два условных — у
+  // участника, которого не спросили про перебор и про Северову, клеток честно
+  // десять, а не «двух не хватает». Название и время — в подсказке клетки, словами
+  // — в колонке «Сейчас»: полоска показывает форму дня, слова говорят, где человек.
   function progressCell(p) {
-    var out = '';
-    for (var i = 1; i <= 12; i++) {
-      out += '<span class="cab-dot' + (i <= p.answered ? ' is-done' : '') + '" title="шаг ' + i + '"></span>';
+    if (!STEPS.length) return '<span class="cab-dim">маршрут не загружен</span>';
+    // Историческая строка: шагов нынешнего маршрута у неё нет ни одного, и полоска
+    // из двенадцати пустых клеток врала бы — читалась бы как «человек не начинал».
+    if (!p.answered && p.legacyAnswered) {
+      return '<span class="cab-dim" title="Прогон прежнего маршрута: шагов v4.4.f в строке нет">не тот маршрут</span>';
     }
+    var at = p.stepsAt || {};
+    var out = STEPS.map(function (s) {
+      var st = stepState(s, at, p.listFacts);
+      var tip = cap(s.label) + ' · ' + STATE_WORDS[st.state] + (st.at ? ' ' + dt(st.at) : '');
+      return '<span class="cab-step is-' + st.state + '" title="' + esc(tip) + '"></span>';
+    }).join('');
     if (p.finished) out += ' <span class="cab-fin" title="День закончен">✓</span>';
     return out;
   }
 
+  // «Сейчас» словами: что зафиксировано последним и что следующее. Без этого
+  // полоска требует навести курсор на каждую клетку, чтобы понять одну вещь —
+  // где человек стоит.
+  function nowCell(p) {
+    if (!p.answered && p.legacyAnswered) {
+      return '<span class="cab-dim">прежний маршрут · ' + p.legacyAnswered + ' из 8</span>';
+    }
+    var at = p.stepsAt || {}, lastDone = null, next = null;
+    STEPS.forEach(function (s) {
+      var st = stepState(s, at, p.listFacts);
+      if (st.state === 'done') lastDone = s;
+      else if (!next && st.state === 'wait') next = s;
+    });
+    if (p.finished) return '<b>день закончен</b>';
+    if (!lastDone) return '<span class="cab-dim">не начинал</span>';
+    return esc(cap(lastDone.label)) +
+      (next ? ' <span class="cab-dim">→ ' + esc(next.label) + '</span>' : '');
+  }
+
+  // ── НУЖЕН ЧЕЛОВЕК ────────────────────────────────────────────────────────────
+  // Причины, по которым строку нельзя оставить машине. Каждая считается по данным,
+  // а не по чутью, и называется словами, а не значком: значок ⚑ сообщал, что
+  // что-то есть, но не что именно, и открывать карточку приходилось у всех подряд.
+  function attention(p) {
+    // Помечен «не оценивать» — вопрос закрыт решением, а не ждёт решения.
+    if (p.noScore) return [];
+    var out = [];
+    var hasWork = !!(p.answered || p.legacyAnswered);
+    var busy = !!(p.queue && (p.queue.queued || p.queue.running));
+    var versionsApart = !!(p.scenesVersion && p.expectScenes && p.scenesVersion !== p.expectScenes);
+    if (hasWork && versionsApart) {
+      out.push({ code: 'версии', text: 'судейство закрыто: сцены ' + p.scenesVersion +
+        ' против судейских ' + p.expectScenes });
+    }
+    if (p.stale) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после суда' });
+    if (p.queue && p.queue.error) out.push({ code: 'очередь', text: 'заданий с ошибкой: ' + p.queue.error });
+    if (p.flags) {
+      out.push({ code: 'флаги', text: p.flags + ' ' + plural(p.flags, 'флаг', 'флага', 'флагов') + ' — перечитать ответ' });
+    }
+    if (p.listFacts && p.listFacts.fitsFrame === false) {
+      out.push({ code: 'рамка', text: 'разбор вышел за рамку года' });
+    }
+    if (p.finished && !busy && !versionsApart && (p.total === null || p.total === undefined)) {
+      out.push({ code: 'не оценён', text: 'день закончен, оценки нет' });
+    }
+    return out;
+  }
+
+  function attentionCell(p) {
+    var a = attention(p);
+    if (!a.length) return '<span class="cab-dim">—</span>';
+    return a.map(function (x) {
+      return '<span class="cab-need" title="' + esc(x.text) + '">' + esc(x.code) + '</span>';
+    }).join(' ');
+  }
+
   function render(participants) {
-    rows = participants || [];
+    if (participants) rows = participants;
     document.getElementById('cabCount').textContent = rows.length + ' в листе Answers';
     if (!rows.length) {
       listHost.innerHTML = '<p class="section-lead">Пока никто не проходил день на новой платформе. Как только появится первая строка в листе Answers, она будет здесь.</p>';
       return;
     }
+    // Фильтр не выбрасывает строки из rows: карточка открывается по индексу в
+    // полном списке, и пересчёт индексов при каждом переключении был бы ровно тем
+    // местом, где кабинет однажды покажет чужую карточку.
+    var onlyNeed = !!(filterEl && filterEl.checked);
+    var shown = 0;
     var html = '<table class="cab-table"><thead><tr>' +
-      '<th>Номер</th><th>ФИО</th><th>Поток</th><th>Ход</th><th>Навыки</th><th>Итог</th>' +
+      '<th>Номер</th><th>ФИО</th><th>Поток</th><th>Ход</th><th>Сейчас</th>' +
+      '<th>Нужен человек</th><th>Навыки</th><th>Итог</th>' +
       '</tr></thead><tbody>';
     rows.forEach(function (p, i) {
+      if (onlyNeed && !attention(p).length) return;
+      shown++;
       html += '<tr data-ix="' + i + '"' + (p.isAi ? ' class="cab-row-ai"' : '') + (p.noScore ? ' style="opacity:.5"' : '') + '>' +
         '<td>' + esc(bib6(p.bib)) + (p.isRunner ? ' <span class="cab-runner" title="Прогон модели (runnerJson заполнен)">⚙</span>' : '') + '</td>' +
         '<td>' + (esc(p.fio) || '<span class="cab-dim">—</span>') + '</td>' +
         '<td>' + (esc(p.wave) || '<span class="cab-dim">—</span>') + (p.isAi ? ' <span class="cab-ai">ИИ</span>' : '') + '</td>' +
         '<td class="cab-progress">' + progressCell(p) + '</td>' +
+        '<td>' + nowCell(p) + '</td>' +
+        '<td>' + attentionCell(p) + '</td>' +
         '<td>' + skillsCell(p) + '</td>' +
         '<td>' + totalCell(p) + '</td>' +
         '</tr>';
     });
-    listHost.innerHTML = html + '</tbody></table>';
+    html += '</tbody></table>';
+    if (onlyNeed && !shown) {
+      html += '<p class="section-lead">Ни одной строки, которая ждёт человека. Снимите отметку, чтобы увидеть весь лист.</p>';
+    }
+    if (filterCount) {
+      var need = rows.filter(function (p) { return attention(p).length; }).length;
+      filterCount.textContent = need ? String(need) : '0';
+    }
+    listHost.innerHTML = html;
     listHost.querySelectorAll('tr[data-ix]').forEach(function (tr) {
       tr.tabIndex = 0;
       tr.addEventListener('click', function () { openCard(rows[Number(tr.getAttribute('data-ix'))]); });
@@ -158,40 +309,113 @@
       (note ? '<p class="cab-note">' + esc(note) + '</p>' : '') + inner + '</section>';
   }
 
-  function answersBlock(d) {
-    var el = d.elicited || {};
-    return block('Ответы', d.windows.map(function (w) {
-      var flags = (el[w.key] || []);
-      return '<div class="cab-answer">' +
-        '<div class="cab-answer-head"><span class="cab-answer-label">' + esc(w.label) + '</span>' +
-          '<span class="cab-dim">' + (w.at ? dt(w.at) + ' · ' : '') + w.len + ' знаков</span></div>' +
-        (flags.length ? '<div class="cab-elicit" title="О чём спросили прямо — судья получает это машинно">спрошено прямо: ' + esc(flags.join(', ')) + '</div>' : '') +
-        '<div class="cab-answer-text">' + (w.text.trim() ? br(w.text) : '<i>промолчал</i>') + '</div>' +
-        '</div>';
-    }).join('') + factsHtml(d.facts) + picksHtml(d.picks));
+  function mechCtx() {
+    return { esc: esc, br: br, num: num, blNum: window.imp.backlogNum,
+             BACKLOG: window.imp.backlog, LIM: window.imp.backlogLimits, isDemo: false };
   }
 
-  // Факты разбора заявок — ровно тем же составом, что уходит судье (listFacts_ в
-  // backend/code.js): три решения названиями, ресурс взятого против рамки года.
+  // Читаемый вид верстака — его собственным answerHtml, тем же кодом, что рисует
+  // участнику вкладку «мои ответы». Своего уплощателя у кабинета нет: два вида
+  // одного ответа однажды разошлись бы, и спорить пришлось бы на разборе.
+  // Если форма верстака изменилась после того, как строка была записана, показываем
+  // сырой объект, а не пустоту: материал участника важнее опрятности.
+  function mechHtml(key, obj) {
+    var spec = window.imp.mechanics ? window.imp.mechanics[key] : null;
+    if (obj == null) return '<i>не заполнено</i>';
+    if (spec && spec.answerHtml) {
+      try { return spec.answerHtml(obj, mechCtx()); } catch (e) {}
+    }
+    return '<pre class="cab-raw">' + esc(JSON.stringify(obj, null, 1)) + '</pre>';
+  }
+
+  function answersBlock(d) {
+    var el = d.elicited || {};
+    var byKey = {};
+    (d.windows || []).forEach(function (w) { byKey[w.key] = w; });
+    var mech = d.mech || {}, mechAt = d.mechAt || {};
+    // Карта «шаг → когда» — та же, что в списке: у верстаков время из mechAt, у
+    // окон из самого окна. Ключ присутствует ровно тогда, когда шаг пройден.
+    var at = {};
+    Object.keys(mech).forEach(function (k) { at[k] = mechAt[k] || ''; });
+    (d.windows || []).forEach(function (w) {
+      if (!w.legacy && String(w.text || '').trim()) at[w.key] = w.at || '';
+    });
+    var f = d.facts;
+    var lf = f ? { fitsFrame: f.fitsFrame,
+                   deferred: (f.later || []).concat(f.never || []).map(function (it) { return it.id; }) } : null;
+
+    var html = STEPS.map(function (s) {
+      var st = stepState(s, at, lf);
+      var flags = el[s.key] || [];
+      var w = byKey[s.key];
+      var body;
+      if (st.state !== 'done') {
+        body = '<div class="cab-answer-text cab-dim">' +
+          (st.state === 'skipped' ? 'не спрашивали: условие шага не сработало' : 'не дошёл') +
+          '</div>';
+      } else if (s.mech) {
+        body = '<div class="cab-answer-text">' + mechHtml(s.mech, mech[s.mech]) + '</div>';
+      } else {
+        body = '<div class="cab-answer-text">' +
+          (String((w && w.text) || '').trim() ? br(w.text) : '<i>промолчал</i>') + '</div>';
+      }
+      return '<div class="cab-answer is-' + st.state + '">' +
+        '<div class="cab-answer-head">' +
+          '<span class="cab-answer-label">' + esc(cap(s.label)) + '</span>' +
+          '<span class="cab-dim">' + esc(s.scene) + (st.at ? ' · ' + dt(st.at) : '') +
+            (!s.mech && w && w.len ? ' · ' + w.len + ' знаков' : '') + '</span>' +
+        '</div>' +
+        (flags.length ? '<div class="cab-elicit" title="О чём спросили прямо — судья получает это машинно">спрошено прямо: ' + esc(flags.join(', ')) + '</div>' : '') +
+        body + '</div>';
+    }).join('');
+
+    // Окна ПРЕЖНЕГО маршрута — только у исторических строк и только заполненные.
+    var legacy = (d.windows || []).filter(function (w) { return w.legacy; });
+    if (legacy.length) {
+      html += '<p class="cab-note">Ниже — прежний маршрут, ' + legacy.length + ' ' +
+        plural(legacy.length, 'окно', 'окна', 'окон') +
+        '. Этих окон в дне больше нет: строка записана до перехода на v4.4.f.</p>' +
+        legacy.map(function (w) {
+          return '<div class="cab-answer is-legacy"><div class="cab-answer-head">' +
+            '<span class="cab-answer-label">' + esc(w.label || w.key) + '</span>' +
+            '<span class="cab-dim">' + (w.at ? dt(w.at) + ' · ' : '') + w.len + ' знаков</span></div>' +
+            '<div class="cab-answer-text">' + (String(w.text).trim() ? br(w.text) : '<i>промолчал</i>') +
+            '</div></div>';
+        }).join('');
+    }
+
+    return block('Ход дня и ответы', html + factsHtml(d.facts) + picksHtml(d.picks),
+      'Двенадцать шагов в порядке маршрута. Названия и порядок взяты из scenes.js, вид верстаков собран их собственным кодом — то же самое, что видел участник.');
+  }
+
+  // Факты разбора заявок — ровно тем же составом, что уходит судье
+  // (v2PortfolioFacts_ в backend/code.js): три решения названиями, ресурс взятого
+  // против рамки года, пол ПР-1 по поступку.
   function factsHtml(f) {
     if (!f) return '';
     var lim = f.limits || {};
-    var zone = function (title, arr) {
+    var zone = function (title, arr, withCost) {
       return '<p><span class="cab-k">' + title + ' (' + arr.length + '):</span></p>' +
         (arr.length ? '<ul>' + arr.map(function (r) {
-          return '<li>' + esc(r.title) + (r.own ? ' <i>— свой вариант</i>' : '') +
-            ' <span class="cab-dim">' + r.people + ' чел. · ' + r.money + ' млрд</span></li>';
+          return '<li><span class="bl-num">' + window.imp.backlogNum(r.id) + '</span> ' + esc(r.title) +
+            (withCost ? ' <span class="cab-dim">' + r.people + ' чел. · ' + num(r.money) + ' млрд</span>' : '') +
+            '</li>';
         }).join('') + '</ul>' : '<p class="cab-dim">ни одной</p>');
     };
     return '<div class="cab-answer"><div class="cab-answer-head">' +
-      '<span class="cab-answer-label">Разбор заявок — факты</span></div>' +
+      '<span class="cab-answer-label">Разбор заявок — факты</span>' +
+      '<span class="cab-dim">то же, что уходит судье</span></div>' +
       '<div class="cab-answer-text">' +
-        '<p><b>' + f.take.length + '</b> берём · <b>' + f.later.length + '</b> не сейчас · ' +
+        '<p><b>' + f.taken.length + '</b> берём · <b>' + f.later.length + '</b> не сейчас · ' +
         '<b>' + f.never.length + '</b> не делаем · ' +
-        f.people + ' человек из ' + lim.people + ' · ' + f.money + ' млрд из ' + lim.money +
-        (f.fitsFrame === false ? ' — <b>вне бюджета</b>' : ' — в бюджете') + '</p>' +
-        (f.undecided.length ? '<p><b>не решено: ' + f.undecided.length + '</b> — разбор неполный</p>' : '') +
-        zone('Берём', f.take) + zone('Не сейчас', f.later) + zone('Не делаем', f.never) +
+        f.people + ' человек из ' + lim.people + ' · ' + num(f.money) + ' млрд из ' + lim.money +
+        (f.fitsFrame === false ? ' — <b>вне рамки года</b>' : ' — в рамке') + '</p>' +
+        (f.undecided ? '<p><b>не решено: ' + f.undecided + '</b> — разбор неполный</p>' : '') +
+        (f.criteria ? '<p><span class="cab-k">Почему именно так:</span> ' + br(f.criteria) + '</p>' : '') +
+        zone('Берём', f.taken, true) + zone('Не сейчас', f.later, false) + zone('Не делаем', f.never, false) +
+        (f.floor ? '<p class="cab-dim">Пол ПР-1 по поступку: L' + f.floor.level +
+          (f.floor.technical ? ' — состояние, которого гейт верстака не допускает: сбой или демо, а не поведение человека' : '') +
+          '. Выше пола поднимает только судья.</p>' : '') +
       '</div></div>';
   }
 
@@ -315,7 +539,11 @@
             (q.queued || q.running ? 'в очереди: ' + (q.queued + q.running) + ' из ' + q.total
               : q.error ? 'заданий с ошибкой: ' + q.error : '') + '</span>' +
         '</div>' +
-        scoresBlock(d) + flagsBlock(d) + answersBlock(d) + processBlock(d);
+        // Порядок: сначала что человек сделал, потом что об этом сказано. Код
+        // рисовал оценку первой, хотя шапка файла обещает «ответы · оценка · флаги
+        // · процесс», и у неоценённого участника карточка открывалась строкой
+        // «ещё не судили» — то есть отсутствием вердикта вместо содержания дня.
+        answersBlock(d) + scoresBlock(d) + flagsBlock(d) + processBlock(d);
       document.getElementById('cabJudge').addEventListener('click', function () { judge(p.bib, this); });
       if (window.imp && window.imp.typoDom) window.imp.typoDom(detailBody);
       detailBody.scrollTop = 0;
@@ -368,6 +596,9 @@
     if (e.key === 'Enter') { e.preventDefault(); login(); }
   });
   document.getElementById('cabRefresh').addEventListener('click', refresh);
+  // Фильтр перерисовывает уже полученный список, не дёргая сервер: решение
+  // «показать только ждущих» — про глаза, а не про данные.
+  if (filterEl) filterEl.addEventListener('change', function () { render(); });
   document.getElementById('cabDetailClose').addEventListener('click', closeCard);
   detail.addEventListener('click', function (e) { if (e.target === detail) closeCard(); });
   document.addEventListener('keydown', function (e) {

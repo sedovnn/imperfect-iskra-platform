@@ -34,12 +34,9 @@
   // раньше она была локальной в рендере портфеля, и свод дня печатал сырой id — то
   // есть участник видел у одной позиции два разных номера и пропуски, которые
   // решением от 03.08 убраны. Новый показ номера — только через blNum().
-  var BL_NUM = (function () {
-    var m = {};
-    BACKLOG.forEach(function (it, ix) { m[it.id] = ix + 1; });
-    return m;
-  })();
-  function blNum(id) { return BL_NUM[id] || ''; }
+  // Счёт переехал в js/backlog.js (window.imp.backlogNum): тот же номер показывает
+  // кабинет фасилитатора, а два счёта над одним списком однажды разошлись бы.
+  function blNum(id) { return window.imp.backlogNum(id); }
 
   var session = null;
   var state = null;
@@ -297,7 +294,9 @@
   // Два машинных ветвления маршрута, оба закрытые и считаются кодом одинаково у
   // человека и у модели. Ни одно не зависит от СОДЕРЖАНИЯ ответа — только от
   // поступка в механике списка.
-  var SEVEROVA_ID = 6;   // «выделить „Миру" в отдельный P&L», М. Северова
+  // «выделить „Миру" в отдельный P&L», М. Северова. Значение переехало в
+  // js/backlog.js — это свойство позиции, и кабинет читает то же самое.
+  var SEVEROVA_ID = window.imp.severovaId;
   function listSums() {
     var lm = state.mech && state.mech.list;
     var spec = window.imp.mechanics && window.imp.mechanics.list;
@@ -1412,11 +1411,10 @@
   }
   // Название шага для вкладки «Мои ответы» и свода. Живёт рядом с реестром, а не в
   // scenes.js: это подпись СЛЕДА механики, а не реплика маршрута.
-  var MECH_TITLES = {
-    theses: 'тезисы и связки', variants: 'варианты', list: 'разбор заявок',
-    seal: 'чат правления', futures: 'варианты будущего', goal: 'цель', letter: 'письмо правлению'
-  };
-  function mechTitle(name) { return MECH_TITLES[name] || name; }
+  // Список переехал в js/mechanics.js (window.imp.mechTitles): название — свойство
+  // механики, и кабинету фасилитатора оно нужно тем же. Держать его здесь значило
+  // держать в двух местах.
+  function mechTitle(name) { return (window.imp.mechTitles || {})[name] || name; }
   function mechAnswerHtml(name) {
     var spec = window.imp.mechanics[name];
     var m = state.mech && state.mech[name];

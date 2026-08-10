@@ -2925,15 +2925,48 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-stale { color: var(--accent-ink); }
 .cab-flag { font-size: var(--fs-op); }
 
-/* Ход: точка на окно плюс портфель. Девять необратимых шагов, а не шесть сцен. */
+/* Ход: клетка на шаг маршрута v4.4.f — двенадцать шагов, семь верстаков и пять
+   свободных окон. Прежние .cab-dot убраны вместе с показом по числу заполненных
+   окон q1…q8: точки были безымянными и у всех пустыми. */
 .cab-progress { white-space: nowrap; }
-.cab-dot {
-  display: inline-block; width: 7px; height: 7px; margin-right: 3px;
-  border-radius: 50%; border: 1px solid #d8dadd; vertical-align: middle;
+.cab-step {
+  display: inline-block; width: 8px; height: 8px; margin-right: 3px;
+  border-radius: 2px; border: 1px solid #d8dadd; vertical-align: middle; cursor: help;
 }
-.cab-dot.is-done { background: var(--ink); border-color: var(--ink); }
-.cab-dot-picks.is-done { background: var(--accent); border-color: var(--accent); }
+.cab-step.is-done { background: var(--ink); border-color: var(--ink); }
+/* «Не спрашивали» — НЕ пустая клетка, а её отсутствие. Условный шаг, который не
+   сработал, пустой клеткой читался бы как пропуск, и его пошли бы искать. */
+.cab-step.is-skipped {
+  width: 8px; height: 1px; border: 0; border-radius: 0;
+  background: #d8dadd; position: relative; top: -1px;
+}
 .cab-fin { color: var(--accent-ink); font-weight: 700; }
+
+/* «Нужен человек»: причина словом, а не значком. Значок сообщал, что что-то есть,
+   но не что именно, и карточку приходилось открывать у всех подряд. */
+.cab-need {
+  display: inline-block; padding: 2px 6px; border-radius: 3px; margin-right: 2px;
+  background: var(--soft); color: var(--accent-ink); cursor: help; white-space: nowrap;
+  font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .03em;
+}
+.cab-filter {
+  display: inline-flex; align-items: center; gap: 8px; margin: 0 0 16px;
+  font-size: var(--fs-op); color: var(--muted-soft); cursor: pointer; user-select: none;
+}
+.cab-filter input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+
+/* Шаг в карточке: непройденный и неспрошенный гасятся, чтобы взгляд шёл по тому,
+   что человек сделал, а не спотыкался на равновесных пустотах. */
+.cab-answer.is-wait, .cab-answer.is-skipped { opacity: .5; }
+.cab-answer.is-legacy { padding-left: 12px; box-shadow: inset 1px 0 0 var(--hairline); }
+/* Сырой объект верстака — путь на случай, когда форма механики изменилась после
+   записи строки. Шрифт тот же (система намеренно одношрифтовая), читаемость даёт
+   разметка пробелами и табличные цифры. */
+.cab-raw {
+  margin: 0; padding: 10px 12px; background: var(--soft); border-radius: 4px;
+  font-size: var(--fs-op-sm); line-height: 1.55; white-space: pre; overflow-x: auto;
+  font-variant-numeric: tabular-nums;
+}
 
 .cab-skill { display: inline-block; margin-right: 9px; font-size: var(--fs-op-sm); color: var(--muted-soft); }
 .cab-skill b { display: inline-block; margin-left: 3px; font-size: var(--fs-op); color: var(--ink); font-variant-numeric: tabular-nums; }
