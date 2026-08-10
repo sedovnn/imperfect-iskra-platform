@@ -2045,13 +2045,34 @@
       // область, если она есть, иначе последнюю реплику.
       var sc2 = el('talkScroll');
       var chats = now.querySelectorAll('.chat.is-in');
-      var tgt = now.querySelector('.s2-mine') || now.querySelector('.mx-host') ||
+      var mine = now.querySelector('.s2-mine');
+      var mineAct = now.querySelector('.mine-act');
+      var tgt = mine || now.querySelector('.mx-host') ||
                 (chats.length ? chats[chats.length - 1] : null);
       if (sc2 && tgt) {
         var pull2 = function () {
-          var mb = tgt.getBoundingClientRect(), sb2 = sc2.getBoundingClientRect();
-          // ⚠ Тянем ВЕРХ рабочей области, а не низ: у разбора заявок низ на две
-          // тысячи пикселей ниже, и «показать низ» означало прыжок в конец списка
+          var sb2 = sc2.getBoundingClientRect();
+          // ── ОКНО ОТВЕТА: ТЯНЕМ ДО КНОПКИ, А НЕ ДО ВЕРХА ПОЛЯ ──────────────────
+          // Правило «подтянуть верх на 80px выше кромки» верно для верстака и
+          // неверно для окна: поле высотой в девять строк плюс ряд с «Ответить»
+          // за этой кромкой уже не помещаются. В «Прожекторе», где реплики НЕ
+          // сворачиваются (там одна беседа на четыре голоса), это ломало шаг:
+          // замер 10.08 — колонка кончается на 923, поле 843…1065, кнопка
+          // 1085…1125, и при этом 252px прокрутки остаются неиспользованными.
+          // Участник дочитывал разговор и видел полоску поля без кнопки.
+          if (mine && mineAct) {
+            var ab = mineAct.getBoundingClientRect();
+            var below = ab.bottom - (sb2.bottom - 16);
+            if (below > 0) sc2.scrollTop += below;
+            // Если поле с кнопкой выше самой колонки, «показать кнопку» увело бы
+            // начало ответа за верхнюю кромку. Тогда важнее видеть, куда писать.
+            var mb0 = mine.getBoundingClientRect();
+            if (mb0.top < sb2.top) sc2.scrollTop -= (sb2.top - mb0.top);
+            return;
+          }
+          var mb = tgt.getBoundingClientRect();
+          // ⚠ У ВЕРСТАКА тянем ВЕРХ, а не низ: у разбора заявок низ на две тысячи
+          // пикселей ниже, и «показать низ» означало прыжок в конец списка
           // (поймано владельцем 07.08). Если верх уже виден — не двигаем ничего.
           var over = mb.top - (sb2.bottom - 80);
           if (over > 0) sc2.scrollTop += over;
