@@ -2918,12 +2918,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-row-ai td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
 .cab-dim { color: var(--muted-soft); }
 .cab-total { font-size: var(--fs-op-h); font-variant-numeric: tabular-nums; }
-.cab-ai, .cab-runner, .cab-stale, .cab-flag {
+/* .cab-flag убран вместе со значком ⚑ в «Итоге»: о флагах теперь говорит словом
+   колонка «Нужен человек», и второй язык для того же только заставлял сверять. */
+.cab-ai, .cab-runner, .cab-stale {
   font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
 }
 .cab-ai { color: var(--accent-ink); }
 .cab-stale { color: var(--accent-ink); }
-.cab-flag { font-size: var(--fs-op); }
 
 /* Ход: клетка на шаг маршрута v4.4.f — двенадцать шагов, семь верстаков и пять
    свободных окон. Прежние .cab-dot убраны вместе с показом по числу заполненных
@@ -2954,6 +2955,49 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   font-size: var(--fs-op); color: var(--muted-soft); cursor: pointer; user-select: none;
 }
 .cab-filter input { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; }
+
+/* ── один кабинет: день и ростер вкладками ──
+   Ростер, волны и пароли переехали из facilitator.html: там они лежали рядом с
+   показом хода по станционным листам прежнего маршрута, и участник, проходящий
+   день сейчас, выглядел бездействующим. */
+.cab-tabs { display: flex; gap: 4px; margin: 0 0 4px; border-bottom: 1px solid var(--hairline); }
+.cab-tab {
+  appearance: none; background: none; border: 0; cursor: pointer;
+  padding: 10px 14px; margin-bottom: -1px;
+  font-size: var(--fs-op); font-weight: 600; color: var(--muted-soft);
+  border-bottom: 2px solid transparent;
+}
+.cab-tab:hover { color: var(--ink); }
+.cab-tab.is-on { color: var(--ink); border-bottom-color: var(--accent); }
+
+.cab-admin { margin: 0 0 34px; }
+.cab-admin h3 { margin: 0 0 12px; }
+.cab-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 14px 0 0; }
+.field-inline { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-op-sm); color: var(--muted-soft); }
+.field-inline.field-check { flex-direction: row; align-items: center; gap: 7px; }
+.field-inline input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); }
+.cab-inp {
+  padding: 7px 9px; border: 1px solid var(--hairline); border-radius: 4px;
+  font-size: var(--fs-op); color: var(--ink); background: #fff; min-width: 90px;
+}
+.cab-inp:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.cab-table-tight th, .cab-table-tight td { padding: 8px 10px 8px 0; }
+/* Широкую таблицу прокручиваем ВНУТРИ её места, иначе горизонтальный скролл
+   уезжает на всю страницу и шапка с вкладками уходит из вида вместе с ней. */
+#cabList, #cabRoster, #cabWaves, #cabIssueOut { overflow-x: auto; }
+.cab-row-acts { white-space: nowrap; }
+/* Пароль набирается табличными цифрами: его диктуют вслух и сверяют по одному знаку. */
+.cab-pw { font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+
+/* Решение человека по уровню: стоит РЯДОМ с мнением судьи, не вместо него. */
+.cab-ability.is-overridden { box-shadow: inset 2px 0 0 var(--accent); padding-left: 12px; }
+.cab-ov { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 9px; }
+.cab-ov .cab-ov-reason { flex: 1 1 220px; min-width: 160px; }
+.cab-ov-why { margin-top: 6px; font-size: var(--fs-op); color: var(--ink); }
+.cab-ovmark {
+  font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--accent-ink);
+}
 
 /* Шаг в карточке: непройденный и неспрошенный гасятся, чтобы взгляд шёл по тому,
    что человек сделал, а не спотыкался на равновесных пустотах. */

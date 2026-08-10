@@ -99,6 +99,8 @@
 
   var pw = '';
   var rows = [];
+  var roster = [];
+  var waves = [];
   var gate = document.getElementById('cabGate');
   var content = document.getElementById('cabContent');
   var listHost = document.getElementById('cabList');
@@ -138,15 +140,26 @@
       try { sessionStorage.setItem(PW_KEY, val); } catch (e) {}
       gate.style.display = 'none';
       content.style.display = '';
-      render(res.participants);
+      absorb(res);
     });
+  }
+
+  // Один ответ v2List кормит все три вида: день, волны, ростер. Второго запроса
+  // нет — иначе экраны показывали бы состояние на разные моменты.
+  function absorb(res) {
+    rows = res.participants || [];
+    roster = res.roster || [];
+    waves = res.waves || [];
+    render();
+    renderWaves();
+    renderRoster();
   }
 
   function refresh() {
     if (!pw) return Promise.resolve();
     say('обновляю…');
     return window.imp.callApi('v2List', { password: pw }).then(function (res) {
-      if (res && res.ok) { render(res.participants); say(''); }
+      if (res && res.ok) { absorb(res); say(''); }
       else say('не удалось обновить список', 'bad');
     });
   }
@@ -174,7 +187,11 @@
     // Флажок ⚑ убран: о флагах словом говорит колонка «Нужен человек», а два
     // языка для одного и того же заставляли сверять значок с колонкой.
     return '<b class="cab-total">' + p.total + '</b><span class="cab-dim"> / 25</span>' +
-      (p.stale ? ' <span class="cab-stale" title="Оценка вынесена по другому тексту ответа">устарело</span>' : '');
+      (p.stale ? ' <span class="cab-stale" title="Оценка вынесена по другому тексту ответа">устарело</span>' : '') +
+      // Правка человека — не повод для внимания, а его след: в колонку «Нужен
+      // человек» она не идёт, иначе фильтр показывал бы уже решённое.
+      (p.overridden ? ' <span class="cab-ovmark" title="Уровней поставлено вами: ' + p.overridden +
+        '">правил человек</span>' : '');
   }
 
   // Ход: клетка на шаг, по маршруту. Двенадцать шагов, из них два условных — у
@@ -298,6 +315,141 @@
       tr.addEventListener('click', function () { openCard(rows[Number(tr.getAttribute('data-ix'))]); });
       tr.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCard(rows[Number(tr.getAttribute('data-ix'))]); }
+      });
+    });
+  }
+
+  // ── РОСТЕР, ВОЛНЫ, ПАРОЛИ ────────────────────────────────────────────────────
+  // Переехали из facilitator.html (кабинет v1). Держать их там было ловушкой: тот
+  // экран показывает ход по станционным листам прежнего маршрута, поэтому человек,
+  // проходящий день сейчас, виден в ростере с пустым ходом — и это читается как
+  // «ничего не делает». Данные администрации при этом живые: лист Registrations
+  // один и тот же. Поэтому переносим сюда, а v1 остаётся смотрелкой прежних прогонов.
+
+  function say2(el, msg, kind) {
+    if (!el) return;
+    el.innerHTML = msg ? '<p class="cab-note' + (kind ? ' is-' + kind : '') + '">' + esc(msg) + '</p>' : '';
+  }
+
+  function call(action, extra) {
+    var p = { password: pw };
+    Object.keys(extra || {}).forEach(function (k) { p[k] = extra[k]; });
+    return window.imp.callApi(action, p);
+  }
+
+  // Ответ действия: либо ok, либо ошибка словами. Молчаливый провал в кабинете
+  // страшнее шумного: фасилитатор решит, что сделано, и пойдёт дальше.
+  function after(res, okMsg) {
+    if (res && res.ok) { say(okMsg || 'готово'); return refresh(); }
+    var msg = res && (res.message || res.error) ? String(res.message || res.error) : 'не получилось';
+    return window.imp.alert('Не вышло: ' + msg).then(function () {});
+  }
+
+  function renderWaves() {
+    var host = document.getElementById('cabWaves');
+    if (!host) return;
+    if (!waves.length) { host.innerHTML = '<p class="cab-dim">Ни одной волны. Добавьте ниже.</p>'; return; }
+    host.innerHTML = '<table class="cab-table cab-table-tight"><thead><tr>' +
+      '<th>Номер</th><th>Название</th><th>Прогон модели</th><th></th></tr></thead><tbody>' +
+      waves.map(function (w, i) {
+        return '<tr data-wix="' + i + '">' +
+          '<td><input type="text" class="cab-inp cab-w-num" maxlength="3" value="' + esc(w.num) + '" /></td>' +
+          '<td><input type="text" class="cab-inp cab-w-name" value="' + esc(w.name) + '" /></td>' +
+          '<td><input type="checkbox" class="cab-w-ai"' + (w.isAi ? ' checked' : '') + ' /></td>' +
+          '<td class="cab-row-acts">' +
+            '<button type="button" class="btn btn-ghost btn-xs cab-w-save">Сохранить</button> ' +
+            '<button type="button" class="btn btn-ghost btn-xs cab-w-del">Удалить</button>' +
+          '</td></tr>';
+      }).join('') + '</tbody></table>';
+
+    host.querySelectorAll('tr[data-wix]').forEach(function (tr) {
+      var w = waves[Number(tr.getAttribute('data-wix'))];
+      tr.querySelector('.cab-w-save').addEventListener('click', function () {
+        call('setWaveMeta', { id: w.id, num: tr.querySelector('.cab-w-num').value.trim(),
+          name: tr.querySelector('.cab-w-name').value.trim(),
+          isAi: tr.querySelector('.cab-w-ai').checked ? '1' : '' })
+          .then(function (r) { return after(r, 'волна сохранена'); });
+      });
+      tr.querySelector('.cab-w-del').addEventListener('click', function () {
+        window.imp.confirm('Удалить волну ' + (w.num || w.id) + '? Выданные в ней номера останутся.',
+          { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
+            if (yes) call('removeWave', { id: w.id }).then(function (r) { return after(r, 'волна удалена'); });
+          });
+      });
+    });
+
+    var sel = document.getElementById('cabIssueWave');
+    if (sel) {
+      sel.innerHTML = waves.map(function (w) {
+        return '<option value="' + esc(w.id) + '">' + esc((w.num || '—') + ' · ' + (w.name || 'без названия')) + '</option>';
+      }).join('');
+    }
+  }
+
+  function renderRoster() {
+    var host = document.getElementById('cabRoster');
+    if (!host) return;
+    if (!roster.length) { host.innerHTML = '<p class="cab-dim">Ни одного номера. Выдайте выше.</p>'; return; }
+    var showPw = !!(document.getElementById('cabRosterShowPw') || {}).checked;
+    host.innerHTML = '<table class="cab-table cab-table-tight"><thead><tr>' +
+      '<th>Номер</th><th>Имя</th><th>Волна</th><th>Пароль</th><th>День</th>' +
+      '<th>Не оценивать</th><th></th></tr></thead><tbody>' +
+      roster.map(function (r, i) {
+        return '<tr data-rix="' + i + '"' + (r.noScore ? ' style="opacity:.55"' : '') + '>' +
+          '<td>' + esc(bib6(r.bib)) + '</td>' +
+          '<td><input type="text" class="cab-inp cab-r-name" value="' + esc(r.firstName) + '" placeholder="имя" /></td>' +
+          '<td>' + (esc(r.wave) || '<span class="cab-dim">—</span>') + '</td>' +
+          '<td class="cab-pw">' + (showPw ? esc(r.password) : '<span class="cab-dim">••••••</span>') + '</td>' +
+          '<td>' + (r.started ? 'начат' : '<span class="cab-dim">не начинал</span>') + '</td>' +
+          '<td><input type="checkbox" class="cab-r-nos"' + (r.noScore ? ' checked' : '') + ' /></td>' +
+          '<td class="cab-row-acts">' +
+            '<button type="button" class="btn btn-ghost btn-xs cab-r-save">Имя</button> ' +
+            '<button type="button" class="btn btn-ghost btn-xs cab-r-pw">Новый пароль</button> ' +
+            (r.started ? '<button type="button" class="btn btn-ghost btn-xs cab-r-reset">Сбросить день</button> ' : '') +
+            '<button type="button" class="btn btn-ghost btn-xs cab-r-del">Удалить</button>' +
+          '</td></tr>';
+      }).join('') + '</tbody></table>';
+
+    host.querySelectorAll('tr[data-rix]').forEach(function (tr) {
+      var r = roster[Number(tr.getAttribute('data-rix'))];
+      var q = function (c) { return tr.querySelector(c); };
+      q('.cab-r-save').addEventListener('click', function () {
+        call('setParticipantName', { bib: r.bib, firstName: q('.cab-r-name').value.trim() })
+          .then(function (res) { return after(res, 'имя сохранено'); });
+      });
+      q('.cab-r-nos').addEventListener('change', function () {
+        call('setNoScore', { bib: r.bib, value: this.checked ? '1' : '' })
+          .then(function (res) { return after(res, 'отметка сохранена'); });
+      });
+      q('.cab-r-pw').addEventListener('click', function () {
+        window.imp.confirm('Выдать номеру ' + bib6(r.bib) + ' новый пароль? Старый перестанет работать.',
+          { confirmLabel: 'Выдать' }).then(function (yes) {
+            if (!yes) return;
+            call('regeneratePassword', { bib: r.bib }).then(function (res) {
+              if (res && res.ok) {
+                document.getElementById('cabRosterShowPw').checked = true;
+                return after(res, 'пароль заменён');
+              }
+              return after(res);
+            });
+          });
+      });
+      if (q('.cab-r-reset')) {
+        q('.cab-r-reset').addEventListener('click', function () {
+          window.imp.confirm('Стереть день у ' + bib6(r.bib) + '? Ответы, оценки и ручные правки уровней ' +
+            'по этому номеру исчезнут. Отменить это нельзя.',
+            { confirmLabel: 'Стереть', danger: true }).then(function (yes) {
+              if (yes) call('resetProgress', { bib: r.bib, confirm: 'RESET' })
+                .then(function (res) { return after(res, 'день стёрт'); });
+            });
+        });
+      }
+      q('.cab-r-del').addEventListener('click', function () {
+        window.imp.confirm('Удалить номер ' + bib6(r.bib) + ' вместе с ответами и оценками? Отменить нельзя.',
+          { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
+            if (yes) call('deleteParticipant', { bib: r.bib })
+              .then(function (res) { return after(res, 'номер удалён'); });
+          });
       });
     });
   }
@@ -463,18 +615,49 @@
       inner += '<p class="cab-warn">Оценка вынесена по другому тексту ответа: участник менял ответы после судейства. Цифры ниже устарели — пересудите.</p>';
     }
 
+    var canOverride = {};
+    (d.overrideAbilities || []).forEach(function (a) { canOverride[a] = true; });
+    var ovs = s.overrides || {};
+    var jl = s.judgeLevels || s.levels;
+
     inner += '<div class="cab-abilities">' + Object.keys(ABILITY_NAMES).map(function (a) {
       var lv = s.levels[a], v = s.verdicts[a] || {};
       var bnd = blockingOf(v);
       var reasoning = v.verdict && v.verdict.reasoning ? v.verdict.reasoning : '';
-      return '<div class="cab-ability">' +
+      var o = ovs[a];
+      var isOv = !!(o && o.overrideLevel !== null && o.overrideLevel !== undefined && o.overrideLevel !== '');
+      // Решение человека и мнение судьи стоят рядом, а не вместо друг друга:
+      // §8 методологии требует, чтобы расхождение разбирал человек, и оригинал
+      // судьи должен остаться видимым, иначе правка перестаёт быть проверяемой.
+      var line = isOv
+        ? 'уровень поставил человек' + (jl[a] === null || jl[a] === undefined ? '' : ' · судья давал L' + jl[a]) +
+          (o.by ? ' · ' + esc(o.by) : '') + (o.at ? ' · ' + dt(o.at) : '')
+        : (v.source === 'deterministic' ? 'посчитано кодом (ответа нет)' : 'ИИ-судья') +
+          (bnd ? ' · остановился на ' + BOUNDARY_NAMES[bnd] : (lv === 5 ? ' · все границы пройдены' : '')) +
+          (v.stable === false ? ' · <b class="cab-jitter">граница дрожит</b>' : '');
+
+      var ctl = '';
+      if (canOverride[a]) {
+        ctl = '<div class="cab-ov" data-ab="' + a + '">' +
+          (isOv
+            ? '<button type="button" class="btn btn-ghost btn-xs cab-ov-clear">Вернуть уровень судьи</button>'
+            : '<span class="cab-dim">поставить свой:</span> ' +
+              [1, 2, 3, 4, 5].map(function (n) {
+                return '<button type="button" class="btn btn-ghost btn-xs cab-ov-set" data-lv="' + n + '">L' + n + '</button>';
+              }).join(' ') +
+              // Причина обязательна: в листе ScoreOverrides для неё есть колонка, и
+              // без неё правка через месяц неотличима от опечатки.
+              '<input type="text" class="cab-inp cab-ov-reason" placeholder="почему — без этого не поставлю" />') +
+          '</div>';
+      }
+
+      return '<div class="cab-ability' + (isOv ? ' is-overridden' : '') + '">' +
         '<div class="cab-ability-head"><span class="cab-ability-name">' + esc(ABILITY_NAMES[a]) + '</span>' +
           '<span class="cab-level">' + (lv === null ? '—' : 'L' + lv) + '</span></div>' +
-        '<div class="cab-dim">' + (v.source === 'deterministic' ? 'посчитано кодом (ответа нет)' : 'ИИ-судья') +
-          (bnd ? ' · остановился на ' + BOUNDARY_NAMES[bnd] : (lv === 5 ? ' · все границы пройдены' : '')) +
-          (v.stable === false ? ' · <b class="cab-jitter">граница дрожит</b>' : '') + '</div>' +
+        '<div class="cab-dim">' + line + '</div>' +
+        (isOv && o.reason ? '<div class="cab-ov-why">Почему: ' + br(o.reason) + '</div>' : '') +
         (reasoning ? '<details class="cab-reasoning"><summary>обоснование судьи</summary><div>' + br(reasoning) + '</div></details>' : '') +
-        '</div>';
+        ctl + '</div>';
     }).join('') + '</div>';
 
     var ctl = [];
@@ -545,8 +728,47 @@
         // «ещё не судили» — то есть отсутствием вердикта вместо содержания дня.
         answersBlock(d) + scoresBlock(d) + flagsBlock(d) + processBlock(d);
       document.getElementById('cabJudge').addEventListener('click', function () { judge(p.bib, this); });
+      wireOverrides(p.bib);
       if (window.imp && window.imp.typoDom) window.imp.typoDom(detailBody);
       detailBody.scrollTop = 0;
+    });
+  }
+
+  // Решение человека по уровню. Балл судьи не стирается — он лежит в том же листе
+  // рядом, и «вернуть уровень судьи» отменяет правку целиком.
+  function wireOverrides(bib) {
+    detailBody.querySelectorAll('.cab-ov').forEach(function (box) {
+      var ability = box.getAttribute('data-ab');
+      var reopen = function () { openCard({ bib: bib, fio: '' }); };
+      box.querySelectorAll('.cab-ov-set').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var inp = box.querySelector('.cab-ov-reason');
+          var reason = inp ? inp.value.trim() : '';
+          if (!reason) {
+            window.imp.alert('Напишите, почему вы ставите свой уровень: без причины правка через месяц неотличима от опечатки.');
+            if (inp) inp.focus();
+            return;
+          }
+          call('setScoreOverride', { bib: bib, ability: ability, level: btn.getAttribute('data-lv'), reason: reason })
+            .then(function (r) {
+              if (r && r.ok) { say('уровень поставлен вами'); return refresh().then(reopen); }
+              return after(r);
+            });
+        });
+      });
+      var clr = box.querySelector('.cab-ov-clear');
+      if (clr) {
+        clr.addEventListener('click', function () {
+          window.imp.confirm('Вернуть уровень судьи по этой способности? Ваша правка и причина будут стёрты.',
+            { confirmLabel: 'Вернуть' }).then(function (yes) {
+              if (!yes) return;
+              call('clearScoreOverride', { bib: bib, ability: ability }).then(function (r) {
+                if (r && r.ok) { say('вернул уровень судьи'); return refresh().then(reopen); }
+                return after(r);
+              });
+            });
+        });
+      }
     });
   }
 
@@ -599,6 +821,77 @@
   // Фильтр перерисовывает уже полученный список, не дёргая сервер: решение
   // «показать только ждущих» — про глаза, а не про данные.
   if (filterEl) filterEl.addEventListener('change', function () { render(); });
+
+  // ── вкладки ──
+  (function () {
+    var tabDay = document.getElementById('cabTabDay');
+    var tabRos = document.getElementById('cabTabRoster');
+    var viewDay = document.getElementById('cabViewDay');
+    var viewRos = document.getElementById('cabViewRoster');
+    if (!tabDay || !tabRos) return;
+    var show = function (isDay) {
+      viewDay.style.display = isDay ? '' : 'none';
+      viewRos.style.display = isDay ? 'none' : '';
+      tabDay.classList.toggle('is-on', isDay);
+      tabRos.classList.toggle('is-on', !isDay);
+      tabDay.setAttribute('aria-selected', isDay ? 'true' : 'false');
+      tabRos.setAttribute('aria-selected', isDay ? 'false' : 'true');
+    };
+    tabDay.addEventListener('click', function () { show(true); });
+    tabRos.addEventListener('click', function () { show(false); });
+  })();
+
+  // ── волны, номера, пароли ──
+  (function () {
+    var add = document.getElementById('cabWaveAdd');
+    if (add) add.addEventListener('click', function () {
+      var num = (document.getElementById('cabWaveNum').value || '').trim();
+      if (!/^\d{3}$/.test(num)) { window.imp.alert('Номер волны — ровно три цифры, например 021.'); return; }
+      call('addWave', { num: num, name: (document.getElementById('cabWaveName').value || '').trim(),
+                        isAi: document.getElementById('cabWaveAi').checked ? '1' : '' })
+        .then(function (r) {
+          if (r && r.ok) {
+            document.getElementById('cabWaveNum').value = '';
+            document.getElementById('cabWaveName').value = '';
+            document.getElementById('cabWaveAi').checked = false;
+          }
+          return after(r, 'волна добавлена');
+        });
+    });
+
+    var issue = document.getElementById('cabIssueBtn');
+    if (issue) issue.addEventListener('click', function () {
+      var wave = document.getElementById('cabIssueWave').value;
+      var count = Number(document.getElementById('cabIssueCount').value);
+      if (!wave) { window.imp.alert('Сначала добавьте волну.'); return; }
+      if (!(count > 0 && count <= 300)) { window.imp.alert('Количество — от 1 до 300.'); return; }
+      var out = document.getElementById('cabIssueOut');
+      say2(out, 'выдаю…');
+      call('createParticipants', { wave: wave, count: count }).then(function (r) {
+        if (!r || !r.ok) { say2(out, ''); return after(r); }
+        // Выданные номера с паролями показываем СРАЗУ и здесь: это единственный
+        // момент, когда они нужны все вместе, чтобы раздать их в зале.
+        say2(out, '');
+        out.innerHTML = '<p class="cab-note">Выдано: ' + (r.created || []).length + '</p>' +
+          '<table class="cab-table cab-table-tight"><thead><tr><th>Номер</th><th>Пароль</th></tr></thead><tbody>' +
+          (r.created || []).map(function (c) {
+            return '<tr><td>' + esc(bib6(c.bib)) + '</td><td class="cab-pw">' + esc(c.password) + '</td></tr>';
+          }).join('') + '</tbody></table>';
+        return refresh();
+      });
+    });
+
+    var gen = document.getElementById('cabGenPass');
+    if (gen) gen.addEventListener('click', function () {
+      call('generatePasswords', {}).then(function (r) {
+        if (!r || !r.ok) return after(r);
+        return after(r, r.generated ? 'дописано паролей: ' + r.generated : 'все пароли уже на месте');
+      });
+    });
+
+    var showPw = document.getElementById('cabRosterShowPw');
+    if (showPw) showPw.addEventListener('change', renderRoster);
+  })();
   document.getElementById('cabDetailClose').addEventListener('click', closeCard);
   detail.addEventListener('click', function (e) { if (e.target === detail) closeCard(); });
   document.addEventListener('keydown', function (e) {
