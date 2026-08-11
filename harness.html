@@ -61,6 +61,15 @@
   .hs-step.is-skip { opacity: .5; text-decoration: line-through; }
   .hs-gate { margin: 12px 0 0; padding: 10px 12px; border-radius: 4px; background: var(--accent-tint); color: var(--accent-ink); font-size: var(--fs-op); }
   .hs-note { margin: 10px 0 0; font-size: var(--fs-op-sm); color: var(--muted-soft); line-height: 1.55; }
+  /* Ряд, в котором ничего не ездит: подпись над полем, но выравниваем по НИЗУ,
+     поэтому у кнопок и полей общая линия. Раньше поля с подписями стояли рядом с
+     кнопками без подписей, и низ у них не совпадал. */
+  .hs-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 16px 0 0; }
+  .hs-f { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-op-sm); color: var(--muted-soft); }
+  .hs-bib { width: 110px; text-align: center; font-variant-numeric: tabular-nums; }
+  .hs-res { margin: 12px 0 0; font-size: var(--fs-op); min-height: 1.4em; }
+  .hs-res.is-ok { color: var(--ink); font-weight: 600; }
+  .hs-res.is-bad { color: var(--accent-ink); font-weight: 600; }
   .hs-kind { font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); }
 </style>
 </head>
@@ -86,7 +95,8 @@
           <input type="text" class="cab-inp cab-inp-wide" id="hsTag" placeholder="Опус 5" /></label>
         <button type="button" class="btn btn-primary btn-sm" id="hsStart">Начать прогон</button>
         <button type="button" class="btn btn-ghost btn-sm" id="hsReset">Начать заново</button>
-        <label class="cab-filter" style="margin:0;"><input type="checkbox" id="hsFull" /> Вставить всё сначала (новый чат)</label>
+        <label class="cab-filter" style="margin:0;" title="Обычно на шаге уезжает только новое: модель уже слышала остальное в этом же чате. Поставьте отметку, если чат оборвался и вы начинаете новый — тогда в шаг войдут установка, кейс и все прошлые реплики.">
+          <input type="checkbox" id="hsFull" /> Начинаю новый чат — вложить кейс и всё сказанное</label>
       </div>
 
       <div class="hs-steps" id="hsSteps"></div>
@@ -116,22 +126,28 @@
       <section class="hs-panel" style="margin-top:22px;">
         <h3>Готовый прогон</h3>
         <p class="hs-note" id="hsDone">Прогон не закончен.</p>
-        <div class="hs-acts">
-          <button type="button" class="btn btn-ghost btn-sm" id="hsDump">Скачать файлом</button>
-          <label class="field-inline"><span>Пароль кабинета</span>
+
+        <div class="hs-form">
+          <label class="hs-f"><span>Пароль кабинета</span>
             <input type="password" class="cab-inp" id="hsPw" autocomplete="off" /></label>
-          <label class="field-inline"><span>Номер участника</span>
-            <input type="text" class="cab-inp cab-inp-num" id="hsBib" placeholder="770001" /></label>
-          <button type="button" class="btn btn-ghost btn-sm" id="hsPush">Залить в лист</button>
+          <label class="hs-f"><span>Номер участника</span>
+            <input type="text" class="cab-inp hs-bib" id="hsBib" inputmode="numeric" placeholder="770001" /></label>
+          <button type="button" class="btn btn-primary btn-sm" id="hsPush">Залить в лист</button>
+          <button type="button" class="btn btn-ghost btn-sm" id="hsDump">Сохранить копию на диск</button>
         </div>
-        <p class="hs-note">Заливка пишет в живой лист <code>Answers</code> тем же действием, которым пишет браузер участника, и ставит метку прогона модели. Номер должен быть заранее выдан в кабинете — лучше в отдельной волне для прогонов.</p>
+        <p class="hs-res" id="hsPushRes" aria-live="polite"></p>
+
+        <p class="hs-note">Заливка пишет в лист <code>Answers</code> тем же действием, которым пишет браузер участника, и помечает строку прогоном модели. Номер должен быть заранее выдан в кабинете — лучше в отдельной волне для прогонов.</p>
+        <p class="hs-note">Копия на диск — на случай, если заливка не удалась: прогон живёт только в этом браузере, и файл его сохраняет.</p>
       </section>
+
     </div>
   </div>
 </div>
 
 <script src="js/main.js?v=4"></script>
 <script src="js/api.js?v=5"></script>
+<script src="js/dialog.js?v=1"></script>
 <script src="js/backlog.js?v=3"></script>
 <script src="js/scenes.js?v=40"></script>
 <script src="js/mechanics.js?v=26"></script>
@@ -140,6 +156,35 @@
 <script src="js/case-ref.js?v=13"></script>
 <script>
 (function () {
+  // ⚠ ОШИБКА ДОЛЖНА БЫТЬ ВИДНА. Страница восемь раз звала window.imp.confirm, а
+  // js/dialog.js в неё не был подключён: первый же вызов падал с TypeError,
+  // обработчик умирал, и «Залить в лист» не делал ничего — без единого признака,
+  // что что-то не так (поймано владельцем 11.08). Молчаливая смерть обработчика
+  // хуже любого сообщения, поэтому теперь всё необработанное выводится на экран.
+  function shout(what) {
+    var box = document.getElementById('hsCrash');
+    if (!box) {
+      box = document.createElement('p');
+      box.id = 'hsCrash';
+      box.className = 'hs-gate';
+      box.style.margin = '14px 0 0';
+      var wrap = document.querySelector('.hs-wrap');
+      if (wrap) wrap.insertBefore(box, wrap.firstChild);
+    }
+    box.textContent = 'Сбой страницы: ' + what + '. Прогон в браузере сохранён — сохраните копию на диск, прежде чем перезагружать.';
+  }
+  window.addEventListener('error', function (e) { shout((e.message || 'ошибка') + (e.filename ? ' · ' + String(e.filename).split('/').pop() + ':' + e.lineno : '')); });
+  window.addEventListener('unhandledrejection', function (e) {
+    shout('необработанный отказ — ' + String((e.reason && e.reason.message) || e.reason || '').slice(0, 160));
+  });
+
+  var need = { 'js/dialog.js': ['confirm', 'alert'], 'js/scenes.js': ['scenes'], 'js/mechanics.js': ['mechanics'],
+               'js/mech-fields.js': ['mechFields'], 'js/case-text.js': ['caseToText'], 'js/backlog.js': ['backlog'] };
+  var missing = Object.keys(need).filter(function (f) {
+    return need[f].some(function (k) { return !window.imp || window.imp[k] === undefined; });
+  });
+  if (missing.length) shout('не загрузились файлы: ' + missing.join(', '));
+
   var S = window.imp.scenes, M = window.imp.mechanics, F = window.imp.mechFields;
   var TITLES = window.imp.mechTitles, BACKLOG = window.imp.backlog, LIM = window.imp.backlogLimits;
   var KEY = 'imp_harness_run';
@@ -416,28 +461,31 @@
     say('верстак зафиксирован');
   });
 
-  el('hsDump').addEventListener('click', function () {
-    if (!run) return;
-    var blob = new Blob([JSON.stringify(run, null, 1)], { type: 'application/json' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'прогон_' + run.tag.replace(/[^\wа-яёА-ЯЁ.-]+/g, '_') + '_' + run.scenesVersion + '.json';
-    a.click();
-  });
+
+  // ⚠ ОТДАЧА РЯДОМ С КНОПКОЙ, А НЕ В ШАПКЕ. Прежде «заливаю…» писалось в строку
+  // состояния возле лого — далеко от кнопки, мелко, и человек не понимал, чего
+  // ждать. Теперь кнопка гаснет на время работы, а результат встаёт под ряд.
+  function res(msg, kind) {
+    var el2 = el('hsPushRes');
+    el2.textContent = msg || '';
+    el2.className = 'hs-res' + (kind ? ' is-' + kind : '');
+  }
 
   el('hsPush').addEventListener('click', function () {
-    if (!run) return;
-    if (current() >= 0) { window.imp.alert('Прогон не закончен. Залить можно только полный.'); return; }
+    var btn = this;
+    if (!run) { res('Прогон не начат.', 'bad'); return; }
+    if (current() >= 0) { res('Прогон не закончен — залить можно только полный.', 'bad'); return; }
     var pw = (el('hsPw').value || '').trim(), bib = (el('hsBib').value || '').trim();
-    if (!pw || !bib) { window.imp.alert('Нужны пароль кабинета и номер участника.'); return; }
-    window.imp.confirm('Залить прогон «' + run.tag + '» в живой лист под номером ' + bib + '?',
+    if (!pw) { res('Впишите пароль кабинета.', 'bad'); el('hsPw').focus(); return; }
+    if (!bib) { res('Впишите номер участника — он должен быть заранее выдан в кабинете.', 'bad'); el('hsBib').focus(); return; }
+
+    window.imp.confirm('Залить прогон «' + run.tag + '» в лист под номером ' + bib + '?',
       { confirmLabel: 'Залить' }).then(function (yes) {
-        if (!yes) return;
-        say('заливаю…');
-        // Тот же saveAnswers, которым пишет браузер участника. runner помечает
-        // строку как прогон модели — кабинет показывает её словом «модель».
-        window.imp.callApi('saveAnswers', {
-          password: pw, bib: bib,
+        if (!yes) { res(''); return; }
+        btn.disabled = true;
+        res('Заливаю… это занимает несколько секунд.');
+        return window.imp.callApi('saveAnswers', {
+          bib: bib,
           scenesVersion: run.scenesVersion, caseVersion: run.caseVersion, backlogVersion: run.backlogVersion,
           answers: run.answers, answersAt: run.answersAt,
           mech: run.mech, mechAt: run.mechAt,
@@ -446,10 +494,30 @@
           startedAt: run.startedAt, finishedAt: new Date().toISOString(),
           runner: { harness: 'harness.html', tag: run.tag, at: new Date().toISOString() }
         }).then(function (r) {
-          if (r && r.ok) { say('залито'); window.imp.alert('Готово. Строка появилась в кабинете с меткой «модель».'); }
-          else { say('не залилось', true); window.imp.alert('Не вышло: ' + ((r && (r.message || r.error)) || 'нет ответа')); }
+          btn.disabled = false;
+          if (r && r.ok) {
+            res('Залито. Строка появилась в кабинете под номером ' + bib + ', с пометкой «модель».', 'ok');
+            return;
+          }
+          // Отказ сервера — словами, а не молчанием. Ответ показываем как есть:
+          // «answer_too_long», «missing_field» и прочее это подсказка, что править.
+          var why = r === null ? 'запрос не дошёл до сервера'
+            : (r.message || r.error || JSON.stringify(r).slice(0, 200));
+          res('Не залилось: ' + why + '. Прогон не потерян — сохраните копию на диск.', 'bad');
         });
       });
+  });
+
+  el('hsDump').addEventListener('click', function () {
+    if (!run) { res('Прогон не начат — сохранять нечего.', 'bad'); return; }
+    try {
+      var blob = new Blob([JSON.stringify(run, null, 1)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'прогон_' + String(run.tag).replace(/[^\wа-яёА-ЯЁ.-]+/g, '_') + '_' + run.scenesVersion + '.json';
+      a.click();
+      res('Копия сохранена в загрузки.', 'ok');
+    } catch (e) { res('Не удалось сохранить копию: ' + e.message, 'bad'); }
   });
 
   // Черновик подхватывается сам, если метку помнит браузер.
