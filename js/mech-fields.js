@@ -43,7 +43,7 @@
   // ── ЧТО ВИДНО В РАБОЧЕЙ ОБЛАСТИ ─────────────────────────────────────────────
   // Материал, который человек читает глазами, а модель обязана получить текстом:
   // иначе она решает вслепую. Заявки нумеруются как на экране — 1…20.
-  window.imp.mechMaterial = function (mech, run, h) {
+  window.imp.mechMaterial = function (mech, run, h, beat) {
     var B = window.imp.backlog, LIM = window.imp.backlogLimits, M = window.imp.mechanics;
     if (mech === 'list') {
       var rows = B.map(function (it) {
@@ -58,6 +58,15 @@
       var lm = run.mech && run.mech.list;
       if (!lm) return '';
       var t = M.list.sums(lm, h.ctx());
+      // ⚠ ВТОРОЙ ТАКТ ПЕЧАТИ: список СВЁРНУТ до итоговой строки. Экран на этом такте
+      // заменяет всё содержимое области одной строкой «N человек · M млрд» —
+      // «участник его только что подтвердил, и повторять три стопки под вопросом
+      // Агеева незачем» (mechanics.js). Я показывал модели все три стопки и реплики
+      // первого такта (поймано владельцем 11.08).
+      if (beat === 'phrase') {
+        return '\n\n' + t.people + ' человек · ' + h.num(t.money) + ' млрд' +
+          (t.over ? ' — вне бюджета' : '');
+      }
       var named = function (d) {
         var r = B.filter(function (it) { return lm.decided['a' + it.id] === d; })
           .map(function (it) { return '№' + window.imp.backlogNum(it.id) + ' ' + it.title; });

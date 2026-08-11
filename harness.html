@@ -151,7 +151,7 @@
 <script src="js/backlog.js?v=3"></script>
 <script src="js/scenes.js?v=41"></script>
 <script src="js/mechanics.js?v=27"></script>
-<script src="js/mech-fields.js?v=5"></script>
+<script src="js/mech-fields.js?v=6"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=13"></script>
 <script>
@@ -243,7 +243,7 @@
   // Материал рабочей области и пересказ разбора — из js/mech-fields.js, общие
   // со скриптом прогона. Здесь только вызов.
   var helpers = function () { return { num: num, ctx: ctx }; };
-  function material(mech) { return window.imp.mechMaterial(mech, run, helpers()); }
+  function material(mech, beat) { return window.imp.mechMaterial(mech, run, helpers(), beat); }
 
   // ---------- маршрут ----------
   function steps() {
@@ -334,22 +334,29 @@
     var body;
     if (step.mech) {
       var f = F[step.mech];
-      var form = f.form, probe = say2('probe');
+      var form = f.form, probe = say2('probe'), ask = say2('ask'), head = say2('before').concat(say2('lead'));
+      var beat = null;
       if (step.mech === 'seal') {
         if (run.sealStage === 'phrase') {
+          // ⚠ ВТОРОЙ ТАКТ: экран заменяет всю область одной итоговой строкой и
+          // задаёт вопрос. Ни before, ни ask здесь нет — «Ну что, с этим к ним
+          // идти? Финализируем?» относится к выбору хода, который уже сделан
+          // (mechanics.js: ask рисуется только при confirmed == null).
           form = f.formPhrase;
-          // Вернулся и поменял — спрашивают другое: «Что поменяли и почему?».
+          beat = 'phrase';
+          head = [];
+          ask = [];
           probe = run.sealBack ? say2('probeReturn') : say2('probe');
         } else {
           form = run.sealBack ? f.formHeld : f.form;
           probe = [];
         }
       }
-      var head = say2('before').concat(say2('lead'));
+      var mat = material(step.mech, beat);
       body = (head.length ? head.join('\n') + '\n\n' : '') +
-        material(step.mech).replace(/^\n\n/, '') + (material(step.mech) ? '\n\n' : '') +
+        mat.replace(/^\n\n/, '') + (mat ? '\n\n' : '') +
         (probe.length ? probe.join('\n') + '\n\n' : '') +
-        (say2('ask').length ? say2('ask').join('\n') + '\n\n' : '') +
+        (ask.length ? ask.join('\n') + '\n\n' : '') +
         'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n' +
         JSON.stringify(form, null, 1);
     } else {
