@@ -369,7 +369,8 @@
         ? '' : 'Нужен хотя бы один вариант с непустой сутью.';
     },
     foot: function () {
-      return { note: '', cta: 'Разложил →' };
+      // Инфинитив, а не прошедшее время в мужском роде: см. scenes.js, правка 11.08.
+      return { note: '', cta: 'Ответить →' };
     },
     locked: function (m) {
       var n = m.rays.filter(function (r) { return String(r.name + r.gist).trim(); }).length;
@@ -785,7 +786,7 @@
     foot: function (m) {
       return m.bet != null
         ? { note: '', cta: 'Ответить →', inCard: true }
-        : { note: '', cta: 'Разложил →' };
+        : { note: '', cta: 'Ответить →' };
     },
     locked: function (m) {
       var n = m.cards.filter(function (t) { return String(t).trim(); }).length;
@@ -879,7 +880,7 @@
       if (ctx.isDemo) return '';
       return String(m.became).trim() ? '' : '«Чем стала компания» — обязательно. Срок и цена по желанию.';
     },
-    foot: function () { return { note: '', cta: 'Ответил →' }; },
+    foot: function () { return { note: '', cta: 'Ответить →' }; },
     locked: function (m) {
       // ⚠ Ни «срок не выбран», ни «цена не названа» здесь больше НЕТ: и то и другое —
       // оценка полноты ответа, то есть методология, сказанная участнику вслух

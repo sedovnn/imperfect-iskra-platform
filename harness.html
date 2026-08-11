@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Прогон модели по шагам — i(m)perfect · «Искра»</title>
+<meta name="robots" content="noindex, nofollow" />
+<!-- ============================================================================
+     ПОШАГОВЫЙ ПРОГОН МОДЕЛИ. Вы — переносчик: копируете текст шага в чат модели,
+     её ответ вставляете сюда, страница проверяет его гейтом самой механики.
+
+     ЗАЧЕМ РЯДОМ С eval/run_v44f.js. Тот гоняет модель через API и сам. Эта
+     страница нужна там, где API нет вовсе (YandexGPT, Алиса и прочие чаты) — и
+     тогда единственный способ провести модель тем же маршрутом это перенести
+     текст руками. Ядро у них общее: маршрут из scenes.js, гейты из mechanics.js,
+     описания верстаков из js/mech-fields.js.
+
+     ЧЕМ ЭТО ОТЛИЧАЕТСЯ ОТ ПРЕЖНЕГО _ai_harness_steps.html. Тот держал СВОИ копии
+     двадцати шести шагов и читал round1…round5.html, страниц с такими именами
+     больше нет. Здесь ни одной копии шага: порядок, реплики и условные ветвления
+     берутся из тех же файлов, что рисуют экран участника. Разойтись нечему.
+
+     И ГЛАВНОЕ ОТЛИЧИЕ: имя без подчёркивания. Прежний файл был под .gitignore
+     (`_*.html`), поэтому не версионировался и исчез вместе с папкой platform,
+     когда её убрали в архив. Этот лежит в репозитории.
+
+     КАК ОТКРЫТЬ. Нужен локальный сервер: страница читает кейс через fetch, а на
+     file:// браузер это запрещает.
+         cd путь-до-imp.v3 && python3 -m http.server 8765
+         открыть http://localhost:8765/harness.html
+     ============================================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<link rel="stylesheet" href="css/styles.css?v=166" />
+<style>
+  .hs-wrap { max-width: var(--maxw); width: 100%; margin: 0 auto; padding: 20px var(--frame-pad, 56px) 70px; }
+  .hs-top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin: 0 0 18px; }
+  .hs-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .hs-cols { grid-template-columns: 1fr; } }
+  .hs-panel { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 16px 18px; }
+  .hs-panel h3 { margin: 0 0 10px; font-size: var(--fs-op-h); }
+  .hs-out {
+    margin: 0; padding: 12px; background: var(--soft); border-radius: 4px;
+    font-size: var(--fs-op-sm); line-height: 1.55; white-space: pre-wrap;
+    max-height: 46vh; overflow: auto; font-variant-numeric: tabular-nums;
+  }
+  .hs-in {
+    width: 100%; min-height: 46vh; padding: 12px; border: 1px solid var(--hairline);
+    border-radius: 4px; font: inherit; font-size: var(--fs-op-sm); line-height: 1.55; resize: vertical;
+  }
+  .hs-in:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .hs-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+  .hs-steps { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; }
+  .hs-step {
+    padding: 4px 9px; border: 1px solid var(--hairline); border-radius: 4px;
+    font-size: var(--fs-op-sm); color: var(--muted-soft); white-space: nowrap;
+  }
+  .hs-step.is-done { background: var(--ink); border-color: var(--ink); color: #fff; }
+  .hs-step.is-now { border-color: var(--accent); color: var(--ink); font-weight: 700; }
+  .hs-step.is-skip { opacity: .5; text-decoration: line-through; }
+  .hs-gate { margin: 12px 0 0; padding: 10px 12px; border-radius: 4px; background: var(--accent-tint); color: var(--accent-ink); font-size: var(--fs-op); }
+  .hs-note { margin: 10px 0 0; font-size: var(--fs-op-sm); color: var(--muted-soft); line-height: 1.55; }
+  .hs-kind { font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--accent-ink); }
+</style>
+</head>
+<body>
+
+<div class="frame station-frame">
+  <div class="station-shell">
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+        <span class="station-sep">/</span>
+        <h1 class="station-name">Прогон модели по шагам</h1>
+      </div>
+      <div class="station-header-right" data-no-refs="1">
+        <span class="cab-status" id="hsStatus"></span>
+        <span class="bib" id="hsVer">—</span>
+      </div>
+    </header>
+
+    <div class="hs-wrap">
+      <div class="hs-top">
+        <label class="field-inline"><span>Метка модели</span>
+          <input type="text" class="cab-inp cab-inp-wide" id="hsTag" placeholder="Опус 5" /></label>
+        <button type="button" class="btn btn-primary btn-sm" id="hsStart">Начать прогон</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="hsReset">Начать заново</button>
+        <label class="cab-filter" style="margin:0;"><input type="checkbox" id="hsFull" /> Вставить всё сначала (новый чат)</label>
+      </div>
+
+      <div class="hs-steps" id="hsSteps"></div>
+
+      <div class="hs-cols">
+        <section class="hs-panel">
+          <h3>Шаг <span id="hsNum">—</span> · <span id="hsLabel">—</span> <span class="hs-kind" id="hsKind"></span></h3>
+          <pre class="hs-out" id="hsPrompt">Введите метку модели и нажмите «Начать прогон».</pre>
+          <div class="hs-acts">
+            <button type="button" class="btn btn-primary btn-sm" id="hsCopy">Скопировать для модели</button>
+            <span class="cab-dim" id="hsCopied"></span>
+          </div>
+          <p class="hs-note" id="hsHint"></p>
+        </section>
+
+        <section class="hs-panel">
+          <h3>Ответ модели</h3>
+          <textarea class="hs-in" id="hsAnswer" placeholder="вставьте ответ модели сюда"></textarea>
+          <div class="hs-acts">
+            <button type="button" class="btn btn-primary btn-sm" id="hsAccept">Принять и дальше →</button>
+            <span class="cab-dim" id="hsSaved"></span>
+          </div>
+          <div id="hsGate"></div>
+        </section>
+      </div>
+
+      <section class="hs-panel" style="margin-top:22px;">
+        <h3>Готовый прогон</h3>
+        <p class="hs-note" id="hsDone">Прогон не закончен.</p>
+        <div class="hs-acts">
+          <button type="button" class="btn btn-ghost btn-sm" id="hsDump">Скачать файлом</button>
+          <label class="field-inline"><span>Пароль кабинета</span>
+            <input type="password" class="cab-inp" id="hsPw" autocomplete="off" /></label>
+          <label class="field-inline"><span>Номер участника</span>
+            <input type="text" class="cab-inp cab-inp-num" id="hsBib" placeholder="770001" /></label>
+          <button type="button" class="btn btn-ghost btn-sm" id="hsPush">Залить в лист</button>
+        </div>
+        <p class="hs-note">Заливка пишет в живой лист <code>Answers</code> тем же действием, которым пишет браузер участника, и ставит метку прогона модели. Номер должен быть заранее выдан в кабинете — лучше в отдельной волне для прогонов.</p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script src="js/main.js?v=4"></script>
+<script src="js/api.js?v=5"></script>
+<script src="js/backlog.js?v=3"></script>
+<script src="js/scenes.js?v=40"></script>
+<script src="js/mechanics.js?v=26"></script>
+<script src="js/mech-fields.js?v=4"></script>
+<script src="js/case-ref.js?v=13"></script>
+<script>
+(function () {
+  var S = window.imp.scenes, M = window.imp.mechanics, F = window.imp.mechFields;
+  var TITLES = window.imp.mechTitles, BACKLOG = window.imp.backlog, LIM = window.imp.backlogLimits;
+  var KEY = 'imp_harness_run';
+
+  var el = function (id) { return document.getElementById(id); };
+  var esc = function (s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; };
+  var num = function (n) { return String(Math.round(Number(n) * 10) / 10).replace('.', ','); };
+  var say = function (m, bad) { el('hsStatus').textContent = m || ''; el('hsStatus').className = 'cab-status' + (bad ? ' is-bad' : ''); };
+
+  el('hsVer').textContent = S.version;
+
+  var run = null, caseTextCache = null;
+
+  function ctx() {
+    return { isDemo: false, BACKLOG: BACKLOG, LIM: LIM, esc: esc, br: esc, num: num,
+             blNum: window.imp.backlogNum, mech: function (k) { return run.mech[k]; } };
+  }
+
+  // Ветвления — тем же кодом, что у участника: перебор считает сама механика,
+  // Северову решает id позиции из backlog.js.
+  function applies(when) {
+    if (!when) return true;
+    var lm = run && run.mech.list;
+    if (!lm) return false;
+    if (when === 'overspend') return !!M.list.sums(lm, ctx()).over;
+    if (when === 'severova') {
+      var d = (lm.decided || {})['a' + window.imp.severovaId];
+      return d === 'later' || d === 'never';
+    }
+    return true;
+  }
+
+  // ---------- материалы ----------
+  function caseText() {
+    if (caseTextCache) return Promise.resolve(caseTextCache);
+    return fetch(S.caseSrc + '?t=' + Date.now()).then(function (r) {
+      if (!r.ok) throw new Error(S.caseSrc + ': ' + r.status);
+      return r.text();
+    }).then(function (html) {
+      var d = document.createElement('div');
+      d.innerHTML = html;
+      var root = d.querySelector('#caseContent');
+      if (!root) throw new Error('в ' + S.caseSrc + ' нет #caseContent');
+      caseTextCache = (root.innerText || root.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+      return caseTextCache;
+    });
+  }
+
+  function cheatsheet() {
+    var c = window.imp.caseCheatsheet || {};
+    var pair = function (a) { return (a || []).map(function (x) { return '· ' + x[0] + ' — ' + x[1]; }).join('\n'); };
+    return 'Кто есть кто:\n' + pair(c.people) + '\n\nЧто есть что:\n' + pair(c.things);
+  }
+
+  // Материал рабочей области и пересказ разбора — из js/mech-fields.js, общие
+  // со скриптом прогона. Здесь только вызов.
+  var helpers = function () { return { num: num, ctx: ctx }; };
+  function material(mech) { return window.imp.mechMaterial(mech, run, helpers()); }
+
+  // ---------- маршрут ----------
+  function steps() {
+    var out = [];
+    S.route().forEach(function (r) {
+      var a = r.act;
+      if (a.kind === 'window' || a.kind === 'mechanic') {
+        out.push({ key: a.save, mech: a.kind === 'mechanic' ? a.mech : null, when: a.when || '',
+                   label: a.kind === 'mechanic' ? (TITLES[a.mech] || a.mech) : (a.label || a.save),
+                   scene: r.scene.name, ix: r.sceneIx, actIx: r.actIx });
+      }
+    });
+    return out;
+  }
+  var STEPS = steps();
+
+  function done(s) { return s.mech ? run.mech[s.mech] !== undefined : run.answers[s.key] !== undefined; }
+  function skipped(s) { return !!s.when && !applies(s.when); }
+  function current() {
+    for (var i = 0; i < STEPS.length; i++) if (!done(STEPS[i]) && !skipped(STEPS[i])) return i;
+    return -1;
+  }
+
+  // Реплики, произнесённые МЕЖДУ прошлым шагом и этим. Раньше на каждом шаге
+  // уезжало всё сказанное с начала дня — но вы вставляете текст в ТОТ ЖЕ чат, где
+  // модель это уже слышала: пересказ заставлял платить за одно и то же двенадцать
+  // раз и путал модель дублями (замечание владельца 11.08). Скрипту прогона
+  // история нужна — там каждый вызов к API без памяти, — а чату нет.
+  function heardBetween(fromStep, toStep) {
+    var out = [];
+    var after = function (r) {
+      if (!fromStep) return true;
+      return r.sceneIx > fromStep.ix || (r.sceneIx === fromStep.ix && r.actIx > fromStep.actIx);
+    };
+    S.route().forEach(function (r) {
+      if (r.sceneIx > toStep.ix || (r.sceneIx === toStep.ix && r.actIx >= toStep.actIx)) return;
+      if (!after(r)) return;
+      var a = r.act;
+      if (a.when && !applies(a.when)) return;
+      if (!a.bubbles) return;
+      var lm = run.mech.list, t = lm ? M.list.sums(lm, ctx()) : null;
+      var lines = a.bubbles.map(function (b) {
+        return String(b.text || '').split('{name}').join(run.tag)
+          .replace('{people}', t ? String(t.people) : '').replace('{money}', t ? num(t.money) : '');
+      });
+      out.push((a.who ? a.who + (a.note ? ' (' + a.note + ')' : '') + ': ' : '') + lines.join(' '));
+    });
+    return out;
+  }
+
+  function fullAgain() { var e = el('hsFull'); return !!(e && e.checked); }
+
+  function promptFor(step, ix) {
+    // Откуда вести разговор: от прошлого СПРОШЕННОГО шага. «Всё сначала» — для
+    // нового чата, когда прежний оборвался.
+    var from = null;
+    if (!fullAgain()) {
+      for (var i = ix - 1; i >= 0; i--) { if (!skipped(STEPS[i])) { from = STEPS[i]; break; } }
+    }
+    var heard = heardBetween(from, step);
+
+    // ⚠ НИ ОДНОГО СВОЕГО СЛОВА СВЕРХ ЭКРАНА. Раньше здесь стояли «РАБОЧАЯ ОБЛАСТЬ»,
+    // «ПОЛЕ ОТВЕТА» и «СПРАВКА (опора, не подсказка)» — наша служебная лексика,
+    // которой человек не видит, а последняя ещё и сообщала модели, что мы боимся
+    // подсказать. Осталось только то, что читает человек: реплики, подпись поля,
+    // подписи полей рабочей области.
+    var body;
+    if (step.mech) {
+      var f = F[step.mech];
+      body = material(step.mech).replace(/^\n\n/, '') +
+        (material(step.mech) ? '\n\n' : '') +
+        'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n' +
+        JSON.stringify(f.form, null, 1);
+    } else {
+      body = 'Поле «' + step.label + '». Напишите ответ обычным текстом.';
+    }
+
+    var pre = (run.sentSetup && !fullAgain()) ? ''
+      : (S.briefForModel(run.tag) + '\n\nО компании\n' + (caseTextCache || '') +
+         '\n\nСправка\n' + cheatsheet() + '\n\n');
+    return pre + (heard.length ? heard.join('\n') + '\n\n' : '') + body;
+  }
+
+  // ---------- отрисовка ----------
+  function renderSteps() {
+    var cur = current();
+    el('hsSteps').innerHTML = STEPS.map(function (s, i) {
+      var cls = skipped(s) ? 'is-skip' : done(s) ? 'is-done' : (i === cur ? 'is-now' : '');
+      return '<span class="hs-step ' + cls + '" title="' + esc(s.scene) + (skipped(s) ? ' · не спрашивали' : '') + '">' +
+        (i + 1) + '. ' + esc(s.label) + '</span>';
+    }).join('');
+  }
+
+  function render() {
+    if (!run) return;
+    renderSteps();
+    var cur = current();
+    if (cur < 0) {
+      el('hsNum').textContent = '—'; el('hsLabel').textContent = 'все шаги пройдены'; el('hsKind').textContent = '';
+      el('hsPrompt').textContent = 'Прогон закончен. Скачайте файлом или залейте в лист ниже.';
+      el('hsDone').textContent = 'Прогон закончен: ' + Object.keys(run.mech).length + ' верстаков и ' +
+        Object.keys(run.answers).length + ' окон. Маршрут ' + run.scenesVersion + '.';
+      return;
+    }
+    var s = STEPS[cur];
+    el('hsNum').textContent = (cur + 1) + ' из ' + STEPS.length;
+    el('hsLabel').textContent = s.label;
+    el('hsKind').textContent = s.mech ? 'верстак · JSON' : 'окно · текст';
+    el('hsHint').textContent = (run.sentSetup && !fullAgain() ? 'Кейс и установка уже уехали — здесь только новое с прошлого шага. ' : '') + (s.mech
+      ? 'Ответ модели вставьте как JSON — страница переведёт его в состояние и проверит тем же гейтом, что держит человека.'
+      : 'Ответ модели вставьте как обычный текст.');
+    el('hsPrompt').textContent = promptFor(s, cur);
+    el('hsAnswer').value = '';
+    el('hsGate').innerHTML = '';
+  }
+
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(run)); } catch (e) {} }
+
+  function start(fresh) {
+    var tag = (el('hsTag').value || '').trim();
+    if (!tag) { window.imp.alert('Впишите метку модели — она попадёт в имя файла и в реплики вместо имени участника.'); return; }
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    if (!fresh && saved && saved.tag === tag && saved.scenesVersion === S.version) {
+      run = saved; say('черновик подхвачен');
+    } else {
+      if (saved && saved.scenesVersion !== S.version) say('маршрут сменился — начинаю заново');
+      run = { tag: tag, scenesVersion: S.version, caseVersion: S.caseVersion, backlogVersion: S.backlogVersion,
+              startedAt: new Date().toISOString(), answers: {}, answersAt: {}, mech: {}, mechAt: {},
+              sent: {}, sentSetup: false };
+    }
+    caseText().then(function () { render(); save(); })
+      .catch(function (e) {
+        el('hsPrompt').textContent = 'Не удалось прочитать кейс: ' + e.message +
+          '\n\nСтраницу нужно открывать через локальный сервер, а не как файл:\n' +
+          '  cd путь-до-imp.v3 && python3 -m http.server 8765\n' +
+          '  затем http://localhost:8765/harness.html';
+        say('кейс не прочитан', true);
+      });
+  }
+
+  el('hsStart').addEventListener('click', function () { start(false); });
+  el('hsFull').addEventListener('change', function () { if (run) render(); });
+  el('hsReset').addEventListener('click', function () {
+    window.imp.confirm('Начать прогон заново? Всё, что модель уже ответила, будет стёрто.',
+      { confirmLabel: 'Начать заново', danger: true }).then(function (yes) { if (yes) start(true); });
+  });
+
+  el('hsCopy').addEventListener('click', function () {
+    var text = el('hsPrompt').textContent;
+    var ok = function () {
+      el('hsCopied').textContent = 'скопировано · ' + text.length + ' знаков';
+      // Установка и кейс уезжают ОДИН раз: дальше модель уже в контексте чата,
+      // и повторять кейс на каждом шаге значит платить за него двенадцать раз.
+      if (!run.sentSetup) { run.sentSetup = true; save(); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, function () {
+      el('hsCopied').textContent = 'буфер недоступен — выделите текст и скопируйте руками';
+    });
+    else el('hsCopied').textContent = 'буфер недоступен — выделите текст и скопируйте руками';
+  });
+
+  el('hsAccept').addEventListener('click', function () {
+    var cur = current();
+    if (cur < 0) return;
+    var s = STEPS[cur], raw = el('hsAnswer').value.trim();
+    if (!raw) { window.imp.alert('Вставьте ответ модели.'); return; }
+    el('hsGate').innerHTML = '';
+
+    // Установка и кейс считаются доставленными, как только принят первый шаг:
+    // модель на него ответила, значит материалы получила. Прежде флаг поднимался
+    // только кнопкой «Скопировать» — кто копирует выделением, получал кейс заново
+    // на каждом шаге.
+    run.sentSetup = true;
+
+    if (!s.mech) {
+      run.answers[s.key] = raw;
+      run.answersAt[s.key] = new Date().toISOString();
+      save(); render(); say('шаг принят');
+      return;
+    }
+
+    var obj;
+    try {
+      var t = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+      obj = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+    } catch (e) {
+      el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(e.message) +
+        '. Попросите модель вернуть один объект, начиная с «{».</p>';
+      return;
+    }
+    var f = F[s.mech];
+    // Перевод ответа модели в состояние механики: она отвечает подписями с экрана
+    // («решения», «№5», «берём»), состояние держит свои ключи (decided, a6, take).
+    try { obj = f.toState(obj); }
+    catch (e) {
+      el('hsGate').innerHTML = '<p class="hs-gate">Не разобрал ответ: ' + esc(e.message) + '</p>';
+      return;
+    }
+    // ГЕЙТ САМОЙ МЕХАНИКИ — тот же, что держит человека.
+    var fail = M[s.mech].gate(obj, ctx());
+    if (fail) {
+      el('hsGate').innerHTML = '<p class="hs-gate">Гейт верстака: ' + esc(fail) +
+        '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
+      return;
+    }
+    run.mech[s.mech] = obj;
+    run.mechAt[s.mech] = new Date().toISOString();
+    save();
+    // Разбор заявок пересказываем словами сразу после принятия: сырые ключи a1…a22
+    // глазами не проверить, а ошибку модели надо увидеть до конца прогона.
+    var recap = s.mech === 'list' ? window.imp.listRecap(obj, helpers()) : '';
+    render();
+    if (recap) el('hsGate').innerHTML = '<p class="hs-note"><b>Записано:</b></p><pre class="hs-out" style="max-height:22vh;">' + esc(recap) + '</pre>';
+    say('верстак зафиксирован');
+  });
+
+  el('hsDump').addEventListener('click', function () {
+    if (!run) return;
+    var blob = new Blob([JSON.stringify(run, null, 1)], { type: 'application/json' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'прогон_' + run.tag.replace(/[^\wа-яёА-ЯЁ.-]+/g, '_') + '_' + run.scenesVersion + '.json';
+    a.click();
+  });
+
+  el('hsPush').addEventListener('click', function () {
+    if (!run) return;
+    if (current() >= 0) { window.imp.alert('Прогон не закончен. Залить можно только полный.'); return; }
+    var pw = (el('hsPw').value || '').trim(), bib = (el('hsBib').value || '').trim();
+    if (!pw || !bib) { window.imp.alert('Нужны пароль кабинета и номер участника.'); return; }
+    window.imp.confirm('Залить прогон «' + run.tag + '» в живой лист под номером ' + bib + '?',
+      { confirmLabel: 'Залить' }).then(function (yes) {
+        if (!yes) return;
+        say('заливаю…');
+        // Тот же saveAnswers, которым пишет браузер участника. runner помечает
+        // строку как прогон модели — кабинет показывает её словом «модель».
+        window.imp.callApi('saveAnswers', {
+          password: pw, bib: bib,
+          scenesVersion: run.scenesVersion, caseVersion: run.caseVersion, backlogVersion: run.backlogVersion,
+          answers: run.answers, answersAt: run.answersAt,
+          mech: run.mech, mechAt: run.mechAt,
+          picks: {}, elicited: {}, marks: [],
+          cursor: 0, started: true, finished: true,
+          startedAt: run.startedAt, finishedAt: new Date().toISOString(),
+          runner: { harness: 'harness.html', tag: run.tag, at: new Date().toISOString() }
+        }).then(function (r) {
+          if (r && r.ok) { say('залито'); window.imp.alert('Готово. Строка появилась в кабинете с меткой «модель».'); }
+          else { say('не залилось', true); window.imp.alert('Не вышло: ' + ((r && (r.message || r.error)) || 'нет ответа')); }
+        });
+      });
+  });
+
+  // Черновик подхватывается сам, если метку помнит браузер.
+  (function () {
+    var saved = null;
+    try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
+    if (saved && saved.tag) { el('hsTag').value = saved.tag; }
+  })();
+})();
+</script>
+</body>
+</html>
