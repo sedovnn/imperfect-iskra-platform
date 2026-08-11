@@ -668,6 +668,10 @@
   M.seal = {
     init: function () { return { confirmed: null, returned: false, why: '', snap: null }; },
     changed: sealChanged,
+    // Слепок разбора наружу: харнесс обязан снять его в тот же момент, что экран
+    // (ДО возврата к списку), иначе «изменил под давлением» и «удержал» не
+    // различить. Отдаём саму функцию, чтобы формула не считалась во втором месте.
+    snap: sealSnap,
     gate: function (m, ctx) {
       if (ctx.isDemo) return '';
       if (m.confirmed == null) return '';           // шаг 1: гейта нет, есть поступок

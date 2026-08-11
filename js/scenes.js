@@ -760,6 +760,28 @@
     return out;
   };
 
+  // ── РЕПЛИКИ АКТА, ВСЕ ДО ЕДИНОЙ ──────────────────────────────────────────────
+  // Речь в акте лежит не только в bubbles: before — над рабочей областью, ask — под
+  // ней, probe — внутри, после действия участника, probeReturn — когда он вернулся
+  // и поменял, after — после фиксации, lead — строка-указатель над областью.
+  // Харнессы читали ТОЛЬКО bubbles, и модель не слышала ни «Почему уверены?» у
+  // печати, ни «Почему именно этот вариант наиболее вероятный?» у будущего — то
+  // есть у неё просили обоснование, не задав вопроса (поймано сверкой 11.08).
+  // Один сборщик на оба харнесса: разойтись нечему.
+  S.speechLines = function (act, field) {
+    var v = act && act[field];
+    if (!v) return [];
+    if (field === 'lead' || field === 'silence') {
+      return (Array.isArray(v) ? v : [v]).map(function (x) { return String(x == null ? '' : x); }).filter(Boolean);
+    }
+    var bubbles = (field === 'bubbles') ? v : v.bubbles;
+    if (!bubbles || !bubbles.length) return [];
+    var who = (field === 'bubbles' ? act.who : (v.who || act.who)) || '';
+    var note = (field === 'bubbles' ? act.note : (v.note || '')) || '';
+    return [(who ? who + (note ? ' (' + note + ')' : '') + ': ' : '') +
+            bubbles.map(function (b) { return String(b.text || ''); }).join(' ')];
+  };
+
   // ── УСТАНОВКА ДЛЯ МОДЕЛИ ─────────────────────────────────────────────────────
   // Тот же S.system, что читает участник, но БЕЗ описания экрана: у модели нет ни
   // трёх колонок, ни четырёх вкладок, ни выделений в тексте. Рассказ про интерфейс

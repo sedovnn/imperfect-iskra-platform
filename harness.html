@@ -149,9 +149,9 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/backlog.js?v=3"></script>
-<script src="js/scenes.js?v=40"></script>
-<script src="js/mechanics.js?v=26"></script>
-<script src="js/mech-fields.js?v=4"></script>
+<script src="js/scenes.js?v=41"></script>
+<script src="js/mechanics.js?v=27"></script>
+<script src="js/mech-fields.js?v=5"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=13"></script>
 <script>
@@ -272,24 +272,39 @@
   // модель это уже слышала: пересказ заставлял платить за одно и то же двенадцать
   // раз и путал модель дублями (замечание владельца 11.08). Скрипту прогона
   // история нужна — там каждый вызов к API без памяти, — а чату нет.
+  // Подстановки маршрута: {name} и единственная числовая пара {people}/{money} —
+  // тот же счётчик, который человек видит на экране разбора.
+  function sub(t) {
+    var lm = run.mech.list, tt = lm ? M.list.sums(lm, ctx()) : null;
+    return String(t == null ? '' : t).split('{name}').join(run.tag)
+      .replace('{people}', tt ? String(tt.people) : '')
+      .replace('{money}', tt ? num(tt.money) : '');
+  }
+
+  // Реплики, произнесённые МЕЖДУ прошлым шагом и этим. Раньше на каждом шаге
+  // уезжало всё сказанное с начала дня — но вы вставляете текст в ТОТ ЖЕ чат, где
+  // модель это уже слышала: пересказ заставлял платить за одно и то же двенадцать
+  // раз и путал модель дублями (замечание владельца 11.08). Скрипту прогона
+  // история нужна — там каждый вызов к API без памяти, — а чату нет.
+  //
+  // ⚠ ЗАБИРАЕМ И `after`: это то, что персонаж говорит ПОСЛЕ фиксации шага, и
+  // человек слышит его перед следующим. Раньше брались только bubbles, и модель не
+  // слышала ни «Штерн пишет, что ждёт вас», ни прощаний — то есть переходов дня.
   function heardBetween(fromStep, toStep) {
     var out = [];
     var after = function (r) {
       if (!fromStep) return true;
-      return r.sceneIx > fromStep.ix || (r.sceneIx === fromStep.ix && r.actIx > fromStep.actIx);
+      return r.sceneIx > fromStep.ix || (r.sceneIx === fromStep.ix && r.actIx >= fromStep.actIx);
     };
     S.route().forEach(function (r) {
       if (r.sceneIx > toStep.ix || (r.sceneIx === toStep.ix && r.actIx >= toStep.actIx)) return;
       if (!after(r)) return;
       var a = r.act;
       if (a.when && !applies(a.when)) return;
-      if (!a.bubbles) return;
-      var lm = run.mech.list, t = lm ? M.list.sums(lm, ctx()) : null;
-      var lines = a.bubbles.map(function (b) {
-        return String(b.text || '').split('{name}').join(run.tag)
-          .replace('{people}', t ? String(t.people) : '').replace('{money}', t ? num(t.money) : '');
-      });
-      out.push((a.who ? a.who + (a.note ? ' (' + a.note + ')' : '') + ': ' : '') + lines.join(' '));
+      var mine = !fromStep || r.sceneIx > fromStep.ix || r.actIx > fromStep.actIx;
+      // У самого прошлого шага берём только `after` — его bubbles модель уже слышала.
+      if (mine) S.speechLines(a, 'bubbles').forEach(function (l) { out.push(sub(l)); });
+      S.speechLines(a, 'after').forEach(function (l) { out.push(sub(l)); });
     });
     return out;
   }
@@ -310,15 +325,36 @@
     // которой человек не видит, а последняя ещё и сообщала модели, что мы боимся
     // подсказать. Осталось только то, что читает человек: реплики, подпись поля,
     // подписи полей рабочей области.
+    // Речь вокруг рабочей области — вся, как у человека: before над ней, lead
+    // строкой-указателем, probe внутри (после действия), ask под ней.
+    var act = null;
+    S.route().forEach(function (r) { if (r.sceneIx === step.ix && r.actIx === step.actIx) act = r.act; });
+    var say2 = function (field) { return act ? S.speechLines(act, field).map(sub) : []; };
+
     var body;
     if (step.mech) {
       var f = F[step.mech];
-      body = material(step.mech).replace(/^\n\n/, '') +
-        (material(step.mech) ? '\n\n' : '') +
+      var form = f.form, probe = say2('probe');
+      if (step.mech === 'seal') {
+        if (run.sealStage === 'phrase') {
+          form = f.formPhrase;
+          // Вернулся и поменял — спрашивают другое: «Что поменяли и почему?».
+          probe = run.sealBack ? say2('probeReturn') : say2('probe');
+        } else {
+          form = run.sealBack ? f.formHeld : f.form;
+          probe = [];
+        }
+      }
+      var head = say2('before').concat(say2('lead'));
+      body = (head.length ? head.join('\n') + '\n\n' : '') +
+        material(step.mech).replace(/^\n\n/, '') + (material(step.mech) ? '\n\n' : '') +
+        (probe.length ? probe.join('\n') + '\n\n' : '') +
+        (say2('ask').length ? say2('ask').join('\n') + '\n\n' : '') +
         'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n' +
-        JSON.stringify(f.form, null, 1);
+        JSON.stringify(form, null, 1);
     } else {
-      body = 'Поле «' + step.label + '». Напишите ответ обычным текстом.';
+      body = (say2('lead').length ? say2('lead').join('\n') + '\n\n' : '') +
+        'Поле «' + step.label + '». Напишите ответ обычным текстом.';
     }
 
     var pre = (run.sentSetup && !fullAgain()) ? ''
@@ -352,7 +388,11 @@
     el('hsNum').textContent = (cur + 1) + ' из ' + STEPS.length;
     el('hsLabel').textContent = s.label;
     el('hsKind').textContent = s.mech ? 'верстак · JSON' : 'окно · текст';
-    el('hsHint').textContent = (run.sentSetup && !fullAgain() ? 'Кейс и установка уже уехали — здесь только новое с прошлого шага. ' : '') + (s.mech
+    var beat = (s.mech === 'seal')
+      ? (run.sealStage === 'phrase' ? 'Второй такт печати: модель подтвердила, осталась одна фраза. '
+        : (run.sealBack ? 'Модель уже возвращалась к разбору — второй раз нельзя, только подтверждение. ' : ''))
+      : '';
+    el('hsHint').textContent = beat + (run.sentSetup && !fullAgain() ? 'Кейс и установка уже уехали — здесь только новое с прошлого шага. ' : '') + (s.mech
       ? 'Ответ модели вставьте как JSON — страница переведёт его в состояние и проверит тем же гейтом, что держит человека.'
       : 'Ответ модели вставьте как обычный текст.');
     el('hsPrompt').textContent = promptFor(s, cur);
@@ -436,9 +476,34 @@
       return;
     }
     var f = F[s.mech];
+
+    // ⚠ ПЕЧАТЬ: ХОД МОДЕЛИ ИСПОЛНЯЕТСЯ, А НЕ ЗАПИСЫВАЕТСЯ ГАЛОЧКОЙ. Человек,
+    // нажавший «← Вернуться и изменить», попадает обратно в разбор заявок и правит
+    // его; слепок снимается ДО правки, иначе «изменил под давлением» и «удержал»
+    // не различить. Прежде модель отвечала «вернуться: да», а харнесс шёл дальше —
+    // к Лемеху (поймано владельцем 11.08 на живом прогоне).
+    if (s.mech === 'seal' && run.sealStage !== 'phrase') {
+      if (f.isBack(obj) && !run.sealBack) {
+        run.sealBack = { returned: true, snap: M.seal.snap(ctx()) };
+        delete run.mech.list;          // разбор снова становится текущим шагом
+        delete run.mechAt.list;
+        save(); render();
+        el('hsGate').innerHTML = '<p class="hs-gate">Модель возвращается к разбору заявок. ' +
+          'Следующий шаг — снова разбор: она правит его, и после этого печать спросит только подтверждение. ' +
+          'Вернуться можно один раз.</p>';
+        say('возврат к разбору');
+        return;
+      }
+      // Подтвердила — открывается второй такт, одна фраза.
+      run.sealStage = 'phrase';
+      save(); render();
+      say('подтверждено, осталась одна фраза');
+      return;
+    }
+
     // Перевод ответа модели в состояние механики: она отвечает подписями с экрана
     // («решения», «№5», «берём»), состояние держит свои ключи (decided, a6, take).
-    try { obj = f.toState(obj); }
+    try { obj = (s.mech === 'seal') ? f.toState(obj, run.sealBack) : f.toState(obj); }
     catch (e) {
       el('hsGate').innerHTML = '<p class="hs-gate">Не разобрал ответ: ' + esc(e.message) + '</p>';
       return;
@@ -452,6 +517,7 @@
     }
     run.mech[s.mech] = obj;
     run.mechAt[s.mech] = new Date().toISOString();
+    if (s.mech === 'seal') delete run.sealStage;
     save();
     // Разбор заявок пересказываем словами сразу после принятия: сырые ключи a1…a22
     // глазами не проверить, а ошибку модели надо увидеть до конца прогона.
