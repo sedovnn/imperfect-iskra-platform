@@ -170,7 +170,7 @@
     if (!p.skills) return '<span class="cab-dim">—</span>';
     return Object.keys(SKILL_NAMES).map(function (k) {
       var v = p.skills[k];
-      return '<span class="cab-skill" title="' + SKILL_NAMES[k] + '">' +
+      return '<span class="cab-skill" title="' + SKILL_NAMES[k] + ' — сумма двух способностей, от 2 до 10">' +
         SKILL_NAMES[k] + '<b>' + (v === null || v === undefined ? '—' : v) + '</b></span>';
     }).join('');
   }
@@ -186,7 +186,7 @@
     // Итог показываем только когда оценены все десять — иначе это не балл.
     // Флажок ⚑ убран: о флагах словом говорит колонка «Нужен человек», а два
     // языка для одного и того же заставляли сверять значок с колонкой.
-    return '<b class="cab-total">' + p.total + '</b><span class="cab-dim"> / 25</span>' +
+    return '<b class="cab-total">' + p.total + '</b><span class="cab-dim"> / 50</span>' +
       (p.stale ? ' <span class="cab-stale" title="Оценка вынесена по другому тексту ответа">устарело</span>' : '') +
       // Правка человека — не повод для внимания, а его след: в колонку «Нужен
       // человек» она не идёт, иначе фильтр показывал бы уже решённое.
@@ -824,9 +824,11 @@
     if (!s) return block('Оценка', '<p class="section-lead">Ещё не судили. Кнопка «Оценить» ниже поставит восемь заданий в очередь.</p>');
     var inner = '<div class="cab-skills-row">' + Object.keys(SKILL_NAMES).map(function (k) {
       var v = s.skills[k];
-      return '<div class="cab-skill-box"><span>' + SKILL_NAMES[k] + '</span><b>' + (v === null ? '—' : v) + '</b></div>';
-    }).join('') + '<div class="cab-skill-box is-total"><span>Итог</span><b>' +
-      (s.total === null ? '—' : s.total) + '</b><i>/25</i></div></div>';
+      return '<div class="cab-skill-box" title="' + SKILL_NAMES[k] +
+        ' — сумма двух способностей, от 2 до 10"><span>' + SKILL_NAMES[k] + '</span><b>' +
+        (v === null ? '—' : v) + '</b></div>';
+    }).join('') + '<div class="cab-skill-box is-total" title="Сумма всех десяти способностей">' +
+      '<span>Итог</span><b>' + (s.total === null ? '—' : s.total) + '</b><i>/50</i></div></div>';
 
     if (s.total === null) {
       inner += '<p class="cab-note">Итог не показан: оценено ' + s.judged + ' способностей из десяти. Сумма по неполному набору выглядит как балл, но им не является.</p>';
@@ -834,6 +836,13 @@
     if (d.stale) {
       inner += '<p class="cab-warn">Оценка вынесена по другому тексту ответа: участник менял ответы после судейства. Цифры ниже устарели — пересудите.</p>';
     }
+    // Правка по способности, у которой больше нет второго чтения, перестала
+    // применяться. Молча этого не делаем: решение человека называем и объясняем.
+    (s.ignoredOverrides || []).forEach(function (o) {
+      inner += '<p class="cab-warn">Ваш уровень L' + o.level + ' по ' + (ABILITY_NAMES[o.ability] || o.ability) +
+        ' больше не применяется: у этой способности нет второго чтения, а правка задумана как разрешение спора двух судей. ' +
+        'В балле стоит уровень судьи.' + (o.reason ? ' Ваша причина была: «' + esc(o.reason) + '».' : '') + '</p>';
+    });
 
     var canOverride = {};
     (d.overrideAbilities || []).forEach(function (a) { canOverride[a] = true; });
@@ -886,10 +895,20 @@
         ' (основная — ' + (s.levels.pr2 === null ? '—' : 'L' + s.levels.pr2) + ')' +
         (s.control.reasoning ? '<br /><span class="cab-dim">' + br(s.control.reasoning) + '</span>' : '') + '</p>');
     }
+    // Кросс-судей ДВА: ГА-1 по тезисам и АК-2 по письму правлению. Второго здесь не
+    // было — его уровень считался и не показывался нигде (правка 11.08). Обоснование
+    // читаем из ключа с именем способности, со сносом на старое плоское `reasoning`:
+    // прогоны до 11.08 писали его без имени.
     if (s.cross && s.cross.ga1Level !== undefined) {
+      var gaWhy = s.cross.ga1Reasoning || s.cross.reasoning || '';
       ctl.push('<p><span class="cab-k">Кросс-судья ГА-1 по ответу на развилку:</span> L' + s.cross.ga1Level +
         ' (основная — ' + (s.levels.ga1 === null ? '—' : 'L' + s.levels.ga1) + ')' +
-        (s.cross.reasoning ? '<br /><span class="cab-dim">' + br(s.cross.reasoning) + '</span>' : '') + '</p>');
+        (gaWhy ? '<br /><span class="cab-dim">' + br(gaWhy) + '</span>' : '') + '</p>');
+    }
+    if (s.cross && s.cross.ak2Level !== undefined) {
+      ctl.push('<p><span class="cab-k">Кросс-судья АК-2 по письму правлению:</span> L' + s.cross.ak2Level +
+        ' (основная — ' + (s.levels.ak2 === null ? '—' : 'L' + s.levels.ak2) + ')' +
+        (s.cross.ak2Reasoning ? '<br /><span class="cab-dim">' + br(s.cross.ak2Reasoning) + '</span>' : '') + '</p>');
     }
     if (ctl.length) inner += '<div class="cab-control">' + ctl.join('') + '</div>';
 

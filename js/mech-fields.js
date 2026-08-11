@@ -46,6 +46,28 @@
   window.imp.mechMaterial = function (mech, run, h, beat) {
     var B = window.imp.backlog, LIM = window.imp.backlogLimits, M = window.imp.mechanics;
     if (mech === 'list') {
+      // ⚠ ТАКТ ПЕРЕСЧЁТА. Человек, пока раскладывает, видит сумму взятого ЖИВОЙ — в
+      // подписи стопки «Берём», пересчёт на каждое нажатие, рядом с картами, из
+      // которых она сложилась (mechanics.js). Крупный липкий счётчик «1602 из 500»
+      // владелец снял 07.08 — он «считал за участника», — но сумма взятого осталась.
+      // Модель же отдаёт все 20 решений одним объектом и складывала бы двадцать пар
+      // чисел в уме, без единой проверки: у человека перелимит выходил позицией, у
+      // модели — арифметикой (поймано владельцем 11.08 на живом прогоне: 1240 при
+      // свободных 500). Здесь она получает ту же подпись, в тот же момент — до
+      // фиксации, а не на печати такт позже, где перебор надо уже защищать.
+      // Числа БЕЗ «перебора» и «вне бюджета»: в подписи стопки их тоже нет.
+      if (beat === 'recount') {
+        var lm2 = (run.mech && run.mech.list) || run.listDraft;
+        if (!lm2) return '';
+        var t2 = M.list.sums(lm2, h.ctx());
+        var cnt = function (d) {
+          return B.filter(function (it) { return lm2.decided['a' + it.id] === d; }).length;
+        };
+        var dec = cnt('take') + cnt('later') + cnt('never');
+        return '\n\nБерём · ' + cnt('take') + ' · ' + t2.people + ' чел. · ' + h.num(t2.money) +
+          ' млрд\nНе сейчас · ' + cnt('later') + '\nНе делаем · ' + cnt('never') + '\n' +
+          (dec >= B.length ? 'все ' + B.length + ' решены' : 'не решено ' + (B.length - dec));
+      }
       var rows = B.map(function (it) {
         return '№' + window.imp.backlogNum(it.id) + '. ' + it.title + ' — ' + it.who +
           '. ' + it.people + ' чел., ' + h.num(it.money) + ' млрд.' +
