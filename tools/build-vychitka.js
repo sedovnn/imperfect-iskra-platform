@@ -212,22 +212,34 @@ const CSS = `
   * { box-sizing: border-box; }
   body { margin:0; background:var(--paper); color:var(--ink); line-height:1.5;
          font-family:-apple-system,BlinkMacSystemFont,"Inter Tight","Segoe UI",Roboto,Arial,sans-serif; }
-  .vy-wrap { max-width:1180px; margin:0 auto; padding:18px 32px 96px; }
+  .vy-wrap { max-width:1420px; margin:0 auto; padding:18px 32px 96px; }
+  /* ⚠ ОГЛАВЛЕНИЕ СЛЕВА, А НЕ СВЕРХУ (правка владельца 12.08). Сорок три плашки в
+     строку занимали пол-экрана и отжимали рабочую область вниз. Теперь это узкая
+     липкая колонка со своей прокруткой, а тексту остаётся вся ширина. */
+  .vy-page { display:grid; grid-template-columns:236px 1fr; gap:30px; align-items:start; }
+  @media (max-width:1100px){ .vy-page { grid-template-columns:1fr; } }
   h1 { font-size:26px; margin:14px 0 4px; letter-spacing:-.02em; }
   .vy-sub { font-size:12px; color:var(--muted); margin:0 0 14px; }
   .vy-lead { font-size:14px; color:var(--muted); max-width:74ch; margin:0 0 20px; }
   .vy-warn { margin:0 0 18px; padding:10px 13px; border-radius:6px; background:var(--acc-tint);
              color:var(--acc-ink); font-size:13px; }
-  .vy-toc { position:sticky; top:0; z-index:5; background:var(--paper); padding:10px 0 11px;
-            border-bottom:1px solid var(--hair); margin:0 0 24px; }
-  .vy-toc-row { display:flex; flex-wrap:wrap; gap:5px; }
-  .vy-toc a { padding:3px 8px; border:1px solid var(--hair); border-radius:4px; font-size:12px;
-              color:var(--muted); text-decoration:none; white-space:nowrap; }
-  .vy-toc a:hover { color:var(--ink); border-color:var(--ink); }
-  .vy-toc a.has-note { border-color:var(--acc); color:var(--acc-ink); font-weight:600; }
-  .vy-step { display:grid; grid-template-columns:1fr 340px; gap:24px; align-items:start;
+  .vy-toc { position:sticky; top:14px; max-height:calc(100vh - 100px); overflow-y:auto;
+            padding-right:6px; }
+  @media (max-width:1100px){ .vy-toc { position:static; max-height:210px; margin:0 0 22px;
+            border:1px solid var(--hair); border-radius:8px; padding:10px 12px; } }
+  .vy-toc-h { font-size:10.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase;
+              color:var(--muted); margin:0 0 8px; }
+  .vy-toc-row { display:flex; flex-direction:column; gap:1px; }
+  .vy-toc a { display:flex; gap:7px; padding:4px 7px; border-radius:5px; font-size:12.5px;
+              color:var(--muted); text-decoration:none; line-height:1.35; border-left:2px solid transparent; }
+  .vy-toc a span { flex:none; font-variant-numeric:tabular-nums; opacity:.65; min-width:17px; text-align:right; }
+  .vy-toc a:hover { background:var(--soft); color:var(--ink); }
+  .vy-toc a.has-note { color:var(--acc-ink); font-weight:600; border-left-color:var(--acc); }
+  .vy-toc a.is-here { background:var(--soft); color:var(--ink); font-weight:600; }
+  .vy-toc a.is-here.has-note { color:var(--acc-ink); }
+  .vy-step { display:grid; grid-template-columns:1fr 330px; gap:26px; align-items:start;
              padding:0 0 24px; margin:0 0 24px; border-bottom:1px solid var(--hair); }
-  @media (max-width:1000px){ .vy-step { grid-template-columns:1fr; } }
+  @media (max-width:900px){ .vy-step { grid-template-columns:1fr; } }
   .vy-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:9px; margin:0 0 4px; }
   .vy-num { font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums; }
   .vy-title { margin:0; font-size:17px; font-weight:700; letter-spacing:-.01em; }
@@ -306,7 +318,7 @@ const RUNTIME = `
     var a = document.createElement('a');
     a.href = '#st-' + b.id;
     a.id = 'toc-' + b.id;
-    a.textContent = (i + 1) + '. ' + b.title;
+    a.innerHTML = '<span>' + (i + 1) + '</span>' + b.title;
     toc.appendChild(a);
   });
 
@@ -318,10 +330,63 @@ const RUNTIME = `
       var ta = host.querySelector('[data-note="' + b.id + '"]');
       if (ta) ta.className = filled ? 'filled' : '';
       var a = el('toc-' + b.id);
-      if (a) a.className = filled ? 'has-note' : '';
+      if (a) {
+        // className целиком не перетираем: на нём может висеть подсветка текущего шага.
+        if (filled) a.classList.add('has-note'); else a.classList.remove('has-note');
+      }
     });
     el('vyCount').innerHTML = 'замечаний: <b>' + n + '</b> из ' + BLOCKS.length + ' шагов';
   }
+  // Подсветка того шага, который сейчас на экране: на сорока трёх блоках без неё
+  // непонятно, где ты в оглавлении.
+  // ⚠ НЕ IntersectionObserver. Он отметил первый шаг при загрузке и больше не
+  // срабатывал ни разу (проверено в браузере: прокрутил на 4500 пикселей, подсветка
+  // осталась на первом шаге). Обработчик прокрутки делает то же самое и без сюрпризов:
+  // ищем верхний шаг, чей заголовок ещё не ушёл за верх экрана.
+  (function () {
+    var steps = Array.prototype.slice.call(host.querySelectorAll('.vy-step'));
+    if (!steps.length) return;
+    var here = null, waiting = false;
+    var nav = document.querySelector('.vy-toc');
+    function mark() {
+      waiting = false;
+      var best = steps[0];
+      for (var i = 0; i < steps.length; i++) {
+        if (steps[i].getBoundingClientRect().top <= 90) best = steps[i]; else break;
+      }
+      var id = best.id.replace(/^st-/, '');
+      if (id === here) return;
+      if (here) { var prev = el('toc-' + here); if (prev) prev.classList.remove('is-here'); }
+      here = id;
+      var a2 = el('toc-' + id);
+      if (!a2) return;
+      a2.classList.add('is-here');
+      // Держим подсвеченное в видимой части оглавления, если у него своя прокрутка.
+      if (nav && nav.scrollHeight > nav.clientHeight) {
+        var top = a2.offsetTop - nav.clientHeight / 2;
+        nav.scrollTop = Math.max(0, top);
+      }
+    }
+    window.addEventListener('scroll', function () {
+      if (waiting) return;
+      waiting = true;
+      window.requestAnimationFrame(mark);
+    }, { passive: true });
+    // ⚠ И ПО КЛИКУ ТОЖЕ. Отметка «где я» не должна зависеть только от событий
+    // прокрутки: в некоторых окружениях программная прокрутка их не порождает
+    // (поймано при проверке), да и по клику отметка должна встать сразу, не дожидаясь
+    // докрутки. Прокрутку браузер сделает сам по ссылке-якорю.
+    toc.addEventListener('click', function (ev) {
+      var a3 = ev.target.closest ? ev.target.closest('a') : null;
+      if (!a3 || !a3.id) return;
+      var id = a3.id.replace(/^toc-/, '');
+      if (here) { var p3 = el('toc-' + here); if (p3) p3.classList.remove('is-here'); }
+      here = id;
+      a3.classList.add('is-here');
+    });
+    mark();
+  })();
+
   Array.prototype.forEach.call(host.querySelectorAll('[data-note]'), function (ta) {
     var k = ta.getAttribute('data-note');
     ta.value = notes[k] || '';
@@ -454,8 +519,10 @@ const html = `<!doctype html>
     его и пришлите обратно.</p>
   <div class="vy-warn" id="vyWarn" style="display:none;">Браузер не даёт этому файлу ничего запоминать,
     поэтому замечания живут только до закрытия вкладки. Сохраняйте их кнопкой внизу, не откладывая.</div>
-  <nav class="vy-toc"><div class="vy-toc-row" id="vyTocRow"></div></nav>
-  <div id="vySteps"></div>
+  <div class="vy-page">
+    <nav class="vy-toc"><div class="vy-toc-h">Шаги дня</div><div class="vy-toc-row" id="vyTocRow"></div></nav>
+    <main id="vySteps"></main>
+  </div>
 </div>
 <div class="vy-foot"><div class="vy-foot-in">
   <button type="button" class="pri" id="vySave">Сохранить все замечания одним файлом</button>
