@@ -201,18 +201,7 @@ a { color: inherit; }
 /* Единый рецепт метки. Стоит рано, чтобы правила ниже могли задавать только своё —
    отступы и цвет. Если когда-нибудь метке понадобится другой размер, менять надо
    токены выше, а не этот список. */
-.kicker,
-.chat-name,
-.recap-q,
-.win-fixed,
-.win-label-past,
-.bl-over-tag,
-.dayside-kicker,
-.toc-title,
-.who-h,
-.toc-group,
-.bl-zone-h,
-.hdr-num {
+.kicker, .chat-name, .recap-q, .win-fixed, .win-label-past, .bl-over-tag, .dayside-kicker, .toc-title, .who-h, .toc-group, .bl-zone-h, .hdr-num {
   font-family: var(--ff-body);
   font-size: var(--label-size);
   font-weight: var(--label-weight);
@@ -224,15 +213,7 @@ a { color: inherit; }
 /* ⚠ РАЗДЕЛЕНИЕ РОЛЕЙ (решение владельца 07.08). Рецепт выше держит СЛУЖЕБНЫЕ отметки
    («ВЫ», «№ 000900», «✓ зафиксировано») — им 11px. Подзаголовки разделов — другая
    роль: они называют кусок экрана и обязаны читаться крупнее прозы под ними. */
-.kicker,
-.recap-q,
-.dayside-kicker,
-.toc-title,
-.who-h,
-.toc-group,
-.bl-zone-h,
-.mx-title,
-.interlude-next {
+.kicker, .recap-q, .dayside-kicker, .toc-title, .who-h, .toc-group, .bl-zone-h, .mx-title, .interlude-next {
   font-size: var(--fs-sub);
 }
 /* Числа внутри подзаголовка зон портфеля остаются служебными. */
@@ -581,10 +562,7 @@ footer {
 
 .field .req { color: var(--lime-dim); }
 
-.field input[type="text"],
-.field input[type="email"],
-.field input[type="password"],
-.field select {
+.field input[type="text"], .field input[type="email"], .field input[type="password"], .field select {
   width: 100%;
   font-family: var(--ff-body);
   font-size: 15px;
@@ -596,8 +574,7 @@ footer {
   transition: border-color 0.15s ease;
 }
 
-.field input:focus,
-.field select:focus {
+.field input:focus, .field select:focus {
   outline: none;
   border-color: var(--ink);
 }
@@ -618,8 +595,7 @@ footer {
 /* .bib по умолчанию — крупная «нашивка» (30px, для отдельных экранов). В любой
    шапке она служебная и мелкая. Правило было заскоплено только на .station-header,
    поэтому на своём ряду экрана сборки Р6 номер вылезал во всю величину. */
-.station-header .bib,
-.finalize-top .bib { font-size: 14px; padding: 6px 12px; }
+.station-header .bib, .finalize-top .bib { font-size: 14px; padding: 6px 12px; }
 /* --- опасное действие: удаление (семантический красный, не бренд-акцент) --- */
 .btn-danger { background: var(--ink); color: #ff7a6b; border-color: var(--ink); }
 .btn-danger:hover { box-shadow: 6px 6px 0 #ff7a6b, 6px 6px 0 1px var(--ink); }
@@ -662,10 +638,6 @@ footer {
 }
 /* Строка таблицы фокусируется как единое действие — контур внутрь,
    чтобы не перекрывать соседние строки. */
-.fac-table tbody tr:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: -2px;
-}
 .field input:focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
@@ -702,7 +674,6 @@ footer {
   white-space: nowrap;
 }
 .s2-act:hover { border-color: var(--ink); }
-@media (max-width: 900px) {}
 
 /* ---------- раунд 2 · бэклог решений менеджеров (ПР-1) ----------
    Двадцать чужих решений с ценой в людях и деньгах против остатка 500 / 22.
@@ -829,7 +800,6 @@ footer {
   line-height: 1.5;
 }
 .pp-type-btn.is-on { background: var(--accent-tint); border-color: var(--accent); font-weight: 600; }
-@media (max-width: 900px) {}
 /* .gate-card.* (не просто .finalize-card/.dossier-card): .gate-card задаёт
    свой max-width:420px ниже по файлу — при равной специфичности выигрывало
    бы правило, идущее позже в файле (т.е. .gate-card), и оба этих модификатора
@@ -900,7 +870,6 @@ footer {
   background: #fafafa;
   font-size: 12.5px;
 }
-@media (max-width: 600px) {}
 
 /* «Мои ответы» и «Кейс» — обычные кнопки ШАПКИ (case-ref.js кладёт их первыми
    в .station-header-right). Прежний вариант — вертикальные язычки плавающим
@@ -1072,10 +1041,6 @@ body.imp-drawer-open .dock-rail { display: none; }
    уже показанного .gate-экрана — например, поверх finishOverlay, где кнопка
    «Мои ответы» тоже есть. Обычный normal-flow .gate для этого не годится:
    оба блока были бы просто показаны один под другим на одной странице. */
-/* Панель — выезжающий ящик СПРАВА (как карточка участника в кабинете
-   фасилитатора), а не карточка по центру поверх всего экрана: страница остаётся
-   видимой слева, участник не теряет контекст разговора. Тот же приём, что
-   .fac-drawer (подложка 0.18, панель во всю высоту без радиуса). */
 .dossier-overlay {
   position: fixed;
   inset: 0;
@@ -1118,9 +1083,8 @@ body.imp-drawer-open .dock-rail { display: none; }
   overflow-y: auto;
   padding: 0;
   margin-top: 18px;
-}
-@media (max-width: 860px) { }/* единое видимое фокус-кольцо для клавиатурной навигации (WCAG 2.4.7) — доборка к точечным :focus-visible */
-.btn:focus-visible, a.hub-room-card:focus-visible, .fac-tab-btn:focus-visible, .fac-table tbody tr:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+}/* единое видимое фокус-кольцо для клавиатурной навигации (WCAG 2.4.7) — доборка к точечным :focus-visible */
+.btn:focus-visible, a.hub-room-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .finalize-actions .btn-primary { flex: 1; }
 
 @media (max-width: 600px) {  .finalize-actions .btn { width: 100%; }
@@ -1508,7 +1472,6 @@ body.imp-drawer-open .dock-rail { display: none; }
 /* .case-nav-progress удалён 2026-07-27: элемента #appxProgress в разметке нет —
    счётчик «N/8 приложений» убран намеренно, «изучено» трекается для кабинета. */
 
-
 /* средняя колонка: вкладки сверху, под ними прокручиваемый текст или заметки */
 .case-main {
   display: flex;
@@ -1545,8 +1508,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 }
 
 .case-content p b { color: var(--ink); }
-blockquote.letter,
-blockquote.dialogue {
+blockquote.letter, blockquote.dialogue {
   margin: 0 0 14px;
   padding: 18px 22px;
   background: #fafafa;
@@ -1706,8 +1668,7 @@ table th { background: #fafafa; font-weight: 700; }
    Штрих несущий, а не украшение: заливка к бумаге даёт 1.1:1, сама по себе
    отметка глазом не находится. Толщину и --accent не менять без пересчёта 1.4.11
    (вермилион к бумаге 3.4:1, к заливке 3.1:1). */
-mark.hl,
-.card .problem-quote .quote-ink {
+mark.hl, .card .problem-quote .quote-ink {
   background: var(--accent-tint);
   text-decoration: underline var(--accent) 2px;
   text-underline-offset: 3px;
@@ -1736,8 +1697,7 @@ mark.hl .appx-ref { text-decoration: none; }
 
 /* Наведение — та же краска, просто плотнее: ни outline, ни второй рамки.
    color: ink здесь не косметика, а требование — --muted на --accent-line даёт 3.85:1. */
-mark.hl:hover,
-.card .problem-quote:hover .quote-ink {
+mark.hl:hover, .card .problem-quote:hover .quote-ink {
   background: var(--accent-line);
   color: var(--ink);
 }
@@ -1752,21 +1712,17 @@ mark.hl:hover,
 @keyframes imp-hl-flash {
   from { background-color: var(--accent); }
 }
-mark.hl.flash,
-.problem-card.flash .problem-quote .quote-ink {
+mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
   color: var(--ink);   /* 5.2:1 на вермилионе — вспышка остаётся читаемой */
   animation: imp-hl-flash 900ms ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  mark.hl.flash,
-  .problem-card.flash .problem-quote .quote-ink {
+  mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
     animation: none;
     background: var(--accent-line);
   }
 }
-.rationale-block textarea,
-.card textarea,
-.card input[type="text"] {
+.rationale-block textarea, .card textarea, .card input[type="text"] {
   width: 100%;
   font-family: var(--ff-body);
   font-size: 14px;
@@ -1778,10 +1734,7 @@ mark.hl.flash,
   resize: vertical;
 }
 
-.rationale-block textarea:focus,
-.card textarea:focus,
-.card input[type="text"]:focus,
-.card select:focus {
+.rationale-block textarea:focus, .card textarea:focus, .card input[type="text"]:focus, .card select:focus {
   outline: none;
   border-color: var(--ink);
 }
@@ -1845,9 +1798,7 @@ mark.hl.flash,
   color: var(--muted-soft);
   margin-bottom: 5px;
 }
-.card.is-locked textarea,
-.card.is-locked input,
-.card.is-locked select { background: #fafafa; pointer-events: none; }
+.card.is-locked textarea, .card.is-locked input, .card.is-locked select { background: #fafafa; pointer-events: none; }
 .sel-toolbar.show { display: flex; }
 .hl-popover.show { display: block; }
 .card input[data-field="anchor"].is-drop-target {
@@ -1857,196 +1808,25 @@ mark.hl.flash,
 
 /* ---------- facilitator cabinet ---------- */
 
-.fac-body {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  /* та же рамка, что у шапки: раньше тело кабинета было во всю ширину окна, и на
-     широком мониторе таблица уезжала за края шапки (тот же разъезд, что ловили в раундах).
-     Таблицы шире рамки прокручиваются внутри .fac-table-scroll — см. ниже. */
-  max-width: var(--maxw);
-  width: 100%;
-  margin: 0 auto;
-  padding: 28px var(--frame-pad);
-}
-
 /* Таблица шире экрана прокручивается в собственном контейнере — так вкладки,
    фильтр и заголовки страницы остаются на месте, а не уезжают вбок вместе с ней. */
-.fac-table-scroll {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.fac-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--fs-op);
-}
-
-.fac-table th {
-  text-align: left;
-  font-size: var(--fs-op-sm);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted-soft);
-  padding: 10px 12px;
-  border-bottom: 2px solid var(--ink);
-  white-space: nowrap;
-}
-
-.fac-table td {
-  padding: 12px;
-  border-bottom: 1px solid #ececec;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.fac-table td:first-child { font-weight: 700; color: var(--ink); }
-
-.fac-table tbody tr { cursor: pointer; }
-.fac-table tbody tr:hover { background: #fafafa; }
-
-.fac-empty {
-  padding: 60px 0;
-  text-align: center;
-  color: var(--muted-soft);
-  font-size: var(--fs-op);
-}
-
-.fac-pill {
-  display: inline-block;
-  font-size: var(--fs-op-sm);
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 3px;
-  border: 1px solid var(--hairline);
-  color: var(--muted-soft);
-  white-space: nowrap;
-}
 
 /* «в процессе» — вермилион (текущее/активное); «завершена» — НЕЙТРАЛЬНАЯ,
    чтобы участник не читал её как оценку (см. решение по станции 3). */
-.fac-pill.is-progress { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-dim); }
-.fac-pill.is-done { border-color: var(--hairline); background: var(--soft); color: var(--ink); }
-
-/* Служебные страницы (кабинет фасилитатора): голубой = пройдено/ок/вопросов нет,
-   вермилион = требует внимания судьи. Скоуп ТОЛЬКО на кабинет (.fac-body/.fac-detail),
-   чтобы нейтральный «завершена» участника на хабе станции 3 не позеленел/посинел. */
-.fac-body .fac-pill.is-done,
-.fac-detail .fac-pill.is-done {
-  border-color: var(--band-line); background: var(--band); color: var(--jb-ink);
-}
 /* пилюля-предупреждение (кросс-контроль выше своей комнаты и т.п.) — вермилион */
-.fac-detail .fac-pill.is-attn {
-  border-color: var(--accent); background: var(--accent-tint); color: var(--accent-dim);
-}
 /* карточка задания/комнаты, требующая внимания судьи: вермилионовая полоса слева
    + тёплая шапка — видно СРАЗУ, куда листать (не только флаг в конце) */
-/* скоуп-селектор нужен, чтобы перебить более позднее в файле правило .fac-task (рамка) */
-.fac-detail .fac-task--attn, .fac-body .fac-task--attn { border-left: 3px solid var(--accent); }
-.fac-detail .fac-task--attn > .fac-task-summary, .fac-body .fac-task--attn > .fac-task-summary { background: var(--accent-tint); }
-.fac-detail .fac-task--attn .fac-card-warn, .fac-body .fac-task--attn .fac-card-warn { color: var(--accent-dim); font-weight: 600; }
 
 /* ---- отметки на ОСНОВНОМ списке (не только в карточке) ---- */
-/* строка, требующая внимания судьи: вермилионовая полоса слева — сразу видно, куда листать */
-/* полосок-акцентов (inset 3px) больше нет — вместо side-stripe полная подсветка строки */
-tr.fac-row--attn td { background: var(--accent-tint); }
-/* разобрано фасилитатором: флаг остаётся маркером «здесь была проверка», но голубой */
-tr.fac-row--reviewed td { background: var(--band); }
-.fac-row-flag { color: var(--accent); font-weight: 700; margin-left: 4px; }
-.fac-row-reviewed { color: var(--jb-ink); font-weight: 700; margin-left: 4px; }
-/* строки ИИ-прогонов — мягкий голубой фон-референс (ИИ = справочная линия по DESIGN.md) + чип «ИИ» */
-tr.fac-row-ai td { background: var(--band); }
-.fac-ai-wave-chip { display: inline-block; font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 6px; background: var(--band); color: var(--jb-ink); border: 1px solid var(--band-line); vertical-align: middle; margin-left: 2px; }
-.fac-row-ok { color: var(--jb-ink); font-weight: 700; margin-left: 4px; }
-
-/* карточка задания, разобранная фасилитатором — голубая рамка, флаг оставлен */
-.fac-detail .fac-task--reviewed, .fac-body .fac-task--reviewed { border-left: 3px solid var(--jb); }
-.fac-detail .fac-task--reviewed > .fac-task-summary, .fac-body .fac-task--reviewed > .fac-task-summary { background: var(--band); }
-.fac-detail .fac-task--reviewed .fac-card-warn, .fac-body .fac-task--reviewed .fac-card-warn { color: var(--jb-ink); font-weight: 600; }
-
-/* точки «Ход»: конкретная станция/комната с флагом — вермилион; разобранная — голубой */
-/* .fac-progress-pills-префикс нужен, чтобы перебить более позднее .fac-progress-dot.is-done */
-.fac-progress-pills .fac-progress-dot.attn-open { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-dim); font-weight: 700; }
-.fac-progress-pills .fac-progress-dot.attn-reviewed { border-color: var(--band-line); background: var(--band); color: var(--jb-ink); font-weight: 700; }
-
 /* панель «откуда вывод об ИИ-помощи» в карточке */
-.fac-ai-basis { border-color: #e0a23c; }
-.fac-ai-basis.is-ai-strong { border-color: #d1553f; }
-.fac-ai-basis .ai-basis-h { font-weight: 600; color: #8f2f1e; margin: 0 0 8px; }
-.fac-ai-basis.is-ai-soft .ai-basis-h { color: #9a6a12; }
-.fac-ai-basis .ai-caveat { margin-top: 10px; color: var(--muted); font-size: var(--fs-op); }
 .ai-sig { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
 .ai-sig-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 12px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--hairline); }
 .ai-sig-k { font-size: 12px; font-weight: 600; color: var(--muted); }
 .ai-sig-v { font-size: 13px; font-weight: 600; color: var(--ink); }
 .ai-sig-h { grid-column: 2; font-size: 11.5px; color: var(--muted-soft); }
 
-.fac-detail {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(10, 10, 10, 0.4);
-  z-index: 60;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-
-.fac-detail.show { display: flex; }
-
 /* Разбор участника — боковой drawer: панель справа, список слева остаётся виден. */
-.fac-detail.fac-drawer { justify-content: flex-end; padding: 0; background: rgba(10, 10, 10, 0.18); }
-.fac-drawer .fac-detail-panel { max-width: 760px; width: 62%; max-height: none; height: 100vh; border-radius: 0; box-shadow: -12px 0 40px rgba(0, 0, 0, 0.12); }
-@media (max-width: 900px) { .fac-drawer .fac-detail-panel { width: 100%; max-width: none; } }
-.fac-drawer-subtabs { display: flex; gap: 18px; padding: 12px 28px 0; border-bottom: 1px solid var(--hairline); flex: none; }
-.fac-sub-btn { font-family: var(--ff-body); font-size: var(--fs-op); font-weight: 700; color: var(--muted-soft); background: none; border: none; border-bottom: 2px solid transparent; padding: 8px 2px 10px; margin-bottom: -1px; cursor: pointer; }
-.fac-sub-btn:hover { color: var(--ink); }
-.fac-sub-btn.is-active { color: var(--ink); border-bottom-color: var(--accent); }
 /* зоны в «Управлении»: Доступ (обычная) + Сброс/Удаление (боксы-деструктив) */
-.fac-manage-sec { padding: 16px 0; border-top: 1px solid var(--hairline); }
-.fac-manage-sec:first-child { border-top: none; padding-top: 4px; }
-.fac-manage-h { font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted-soft); margin-bottom: 10px; }
-.fac-manage-sec.fac-danger { border: 1px solid var(--accent); border-radius: var(--radius); background: var(--soft); padding: 12px 14px; margin-top: 14px; }
-.fac-manage-sec.fac-danger.fac-danger { border-top: 1px solid var(--accent); }
-.fac-danger-h { color: var(--accent); }
-
-.fac-detail-panel {
-  background: var(--paper);
-  border-radius: var(--radius);
-  max-width: 640px;
-  width: 100%;
-  max-height: 86vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.fac-detail-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 28px 28px 20px;
-  border-bottom: 1px solid #ececec;
-}
-
-.fac-detail-head h3 {
-  font-family: var(--ff-display);
-  font-size: var(--fs-op-xl);
-  margin: 0;
-}
-
-.fac-detail-close {
-  background: none;
-  border: none;
-  font-size: var(--fs-op-h);
-  cursor: pointer;
-  color: var(--muted-soft);
-  padding: 4px;
-  flex: none;
-}
 
 .fac-detail-body {
   padding: 24px 28px 32px;
@@ -2064,14 +1844,6 @@ tr.fac-row-ai td { background: var(--band); }
 
 .fac-detail-body h4:first-child { margin-top: 0; }
 
-.fac-detail-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  font-size: var(--fs-op);
-  color: var(--muted);
-}
-
 .fac-detail-text {
   font-size: var(--fs-op);
   line-height: 1.6;
@@ -2080,16 +1852,6 @@ tr.fac-row-ai td { background: var(--band); }
 }
 
 /* Блок кнопки «Сформировать отчёт» в карточке участника — кнопка + пояснение. */
-.fac-report-block {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin: 14px 0 4px;
-  padding: 14px 0 2px;
-  border-top: 1px solid var(--hairline);
-}
-.fac-report-block .fac-detail-text { flex: 1; min-width: 220px; }
 
 .fac-detail-loading {
   font-size: var(--fs-op);
@@ -2098,494 +1860,19 @@ tr.fac-row-ai td { background: var(--band); }
   padding: 40px 0;
 }
 
-.fac-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.fac-card {
-  border: 1px solid var(--hairline);
-  border-radius: var(--radius);
-  padding: 12px 14px;
-}
-
-.fac-card p {
-  font-size: var(--fs-op);
-  line-height: 1.5;
-  color: var(--ink);
-  margin: 0 0 6px;
-}
-
-.fac-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: var(--fs-op-sm);
-  color: var(--muted-soft);
-}
-
-.fac-card-warn { color: #c4362b; }
-.fac-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-.fac-sortable:hover { color: var(--ink); }
-.fac-sortable.is-sorted { color: var(--ink); }
-
-.fac-sort-arrow {
-  display: inline-block;
-  font-size: var(--fs-op-sm);
-  color: var(--muted-soft);
-  margin-left: 2px;
-}
-.fac-sortable.is-sorted .fac-sort-arrow { color: var(--ink); }
-
 /* Компактная разбивка по навыкам в строке списка */
-.fac-skill-mini { display: inline-flex; gap: 4px; }
-.fac-skill-chip {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 3px;
-  padding: 2px 6px;
-  border-radius: 6px;
-  background: var(--soft);
-  border: 1px solid var(--hairline);
-  font-size: var(--fs-op-sm);
-  line-height: 1.2;
-  white-space: nowrap;
-}
-.fac-skill-chip .fac-skill-code { color: var(--muted); letter-spacing: 0.02em; }
-.fac-skill-chip .fac-skill-val { font-weight: 700; color: var(--ink); }
-.fac-skill-chip.is-empty {
-  background: transparent;
-  border-color: var(--hairline);
-}
-.fac-skill-chip.is-empty .fac-skill-val { color: var(--muted-soft); font-weight: 400; }
-.fac-recalc-btn {
-  background: none;
-  border: 1px solid #d8dadd;
-  border-radius: 6px;
-  width: 22px;
-  height: 22px;
-  line-height: 1;
-  font-size: var(--fs-op);
-  color: var(--muted-soft);
-  cursor: pointer;
-  flex: none;
-}
 
-.fac-recalc-btn:hover { color: var(--ink); border-color: var(--ink); }
-
-/* Ручная корректировка балла по контролю (§7-8) */
-.fac-ov { margin-top: 8px; border-top: 1px dashed rgba(0, 0, 0, .15); padding-top: 8px; }
-.fac-ov-manual { margin-top: 6px; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-.fac-ov-manual input[type="text"] { flex: 1; min-width: 120px; padding: 4px 8px; border: 1px solid #d8dadd; border-radius: 6px; }
-.fac-ov-manual select { padding: 4px 6px; border: 1px solid #d8dadd; border-radius: 6px; }
-.fac-ov-btn {
-  background: none;
-  border: 1px solid #d8dadd;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: var(--fs-op);
-  color: var(--ink);
-  cursor: pointer;
-}
-.fac-ov-btn:hover { border-color: var(--ink); background: var(--paper, #fff); }
-.fac-ov-btn:disabled { opacity: .5; cursor: default; }
-
-/* Маркер ИИ-помощи (процессный сигнал; на балл не влияет) */
-.fac-ai-chip { cursor: help; border-color: #e0a23c; color: #9a6a12; }
-.fac-ai-chip.is-ai-strong { border-color: #d1553f; color: #b03a26; font-weight: 600; }
-.fac-ai-banner {
-  margin: 10px 0 0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: var(--fs-op);
-  line-height: 1.4;
-  border: 1px solid #e0a23c;
-  background: rgba(224, 162, 60, .1);
-  color: #7a5210;
-}
-.fac-ai-banner.is-ai-strong { border-color: #d1553f; background: rgba(209, 85, 63, .1); color: #8f2f1e; }
-.fac-recalc-btn:disabled { opacity: 0.5; cursor: default; }
-
-.fac-judge-reasoning { margin-top: 10px; }
-.fac-judge-reasoning summary { cursor: pointer; font-size: var(--fs-op); color: var(--muted-soft); }
-.fac-judge-reasoning[open] summary { margin-bottom: 8px; }
-.fac-judge-reasoning .fac-card { margin-bottom: 10px; }
-
-/* ——— тело задания: способность как самостоятельный блок ——— */
 /* .fac-detail-body h4 (uppercase-серый) перебивает одиночный класс по
    специфичности, поэтому имя способности скоупим под .fac-task-body. */
-.fac-ability {
-  margin-top: 14px;
-  padding: 14px 16px;
-  border: 1px solid var(--hairline);
-  border-radius: 12px;
-  background: #fafafa;
-}
-.fac-ability-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-.fac-task-body .fac-ability-name {
-  margin: 0;
-  font-size: var(--fs-op);
-  font-weight: 600;
-  text-transform: none;
-  letter-spacing: normal;
-  color: var(--ink);
-}
-.fac-ability-code { font-size: var(--fs-op); font-weight: 600; color: var(--muted-soft); }
-.fac-ability-level {
-  flex: none;
-  font-weight: 700;
-  font-size: var(--fs-op-h);
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.fac-ability-level.is-empty { color: var(--muted-soft); font-weight: 400; }
-.fac-ability-src { margin: 8px 0 0; font-size: var(--fs-op); color: var(--muted-soft); }
-.fac-ability .fac-detail-text { margin-top: 8px; }
-.fac-ability .fac-judge-reasoning { margin-top: 10px; }
 /* флаг-нарушение — настоящее предупреждение, остаётся акцентным */
-.fac-flag { margin: 8px 0 0; font-size: var(--fs-op); line-height: 1.5; color: #c4362b; font-weight: 500; }
-
-/* чек-лист структурных признаков вместо «·»-строки «да/нет» */
-.fac-checks { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
-.fac-checks li { position: relative; padding-left: 22px; font-size: var(--fs-op); line-height: 1.4; }
-.fac-checks li::before { position: absolute; left: 2px; top: 0; font-weight: 700; }
-.fac-checks li.is-on { color: var(--ink); }
-.fac-checks li.is-on::before { content: '✓'; color: #4a8a00; }
-.fac-checks li.is-off { color: var(--muted-soft); }
-.fac-checks li.is-off::before { content: '–'; color: var(--muted-soft); }
-
-/* сырой материал участника — тихий заголовок-ярлык (отличается от имени способности) */
-.fac-datasec { margin-top: 18px; }
-.fac-task-body .fac-datasec-title {
-  margin: 0 0 10px;
-  font-size: var(--fs-op-sm);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--muted-soft);
-}
-.fac-datasec .fac-subk { margin-top: 12px; }
-
-/* строковый ярлык внутри факта */
-.fac-k { color: var(--muted-soft); font-weight: 600; }
-.fac-card-note { margin: 6px 0 0; font-size: var(--fs-op); line-height: 1.5; color: var(--muted); }
-.fac-tag {
-  display: inline-block;
-  font-size: var(--fs-op-sm);
-  font-weight: 600;
-  color: var(--muted);
-  background: var(--paper);
-  border: 1px solid var(--hairline);
-  border-radius: 999px;
-  padding: 1px 9px;
-}
-.fac-status-line { margin-bottom: 2px; font-size: var(--fs-op); color: var(--muted-soft); }
-
-/* подвал задания: единственное действие «пересчитать» */
-.fac-task-foot {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid var(--hairline);
-}
-.fac-task-foot .fac-recalc-btn-labeled { margin: 0; }
-
-/* ——— вердикт судьи: главное в способности. Выделен лаймом, свёрнут (длинный) ——— */
-.fac-verdict {
-  margin-top: 10px;
-  border: 1px solid var(--lime-line);
-  border-radius: 10px;
-  background: var(--lime-tint);
-  overflow: hidden;
-}
-.fac-verdict-sum {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  list-style: none;
-  padding: 10px 13px;
-  font-size: var(--fs-op);
-  font-weight: 700;
-  color: var(--ink);
-}
-.fac-verdict-sum::-webkit-details-marker { display: none; }
-.fac-verdict-sum::before {
-  content: '▸';
-  color: var(--ink);
-  transition: transform 0.15s ease;
-}
-.fac-verdict[open] .fac-verdict-sum::before { transform: rotate(90deg); }
-.fac-verdict[open] .fac-verdict-sum { border-bottom: 1px solid var(--lime-line); }
-.fac-verdict-text {
-  margin: 0;
-  padding: 12px 14px;
-  font-size: var(--fs-op);
-  line-height: 1.55;
-  color: var(--ink);
-}
-
-/* ——— материалы участника: вторичны, свёрнуты, тихие ——— */
-.fac-materials {
-  margin-top: 16px;
-  border: 1px solid var(--hairline);
-  border-radius: 10px;
-  overflow: hidden;
-}
-.fac-materials-sum {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  list-style: none;
-  padding: 11px 14px;
-  font-size: var(--fs-op);
-  font-weight: 600;
-  color: var(--muted);
-}
-.fac-materials-sum::-webkit-details-marker { display: none; }
-.fac-materials-sum::before {
-  content: '▸';
-  color: var(--muted-soft);
-  transition: transform 0.15s ease;
-}
-.fac-materials[open] .fac-materials-sum::before { transform: rotate(90deg); }
-.fac-materials[open] .fac-materials-sum { border-bottom: 1px solid var(--hairline); }
-.fac-materials-body { padding: 2px 14px 14px; }
-.fac-materials-body .fac-datasec:first-child { margin-top: 14px; }
-
-.fac-task {
-  border: 1px solid #ececec;
-  border-radius: 12px;
-  margin: 0 0 12px;
-  overflow: hidden;
-}
-
-.fac-task + .fac-task { margin-top: 12px; }
-
-.fac-task-summary {
-  display: block;
-  padding: 14px 16px;
-  cursor: pointer;
-  list-style: none;
-  font-size: var(--fs-op);
-  color: var(--ink);
-}
-
-.fac-task-summary::-webkit-details-marker { display: none; }
-
-/* строка заголовка: [▸ название] ......... [статус] */
-.fac-task-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.fac-task-title {
-  font-weight: 600;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 8px;
-  min-width: 0;
-}
-.fac-task-title::before {
-  content: '▸';
-  color: var(--muted-soft);
-  transition: transform 0.15s ease;
-  flex: none;
-}
-.fac-task[open] .fac-task-title::before { transform: rotate(90deg); }
-
-/* бейджи способностей/навыка — отдельной строкой под заголовком, слева */
-.fac-task-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  justify-content: flex-start;
-  margin-top: 10px;
-  padding-left: 20px; /* выровнять под текст заголовка, после маркера ▸ */
-}
-
-.fac-task-body {
-  padding: 4px 16px 18px;
-  border-top: 1px solid #ececec;
-}
-
-.fac-task-body h4:first-child { margin-top: 0; }
-.fac-waves {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 16px;
-  margin-bottom: 16px;
-  border: 1px solid #ececec;
-  border-radius: 10px;
-  background: #fafafa;
-}
-
-.fac-waves-label {
-  font-size: var(--fs-op-sm);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted-soft);
-  flex: none;
-}
-
-.fac-waves-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.fac-wave-remove {
-  background: none;
-  border: none;
-  font-size: var(--fs-op-sm);
-  color: var(--muted-soft);
-  cursor: pointer;
-  padding: 2px;
-  line-height: 1;
-}
-
-.fac-wave-remove:hover { color: #c4362b; }
-
-.fac-wave-add {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.fac-wave-add input {
-  font-size: var(--fs-op);
-  padding: 7px 10px;
-  border: 1px solid #d8dadd;
-  border-radius: 6px;
-  width: 180px;
-}
-
-.fac-wave-add .btn { padding: 7px 14px; font-size: var(--fs-dense); }
-
-.fac-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 12px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.fac-search {
-  flex: 1 1 auto;
-  min-width: 180px;
-  max-width: 320px;
-  font-size: var(--fs-op);
-  padding: 8px 12px;
-  border: 1px solid #d8dadd;
-  border-radius: 6px;
-  color: var(--ink);
-  background: var(--paper);
-  font-family: var(--ff-body);
-}
-.fac-search::placeholder { color: var(--muted-soft); }
-.fac-search:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; border-color: var(--ink); }
-
-.fac-select {
-  font-size: var(--fs-op);
-  padding: 8px 12px;
-  border: 1px solid #d8dadd;
-  border-radius: 6px;
-  color: var(--ink);
-  background: var(--paper);
-}
-
-.fac-toolbar-hint {
-  font-size: var(--fs-op);
-  color: var(--muted-soft);
-}
 
 /* «Ход раунда» (мониторинг) vs «Регистрации и потоки» (админ-задачи) —
    разный темп работы, поэтому разнесены, а не разложены колонками в одной строке. */
-.fac-tabs {
-  display: flex;
-  gap: 4px;
-  margin-bottom: 18px;
-  border-bottom: 1px solid #ececec;
-}
-
-.fac-tab-btn {
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 10px 4px;
-  margin-right: 22px;
-  font-size: var(--fs-op);
-  font-weight: 700;
-  color: var(--muted-soft);
-  cursor: pointer;
-}
-
-.fac-tab-btn:hover { color: var(--ink); }
-.fac-tab-btn.is-active { color: var(--ink); border-bottom-color: var(--ink); }
 
 /* компактный статус на станцию — точка + инициал, полная расшифровка в title
    и в карточке участника по клику, не здесь */
-.fac-progress-pills { display: inline-flex; gap: 6px; }
 
-.fac-progress-dot {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 24px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 999px;
-  border: 1px solid #d8dadd;
-  color: var(--muted-soft);
-  font-size: var(--fs-op-sm);
-  font-weight: 700;
-}
-
-.fac-progress-dot.is-progress { border-color: var(--accent-line); background: var(--accent-tint); color: var(--accent-dim); }
-.fac-progress-dot.is-done { border-color: var(--band-line); background: var(--band); color: var(--jb-ink); }
-
-/* Не-цветовой признак статуса (WCAG 1.4.1): форма-глиф в дополнение к цвету. */
-.fac-progress-dot::before { font-weight: 400; margin-right: 3px; }
-.fac-progress-dot.is-done::before { content: "\2713"; }      /* ✓ */
-.fac-progress-dot.is-progress::before { content: "\25D0"; }  /* ◐ */
-.fac-progress-dot.is-none::before { content: "\25CB"; }      /* ○ */
-
-/* Легенда статусов над таблицей «Ход» */
-.fac-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin: 0 0 14px;
-  font-size: var(--fs-op);
-  color: var(--muted);
-}
-.fac-legend-item { display: inline-flex; align-items: center; gap: 5px; }
-.fac-legend-glyph { font-size: var(--fs-op); line-height: 1; }
-.fac-legend-glyph.g-done { color: var(--ink); }
-.fac-legend-glyph.g-progress { color: #6b5900; }
-.fac-legend-glyph.g-none { color: var(--muted-soft); }
-
-.fac-recalc-btn-labeled {
-  width: auto;
-  height: auto;
-  padding: 5px 10px;
-  font-size: var(--fs-op);
-  font-weight: 700;
-  text-transform: none;
-  letter-spacing: normal;
-  border-radius: 999px;
-  margin: 6px 0 10px;
-  display: inline-block;
-}
+/* Не-цветовой признак статуса (WCAG 1.4.1): форма-глиф в дополнение к цвету. */      /* ✓ */  /* ◐ */      /* ○ */
 
 /* ---------- responsive ---------- */
 
@@ -2642,8 +1929,7 @@ tr.fac-row-ai td { background: var(--band); }
 /* Служебное — ВНЕ пузыря: в пузыре только прямая речь. Уточнение, кто это, —
    обычным текстом в скобках; действие и реакция — курсивом. Иначе ремарки
    («фыркает», «ставит стакан») читались как часть реплики. */
-.chat-note,
-.chat-act {
+.chat-note, .chat-act {
   font-family: var(--ff-body);
   font-size: var(--fs-dense);
   line-height: 1.45;
@@ -2696,11 +1982,7 @@ tr.fac-row-ai td { background: var(--band); }
    области. Вспомогательные кнопки внутри карточек и списков («+ добавить этап»,
    «в приоритеты», «скопировать якорь») не затрагиваются: они .btn-ghost или
    лежат глубже в разметке. */
-.s2-block > .btn-primary,
-.s2-body > div > .btn-primary,
-.links-body .conn-actions > .btn-primary,
-.btn-advance.btn-primary,
-#finishBtn.btn-primary {
+.s2-block > .btn-primary, .s2-body > div > .btn-primary, .links-body .conn-actions > .btn-primary, .btn-advance.btn-primary, #finishBtn.btn-primary {
   display: block;
   margin-left: auto;
 }
@@ -3469,7 +2751,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    узкую рамку — заголовок свёртки шёл по одной ширине, текст по другой. */
 #supCaseText .case-block > article { max-width: none; }
 
-
 .day-grid.is-reading #supCaseText {
   /* 1280 → 16px, 1440 → 16,5, 1920 → 18, 2560 → 19 (дальше не растёт) */
   font-size: var(--fs-read);
@@ -3515,8 +2796,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    должно (решение владельца 04.08). Порядок в разметке [записка, кнопка], значит
    flex-end ставит кнопку у самого края, а записка читается слева от неё. */
 /* Подвал переезжает вместе с телом кейса: выше 1360 — .casewide, ниже — панель. */
-.support > .case-read-foot,
-.casewide > .case-read-foot {
+.support > .case-read-foot, .casewide > .case-read-foot {
   flex: none;
   position: static;
   justify-content: flex-end;
@@ -3524,8 +2804,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   padding: 14px var(--frame-pad, 56px) 18px;
   background: var(--paper);
 }
-.support > .case-read-foot .win-note,
-.casewide > .case-read-foot .win-note { max-width: 340px; }
+.support > .case-read-foot .win-note, .casewide > .case-read-foot .win-note { max-width: 340px; }
 /* Пустое примечание не должно держать место и зазор рядом с кнопкой. */
 .win-note:empty { display: none; }
 .who-h { margin: 18px 0 8px;
@@ -3742,13 +3021,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mark-item.is-hit { background: var(--accent-tint); transition: background .5s ease; }
 
 /* Мера строки в режиме чтения. Таблицы приложений остаются во всю ширину. */
-.day-grid.is-reading #supCaseText > .case-doc,
-.day-grid.is-reading #supCaseText article > p,
-.day-grid.is-reading #supCaseText article > h2,
-.day-grid.is-reading #supCaseText article > h3,
-.day-grid.is-reading #supCaseText article > ul,
-.day-grid.is-reading #supCaseText article > ol,
-.day-grid.is-reading #supCaseText article > blockquote {
+.day-grid.is-reading #supCaseText > .case-doc, .day-grid.is-reading #supCaseText article > p, .day-grid.is-reading #supCaseText article > h2, .day-grid.is-reading #supCaseText article > h3, .day-grid.is-reading #supCaseText article > ul, .day-grid.is-reading #supCaseText article > ol, .day-grid.is-reading #supCaseText article > blockquote {
   max-width: 80ch;
 }
 
@@ -3949,7 +3222,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .interlude-bridge-p { margin: 0 0 6px; font-size: var(--fs-read); line-height: 1.6; color: var(--ink); }
 
 /* ── СВЁРНУТЫЙ МОНОЛОГ ПРОЙДЕННОГО ШАГА ── */
-/* .talk-listen убран вместе с тактом «слушаю» (07.08). */
 /* Ряд «Ответить» внутри своей карточки: прижат вправо, как и подвал колонки, —
    действие всегда у правого края, где бы оно ни стояло. */
 .mine-act { display: flex; justify-content: flex-end; margin-top: 10px; }
@@ -4144,10 +3416,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Реплика собеседника ВНУТРИ верстака (вопрос Лемеха под карточками будущего,
    вопрос Агеева в чате правления) начинается с отступа: вплотную к полю пузырь
    читался как подпись последнего поля, а не как сказанное вслух. */
-.mx-add + .chat,
-.mx-card + .chat,
-.mx-seal-total + .chat,
-.s2-mine + .chat { margin-top: 18px; }
+.mx-add + .chat, .mx-card + .chat, .mx-seal-total + .chat, .s2-mine + .chat { margin-top: 18px; }
 .mx-hint { font-size: var(--fs-util); color: var(--muted-soft); margin: 8px 0 3px; }
 
 /* слот симптома: метка-заголовок, без стрелки и без глагола (лор §С1) */
@@ -4292,9 +3561,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 #supCaseText h2, #supCaseText h3, .case-sum-t, .who-row b, .recap-q { color: var(--muted); }
 #supCaseText b, #supCaseText strong, .mark-quote { color: var(--ink); }
 /* --- работа: полный контраст --- */
-.talk .win-label, .casewide .win-label,
-.talk .mx-label, .talk .mx-title, .talk .bl-card-title, .talk .bl-zone-h,
-.talk .sc-head, .talk .chat-name { color: var(--ink); }
+.talk .win-label, .casewide .win-label, .talk .mx-label, .talk .mx-title, .talk .bl-card-title, .talk .bl-zone-h, .talk .sc-head, .talk .chat-name { color: var(--ink); }
 .talk .win-input, .talk .mx-input, .talk textarea { color: var(--ink); }
 
 /* ══════════════════════════════════════════════════════════════════════════
