@@ -33,7 +33,7 @@
   // Человеческим языком: на какой границе участник остановился. Без этого уровень
   // — просто число, и перечитывать ответ незачем.
   var BOUNDARY_NAMES = {
-    '1to2': 'граница 1→2', '2to3': 'граница 2→3', '3to4': 'граница 3→4', '4to5': 'граница 4→5'
+    '1to2': 'границе 1→2', '2to3': 'границе 2→3', '3to4': 'границе 3→4', '4to5': 'границе 4→5'
   };
 
   // ── МАРШРУТ ДНЯ: ОДИН ИСТОЧНИК ───────────────────────────────────────────────
@@ -54,6 +54,38 @@
                scene: (w.scene && w.scene.name) ? w.scene.name : '' };
     });
   })();
+
+  // ── СПОСОБНОСТЬ → ШАГИ, ПО КОТОРЫМ ЕЁ СУДИЛИ ────────────────────────────────
+  // Инверсия S.measures из scenes.js, а та в свою очередь сверяется с таблицей заданий
+  // судьи проверкой eval/lint_measures.js. Своего списка «что где меряется» у кабинета
+  // нет: он стал бы третьим по счёту и разошёлся бы молча.
+  var RU_OF = (function () {
+    var m = {};
+    Object.keys(ABILITY_NAMES).forEach(function (a) { m[a] = String(ABILITY_NAMES[a]).split(' · ')[0]; });
+    return m;
+  })();
+  var ABILITY_STEPS = (function () {
+    var S = window.imp.scenes, out = {};
+    Object.keys(ABILITY_NAMES).forEach(function (a) { out[a] = { main: [], control: [] }; });
+    if (!S || !S.measures) return out;
+    Object.keys(S.measures).forEach(function (key) {
+      var m = S.measures[key];
+      Object.keys(ABILITY_NAMES).forEach(function (a) {
+        if ((m.main || []).indexOf(RU_OF[a]) >= 0) out[a].main.push(key);
+        if ((m.control || []).indexOf(RU_OF[a]) >= 0) out[a].control.push(key);
+      });
+    });
+    return out;
+  })();
+  // Флаг относится к способности, если её код стоит в имени флага. Контроль по письму
+  // назван без префикса (control_above/below) и относится к ПР-2 — так в v2Flags_.
+  function flagsOf(all, a) {
+    return (all || []).filter(function (f) {
+      var c = String(f.code || '');
+      if (c.indexOf(a + '_') === 0 || c.indexOf('_' + a + '_') > 0 || c.indexOf('_' + a) === c.length - a.length - 1) return true;
+      return a === 'pr2' && c.indexOf('control_') === 0;
+    });
+  }
 
   function cap(s) { return String(s).charAt(0).toUpperCase() + String(s).slice(1); }
   // Бэкенд отдаёт поток как «020 · Тест по ссылке»: номер до разделителя.
@@ -676,6 +708,13 @@
 
   // ---------- карточка ----------
 
+  // Свёрнутый блок: карточка не должна открываться полотном. Заголовок остаётся
+  // видимым, чтобы было понятно, что внутри.
+  function foldBlock(title, inner) {
+    if (!inner) return '';
+    return '<details class="cab-fold"><summary>' + esc(title) + '</summary>' + inner + '</details>';
+  }
+
   function block(title, inner, note) {
     return '<section class="cab-block"><h3>' + esc(title) + '</h3>' +
       (note ? '<p class="cab-note">' + esc(note) + '</p>' : '') + inner + '</section>';
@@ -700,7 +739,52 @@
     return '<pre class="cab-raw">' + esc(JSON.stringify(obj, null, 1)) + '</pre>';
   }
 
-  function answersBlock(d) {
+  // ОДИН ШАГ: заголовок, время, что спросили прямо, сам ответ. Отдельной функцией,
+  // потому что рисуется в двух местах — под способностью, которую по нему судили, и в
+  // полном ходе дня. Две отрисовки одного ответа однажды разошлись бы.
+  function answerCard(d, s) {
+    var el = d.elicited || {};
+    var byKey = {};
+    (d.windows || []).forEach(function (w) { byKey[w.key] = w; });
+    var mech = d.mech || {}, mechAt = d.mechAt || {};
+    var at = {};
+    Object.keys(mech).forEach(function (k) { at[k] = mechAt[k] || ''; });
+    (d.windows || []).forEach(function (w) {
+      if (!w.legacy && String(w.text || '').trim()) at[w.key] = w.at || '';
+    });
+    var f = d.facts;
+    var lf = f ? { fitsFrame: f.fitsFrame,
+                   deferred: (f.later || []).concat(f.never || []).map(function (it) { return it.id; }) } : null;
+    var st = stepState(s, at, lf);
+    var flags = el[s.key] || [];
+    var w = byKey[s.key];
+    var body;
+    if (st.state !== 'done') {
+      body = '<div class="cab-answer-text cab-dim">' +
+        (st.state === 'skipped' ? 'не спрашивали: условие шага не сработало' : 'не дошёл') + '</div>';
+    } else if (s.mech) {
+      body = '<div class="cab-answer-text">' + mechHtml(s.mech, mech[s.mech]) + '</div>';
+    } else {
+      body = '<div class="cab-answer-text">' +
+        (String((w && w.text) || '').trim() ? br(w.text) : '<i>промолчал</i>') + '</div>';
+    }
+    return '<div class="cab-answer is-' + st.state + '">' +
+      '<div class="cab-answer-head">' +
+        '<span class="cab-answer-label">' + esc(cap(s.label)) + '</span>' +
+        '<span class="cab-dim">' + esc(s.scene) + (st.at ? ' · ' + dt(st.at) : '') +
+          (!s.mech && w && w.len ? ' · ' + w.len + ' знаков' : '') + '</span>' +
+      '</div>' +
+      (flags.length ? '<div class="cab-elicit" title="О чём спросили прямо — судья получает это машинно">спрошено прямо: ' + esc(flags.join(', ')) + '</div>' : '') +
+      body + '</div>';
+  }
+
+  function stepByKey(k) {
+    var out = null;
+    STEPS.forEach(function (s) { if (s.key === k) out = s; });
+    return out;
+  }
+
+  function answersBlock(d, bare) {
     var el = d.elicited || {};
     var byKey = {};
     (d.windows || []).forEach(function (w) { byKey[w.key] = w; });
@@ -716,30 +800,7 @@
     var lf = f ? { fitsFrame: f.fitsFrame,
                    deferred: (f.later || []).concat(f.never || []).map(function (it) { return it.id; }) } : null;
 
-    var html = STEPS.map(function (s) {
-      var st = stepState(s, at, lf);
-      var flags = el[s.key] || [];
-      var w = byKey[s.key];
-      var body;
-      if (st.state !== 'done') {
-        body = '<div class="cab-answer-text cab-dim">' +
-          (st.state === 'skipped' ? 'не спрашивали: условие шага не сработало' : 'не дошёл') +
-          '</div>';
-      } else if (s.mech) {
-        body = '<div class="cab-answer-text">' + mechHtml(s.mech, mech[s.mech]) + '</div>';
-      } else {
-        body = '<div class="cab-answer-text">' +
-          (String((w && w.text) || '').trim() ? br(w.text) : '<i>промолчал</i>') + '</div>';
-      }
-      return '<div class="cab-answer is-' + st.state + '">' +
-        '<div class="cab-answer-head">' +
-          '<span class="cab-answer-label">' + esc(cap(s.label)) + '</span>' +
-          '<span class="cab-dim">' + esc(s.scene) + (st.at ? ' · ' + dt(st.at) : '') +
-            (!s.mech && w && w.len ? ' · ' + w.len + ' знаков' : '') + '</span>' +
-        '</div>' +
-        (flags.length ? '<div class="cab-elicit" title="О чём спросили прямо — судья получает это машинно">спрошено прямо: ' + esc(flags.join(', ')) + '</div>' : '') +
-        body + '</div>';
-    }).join('');
+    var html = STEPS.map(function (s) { return answerCard(d, s); }).join('');
 
     // Окна ПРЕЖНЕГО маршрута — только у исторических строк и только заполненные.
     var legacy = (d.windows || []).filter(function (w) { return w.legacy; });
@@ -756,8 +817,9 @@
         }).join('');
     }
 
-    return block('Ход дня и ответы', html + factsHtml(d.facts) + picksHtml(d.picks),
-      'Двенадцать шагов в порядке маршрута. Названия и порядок взяты из scenes.js, вид верстаков собран их собственным кодом — то же самое, что видел участник.');
+    var body = '<p class="cab-note">Двенадцать шагов в порядке маршрута. Названия и порядок взяты из scenes.js, вид верстаков собран их собственным кодом — то же самое, что видел участник.</p>' +
+      html + factsHtml(d.facts) + picksHtml(d.picks);
+    return bare ? body : block('Ход дня и ответы', body);
   }
 
   // Факты разбора заявок — ровно тем же составом, что уходит судье
@@ -808,15 +870,31 @@
 
   // Блокирующая граница — то, из-за чего уровень не выше. Достаём из вердикта:
   // по четырём булевым видно, где участник остановился.
-  function blockingOf(v) {
+  // ⚠ ГРАНИЦЫ ТОЛЬКО СВОЕЙ СПОСОБНОСТИ. Один судья возвращает по восемь булевых —
+  // четыре на каждую способность навыка (mk1_* и mk2_*, ga1_* и ga2_*). Разбор брал
+  // первый ключ, где встречалась граница, поэтому у МК-2 с уровнем L5 в карточке стояло
+  // «остановился на границе 2→3» — это была непройденная граница МК-1 (поймано на живой
+  // карточке 001003). Теперь ключ обязан начинаться с кода этой способности.
+  function blockingOf(v, ability) {
     if (!v || !v.verdict) return null;
-    var j = v.verdict, keys = Object.keys(j);
-    var order = ['1to2', '2to3', '3to4', '4to5'];
+    var j = v.verdict, order = ['1to2', '2to3', '3to4', '4to5'];
     for (var i = 0; i < order.length; i++) {
-      var hit = keys.filter(function (k) { return k.indexOf('_' + order[i]) > 0 || k === order[i]; })[0];
-      if (hit && j[hit] === false) return order[i];
+      var k = ability ? (ability + '_' + order[i]) : null;
+      if (k && k in j) { if (j[k] === false) return order[i]; continue; }
+      // Судьи с одной способностью на задание кладут границу без префикса.
+      if (!ability && j[order[i]] === false) return order[i];
     }
     return null;
+  }
+
+  // Контроль рядом с той способностью, которую он пере-судит, а не отдельным списком
+  // в конце карточки: расхождение читается только в паре с основной оценкой.
+  function ctrlPara(title, ctrlLv, mainLv, why) {
+    var d2 = (ctrlLv != null && mainLv != null) ? (Number(ctrlLv) - Number(mainLv)) : null;
+    var mark = (d2 !== null && Math.abs(d2) >= 2) ? ' <b class="cab-jitter">расхождение на ' + Math.abs(d2) + '</b>' : '';
+    return '<div class="cab-ab-h">' + esc(title) + '</div>' +
+      '<p>L' + ctrlLv + ' против основной ' + (mainLv === null ? '—' : 'L' + mainLv) + mark + '</p>' +
+      (why ? '<div class="cab-ab-why">' + br(why) + '</div>' : '');
   }
 
   function scoresBlock(d) {
@@ -849,9 +927,17 @@
     var ovs = s.overrides || {};
     var jl = s.judgeLevels || s.levels;
 
+    // ── ДЕСЯТЬ СПОСОБНОСТЕЙ, КАЖДАЯ СВЁРНУТА ────────────────────────────────
+    // Порядок внутри один и тот же (решение владельца 12.08): поднавык и уровень в
+    // заголовке, а под ним — обоснование судьи и ТОТ ОТВЕТ, по которому оно дано.
+    // Раньше обоснование лежало отдельно, а ответы — другим блоком выше, и чтобы
+    // понять, за что поставлен уровень, приходилось листать карточку целиком.
+    // Свёрнуто по умолчанию: развёрнутые десять способностей с текстами ответов
+    // превращали карточку в километровое полотно.
+    var allFlags = (s.flags || []);
     inner += '<div class="cab-abilities">' + Object.keys(ABILITY_NAMES).map(function (a) {
       var lv = s.levels[a], v = s.verdicts[a] || {};
-      var bnd = blockingOf(v);
+      var bnd = blockingOf(v, a);
       var reasoning = v.verdict && v.verdict.reasoning ? v.verdict.reasoning : '';
       var o = ovs[a];
       var isOv = !!(o && o.overrideLevel !== null && o.overrideLevel !== undefined && o.overrideLevel !== '');
@@ -862,7 +948,11 @@
         ? 'уровень поставил человек' + (jl[a] === null || jl[a] === undefined ? '' : ' · судья давал L' + jl[a]) +
           (o.by ? ' · ' + esc(o.by) : '') + (o.at ? ' · ' + dt(o.at) : '')
         : (v.source === 'deterministic' ? 'посчитано кодом (ответа нет)' : 'ИИ-судья') +
-          (bnd ? ' · остановился на ' + BOUNDARY_NAMES[bnd] : (lv === 5 ? ' · все границы пройдены' : '')) +
+          // Немонотонные случаи v10: верх бывает пройден в обход границы 3→4, и писать
+          // «все границы пройдены» тогда неправда.
+          (bnd
+            ? (lv === 5 ? ' · верх пройден в обход ' + BOUNDARY_NAMES[bnd] : ' · остановился на ' + BOUNDARY_NAMES[bnd])
+            : (lv === 5 ? ' · все границы пройдены' : '')) +
           (v.stable === false ? ' · <b class="cab-jitter">граница дрожит</b>' : '');
 
       var ctl = '';
@@ -880,52 +970,86 @@
           '</div>';
       }
 
-      return '<div class="cab-ability' + (isOv ? ' is-overridden' : '') + '">' +
-        '<div class="cab-ability-head"><span class="cab-ability-name">' + esc(ABILITY_NAMES[a]) + '</span>' +
-          '<span class="cab-level">' + (lv === null ? '—' : 'L' + lv) + '</span></div>' +
-        '<div class="cab-dim">' + line + '</div>' +
-        (isOv && o.reason ? '<div class="cab-ov-why">Почему: ' + br(o.reason) + '</div>' : '') +
-        (reasoning ? '<details class="cab-reasoning"><summary>обоснование судьи</summary><div>' + br(reasoning) + '</div></details>' : '') +
-        ctl + '</div>';
+      // У ПР-1 судья отвечает не границами, а названными маркерами, поэтому строка «где
+      // остановился» у него пустая. Объясняем потолок словами: на живых прогонах ПР-1
+      // упирался в 3 у всех пяти, и без этой строки причина в карточке не видна.
+      if (a === 'pr1' && !isOv && v.verdict && lv !== null && lv < 4) {
+        var vp = v.verdict;
+        line += vp.ruleReal === false
+          ? ' · выше L3 не поднялся: принцип отсечения не сформулирован'
+          : (vp.fitsFrame === false ? ' · выше L3 не поднялся: перебор рамки не оплачен' : '');
+      }
+      if (a === 'pr1' && !isOv && v.verdict && lv === 5 && v.verdict.ruleReal === false) {
+        line += ' · верх пройден в обход границы 3→4: ресурс перераспределён без правила';
+      }
+
+      var mine = flagsOf(allFlags, a);
+      var steps = ABILITY_STEPS[a] || { main: [], control: [] };
+      var stepsHtml = steps.main.map(function (k) {
+        var st = stepByKey(k);
+        return st ? answerCard(d, st) : '';
+      }).join('');
+      var ctrlHtml = steps.control.map(function (k) {
+        var st = stepByKey(k);
+        return st ? '<p class="cab-dim">Контрольное чтение — по этому же ответу судили другим заданием:</p>' + answerCard(d, st) : '';
+      }).join('');
+
+      // Контроль именно этой способности: уровень второго чтения рядом с основным.
+      var ctrlLine = '';
+      if (a === 'pr2' && s.control && s.control.pr2Level !== undefined) {
+        ctrlLine = ctrlPara('Контроль по письму правлению', s.control.pr2Level, lv, s.control.reasoning);
+      }
+      if (a === 'ga1' && s.cross && s.cross.ga1Level !== undefined) {
+        ctrlLine = ctrlPara('Кросс-судья по ответу на развилку', s.cross.ga1Level, lv,
+                            s.cross.ga1Reasoning || s.cross.reasoning || '');
+      }
+      if (a === 'ak2' && s.cross && s.cross.ak2Level !== undefined) {
+        ctrlLine = ctrlPara('Кросс-судья по письму правлению', s.cross.ak2Level, lv, s.cross.ak2Reasoning || '');
+      }
+
+      return '<details class="cab-ab' + (isOv ? ' is-overridden' : '') + (mine.length ? ' has-flag' : '') + '">' +
+        '<summary>' +
+          '<span class="cab-ab-name">' + esc(ABILITY_NAMES[a]) + '</span>' +
+          '<span class="cab-level">' + (lv === null ? '—' : 'L' + lv) + '</span>' +
+          (mine.length ? '<span class="cab-ab-flag">нужен человек</span>' : '') +
+          '<span class="cab-ab-line">' + line + '</span>' +
+        '</summary>' +
+        '<div class="cab-ab-body">' +
+          (isOv && o.reason ? '<div class="cab-ov-why">Почему вы поставили свой: ' + br(o.reason) + '</div>' : '') +
+          (mine.length ? '<ul class="cab-flags">' + mine.map(function (x) {
+            return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + '</li>';
+          }).join('') + '</ul>' : '') +
+          (reasoning ? '<div class="cab-ab-h">Обоснование судьи</div><div class="cab-ab-why">' + br(reasoning) + '</div>'
+                     : '<p class="cab-dim">Обоснования нет: уровень посчитан кодом или задание не отработало.</p>') +
+          ctrlLine +
+          (stepsHtml ? '<div class="cab-ab-h">Ответ, по которому это сказано</div>' + stepsHtml : '') +
+          ctrlHtml +
+          ctl +
+        '</div></details>';
     }).join('') + '</div>';
 
-    var ctl = [];
-    if (s.control && s.control.pr2Level !== undefined) {
-      ctl.push('<p><span class="cab-k">Контроль ПР-2 по письму правлению:</span> L' + s.control.pr2Level +
-        ' (основная — ' + (s.levels.pr2 === null ? '—' : 'L' + s.levels.pr2) + ')' +
-        (s.control.reasoning ? '<br /><span class="cab-dim">' + br(s.control.reasoning) + '</span>' : '') + '</p>');
-    }
-    // Кросс-судей ДВА: ГА-1 по тезисам и АК-2 по письму правлению. Второго здесь не
-    // было — его уровень считался и не показывался нигде (правка 11.08). Обоснование
-    // читаем из ключа с именем способности, со сносом на старое плоское `reasoning`:
-    // прогоны до 11.08 писали его без имени.
-    if (s.cross && s.cross.ga1Level !== undefined) {
-      var gaWhy = s.cross.ga1Reasoning || s.cross.reasoning || '';
-      ctl.push('<p><span class="cab-k">Кросс-судья ГА-1 по ответу на развилку:</span> L' + s.cross.ga1Level +
-        ' (основная — ' + (s.levels.ga1 === null ? '—' : 'L' + s.levels.ga1) + ')' +
-        (gaWhy ? '<br /><span class="cab-dim">' + br(gaWhy) + '</span>' : '') + '</p>');
-    }
-    if (s.cross && s.cross.ak2Level !== undefined) {
-      ctl.push('<p><span class="cab-k">Кросс-судья АК-2 по письму правлению:</span> L' + s.cross.ak2Level +
-        ' (основная — ' + (s.levels.ak2 === null ? '—' : 'L' + s.levels.ak2) + ')' +
-        (s.cross.ak2Reasoning ? '<br /><span class="cab-dim">' + br(s.cross.ak2Reasoning) + '</span>' : '') + '</p>');
-    }
-    if (ctl.length) inner += '<div class="cab-control">' + ctl.join('') + '</div>';
+    // ⚠ ОБЩЕГО СПИСКА КОНТРОЛЕЙ ВНИЗУ БОЛЬШЕ НЕТ: каждое второе чтение стоит внутри
+    // своей способности, рядом с основной оценкой. Прежде три абзаца лежали в конце
+    // карточки, и чтобы понять, к чему относится «L5 против основной L3», надо было
+    // возвращаться наверх.
 
     inner += '<p class="cab-dim">Судья: ' + esc(s.judgeModel || '—') + ' · ' + dt(s.judgedAt) +
       ' · сцены ' + esc(s.scenesVersion) + ' · кейс ' + esc(s.caseVersion) + '</p>';
     return block('Оценка', inner, 'Балл не правится автоматически никогда — ни флагом, ни контролем. Уровень собирается лестницей: непройденная нижняя граница обнуляет всё выше.');
   }
 
-  function flagsBlock(d) {
+  function flagsBlock(d, bare) {
     var f = (d.scores && d.scores.flags) || [];
-    if (!f.length) return block('Флаги', '<p class="section-lead">Ни одного. Зависимости §9 и расхождения с контролем в пределах нормы.</p>');
-    return block('Флаги', '<ul class="cab-flags">' + f.map(function (x) {
-      return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + '</li>';
-    }).join('') + '</ul>', 'Флаг — приглашение перечитать ответ, а не ошибка участника и не поправка к баллу.');
+    var body = f.length
+      ? '<p class="cab-note">Флаг — приглашение перечитать ответ, а не ошибка участника и не поправка к баллу. Каждый флаг стоит и внутри своей способности.</p>' +
+        '<ul class="cab-flags">' + f.map(function (x) {
+          return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + '</li>';
+        }).join('') + '</ul>'
+      : '<p class="section-lead">Ни одного. Зависимости §9 и расхождения с контролем в пределах нормы.</p>';
+    return bare ? body : block('Флаги', body);
   }
 
-  function processBlock(d) {
+  function processBlock(d, bare) {
     var p = d.process || {};
     var t = p.telemetry && p.telemetry.totals;
     var inner = '<p><span class="cab-k">Маркер ИИ-помощи:</span> ' + (p.aiMarkerLevel ? esc(p.aiMarkerLevel) : 'не выставлен') +
@@ -942,7 +1066,8 @@
       (d.versions.scenes !== d.versions.expectScenes || d.versions.caseVer !== d.versions.expectCase
         ? ' <b class="cab-warn-inline">— расходятся с судейскими (' + esc(d.versions.expectScenes) + ' / ' + esc(d.versions.expectCase) + '): судейство откажет</b>'
         : '') + '</p>';
-    return block('Процесс', inner, 'Ничто из этого блока в уровень не входит.');
+    inner = '<p class="cab-note">Ничто из этого блока в уровень не входит.</p>' + inner;
+    return bare ? inner : block('Процесс', inner);
   }
 
   function openCard(p) {
@@ -961,11 +1086,15 @@
             (q.queued || q.running ? 'в очереди: ' + (q.queued + q.running) + ' из ' + q.total
               : q.error ? 'заданий с ошибкой: ' + q.error : '') + '</span>' +
         '</div>' +
-        // Порядок: сначала что человек сделал, потом что об этом сказано. Код
-        // рисовал оценку первой, хотя шапка файла обещает «ответы · оценка · флаги
-        // · процесс», и у неоценённого участника карточка открывалась строкой
-        // «ещё не судили» — то есть отсутствием вердикта вместо содержания дня.
-        answersBlock(d) + scoresBlock(d) + flagsBlock(d) + processBlock(d);
+        // ⚠ ПОРЯДОК: ОЦЕНКА ПЕРВОЙ (решение владельца 12.08). Главное, с чем работает
+        // фасилитатор, — оценка, и внутри каждой способности лежит всё, что нужно для
+        // решения: обоснование судьи, ответ, по которому оно дано, контроль и флаги.
+        // Ход дня целиком остался, но ниже и свёрнутым: он нужен, когда смотришь не
+        // «за что этот уровень», а «как прошёл день». Прежде порядок был обратный, и
+        // оценка оказывалась за экраном ответов.
+        scoresBlock(d) + foldBlock('Ход дня и все ответы', answersBlock(d, true)) +
+        foldBlock('Флаги целиком', flagsBlock(d, true)) +
+        foldBlock('Процесс и версии', processBlock(d, true));
       document.getElementById('cabJudge').addEventListener('click', function () { judge(p.bib, this); });
       wireOverrides(p.bib);
       if (window.imp && window.imp.typoDom) window.imp.typoDom(detailBody);

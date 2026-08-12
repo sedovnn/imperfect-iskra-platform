@@ -2431,6 +2431,58 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-skill-box i { font-size: var(--fs-op-sm); color: var(--muted-soft); font-style: normal; }
 .cab-skill-box.is-total { border-color: var(--ink); }
 
+/* Оценка стоит первым блоком карточки (правка 12.08), и штатные 72 пикселя сверху
+   читались как дырка под кнопкой «Пересудить». Первому блоку отступ сверху меньше. */
+.fac-detail-body .cab-block:first-of-type { padding-top: 14px; }
+
+/* ── СПОСОБНОСТЬ В КАРТОЧКЕ: СВЁРНУТАЯ СТРОКА ─────────────────────────────────
+   Внутри одной строки лежит всё, что нужно для решения: обоснование судьи, ответ, по
+   которому оно дано, контроль и флаги. Свёрнуто по умолчанию — иначе десять способностей
+   с текстами ответов превращают карточку в километровое полотно (правка 12.08). */
+.cab-ab { border-top: 1px solid var(--hairline); }
+/* ⚠ FLEX, А НЕ GRID. В grid-контейнере псевдоэлемент ::before становится ЧЕТВЁРТЫМ
+   элементом сетки и забирает первую колонку целиком — название уезжало к правому краю
+   (поймано на живой карточке). Во flex он просто первый в ряду. */
+.cab-ab > summary {
+  cursor: pointer; list-style: none; padding: 11px 0;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px;
+}
+.cab-ab > summary::-webkit-details-marker { display: none; }
+.cab-ab > summary::before {
+  content: ''; display: inline-block; width: 6px; height: 5.5px; margin-right: 8px;
+  background: var(--muted-soft); clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transition: transform .12s ease; vertical-align: 1px;
+}
+.cab-ab[open] > summary::before { transform: rotate(90deg); }
+.cab-ab > summary:hover { background: var(--soft); }
+.cab-ab-name { font-size: var(--fs-op); font-weight: 600; flex: 1 1 auto; }
+.cab-ab-line { flex: 0 0 100%; font-size: var(--fs-op-sm); color: var(--muted-soft); padding-left: 14px; }
+.cab-ab-flag {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--accent-ink); background: var(--accent-tint); padding: 2px 7px; border-radius: 4px;
+}
+.cab-ab.has-flag > summary { background: var(--accent-tint); }
+.cab-ab-body { padding: 2px 0 16px 14px; }
+.cab-ab-h {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted-soft); margin: 14px 0 6px;
+}
+.cab-ab-why { font-size: var(--fs-op); line-height: 1.55; max-width: var(--w-read); white-space: pre-wrap; }
+
+/* Крупные блоки карточки ниже оценки — тоже свёрнуты. */
+.cab-fold { border-top: 1px solid var(--hairline); margin-top: 18px; }
+.cab-fold > summary {
+  cursor: pointer; list-style: none; padding: 13px 0;
+  font-size: var(--fs-op-h); font-weight: 700; letter-spacing: -0.01em;
+}
+.cab-fold > summary::-webkit-details-marker { display: none; }
+.cab-fold > summary::before {
+  content: ''; display: inline-block; width: 7px; height: 6.5px; margin-right: 9px;
+  background: var(--ink); clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transition: transform .12s ease; vertical-align: 2px;
+}
+.cab-fold[open] > summary::before { transform: rotate(90deg); }
+
 .cab-ability { padding: 10px 0; border-top: 1px solid var(--hairline); }
 .cab-ability-head { display: flex; align-items: baseline; gap: 10px; }
 .cab-ability-name { font-size: var(--fs-op); font-weight: 600; }
