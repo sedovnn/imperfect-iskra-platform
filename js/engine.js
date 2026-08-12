@@ -326,6 +326,23 @@
     return act.kind === 'window' || act.kind === 'mechanic' || act.kind === 'case' || act.kind === 'interlude';
   }
 
+  // Реплики, КОТОРЫМИ СЦЕНА ЗАКАНЧИВАЕТСЯ: после этого шага в сцене остались только
+  // они, ни одного останавливающего акта. Такого случая раньше не было — прощание
+  // Агеева висело полем `after` у верстака печати, — поэтому фиксация верстака
+  // двигала день сразу, а отрисовка до этих реплик не доходила. Когда вопрос про
+  // перебор переехал за утверждение (11.08), прощание стало отдельным завершающим
+  // тактом и пропало с экрана в обеих ветках.
+  function sceneTailSpeech(ix) {
+    var out = [], sc = route[ix] && route[ix].sceneIx;
+    for (var k = ix + 1; k < route.length; k++) {
+      if (route[k].sceneIx !== sc) break;
+      if (!applies(route[k].act)) continue;
+      if (route[k].act.kind !== 'speech') return [];
+      out.push(route[k].act);
+    }
+    return out;
+  }
+
   function normalizeCursor() {
     while (state.cursor < route.length) {
       var st = route[state.cursor];
@@ -1515,7 +1532,7 @@
       saveState();
       // У верстака с репликами после (act.after) фиксация день НЕ двигает: сначала
       // собеседник отвечает, и только потом «Дальше» (решение владельца 07.08).
-      if (act.after) { render(); return; }
+      if (act.after || sceneTailSpeech(state.cursor).length) { render(); return; }
       advance();
     });
     if (window.imp && window.imp.typoDom) window.imp.typoDom(d);
@@ -1904,12 +1921,23 @@
       pending = [];
     };
 
+    var curDone = false, tail = false;
     for (var i = 0; i < route.length; i++) {
       var st = route[i];
       if (st.sceneIx !== curSceneIx) continue;
       if (!applies(st.act)) continue;
       var past = i < state.cursor, current = i === state.cursor;
-      if (!past && !current) break;
+      if (!past && !current) {
+        // ⚠ РЕПЛИКИ В КОНЦЕ СЦЕНЫ. Курсор стоит на последнем останавливающем акте
+        // сцены, а реплики после него лежат дальше по маршруту — цикл прерывался, не
+        // дойдя до них, и они не рисовались НИГДЕ. Так пропало прощание Агеева, когда
+        // вопрос про перебор переехал за утверждение (11.08): прежде прощание висело
+        // полем `after` у верстака печати, а после переноса стало отдельным
+        // завершающим тактом — и исчезло с экрана. Показываем их только когда шаг уже
+        // закрыт: пока участник не ответил, собеседник прощаться не может.
+        if (st.act.kind === 'speech' && curDone) { pending.push(st.act); tail = true; continue; }
+        break;
+      }
 
       if (st.act.kind === 'speech') { pending.push(st.act); continue; }
 
@@ -1934,6 +1962,7 @@
       // над репликами повторяла её же.
       else if (st.act.kind === 'case') { /* отметка не рисуется */ }
       else if (st.act.kind === 'window') {
+        if (current) curDone = !!state.answersAt[st.act.save];
         var wb = windowBlock(st.act, past);
         if (current && !state.answersAt[st.act.save]) wb.classList.add('is-await');
         now.appendChild(wb);
@@ -1942,11 +1971,13 @@
       }
       else if (st.act.kind === 'mechanic') {
         var fixedAt = st.act.mech ? (state.mechAt && state.mechAt[st.act.mech]) : null;
+        if (current) curDone = !!fixedAt;
         // Верстак зафиксирован, но шаг ещё текущий: на экране свод, реплики после
-        // и «Дальше». Так ведут себя только верстаки с act.after.
-        if (current && fixedAt && st.act.after) {
+        // и «Дальше». Так ведут себя верстаки с act.after — и тот, за которым сцена
+        // кончается репликами (печать, когда перебора нет и дальше только прощание).
+        if (current && fixedAt && (st.act.after || sceneTailSpeech(i).length)) {
           now.appendChild(mechanicBlock(st.act, true));
-          now.appendChild(afterBlock(st.act.after, st.act.id));
+          if (st.act.after) now.appendChild(afterBlock(st.act.after, st.act.id));
           var nf = document.createElement('div');
           nf.className = 's2-block';
           nf.innerHTML = '<div class="win-foot"><button class="btn btn-primary" id="nextBtn">' +
@@ -1958,7 +1989,9 @@
         }
       }
     }
-    flush(false);
+    // Завершающие реплики сцены раскрываются по одной, как любой монолог: иначе
+    // прощание высыпалось бы целиком, а «Дальше» стала бы активна сразу.
+    flush(tail);
 
     if (state.cursor >= route.length && !state.finished) {
       var fin = document.createElement('div');
