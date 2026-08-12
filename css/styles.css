@@ -1004,9 +1004,37 @@ body.imp-drawer-open .dock-rail { display: none; }
   font-weight: 600;
   list-style: none;
 }
+/* ⚠ СТРОКА «ЧТО МЕРИТ ЭТОТ ШАГ» — ТОЛЬКО ДЕМО (движок рисует её при isDemo).
+   Намеренно неяркая и служебного вида: это подпись для фасилитатора, а не часть
+   разговора, и спутать её с репликой нельзя. */
+.sc-measures {
+  margin: -2px 0 14px;
+  font-size: var(--fs-op-sm);
+  line-height: 1.5;
+  color: var(--muted-soft);
+  border-left: 2px solid var(--hairline);
+  padding-left: 10px;
+}
+.sc-measures b { color: var(--ink); font-weight: 600; }
+
 .cheat-block > summary::-webkit-details-marker { display: none; }
-.cheat-block > summary::before { content: '▸ '; color: var(--muted); }
-.cheat-block[open] > summary::before { content: '▾ '; }
+/* ⚠ ТРЕУГОЛЬНИК — БРЕНД-ФОРМА, НЕ ЮНИКОД (правка владельца 12.08). Символы ▸ и ▾
+   рисует шрифт: пропорция своя, вершина скруглена, и рядом со стрелкой futureproof в
+   шапке это читалось как другая форма. Геометрия та же, что в логотипе (треугольник
+   13×12 с вершиной по середине высоты), заданная clip-path: тогда открытое состояние
+   — тот же треугольник, повёрнутый на 90°, а не другой символ. */
+.cheat-block > summary::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 6.5px;
+  margin-right: 7px;
+  vertical-align: 1px;
+  background: var(--muted);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  transition: transform .12s ease;
+}
+.cheat-block[open] > summary::before { transform: rotate(90deg); }
 .cheat-body { padding: 2px 14px 12px; }
 .cheat-h {
   margin: 10px 0 4px;

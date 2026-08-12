@@ -362,6 +362,10 @@
   // Словесного «если видите не один вариант» здесь нет: это элиситация границы.
   // ═════════════════════════════════════════════════════════════════════════
   M.variants = {
+    // ⚠ ПОЛЯ «НАЗВАНИЕ» БОЛЬШЕ НЕТ (правка владельца 12.08). Оно просило придумать
+    // ярлык прежде, чем сказана сама мысль, и на экране стояло первым — то есть
+    // человек начинал с упаковки. `name` остаётся в состоянии пустой строкой: записи
+    // до 12.08 его несут, и сводки читают оба поля.
     init: function () { return { rays: [{ name: '', gist: '', from: '' }] }; },
     gate: function (m, ctx) {
       if (ctx.isDemo) return '';
@@ -373,7 +377,7 @@
       return { note: '', cta: 'Ответить →' };
     },
     locked: function (m) {
-      var n = m.rays.filter(function (r) { return String(r.name + r.gist).trim(); }).length;
+      var n = m.rays.filter(function (r) { return String((r.name || '') + r.gist).trim(); }).length;
       return '<b>' + n + '</b> ' + plural(n, 'вариант', 'варианта', 'вариантов') +
         ' <span class="bl-locked-hint">целиком — во вкладке «Мои ответы»</span>';
     },
@@ -383,9 +387,8 @@
         m.rays.forEach(function (r, i) {
           h += '<div class="mx-card"><div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span>' +
             '<div class="mx-acts">' + (m.rays.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') + '</div></div>' +
-            field(ctx, { id: 'mxN' + i, f: 'name', i: i, line: 1, label: 'Название', ph: 'название варианта', val: r.name }) +
-            field(ctx, { id: 'mxG' + i, f: 'gist', i: i, label: 'Суть', val: r.gist }) +
-            field(ctx, { id: 'mxF' + i, f: 'from', i: i, label: 'Где вы это подсмотрели?', rows: 2, val: r.from }) +
+            field(ctx, { id: 'mxG' + i, f: 'gist', i: i, label: 'Вариант', val: r.gist }) +
+            field(ctx, { id: 'mxF' + i, f: 'from', i: i, label: 'Как пришли к такой идее?', rows: 2, val: r.from }) +
             '</div>';
         });
         h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
@@ -401,7 +404,7 @@
         var a = e.target.getAttribute && e.target.getAttribute('data-del');
         if (a) { m.rays.splice(Number(a), 1); ctx.save(); draw(); ctx.sync(); return; }
         if (e.target.getAttribute && e.target.getAttribute('data-add')) {
-          m.rays.push({ name: '', gist: '', from: '' }); ctx.save(); draw(); ctx.sync();
+          m.rays.push({ gist: '', from: '' }); ctx.save(); draw(); ctx.sync();
         }
       });
       draw();
@@ -1038,9 +1041,11 @@
   };
 
   M.variants.answerHtml = function (m, ctx) {
-    return m.rays.filter(function (r) { return String(r.name + r.gist).trim(); }).map(function (r) {
-      return '<p style="margin:0 0 8px;"><b>' + ctx.br(r.name || '(без названия)') + '</b><br />' + ctx.br(r.gist) +
-        (String(r.from).trim() ? '<br /><i>откуда: ' + ctx.br(r.from) + '</i>' : '') + '</p>';
+    return m.rays.filter(function (r) { return String((r.name || '') + r.gist).trim(); }).map(function (r) {
+      // Название у записей до 12.08 ещё встречается — тогда показываем его строкой
+      // выше сути; у новых его нет, и придумывать «(без названия)» незачем.
+      return '<p style="margin:0 0 8px;">' + (String(r.name || '').trim() ? '<b>' + ctx.br(r.name) + '</b><br />' : '') + ctx.br(r.gist) +
+        (String(r.from).trim() ? '<br /><i>как пришёл: ' + ctx.br(r.from) + '</i>' : '') + '</p>';
     }).join('') || '<i>не заполнено</i>';
   };
 

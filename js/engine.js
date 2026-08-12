@@ -1269,6 +1269,31 @@
     return '';
   }
 
+  // ⚠ ЧТО МЕРИТ ЭТОТ ШАГ — ТОЛЬКО В ДЕМО. Участнику предмет замера не показывается ни
+  // при каких условиях: знание предмета ломает замер. Здесь строка выводится под
+  // заголовком шага и видна лишь когда движок в демо-режиме (isDemo). Содержимое —
+  // S.measures из scenes.js, инверсия таблицы судей; расхождение ловит
+  // eval/lint_measures.js.
+  function measuresLine(act) {
+    if (!isDemo) return '';   // isDemo — значение, а не функция (см. объявление выше)
+    var key = act && (act.save || act.mech);
+    var m = key && S.measures ? S.measures[key] : null;
+    if (!m) return '';
+    var named = function (arr) {
+      return arr.map(function (a) {
+        var n = S.abilityNames && S.abilityNames[a];
+        return '<b>' + esc(a) + '</b>' + (n ? ' · ' + esc(n) : '');
+      }).join('; ');
+    };
+    var parts = [];
+    if (m.main.length) parts.push('меряет: ' + named(m.main));
+    if (m.control.length) parts.push('контроль: ' + named(m.control));
+    if (!parts.length && m.note) parts.push(esc(m.note));
+    else if (m.note) parts.push(esc(m.note));
+    if (!parts.length) return '';
+    return '<div class="sc-measures">демо · ' + parts.join(' &nbsp;·&nbsp; ') + '</div>';
+  }
+
   function sceneHead(scene, act) {
     var t = stepTitle(act);
     t = t ? t.charAt(0).toUpperCase() + t.slice(1) : esc(scene.name);
@@ -1276,7 +1301,7 @@
       '<span class="sc-head-name">' + esc(t) + '</span>' +
       '<span class="sc-head-sep">·</span>' +
       '<span class="sc-head-where">' + esc(scene.place || scene.name) + ', ' + esc(scene.where) + '</span>' +
-      '</div>';
+      '</div>' + measuresLine(act);
   }
 
   // ── ОКНО ОТВЕТА: ДВА ДЕЙСТВИЯ, А НЕ ОДНО (решение владельца 07.08) ──
