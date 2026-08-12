@@ -666,7 +666,13 @@
   }
 
   M.seal = {
-    init: function () { return { confirmed: null, returned: false, why: '', snap: null }; },
+    // ⚠ `changed` — ОТДЕЛЬНОЕ ПОЛЕ, а не производная от `returned`. Человек может
+    // вернуться, пересмотреть и оставить всё как было: это удержание, причём более
+    // сильное, чем удержание без пересмотра. Формула сравнения одна (sealChanged), и
+    // ответ записывается в момент подтверждения — тогда его читают и экран, и судья, и
+    // никому не приходится считать слепок второй раз (замечание владельца 12.08:
+    // «человек может вернуться потыкать, но в итоге оставить как есть»).
+    init: function () { return { confirmed: null, returned: false, changed: false, why: '', snap: null }; },
     changed: sealChanged,
     // Слепок разбора наружу: харнесс обязан снять его в тот же момент, что экран
     // (ДО возврата к списку), иначе «изменил под давлением» и «удержал» не
@@ -711,7 +717,11 @@
     // «Утверждаю» на первом шаге день НЕ двигает: он фиксирует поступок и
     // открывает поле объяснения.
     onCta: function (m, ctx) {
-      if (m.confirmed == null) { m.confirmed = true; ctx.save(); ctx.redraw(); return false; }
+      if (m.confirmed == null) {
+        m.confirmed = true;
+        m.changed = sealChanged(m, ctx);
+        ctx.save(); ctx.redraw(); return false;
+      }
       return true;
     },
     locked: function (m, ctx) {
@@ -757,9 +767,11 @@
             return t.people + ' человек · ' + ctx.num(t.money) + ' млрд' +
               (t.over ? ' <span class="bl-over-tag">вне бюджета</span>' : '');
           })() : '') + '</div>';
-          // После возврата Агеев спрашивает не «почему уверены», а «что поменяли»:
-          // вопрос обязан относиться к тому, что участник только что сделал.
-          h += ctx.speech(m.returned && ctx.probeReturn ? ctx.probeReturn : ctx.probe);
+          // ⚠ ВОПРОС ПО ФАКТУ ИЗМЕНЕНИЯ, А НЕ ВОЗВРАТА. Спрашивать «что решили изменить»
+          // у того, кто вернулся, посмотрел и ничего не тронул, — спрашивать про
+          // несделанное. Ему идёт тот же вопрос, что и не возвращавшемуся: он уверен в
+          // этом составе решений, только теперь уверен после пересмотра.
+          h += ctx.speech(m.changed && ctx.probeReturn ? ctx.probeReturn : ctx.probe);
           h += '<span class="chat-name chat-name-mine">Вы</span>' +
             '<div class="s2-mine">' +
             field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: 'ваш ответ', label: '',

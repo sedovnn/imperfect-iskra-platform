@@ -193,10 +193,15 @@
         return /возвра|меня/i.test(String((o && (o['мой ход'] || o.move)) || ''));
       },
       // back — что накопил харнесс за возврат: { returned: true, snap: '…' }.
-      toState: function (o, back) {
-        return { confirmed: true, returned: !!(back && back.returned),
-                 why: String((o && (o['одна фраза'] || o.why)) || ''),
-                 snap: (back && back.snap) || null };
+      // ⚠ `changed` считает механика, сравнивая слепок ДО правки с тем, что стало:
+      // вернуться и ничего не тронуть — это удержание, а не изменение. Формула одна и
+      // живёт в mechanics.js; здесь только её вызов.
+      toState: function (o, back, ctx) {
+        var st = { confirmed: true, returned: !!(back && back.returned),
+                   why: String((o && (o['одна фраза'] || o.why)) || ''),
+                   snap: (back && back.snap) || null };
+        st.changed = ctx ? !!window.imp.mechanics.seal.changed(st, ctx) : false;
+        return st;
       }
     },
 

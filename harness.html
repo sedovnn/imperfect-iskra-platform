@@ -149,9 +149,9 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/backlog.js?v=3"></script>
-<script src="js/scenes.js?v=43"></script>
-<script src="js/mechanics.js?v=27"></script>
-<script src="js/mech-fields.js?v=7"></script>
+<script src="js/scenes.js?v=44"></script>
+<script src="js/mechanics.js?v=28"></script>
+<script src="js/mech-fields.js?v=8"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=13"></script>
 <script>
@@ -361,7 +361,10 @@
           beat = 'phrase';
           head = [];
           ask = [];
-          probe = run.sealBack ? say2('probeReturn') : say2('probe');
+          // ⚠ ПО ФАКТУ ИЗМЕНЕНИЯ, А НЕ ВОЗВРАТА (как на экране): модель могла вернуться
+          // к разбору и оставить его как был. Тогда вопрос тот же, что без возврата.
+          probe = (run.sealBack && M.seal.changed({ returned: true, snap: run.sealBack.snap }, ctx()))
+            ? say2('probeReturn') : say2('probe');
         } else {
           form = run.sealBack ? f.formHeld : f.form;
           probe = [];
@@ -529,7 +532,7 @@
 
     // Перевод ответа модели в состояние механики: она отвечает подписями с экрана
     // («решения», «№5», «берём»), состояние держит свои ключи (decided, a6, take).
-    try { obj = (s.mech === 'seal') ? f.toState(obj, run.sealBack) : f.toState(obj); }
+    try { obj = (s.mech === 'seal') ? f.toState(obj, run.sealBack, ctx()) : f.toState(obj); }
     catch (e) {
       el('hsGate').innerHTML = '<p class="hs-gate">Не разобрал ответ: ' + esc(e.message) + '</p>';
       return;

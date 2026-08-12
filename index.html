@@ -45,7 +45,13 @@
   .entry-foot { border-top: 1px solid var(--hairline); padding: 16px 0 26px; display: flex; align-items: center; justify-content: space-between; }
   .entry-fnote { font-size: 12px; color: var(--muted-soft); }
   .dotmenu { position: relative; }
-  .dotmenu-trigger { cursor: pointer; font-size: 12px; color: var(--gray-3, #c9ccd0); letter-spacing: .3em; user-select: none; padding: 6px 4px; background: none; border: none; }
+  /* ⚠ ТРЕУГОЛЬНИКИ — БРЕНД-SVG, НЕ ЮНИКОД (правка владельца 12.08). Символ ▸ рисует
+     шрифт: своя пропорция, скруглённая вершина, — и рядом со стрелкой futureproof в
+     шапке читался как другая форма. Path тот же, что в логотипе; серый приходит через
+     currentColor, поэтому :hover остаётся одним свойством. */
+  .dotmenu-trigger { cursor: pointer; color: var(--gray-3, #c9ccd0); user-select: none; padding: 6px 4px; background: none; border: none; display: inline-flex; align-items: center; gap: 5px; }
+  .dm-tri { display: inline-block; width: 7px; height: 7px; }
+  .dm-tri svg { display: block; width: 100%; height: 100%; }
   .dotmenu-trigger:hover { color: var(--muted); }
   .dotmenu-list { position: absolute; right: 0; bottom: 36px; background: var(--paper); border: 1px solid var(--hairline); border-radius: var(--radius); min-width: 220px; padding: 6px; display: none; }
   .dotmenu-list.open { display: block; }
@@ -128,7 +134,7 @@
     <footer class="entry-foot">
       <div class="entry-fnote">© futureproof · сессия «Искра»</div>
       <div class="dotmenu">
-        <button type="button" class="dotmenu-trigger" id="dotmenuTrigger" aria-label="Служебное меню">▸ ▸ ▸</button>
+        <button type="button" class="dotmenu-trigger" id="dotmenuTrigger" aria-label="Служебное меню"><i class="dm-tri"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="currentColor"/></svg></i><i class="dm-tri"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="currentColor"/></svg></i><i class="dm-tri"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="currentColor"/></svg></i></button>
         <div class="dotmenu-list" id="dotmenuList">
           <div class="dotmenu-label">Служебное</div>
           <a href="cabinet.html">Кабинет фасилитатора</a>
