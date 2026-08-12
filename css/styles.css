@@ -1545,61 +1545,14 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
 
 .case-content article[id^="appx-"]:last-of-type .appx-doc { margin-bottom: 0; }
 
-.appx-doc > summary {
-  list-style: none;
-  cursor: pointer;
-  padding: 20px 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-family: var(--ff-display);
-  font-weight: 800;
-  font-size: var(--fs-read);
-}
-
-.appx-doc > summary::-webkit-details-marker { display: none; }
-
-.appx-doc > summary::before {
-  content: '📎';
-  font-size: var(--fs-dense);
-  flex: none;
-}
-
-.appx-doc > summary::after {
-  content: '▾';
-  margin-left: auto;
-  flex: none;
-  font-size: var(--fs-dense);
-  color: var(--muted-soft);
-  transition: transform 0.15s ease;
-}
-
-.appx-doc[open] > summary::after { transform: rotate(-180deg); }
-
-.appx-doc > summary h3 {
-  margin: 0;
-  font-size: var(--fs-read);
-}
-
-.appx-doc > summary:hover { background: #fafafa; }
-
-.appx-doc[open] > summary {
-  border-bottom: 1px solid #ececec;
-  /* Приложение зачитывается прокруткой до конца, а статус («открыто · дочитайте
-     до конца» → «✓ изучено») стоит в этой шапке: пока она уезжала вверх,
-     участник в момент зачёта его уже не видел и возвращался проверять
-     (репорт прогона 005001). Держим шапку на виду. */
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--paper);
-}
 /* Приложения кейса v6 раскрыты по умолчанию: не <details>, а обычная секция с
    шапкой. Ни раскрытия, ни статуса прочтения здесь нет сознательно — и то и
    другое было сигналом, который у человека и у модели устроен по-разному (модели
    кейс приходит целиком в system, «открыть приложение» у неё не событие), а
    значит мерило браузер, а не мышление. Классы .appx-doc-badge / .appx-sentinel
-   и правила для summary остаются ниже, пока живы старые раунды. */
+   и правила для summary УДАЛЕНЫ 12.08: они держались «пока живы старые раунды», а
+   round1…round5.html не существует с переезда на imp.v3. Внутри жил последний юникодный
+   «▾» продукта — и он никому не показывался, потому что <summary> в кейсах нет ни одного. */
 .appx-doc-open > .appx-doc-head {
   padding: 20px 24px;
   display: flex;
