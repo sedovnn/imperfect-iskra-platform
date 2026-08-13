@@ -151,7 +151,7 @@
 <script src="js/backlog.js?v=3"></script>
 <script src="js/scenes.js?v=48"></script>
 <script src="js/mechanics.js?v=30"></script>
-<script src="js/mech-fields.js?v=11"></script>
+<script src="js/mech-fields.js?v=12"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=13"></script>
 <script>
@@ -342,6 +342,12 @@
       var f = F[step.mech];
       var form = f.form, probe = say2('probe'), ask = say2('ask'), head = say2('before').concat(say2('lead'));
       var beat = null;
+      // ⚠ ВОЗВРАТ К РАЗБОРУ: ФОРМА ПРИЕЗЖАЕТ ЗАПОЛНЕННОЙ, как поля на экране у человека.
+      // Он видит свои решения и своё обоснование и правит то, что хочет; инструкция при
+      // этом та же, что всегда, — никакого дополнительного вопроса не задаётся.
+      if (step.mech === 'list' && run.sealBack && run.sealBack.prev) {
+        form = window.imp.mechFilled ? window.imp.mechFilled('list', run.sealBack.prev) : form;
+      }
       if (step.mech === 'seal') {
         if (run.sealStage === 'phrase') {
           // ⚠ ВТОРОЙ ТАКТ: экран заменяет всю область одной итоговой строкой и
@@ -500,7 +506,12 @@
     // к Лемеху (поймано владельцем 11.08 на живом прогоне).
     if (s.mech === 'seal' && run.sealStage !== 'phrase') {
       if (f.isBack(obj) && !run.sealBack) {
-        run.sealBack = { returned: true, snap: M.seal.snap(ctx()) };
+        // ⚠ ПРЕЖНИЙ ОТВЕТ СОХРАНЯЕМ. На экране человек, вернувшийся к разбору, видит свои
+        // решения и свой текст «почему именно так» УЖЕ В ПОЛЯХ — он правит то, что хочет,
+        // а не набирает заново. Модели же уезжала пустая форма, и её приходилось заполнять
+        // с нуля, включая обоснование, которого у человека повторно не спрашивают
+        // (замечание владельца 12.08).
+        run.sealBack = { returned: true, snap: M.seal.snap(ctx()), prev: run.mech.list };
         delete run.mech.list;          // разбор снова становится текущим шагом
         delete run.mechAt.list;
         save(); render();
