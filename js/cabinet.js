@@ -989,6 +989,16 @@
         var st = stepByKey(k);
         return st ? answerCard(d, st) : '';
       }).join('');
+      // ⚠ У ГА-1 судья читает ВЕСЬ ДЕНЬ, а не только окна ниже (v10 стр. 1257, правка
+      // 13.08). Без этой строки карточка утверждала бы, что материала два окна, — и
+      // оценщик не понимал бы, откуда взялось обоснование про письмо правления.
+      // Список приходит из scenes.js, чтобы у кабинета не было своего мнения.
+      var scopeNote = '';
+      if (((window.imp.scenes || {}).abilityScope || {})[RU_OF[a]] === 'day') {
+        scopeNote = '<p class="cab-dim">Область оценки по методологии — весь ответ участника, ' +
+          'все поля всех сцен. Ниже раскрыты основные окна; остальные ответы дня судья тоже читал ' +
+          'и мог опереться на любой из них.</p>';
+      }
       var ctrlHtml = steps.control.map(function (k) {
         var st = stepByKey(k);
         return st ? '<p class="cab-dim">Контрольное чтение — по этому же ответу судили другим заданием:</p>' + answerCard(d, st) : '';
@@ -1022,7 +1032,7 @@
           (reasoning ? '<div class="cab-ab-h">Обоснование судьи</div><div class="cab-ab-why">' + br(reasoning) + '</div>'
                      : '<p class="cab-dim">Обоснования нет: уровень посчитан кодом или задание не отработало.</p>') +
           ctrlLine +
-          (stepsHtml ? '<div class="cab-ab-h">Ответ, по которому это сказано</div>' + stepsHtml : '') +
+          (stepsHtml ? '<div class="cab-ab-h">Ответ, по которому это сказано</div>' + scopeNote + stepsHtml : '') +
           ctrlHtml +
           ctl +
         '</div></details>';

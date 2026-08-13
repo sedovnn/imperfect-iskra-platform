@@ -19,7 +19,16 @@
   var cache = null;
   window.imp.loadCaseHtml = function () {
     if (cache !== null) return Promise.resolve(cache);
-    return fetch(document.body.dataset.caseSrc || 'case-v6.html')
+    // ⚠ РЕЗЕРВНОЕ ЗНАЧЕНИЕ — ИЗ ЕДИНСТВЕННОГО ИСТОЧНИКА, А НЕ ЛИТЕРАЛОМ (13.08).
+    // Здесь стоял 'case-v6.html' — кейс двух версий назад. Сейчас страницы адрес задают
+    // (engine.js ставит dataset.caseSrc), так что резерв не срабатывал, но сцепка версий
+    // его бы и не поймала: V2_CASE_VERSION и AK1_KEY_VERSION сверяют бэкенд с записью
+    // прогона, а не файл, который скачал браузер. Участник читал бы v6, АК-1 судился бы
+    // по ключу v8, и отказа судейства не было бы. Нашла ревизия 13.08, §1.3.
+    var src = document.body.dataset.caseSrc ||
+      (window.imp.scenes && window.imp.scenes.caseSrc);
+    if (!src) throw new Error('case-ref: адрес кейса не задан ни страницей, ни scenes.js');
+    return fetch(src)
       .then(function (r) { return r.text(); })
       .then(function (html) {
         var doc = new DOMParser().parseFromString(html, 'text/html');
