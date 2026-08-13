@@ -29,6 +29,24 @@ require(path.join(ROOT, 'js', 'mech-fields.js'));
 
 const S = global.window.imp.scenes;
 const F = global.window.imp.mechFields;
+
+// Подписи полей, как их набрал mechanics.js: только он рисует экран участника.
+// Ключ — нормализованный вид (нижний регистр, без знаков), значение — подпись как есть.
+const SCREEN_LABELS = (function () {
+  const src = fs.readFileSync(path.join(ROOT, 'js', 'mechanics.js'), 'utf8');
+  const out = {};
+  const add = (l) => { if (/[А-Яа-яЁё]/.test(l)) out[norm(l)] = l; };
+  // Подписи набраны двумя способами: field(..., label: 'Подпись') и списками пар
+  // ['ключСостояния', 'Подпись'] (письмо, тезисы). Читаем оба, иначе проверка
+  // объявляет «нет на экране» то, что на экране есть.
+  (src.match(/label:\s*'[^']+'/g) || []).forEach((m) => add(m.replace(/^label:\s*'/, '').replace(/'$/, '')));
+  (src.match(/\['[a-zA-Z][a-zA-Z0-9]*',\s*'[^']+'\]/g) || []).forEach((m) => {
+    const g = m.match(/,\s*'([^']+)'\]$/); if (g) add(g[1]);
+  });
+  return out;
+})();
+function norm(t) { return String(t).toLowerCase().replace(/[?!.,:;«»""]/g, '').replace(/\s+/g, ' ').trim(); }
+function screenLabel(key) { return SCREEN_LABELS[norm(key)] || key; }
 const TITLES = global.window.imp.mechTitles || {};
 
 const esc = (t) => String(t == null ? '' : t)
@@ -45,6 +63,14 @@ function measuresHtml(key) {
   const parts = [];
   if (m.main.length) parts.push('меряет: ' + named(m.main));
   if (m.control.length) parts.push('контроль: ' + named(m.control));
+  // ⚠ У ГА-1 область оценки — весь день (v10 стр. 1257, единственная такая строка в
+  // методологии). Без этой пометки строка замера врала бы вычитывающему: он видит «ГА-1»
+  // на одном шаге и делает вывод, что на остальных она не при чём.
+  const wide = m.main.concat(m.control).filter((a) => S.abilityScope && S.abilityScope[a] === 'day');
+  if (wide.length) {
+    parts.push(wide.map((a) => '<b>' + esc(a) + '</b>').join(' и ') +
+      ' читается по <b>всему дню</b>, а не только по этому шагу');
+  }
   if (m.note) parts.push(esc(m.note));
   if (!parts.length) return '';
   return '<div class="vy-measures' + (m.main.length ? '' : ' is-none') + '">' + parts.join(' &nbsp;·&nbsp; ') + '</div>';
@@ -95,6 +121,13 @@ function workHtml(act) {
   if (act.kind !== 'mechanic') return '';
   const f = F[act.mech];
   if (!f) return '';
+  // ⚠ ПОДПИСИ БЕРЁМ С ЭКРАНА, А НЕ ИЗ ФОРМЫ ХАРНЕССА (13.08).
+  // Верстаки рисует mechanics.js, а формы для модели живут в mech-fields.js, и ключи
+  // формы должны БЫТЬ подписями экрана. По факту они разошлись в регистре и пунктуации:
+  // человек читает «Как пришли к такой идее?», а в форме стоит «как пришли к такой идее».
+  // Файл вычитки обещает «всё, что читает участник», поэтому показывать он обязан
+  // экранное. Сопоставляем по нормализованному виду; не нашли — оставляем ключ формы,
+  // и это увидит проверка в eval/lint_harness.js.
   let h = '<div class="vy-work"><div class="vy-work-h">рабочая область · ' +
     esc(TITLES[act.mech] || act.mech) + '</div>';
   let forms = [['form', '']];
@@ -110,21 +143,21 @@ function workHtml(act) {
     Object.keys(form).forEach((k) => {
       const v = form[k];
       if (Array.isArray(v) && v.length && typeof v[0] === 'object') {
-        h += '<div class="vy-f"><label>' + esc(k) + '</label>';
+        h += '<div class="vy-f"><label>' + esc(screenLabel(k)) + '</label>';
         Object.keys(v[0]).forEach((sub) => {
-          h += '<div class="vy-f" style="margin-left:14px;"><label>' + esc(sub) + '</label>' +
+          h += '<div class="vy-f" style="margin-left:14px;"><label>' + esc(screenLabel(sub)) + '</label>' +
                '<div class="box">' + esc(String(v[0][sub])) + '</div></div>';
         });
         h += '<div class="vy-rep">карточка повторяется — участник добавляет столько, сколько нужно</div></div>';
       } else if (v && typeof v === 'object') {
-        h += '<div class="vy-f"><label>' + esc(k) + '</label>';
+        h += '<div class="vy-f"><label>' + esc(screenLabel(k)) + '</label>';
         Object.keys(v).forEach((sub) => {
-          h += '<div class="vy-f" style="margin-left:14px;"><label>' + esc(sub) + '</label>' +
+          h += '<div class="vy-f" style="margin-left:14px;"><label>' + esc(screenLabel(sub)) + '</label>' +
                '<div class="box">' + esc(String(v[sub])) + '</div></div>';
         });
         h += '</div>';
       } else {
-        h += '<div class="vy-f"><label>' + esc(k) + '</label><div class="box">' + esc(String(v)) + '</div></div>';
+        h += '<div class="vy-f"><label>' + esc(screenLabel(k)) + '</label><div class="box">' + esc(String(v)) + '</div></div>';
       }
     });
   });
