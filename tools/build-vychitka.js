@@ -151,10 +151,21 @@ function workHtml(act) {
         h += '<div class="vy-rep">карточка повторяется — участник добавляет столько, сколько нужно</div></div>';
       } else if (v && typeof v === 'object') {
         h += '<div class="vy-f"><label>' + esc(screenLabel(k)) + '</label>';
-        Object.keys(v).forEach((sub) => {
+        // ⚠ ОДНООБРАЗНЫЙ ДЛИННЫЙ СПИСОК СВОРАЧИВАЕМ. У разбора заявок форма несёт все
+        // двадцать позиций (модель обязана получить их явно, иначе угадывает), но человеку
+        // двадцать одинаковых строк «берём / не сейчас / не делаем» читать незачем: он
+        // вычитывает ТЕКСТ, а список позиций уже стоит выше, в материале шага.
+        const subs = Object.keys(v);
+        const same = subs.length > 4 && subs.every((x) => String(v[x]) === String(v[subs[0]]));
+        const show = same ? subs.slice(0, 2) : subs;
+        show.forEach((sub) => {
           h += '<div class="vy-f" style="margin-left:14px;"><label>' + esc(screenLabel(sub)) + '</label>' +
                '<div class="box">' + esc(String(v[sub])) + '</div></div>';
         });
+        if (same) {
+          h += '<div class="vy-rep">… и так по каждой из ' + subs.length +
+               ' (в форме для прогона модели все ' + subs.length + ' перечислены явно)</div>';
+        }
         h += '</div>';
       } else {
         h += '<div class="vy-f"><label>' + esc(screenLabel(k)) + '</label><div class="box">' + esc(String(v)) + '</div></div>';
