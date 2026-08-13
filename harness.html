@@ -149,9 +149,9 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/backlog.js?v=3"></script>
-<script src="js/scenes.js?v=47"></script>
+<script src="js/scenes.js?v=48"></script>
 <script src="js/mechanics.js?v=30"></script>
-<script src="js/mech-fields.js?v=10"></script>
+<script src="js/mech-fields.js?v=11"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=13"></script>
 <script>
@@ -322,8 +322,8 @@
     // получила эти реплики такт назад, в том же чате. Раньше повторялось — тот же
     // дубль, на который владелец указал 11.08 («зачем в каждом сообщении
     // пересказывается всё что было до»).
-    var second = (step.mech === 'seal' && run.sealStage === 'phrase') ||
-                 (step.mech === 'list' && run.listStage === 'recount');
+    // Второй такт остался только у печати: у разбора заявок такта пересчёта больше нет.
+    var second = (step.mech === 'seal' && run.sealStage === 'phrase');
     var heard = second ? [] : heardBetween(from, step);
 
     // ⚠ НИ ОДНОГО СВОЕГО СЛОВА СВЕРХ ЭКРАНА. Раньше здесь стояли «РАБОЧАЯ ОБЛАСТЬ»,
@@ -342,16 +342,7 @@
       var f = F[step.mech];
       var form = f.form, probe = say2('probe'), ask = say2('ask'), head = say2('before').concat(say2('lead'));
       var beat = null;
-      if (step.mech === 'list' && run.listStage === 'recount') {
-        // Подпись стопок с пересчитанной суммой — и та же форма: на экране разбор
-        // лежит перед человеком, любую карту можно переложить, а «Разложил →»
-        // двигает день. Ни одной оценки числа: спрашивать здесь нечего, человека
-        // тоже никто не спрашивает.
-        beat = 'recount';
-        head = [];
-        ask = [];
-        probe = [];
-      } else if (step.mech === 'seal') {
+      if (step.mech === 'seal') {
         if (run.sealStage === 'phrase') {
           // ⚠ ВТОРОЙ ТАКТ: экран заменяет всю область одной итоговой строкой и
           // задаёт вопрос. Ни before, ни ask здесь нет — «Ну что, с этим к ним
@@ -375,9 +366,7 @@
         mat.replace(/^\n\n/, '') + (mat ? '\n\n' : '') +
         (probe.length ? probe.join('\n') + '\n\n' : '') +
         (ask.length ? ask.join('\n') + '\n\n' : '') +
-        (beat === 'recount'
-          ? 'Верните разбор ещё раз — в этом виде он и зафиксируется. ОДНИМ объектом JSON, ровно в этом виде, без пояснений до и после:\n'
-          : 'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n') +
+        'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n' +
         JSON.stringify(form, null, 1);
     } else {
       body = (say2('lead').length ? say2('lead').join('\n') + '\n\n' : '') +
@@ -418,9 +407,7 @@
     var beat = (s.mech === 'seal')
       ? (run.sealStage === 'phrase' ? 'Второй такт печати: модель подтвердила, осталась одна фраза. '
         : (run.sealBack ? 'Модель уже возвращалась к разбору — второй раз нельзя, только подтверждение. ' : ''))
-      : (s.mech === 'list' && run.listStage === 'recount')
-        ? 'Второй такт разбора: модель получила пересчитанную сумму взятого — то же, что человек видит в подписи стопки «Берём». Её ответ и зафиксируется. '
-        : '';
+      : '';
     el('hsHint').textContent = beat + (run.sentSetup && !fullAgain() ? 'Кейс и установка уже уехали — здесь только новое с прошлого шага. ' : '') + (s.mech
       ? 'Ответ модели вставьте как JSON — страница переведёт его в состояние и проверит тем же гейтом, что держит человека.'
       : 'Ответ модели вставьте как обычный текст.');
@@ -544,22 +531,9 @@
         '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
       return;
     }
-    // Первый ответ по заявкам ещё не фиксация: харнесс считает сумму взятого и
-    // отдаёт её модели той же подписью, что видит человек, — до фиксации.
-    if (s.mech === 'list' && run.listStage !== 'recount') {
-      run.listDraft = obj;
-      run.listStage = 'recount';
-      save(); render();
-      el('hsGate').innerHTML = '<p class="hs-note"><b>Разложено, сумма посчитана:</b></p><pre class="hs-out" style="max-height:22vh;">' +
-        esc(window.imp.listRecap(obj, helpers())) + '</pre>';
-      say('сумма посчитана, шаг ещё не зафиксирован');
-      return;
-    }
-
     run.mech[s.mech] = obj;
     run.mechAt[s.mech] = new Date().toISOString();
     if (s.mech === 'seal') delete run.sealStage;
-    if (s.mech === 'list') { delete run.listStage; delete run.listDraft; }
     save();
     // Разбор заявок пересказываем словами сразу после принятия: сырые ключи a1…a22
     // глазами не проверить, а ошибку модели надо увидеть до конца прогона.
