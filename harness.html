@@ -582,7 +582,13 @@
           scenesVersion: run.scenesVersion, caseVersion: run.caseVersion, backlogVersion: run.backlogVersion,
           answers: run.answers, answersAt: run.answersAt,
           mech: run.mech, mechAt: run.mechAt,
-          picks: {}, elicited: {}, marks: [],
+          // ⚠ ФЛАГИ ЭЛИСИТАЦИИ ОТДАЮТСЯ, а не пустым объектом (13.08). Здесь стояло
+          // elicited: {} — и судья получал «ни одного, всё участник принёс сам» про шаг,
+          // где варианты просят прямо. Правило чтения засчитывает непомеченное «в полную
+          // силу», то есть модели судились МЯГЧЕ живого участника, который флаги отдаёт
+          // через движок. Карта статическая (собирается из полей elicited у актов сцен),
+          // от состояния прогона не зависит — потому её можно взять прямо здесь.
+          picks: {}, elicited: S.elicitedMap(), marks: [],
           cursor: 0, started: true, finished: true,
           startedAt: run.startedAt, finishedAt: new Date().toISOString(),
           runner: { harness: 'harness.html', tag: run.tag, at: new Date().toISOString() }
