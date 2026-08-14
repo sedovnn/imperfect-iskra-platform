@@ -96,11 +96,17 @@
       // Замер страдал вместе с лором: v10 стр. 1271 требует для ГА-1 2→3, чтобы пути
       // были «предъявлены как соразмерные, МЕЖДУ НИМИ ДЕЛАЕТСЯ ВЫБОР», а выбора
       // мы не собирали — только веер.
-      // Порядок такой намеренно: сначала веер, потом выбор. Если спросить «какое
-      // основное» сразу, участник напишет рекомендацию первой строкой, а остальное
-      // дозаполнит для галочки — то есть веер породится под рамкой выбора, а не до неё.
-      main:    'основное решение',
-      mainWhy: { label: 'Почему именно оно основное', ph: 'ваш ответ' }
+      // Порядок такой намеренно: сначала веер, потом рекомендация. Веер сдан до того,
+      // как названа основная, — значит дописать его для галочки невозможно.
+      //
+      // ⚠ ОТМЕТКИ «КАКОЕ ИЗ НИХ ОСНОВНОЕ» ЗДЕСЬ БЫЛА И СНЯТА (14.08, замечание
+      // владельца). Она противоречила постановке: Агеев просит рекомендацию
+      // ПРИДЕРЖАТЬ, и если участник послушался, её в списке нет — отмечать нечего.
+      // Теперь Агеев за ней ВОЗВРАЩАЕТСЯ: два поля, сама рекомендация и почему она,
+      // а не перечисленное. Вопрос «почему она, а не эти» и есть выбор между
+      // соразмерными путями, которого требует v10 стр. 1271.
+      main:    { label: 'Ваша основная рекомендация', ph: 'ваш ответ' },
+      mainWhy: { label: 'Почему она, а не то, что перечислили выше', ph: 'ваш ответ' }
     },
     list: {
       crit:    { label: 'Почему именно так', ph: 'ваш ответ' },
@@ -430,15 +436,15 @@
     // до 12.08 его несут, и сводки читают оба поля.
     // picked === null — первый такт (веер). После «Ответить» становится true, и
     // открывается второй такт: какое из записанного основное и почему.
-    init: function () { return { rays: [{ name: '', gist: '', from: '' }], picked: null, mainIx: null, mainWhy: '' }; },
+    init: function () { return { rays: [{ name: '', gist: '', from: '' }], picked: null, mainText: '', mainWhy: '' }; },
     gate: function (m, ctx) {
       if (ctx.isDemo) return '';
       if (m.picked == null) {
         return m.rays.some(function (r) { return String(r.gist).trim(); })
           ? '' : 'Нужен хотя бы один вариант с непустой сутью.';
       }
-      if (m.mainIx == null) return 'Отметьте, какое решение основное.';
-      if (!String(m.mainWhy).trim()) return 'Скажите, почему именно оно основное.';
+      if (!String(m.mainText).trim()) return 'Напишите вашу основную рекомендацию.';
+      if (!String(m.mainWhy).trim()) return 'Скажите, почему она, а не то, что перечислили выше.';
       return '';
     },
     foot: function (m) {
@@ -463,43 +469,26 @@
       // то же обоснование, что в СПЕК §4.5а: случайность давала бы разным участникам
       // разную задачу и не воспроизводилась бы харнессом модели. Первый — потому что
       // с главного обычно и начинают, то есть догадка правдоподобна, а не техническая.
-      var drawPick = function () {
-        var live = m.rays.map(function (r, i) { return { r: r, i: i }; })
-                         .filter(function (x) { return String(x.r.gist).trim(); });
-        var guess = live.length ? live[0].i : null;
-        // Реплика Агеева второго такта — из сцены (act.probe), как у печати.
-        var h = ctx.speech(ctx.probe) +
-          head(COPY.variants.section, '<span class="mx-count">' +
-          COPY.variants.main + ': ' + (m.mainIx == null ? 'не отмечено' : '№' + (m.mainIx + 1)) + '</span>');
-        live.forEach(function (x) {
-          var on = m.mainIx === x.i;
-          h += '<div class="mx-card"><div class="mx-card-top"><span class="bl-n">' + (x.i + 1) + '</span>' +
-            '<div class="mx-acts">' +
-            (on
-              ? '<button type="button" class="s2-act is-on mx-flag" data-main="' + x.i +
-                '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.variants.main) + '</button>'
-              : '<button type="button" class="s2-act" data-main="' + x.i + '">' + ctx.esc(COPY.variants.main) + '</button>') +
-            '</div></div>' +
-            '<div class="mx-ray-gist">' + ctx.br(ctx.esc(x.r.gist)) + '</div></div>';
+      // Второй такт: перечисленное показано только для сверки, править его уже нельзя —
+      // веер сдан. Ниже два поля: сама рекомендация и почему она, а не эти.
+      var drawMain = function () {
+        var live = m.rays.filter(function (r) { return String(r.gist).trim(); });
+        var h = ctx.speech(ctx.probe) + head(COPY.variants.section, '');
+        live.forEach(function (r, i) {
+          h += '<div class="mx-card mx-card-ro"><div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span></div>' +
+            '<div class="mx-ray-gist">' + ctx.br(ctx.esc(r.gist)) + '</div></div>';
         });
-        h += field(ctx, { id: 'mxMW', f: 'mainWhy', label: COPY.variants.mainWhy.label,
+        h += field(ctx, { id: 'mxMT', f: 'mainText', label: COPY.variants.main.label,
+                          ph: COPY.variants.main.ph, rows: 3, val: m.mainText }) +
+             field(ctx, { id: 'mxMW', f: 'mainWhy', label: COPY.variants.mainWhy.label,
                           ph: COPY.variants.mainWhy.ph, rows: 3, val: m.mainWhy });
         host.innerHTML = h;
-        var ta = host.querySelector('[data-f="mainWhy"]');
-        if (ta) ta.addEventListener('input', function () { m.mainWhy = ta.value; ctx.save(); ctx.sync(); });
-        return guess;
+        var mt = host.querySelector('[data-f="mainText"]');
+        if (mt) mt.addEventListener('input', function () { m.mainText = mt.value; ctx.save(); ctx.sync(); });
+        var mw = host.querySelector('[data-f="mainWhy"]');
+        if (mw) mw.addEventListener('input', function () { m.mainWhy = mw.value; ctx.save(); ctx.sync(); });
       };
-      if (m.picked != null) {
-        wireClick(host, function (e) {
-          var a = e.target.getAttribute && e.target.getAttribute('data-main');
-          if (a == null) return;
-          var ix = Number(a);
-          m.mainIx = (m.mainIx === ix) ? null : ix;
-          ctx.save(); drawPick(); ctx.sync();
-        });
-        drawPick();
-        return;
-      }
+      if (m.picked != null) { drawMain(); return; }
       var draw = function () {
         var h = head(COPY.variants.section, '<span class="mx-count">вариантов: ' + m.rays.length + '</span>');
         m.rays.forEach(function (r, i) {
