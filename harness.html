@@ -151,7 +151,7 @@
 <script src="js/backlog.js?v=3"></script>
 <script src="js/scenes.js?v=50"></script>
 <script src="js/mechanics.js?v=31"></script>
-<script src="js/mech-fields.js?v=16"></script>
+<script src="js/mech-fields.js?v=17"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -369,7 +369,7 @@
       // стоят над стопкой «Берём» у человека, и его же раскладка в полях.
       var sumBeat = (step.mech === 'list' && run.listStage === 'sum' && run.mech.list);
       if (sumBeat) {
-        form = window.imp.mechFilled ? window.imp.mechFilled('list', run.mech.list) : form;
+        form = window.imp.mechFilled ? window.imp.mechFilled('list', run.mech.list, { criteria: true }) : form;
       }
       if (step.mech === 'seal') {
         if (run.sealStage === 'phrase') {
@@ -592,8 +592,13 @@
     // его нет, и toState вернул бы пустую строку, а гейт разбора требует непустые
     // критерии. У человека текст просто остаётся в состоянии шага; здесь переносим его
     // так же, из сохранённого прежнего ответа.
-    if (s.mech === 'list' && run.sealBack && run.sealBack.prev && !String(obj.criteria || '').trim()) {
-      obj.criteria = String(run.sealBack.prev.criteria || '');
+    // Источник прежнего текста два: на возврате — сохранённый ответ до печати, на такте
+    // счёта — черновик раскладки, принятый такт назад. У человека в обоих случаях текст
+    // просто остаётся в поле и не пропадает, если он его не тронул.
+    if (s.mech === 'list' && !String(obj.criteria || '').trim()) {
+      var prevCrit = (run.sealBack && run.sealBack.prev && run.sealBack.prev.criteria) ||
+                     (run.mech.list && run.mech.list.criteria) || '';
+      if (prevCrit) obj.criteria = String(prevCrit);
     }
     // ГЕЙТ САМОЙ МЕХАНИКИ — тот же, что держит человека.
     var fail = M[s.mech].gate(obj, ctx());
