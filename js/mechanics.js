@@ -73,8 +73,9 @@
       worst:   'Самый тревожный симптом',
       why:     { label: 'Почему именно это', ph: 'ваш ответ' },
       links:   'Как тезисы связаны друг с другом',
-      link:    'Связка',
-      lwhy:    { label: 'Что из чего вытекает', ph: 'например: A усиливает B' },
+      // ⚠ ПОДПИСЬ «Связка» УБРАНА 14.08 вместе с конструктором связок: нумерованных
+      // связок на экране больше нет, вместо них два свободных поля.
+      lwhy:    { label: 'Что с чем связано и как', ph: 'например: A усиливает B, потому что…' },
       // ⚠ ФОРМУЛИРОВКА ПЕРЕПИСАНА 14.08 (решение владельца). Было «Что из этого
       // следует для Агеева». Участник честно не понимал, чего просят: «следует» —
       // это мысль или действие? а «для Агеева» читалось как «что ему с этого».
@@ -83,7 +84,7 @@
       // к нему декларативно». Значит нужен прямо назван артефакт — ВЫВОД — и объект
       // — КОМПАНИЯ. Слово «вывод» участник уже читает у Агеева («иначе получу готовые
       // выводы и не пойму, откуда они взялись»), поэтому это не наша лексика.
-      lconc:   { label: 'Какой из этого вывод для компании' }
+      lconc:   { label: 'Какой из этого вывод для компании', ph: 'ваш ответ' }
     },
     variants: {
       section: 'Ваши варианты',
@@ -168,7 +169,10 @@
   var NORM = 12;
   M.theses = {
     init: function () {
-      return { cards: [{ id: 1, text: '', anchor: '' }], nextId: 2, first: null, why: '', links: [], pending: [] };
+      // links/pending остались пустыми ради записей до 14.08: сводки и рендер судьи
+      // читают оба вида — прежние объекты связок и нынешние два поля.
+      return { cards: [{ id: 1, text: '', anchor: '' }], nextId: 2, first: null, why: '',
+               linkWhy: '', linkConc: '', links: [], pending: [] };
     },
     gate: function (m, ctx) {
       if (ctx.isDemo) return '';
@@ -183,8 +187,9 @@
     },
     locked: function (m, ctx) {
       var n = m.cards.filter(function (c) { return String(c.text).trim(); }).length;
+      // Счётчика связок больше нет — считать нечего: про связи спрашивают двумя
+      // свободными полями, а не нумерованными объектами.
       return '<b>' + n + '</b> ' + plural(n, 'тезис', 'тезиса', 'тезисов') +
-        ' · связок: <b>' + m.links.length + '</b>' +
         ' <span class="bl-locked-hint">целиком — во вкладке «Мои ответы»</span>';
     },
     render: function (host, m, ctx) {
@@ -291,22 +296,27 @@
         // в списке связок появлялись только после следующей перерисовки, то есть
         // когда участник добавлял ещё один тезис. Поймано владельцем 07.08.
 
-        h += head(COPY.theses.links, '<span class="mx-count">связок: ' + m.links.length + '</span>');
-        m.links.forEach(function (lk, li) {
-          var refs = lk.ids.map(function (id) {
-            var x = byId(id); return x ? '«' + ctx.esc(cut(x.text, 40)) + '»' : '';
-          }).filter(Boolean).join(' + ');
-          h += '<div class="mx-link"><div class="mx-card-top"><span class="mx-link-n">' + ctx.esc(COPY.theses.link) + ' ' + (li + 1) + '</span>' +
-            '<div class="mx-acts"><button type="button" class="s2-act" data-linkdel="' + li + '">убрать</button></div></div>' +
-            '<p class="mx-link-refs">' + refs + '</p>' +
-            // Пример на буквах и в ДВА звена (правка ревью №8): трёхзвенный
-            // «A→B→C» рисовал форму верха АК-2 — многозвенная цепочка обязана
-            // прийти сама, а не быть подсказана плейсхолдером.
-            field(ctx, { id: 'mxLw' + li, f: 'lwhy', i: li, label: COPY.theses.lwhy.label, rows: 2, ph: COPY.theses.lwhy.ph, val: lk.why }) +
-            field(ctx, { id: 'mxLc' + li, f: 'lconc', i: li, label: COPY.theses.lconc.label, rows: 2, val: lk.conclusion }) +
-            '</div>';
-        });
-        h += '<div class="mx-pick-host"></div>';
+        // ⚠ КОНСТРУКТОР СВЯЗОК УБРАН 14.08 (решение владельца). Было так: отметить
+        // 2–4 карточки, нажать «создать связь», заполнить два поля — то есть шесть
+        // действий на одну мысль, которая в прозе занимает одно предложение. Тот, кто
+        // думает связно, был обязан сначала разложить мысль на атомы-карточки, а потом
+        // собрать её обратно нашим жестом.
+        //
+        // Почему это безопасно для замера. Судья и раньше получал связки ТЕКСТОМ, а не
+        // структурой (backend/code.js, v2MechText_ печатал тексты карточек, не номера),
+        // а промпт АК-2 прямо говорит: «Структуру не проверяй: списком, прозой или
+        // вперемешку — неважно». Тезисы приезжают ему пронумерованными в том же блоке,
+        // поэтому ссылка «первый и пятый» разрешается однозначно.
+        //
+        // Полей ДВА, а не одно: v10 стр. 1083 требует и цепочку, И вывод из неё
+        // («рекомендации наблюдаемо вытекают из анализа»), а судья ищет их отдельными
+        // маркерами chainReal и conclusionFollows. В одном поле они сливаются, и
+        // различать пришлось бы на глаз.
+        h += head(COPY.theses.links, '');
+        h += field(ctx, { id: 'mxLw', f: 'linkWhy', label: COPY.theses.lwhy.label,
+                          rows: 3, ph: COPY.theses.lwhy.ph, val: m.linkWhy }) +
+             field(ctx, { id: 'mxLc', f: 'linkConc', label: COPY.theses.lconc.label,
+                          rows: 3, ph: COPY.theses.lconc.ph, val: m.linkConc });
         host.innerHTML = h;
 
         // Части, зависящие от текста карточек. Зовётся и из draw(), и на каждый ввод
@@ -325,28 +335,11 @@
             var w2 = slot.querySelector('#mxWhy');
             if (w2) w2.addEventListener('input', function () { m.why = w2.value; ctx.save(); });
           }
-          var pick = host.querySelector('.mx-pick-host');
-          if (!pick) return;
-          var named = m.cards.filter(function (x) { return String(x.text).trim(); });
-          if (named.length < 2) { pick.innerHTML = ''; return; }
-          var ph = '<p class="mx-hint">Отметьте от 2 до 4 карточек для новой связки</p>';
-          named.forEach(function (x) {
-            ph += '<label class="mx-pick"><input type="checkbox" data-pick="' + x.id + '"' +
-              (m.pending.indexOf(x.id) >= 0 ? ' checked' : '') + ' />' +
-              '<span>' + ctx.esc(cut(x.text, 70)) + '</span></label>';
-          });
-          var bad = m.pending.length < 2 || m.pending.length > 4;
-          ph += '<button type="button" class="mx-add" data-linkadd="1"' + (bad ? ' disabled' : '') + '>' +
-            'Создать связь из выбранных (' + m.pending.length + ')' + (bad ? ' — нужно 2–4' : '') + '</button>';
-          pick.innerHTML = ph;
-          pick.querySelectorAll('[data-pick]').forEach(function (chk) {
-            chk.addEventListener('change', function () {
-              var id = Number(chk.dataset.pick);
-              if (chk.checked) { if (m.pending.length < 4) m.pending.push(id); else chk.checked = false; }
-              else m.pending = m.pending.filter(function (p) { return p !== id; });
-              ctx.save(); drawDerived();
-            });
-          });
+          // ⚠ ВЫБОР КАРТОЧЕК ДЛЯ СВЯЗКИ УБРАН 14.08 вместе с самим конструктором.
+          // Здесь стоял список чекбоксов «отметьте от 2 до 4 карточек» и кнопка
+          // «создать связь из выбранных». Теперь про связи спрашивают двумя полями,
+          // и выбирать карточки не нужно: тезисы приезжают судье пронумерованными,
+          // ссылка словами разрешается однозначно.
         };
         drawDerived();
 
@@ -367,12 +360,12 @@
         // Было [data-lwhy] — атрибута с таким именем field() не ставит, поэтому
         // оба поля связки не подключались вовсе и текст в них терялся при
         // перерисовке. Поймано стендом.
-        host.querySelectorAll('[data-f="lwhy"]').forEach(function (ta) {
-          ta.addEventListener('input', function () { m.links[Number(ta.dataset.i)].why = ta.value; ctx.save(); });
-        });
-        host.querySelectorAll('[data-f="lconc"]').forEach(function (ta) {
-          ta.addEventListener('input', function () { m.links[Number(ta.dataset.i)].conclusion = ta.value; ctx.save(); });
-        });
+        // Два свободных поля вместо конструктора связок (14.08). Индекса у них нет —
+        // это не элементы списка, а поля шага.
+        var lw = host.querySelector('[data-f="linkWhy"]');
+        if (lw) lw.addEventListener('input', function () { m.linkWhy = lw.value; ctx.save(); ctx.sync(); });
+        var lc = host.querySelector('[data-f="linkConc"]');
+        if (lc) lc.addEventListener('input', function () { m.linkConc = lc.value; ctx.save(); ctx.sync(); });
       };
       // ⚠ ДЕЛЕГИРОВАННЫЙ КЛИК ВЕШАЕТСЯ ОДИН РАЗ, СНАРУЖИ draw(). Внутри draw() он
       // копился: innerHTML меняет потомков, но слушатель сидит на самом host, и
@@ -395,13 +388,8 @@
             var id = Number(a);
             m.cards = m.cards.filter(function (x) { return x.id !== id; });
             if (m.first === id) m.first = null;
-            m.pending = m.pending.filter(function (p) { return p !== id; });
-            // Связка держится минимум на двух карточках: если после удаления
-            // осталась одна, это уже не то, что отметил участник, — связка уходит.
-            m.links = m.links.filter(function (lk) {
-              lk.ids = lk.ids.filter(function (i3) { return i3 !== id; });
-              return lk.ids.length >= 2;
-            });
+            // Связок как объектов больше нет: текст про связи живёт в двух полях шага
+            // и от удаления карточки не зависит. Чистить нечего.
             ctx.save(); draw(); ctx.sync(); return;
           }
           if (t.getAttribute && t.getAttribute('data-add')) {
@@ -424,14 +412,6 @@
             var c2 = byId(Number(a));
             if (c2) { c2.anchor = ''; c2.anchorRef = null; ctx.save(); draw(); ctx.sync(); }
             return;
-          }
-          if ((a = t.getAttribute && t.getAttribute('data-linkdel'))) {
-            m.links.splice(Number(a), 1); ctx.save(); draw(); return;
-          }
-          if (t.getAttribute && t.getAttribute('data-linkadd')) {
-            if (m.pending.length < 2 || m.pending.length > 4) return;
-            m.links.push({ ids: m.pending.slice(), why: '', conclusion: '' });
-            m.pending = []; ctx.save(); draw(); return;
           }
       });
       draw();
@@ -1178,7 +1158,14 @@
     }).join('') + '</ol>';
     var f = m.cards.filter(function (c) { return c.id === m.first; })[0];
     if (f) h += p(COPY.theses.worst, ctx.br(f.text) + '<br /><b>Почему:</b> ' + ctx.br(m.why));
-    if (m.links.length) {
+    // Два поля про связи (с 14.08). Показываем их, если заполнены.
+    if (String(m.linkWhy || '').trim() || String(m.linkConc || '').trim()) {
+      h += p(COPY.theses.links, '');
+      if (String(m.linkWhy || '').trim()) h += p(COPY.theses.lwhy.label, ctx.br(m.linkWhy));
+      if (String(m.linkConc || '').trim()) h += p(COPY.theses.lconc.label, ctx.br(m.linkConc));
+    }
+    // Прежние связки-объекты — только у записей до 14.08.
+    if ((m.links || []).length) {
       h += p('Связки (' + m.links.length + ')', '');
       m.links.forEach(function (lk) {
         var t = lk.ids.map(function (id) {

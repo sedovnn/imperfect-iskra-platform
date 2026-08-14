@@ -223,9 +223,11 @@
                                [C.theses.src.label]: C.theses.src.ph }],
         [C.theses.worst]: 'номер тезиса из списка выше',
         [C.theses.why.label]: C.theses.why.ph,
-        [C.theses.links]: [{ 'Связка': ['номера тезисов'],
-                             [C.theses.lwhy.label]: C.theses.lwhy.ph,
-                             [C.theses.lconc.label]: 'ваш ответ' }]
+        // ⚠ КОНСТРУКТОРА СВЯЗОК БОЛЬШЕ НЕТ (14.08). Было: массив объектов с номерами
+        // карточек, механизмом и выводом. Теперь два плоских поля, как на экране —
+        // модель отвечает прозой и ссылается на номера тезисов словами.
+        [C.theses.lwhy.label]: C.theses.lwhy.ph,
+        [C.theses.lconc.label]: C.theses.lconc.ph
       },
       toState: function (o) {
         var cards = (o[C.theses.section] || o['тезисы'] || o.cards || []).map(function (c, i) {
@@ -252,7 +254,12 @@
                    conclusion: String(l[C.theses.lconc.label] || l['Что из этого следует для Агеева'] || l['что из этого следует для Агеева'] || l.conclusion || '') };
         });
         return { cards: cards, nextId: cards.length + 1, first: first || null,
-                 why: String(o[C.theses.why.label] || o['Почему именно это'] || o['почему именно это'] || o.why || ''), links: links, pending: [] };
+                 why: String(o[C.theses.why.label] || o['Почему именно это'] || o['почему именно это'] || o.why || ''),
+                 // Два поля про связи — с 14.08. `links` остаётся ради записей, сделанных
+                 // до этой даты: их читают и сводка, и рендер судьи.
+                 linkWhy: String(o[C.theses.lwhy.label] || o['что с чем связано и как'] || ''),
+                 linkConc: String(o[C.theses.lconc.label] || o['какой из этого вывод для компании'] || ''),
+                 links: links, pending: [] };
       }
     },
 
