@@ -228,7 +228,15 @@
       },
       toState: function (o) {
         var cards = (o[C.theses.section] || o['тезисы'] || o.cards || []).map(function (c, i) {
-          return { id: i + 1, text: String(c['тезис'] || c.text || c || ''), anchor: String(c['откуда это в материалах'] || c.anchor || '') };
+          // ⚠ КЛЮЧИ ИЗ РЕЕСТРА, а не строкой. Здесь стояло c['тезис'] и
+          // c['откуда это в материалах'] — прежние имена. После перевода форм на реестр
+          // (13.08) форма отдаёт «Тезис» и «Подтвердить заметкой в материалах», читатель
+          // остался на старых, и `String(объект)` писал в карточку «[object Object]».
+          // Восемь тезисов живого прогона ГигаЧата потеряны так. Проверка это пропустила,
+          // потому что сверяла СОСТАВ ключей состояния, а не то, доехало ли содержимое.
+          return { id: i + 1,
+                   text: String((typeof c === 'string' ? c : (c['Тезис'] || c['тезис'] || c.text)) || ''),
+                   anchor: String((c && (c[C.theses.src.label] || c['откуда это в материалах'] || c.anchor)) || '') };;
         });
         var first = parseInt(String(o[C.theses.worst] || o['самый тревожный'] || o.first || '').replace(/\D/g, ''), 10);
         var links = (o[C.theses.links] || o['связки'] || o.links || []).map(function (l) {
