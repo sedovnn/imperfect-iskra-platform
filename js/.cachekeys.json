@@ -1,0 +1,123 @@
+{
+ "js/api.js": {
+  "sha": "1fe04ab44e12",
+  "keys": {
+   "assessment.html": 5,
+   "cabinet.html": 5,
+   "harness.html": 5,
+   "index.html": 5,
+   "vitrina.html": 5
+  }
+ },
+ "js/backlog.js": {
+  "sha": "1f0bd11d2146",
+  "keys": {
+   "assessment.html": 3,
+   "cabinet.html": 3,
+   "harness.html": 3
+  }
+ },
+ "js/boot-loading.js": {
+  "sha": "46795025344e",
+  "keys": {
+   "assessment.html": 4
+  }
+ },
+ "js/cabinet.js": {
+  "sha": "ba87d84b9859",
+  "keys": {
+   "cabinet.html": 16
+  }
+ },
+ "js/case-ref.js": {
+  "sha": "85a022bd3959",
+  "keys": {
+   "assessment.html": 14,
+   "harness.html": 14
+  }
+ },
+ "js/case-text.js": {
+  "sha": "852fddfe3e89",
+  "keys": {
+   "harness.html": 1
+  }
+ },
+ "js/dialog.js": {
+  "sha": "e918cd40f0af",
+  "keys": {
+   "assessment.html": 1,
+   "cabinet.html": 1,
+   "harness.html": 1
+  }
+ },
+ "js/edits.js": {
+  "sha": "102343d933cb",
+  "keys": {
+   "assessment.html": 1
+  }
+ },
+ "js/engine.js": {
+  "sha": "ce81e436593e",
+  "keys": {
+   "assessment.html": 55
+  }
+ },
+ "js/main.js": {
+  "sha": "bf06424bd396",
+  "keys": {
+   "assessment.html": 7,
+   "cabinet.html": 7,
+   "harness.html": 7,
+   "index.html": 7,
+   "intro.html": 7,
+   "role.html": 7,
+   "vitrina.html": 7
+  }
+ },
+ "js/mech-fields.js": {
+  "sha": "be5eea40adbe",
+  "keys": {
+   "harness.html": 21
+  }
+ },
+ "js/mechanics.js": {
+  "sha": "f51ae2311915",
+  "keys": {
+   "assessment.html": 32,
+   "cabinet.html": 32,
+   "harness.html": 32
+  }
+ },
+ "js/report-texts.js": {
+  "sha": "28c06933fa24",
+  "keys": {
+   "report-example.html": 1
+  }
+ },
+ "js/report.js": {
+  "sha": "f4d48b9fc508",
+  "keys": {
+   "report-example.html": 6
+  }
+ },
+ "js/scenes.js": {
+  "sha": "2b5783019a28",
+  "keys": {
+   "assessment.html": 51,
+   "cabinet.html": 51,
+   "harness.html": 51,
+   "role.html": 51
+  }
+ },
+ "js/typo.js": {
+  "sha": "b22a347795f1",
+  "keys": {
+   "assessment.html": 2,
+   "cabinet.html": 2,
+   "index.html": 2,
+   "intro.html": 2,
+   "role.html": 2,
+   "vitrina.html": 2
+  }
+ }
+}
