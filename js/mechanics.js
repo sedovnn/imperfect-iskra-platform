@@ -88,7 +88,18 @@
     variants: {
       section: 'Ваши варианты',
       gist:    { label: 'Вариант' },
-      from:    { label: 'Как пришли к такой идее?' }
+      from:    { label: 'Как пришли к такой идее?' },
+      // ⚠ ВТОРОЙ ТАКТ ДОБАВЛЕН 14.08 (решение владельца). Агеев говорил «основная
+      // рекомендация у вас уже готова, но придержите её пока» — и не возвращался
+      // за ней НИ РАЗУ до вечернего письма: обещание «пока» день не выполнял.
+      // Замер страдал вместе с лором: v10 стр. 1271 требует для ГА-1 2→3, чтобы пути
+      // были «предъявлены как соразмерные, МЕЖДУ НИМИ ДЕЛАЕТСЯ ВЫБОР», а выбора
+      // мы не собирали — только веер.
+      // Порядок такой намеренно: сначала веер, потом выбор. Если спросить «какое
+      // основное» сразу, участник напишет рекомендацию первой строкой, а остальное
+      // дозаполнит для галочки — то есть веер породится под рамкой выбора, а не до неё.
+      main:    'основное решение',
+      mainWhy: { label: 'Почему именно оно основное', ph: 'ваш ответ' }
     },
     list: {
       crit:    { label: 'Почему именно так', ph: 'ваш ответ' },
@@ -437,15 +448,29 @@
     // ярлык прежде, чем сказана сама мысль, и на экране стояло первым — то есть
     // человек начинал с упаковки. `name` остаётся в состоянии пустой строкой: записи
     // до 12.08 его несут, и сводки читают оба поля.
-    init: function () { return { rays: [{ name: '', gist: '', from: '' }] }; },
+    // picked === null — первый такт (веер). После «Ответить» становится true, и
+    // открывается второй такт: какое из записанного основное и почему.
+    init: function () { return { rays: [{ name: '', gist: '', from: '' }], picked: null, mainIx: null, mainWhy: '' }; },
     gate: function (m, ctx) {
       if (ctx.isDemo) return '';
-      return m.rays.some(function (r) { return String(r.gist).trim(); })
-        ? '' : 'Нужен хотя бы один вариант с непустой сутью.';
+      if (m.picked == null) {
+        return m.rays.some(function (r) { return String(r.gist).trim(); })
+          ? '' : 'Нужен хотя бы один вариант с непустой сутью.';
+      }
+      if (m.mainIx == null) return 'Отметьте, какое решение основное.';
+      if (!String(m.mainWhy).trim()) return 'Скажите, почему именно оно основное.';
+      return '';
     },
-    foot: function () {
+    foot: function (m) {
       // Инфинитив, а не прошедшее время в мужском роде: см. scenes.js, правка 11.08.
-      return { note: '', cta: 'Ответить →' };
+      return { note: '', cta: (m && m.picked != null) ? 'Ответить →' : 'Ответить →' };
+    },
+    // Первый «Ответить» день НЕ двигает: он закрывает веер и открывает выбор.
+    // Тот же приём, что у печати (M.seal.onCta): вернуть false значит «я
+    // перерисовалась сама», день остаётся на этом шаге.
+    onCta: function (m, ctx) {
+      if (m.picked == null) { m.picked = true; ctx.save(); ctx.redraw(); return false; }
+      return true;
     },
     locked: function (m) {
       var n = m.rays.filter(function (r) { return String((r.name || '') + r.gist).trim(); }).length;
@@ -453,6 +478,48 @@
         ' <span class="bl-locked-hint">целиком — во вкладке «Мои ответы»</span>';
     },
     render: function (host, m, ctx) {
+      // ── ВТОРОЙ ТАКТ: какое из записанного основное ──────────────────────────
+      // Агеев «угадывает» ПЕРВЫЙ записанный вариант. Правило детерминировано, и это
+      // то же обоснование, что в СПЕК §4.5а: случайность давала бы разным участникам
+      // разную задачу и не воспроизводилась бы харнессом модели. Первый — потому что
+      // с главного обычно и начинают, то есть догадка правдоподобна, а не техническая.
+      var drawPick = function () {
+        var live = m.rays.map(function (r, i) { return { r: r, i: i }; })
+                         .filter(function (x) { return String(x.r.gist).trim(); });
+        var guess = live.length ? live[0].i : null;
+        // Реплика Агеева второго такта — из сцены (act.probe), как у печати.
+        var h = ctx.speech(ctx.probe) +
+          head(COPY.variants.section, '<span class="mx-count">' +
+          COPY.variants.main + ': ' + (m.mainIx == null ? 'не отмечено' : '№' + (m.mainIx + 1)) + '</span>');
+        live.forEach(function (x) {
+          var on = m.mainIx === x.i;
+          h += '<div class="mx-card"><div class="mx-card-top"><span class="bl-n">' + (x.i + 1) + '</span>' +
+            '<div class="mx-acts">' +
+            (on
+              ? '<button type="button" class="s2-act is-on mx-flag" data-main="' + x.i +
+                '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.variants.main) + '</button>'
+              : '<button type="button" class="s2-act" data-main="' + x.i + '">' + ctx.esc(COPY.variants.main) + '</button>') +
+            '</div></div>' +
+            '<div class="mx-ray-gist">' + ctx.br(ctx.esc(x.r.gist)) + '</div></div>';
+        });
+        h += field(ctx, { id: 'mxMW', f: 'mainWhy', label: COPY.variants.mainWhy.label,
+                          ph: COPY.variants.mainWhy.ph, rows: 3, val: m.mainWhy });
+        host.innerHTML = h;
+        var ta = host.querySelector('[data-f="mainWhy"]');
+        if (ta) ta.addEventListener('input', function () { m.mainWhy = ta.value; ctx.save(); ctx.sync(); });
+        return guess;
+      };
+      if (m.picked != null) {
+        wireClick(host, function (e) {
+          var a = e.target.getAttribute && e.target.getAttribute('data-main');
+          if (a == null) return;
+          var ix = Number(a);
+          m.mainIx = (m.mainIx === ix) ? null : ix;
+          ctx.save(); drawPick(); ctx.sync();
+        });
+        drawPick();
+        return;
+      }
       var draw = function () {
         var h = head(COPY.variants.section, '<span class="mx-count">вариантов: ' + m.rays.length + '</span>');
         m.rays.forEach(function (r, i) {
