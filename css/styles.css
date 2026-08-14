@@ -3228,6 +3228,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Ряд «Ответить» внутри своей карточки: прижат вправо, как и подвал колонки, —
    действие всегда у правого края, где бы оно ни стояло. */
 .mine-act { display: flex; justify-content: flex-end; margin-top: 10px; }
+/* Реплики, которые остаются на экране, пока участник отвечает (14.08). Своей рамки
+   у них НЕТ намеренно: это те же пузыри разговора, просто не уехавшие в свёртку.
+   Рамка сделала бы из них «блок с заданием», то есть анкету вместо разговора. */
+.talk-kept { border: 0; background: none; padding: 0; }
+.talk-kept + .talk-folded { margin-top: 10px; }
 .talk-folded { border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--soft); }
 .talk-folded-sum {
   display: flex; align-items: baseline; gap: 10px; cursor: pointer; list-style: none;

@@ -1777,10 +1777,40 @@
   // ── СВЁРНУТЫЕ РЕПЛИКИ: одна строка вместо семи пузырей ──
   // Раскрывается кликом и остаётся раскрытой до следующей перерисовки: перечитать
   // сказанное надо уметь всегда — тот же принцип, по которому кейс открыт до конца.
+  // ⚠ ВОПРОС ОСТАЁТСЯ НА ЭКРАНЕ (14.08, решение владельца). Прежде в свёртку уезжало
+  // ВСЁ сказанное, и участник писал ответ, видя только названия полей: «Ваши варианты /
+  // Вариант / Как пришли к такой идее?» — а вариантов ЧЕГО, лежало за кликом. На шаге
+  // вариантов это прямо портило замер ГА-1: привязка к основной рекомендации была в
+  // спрятанной реплике. Пузыри с признаком keep остаются видимыми над верстаком,
+  // обстановка («проходите, садитесь», «тезисы прочитал в субботу») уезжает в свёртку.
+  //
+  // Правило «оставить последнюю реплику» не годится: у тезисов последняя — «Всё, не
+  // отвлекаю. До понедельника», а вопрос в шестой из восьми. Поэтому признак стоит в
+  // данных сцены, у каждого пузыря отдельно.
   function foldedSpeech(act, speeches) {
-    var foldCount = speeches.reduce(function (n, a) {
+    var keptActs = [], foldActs = [];
+    speeches.forEach(function (a) {
+      var bs = a.bubbles || [];
+      var kept = bs.filter(function (b) { return b && b.keep; });
+      if (!kept.length) { foldActs.push(a); return; }
+      var rest = bs.filter(function (b) { return !(b && b.keep); });
+      // Ремарка («кивнув на распечатку») остаётся у свёрнутой части: над вопросом она
+      // описывает жест, которого участник уже не видит.
+      keptActs.push({ id: a.id + '.keep', kind: 'speech', who: a.who, bubbles: kept });
+      if (rest.length) foldActs.push({ id: a.id, kind: 'speech', who: a.who, note: a.note, bubbles: rest });
+    });
+    var foldCount = foldActs.reduce(function (n, a) {
       return n + ((a.bubbles || []).length || 1);
     }, 0);
+    var frag = document.createDocumentFragment();
+    if (keptActs.length) {
+      var box = document.createElement('div');
+      box.className = 's2-block talk-kept';
+      box.innerHTML = keptActs.map(function (a) { return speechHtml(a); }).join('');
+      frag.appendChild(box);
+    }
+    // Если прятать нечего — свёртки не рисуем вовсе: пустая строка «0 реплик» врала бы.
+    if (!foldCount) return frag;
     var det = document.createElement('details');
     det.className = 's2-block talk-folded';
     det.innerHTML = '<summary class="talk-folded-sum">' +
@@ -1789,8 +1819,9 @@
         // реплика» противоречило бы тому, что участник только что прочитал.
         '<span class="talk-folded-n">' + foldCount + ' ' +
           plural(foldCount, 'реплика', 'реплики', 'реплик') + ' · показать</span>' +
-      '</summary><div class="talk-folded-body">' + speeches.map(function (a) { return speechHtml(a); }).join('') + '</div>';
-    return det;
+      '</summary><div class="talk-folded-body">' + foldActs.map(function (a) { return speechHtml(a); }).join('') + '</div>';
+    frag.appendChild(det);
+    return frag;
   }
 
   // ⚠ recapBlock удалён 07.08 вместе с актом «свод дня» (правка владельца):
