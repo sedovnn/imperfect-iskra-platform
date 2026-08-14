@@ -291,7 +291,20 @@
   // поступка в механике списка.
   // «выделить „Миру" в отдельный P&L», М. Северова. Значение переехало в
   // js/backlog.js — это свойство позиции, и кабинет читает то же самое.
-  var SEVEROVA_ID = window.imp.severovaId;
+  // Кого участник встретит на выходе: правило живёт в js/backlog.js, здесь только
+  // сбор отказов из верстака. Возвращает саму заявку либо null.
+  function refusedIds() {
+    var lm = state.mech && state.mech.list;
+    if (!lm || !lm.decided) return [];
+    var ids = [];
+    Object.keys(lm.decided).forEach(function (k) {
+      var d = lm.decided[k];
+      if (d === 'later' || d === 'never') ids.push(String(k).replace(/^a/, ''));
+    });
+    return ids;
+  }
+  function refusedPick() { return window.imp.refusedOwner(refusedIds()); }
+  function refusedParts() { return window.imp.refusedParts(refusedIds()); }
   function listSums() {
     var lm = state.mech && state.mech.list;
     var spec = window.imp.mechanics && window.imp.mechanics.list;
@@ -311,10 +324,10 @@
       return t ? t.over : totals().over;
     }
     if (act.when === 'severova') {
-      var lm = state.mech && state.mech.list;
-      if (!lm || !lm.decided) return false;
-      var d = lm.decided['a' + SEVEROVA_ID];
-      return d === 'later' || d === 'never';
+      // Встреча есть у каждого, кто хоть что-то отложил или отклонил (решение
+      // владельца 14.08). Прежде условием был отказ ровно заявке №6, и окно было
+      // условным — из-за чего его пришлось держать вне балла.
+      return !!refusedPick();
     }
     return true;
   }
@@ -369,6 +382,18 @@
       // иначе персонаж говорит «Спасибо, . Прочитал» и выглядит сломанным.
       t = nm ? t.split('{name}').join(nm)
              : t.replace(/,\s*\{name\}/g, '').replace(/\{name\}\s*,\s*/g, '').split('{name}').join('');
+    }
+    // {who} и {title} — хозяин самой дорогой по людям отказанной заявки и её
+    // название. Подставляются только в сцене на выходе из офиса; если отказов нет,
+    // сцена не играется вовсе (applies), и подставлять нечего.
+    if (t.indexOf('{who}') >= 0 || t.indexOf('{title}') >= 0 || t.indexOf('{whoName}') >= 0) {
+      var pk = refusedPick();
+      // Готовые подстановки берём из backlog.js: там же, где правило выбора, лежит
+      // и подготовка текста (вложенные кавычки в названии заявки). Своей обработки
+      // здесь нет намеренно — иначе три харнесса разойдутся в мелочах.
+      t = t.split('{whoName}').join(pk.whoName)
+           .split('{who}').join(pk.who)
+           .split('{title}').join(pk.title);
     }
     if (t.indexOf('{people}') >= 0 || t.indexOf('{money}') >= 0) {
       // ⚠ ЧИСЛА БЕРУТСЯ ИЗ НОВОГО СПИСКА (правка 09.08). Здесь стоял старый
@@ -496,7 +521,11 @@
     // Фильтр ДО перебора, а не внутри: имя говорящего и ремарка привязаны к первому
     // пузырю, и пропуск первого молча стирал бы подпись реплики.
     (act.bubbles || []).filter(bubbleShown).forEach(function (b, i) {
-      var name = i === 0 ? (act.who || '') : '';
+      // ⚠ ИМЯ ГОВОРЯЩЕГО ТОЖЕ ЧЕРЕЗ subst. С 14.08 на выходе из офиса участника
+      // догоняет хозяин отказанной им заявки — кто именно, известно только в момент
+      // отрисовки, поэтому в сцене стоит {whoName}. Для остальных реплик подстановок
+      // в имени нет и subst здесь ничего не меняет.
+      var name = i === 0 ? subst(act.who || '') : '';
       var actLine = i === 0 ? (b.act || act.act || '') : (b.act || '');
       // Уже показанный пузырь рисуется на месте и без анимации; новый ждёт очереди.
       var rk = pre + ':' + i;
@@ -509,8 +538,8 @@
       }
       // Ремарка — своей строкой курсивом ПОД именем (решение владельца 07.08): в
       // одну строку с именем она читалась как часть должности.
-      out += '<div class="' + cls + '"' + attr + '><div class="chat-msg them"' + (act.who ? ' data-who="' + esc(act.who) + '"' : '') + '>' +
-        (name ? '<span class="chat-name">' + faceHtml(act.who) + esc(name) + '</span>' : '') +
+      out += '<div class="' + cls + '"' + attr + '><div class="chat-msg them"' + (act.who ? ' data-who="' + esc(subst(act.who)) + '"' : '') + '>' +
+        (name ? '<span class="chat-name">' + faceHtml(subst(act.who)) + esc(name) + '</span>' : '') +
         // ⚠ Ремарка рисуется и БЕЗ имени: у реплики «обращаясь к Дарье» говорящий тот
         // же, поэтому имени нет, а ремарка есть — и раньше она пропадала совсем.
         (i === 0 && act.note ? '<span class="chat-note">' + esc(act.note) + '</span>' : '') +

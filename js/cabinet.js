@@ -102,14 +102,16 @@
   // Спрашивали ли условный шаг. Правило ровно то же, что у движка в applies():
   // перебор — если разбор не уложился в рамку года; Северова — если «Миру»
   // отложена или отклонена. Считаем по фактам верстака, которые отдаёт бэкенд, и
-  // по window.imp.severovaId — тому же значению, по которому ветвится день.
+  // по window.imp.refusedOwner — тому же правилу, по которому ветвится день.
   // Возвращает null, когда судить не о чем: верстак ещё не заполнен.
   function conditionalAsked(key, lf) {
     if (!lf) return null;
     if (key === 'overspend') return lf.fitsFrame === false;
     if (key === 'severova') {
-      var id = window.imp.severovaId;
-      return (lf.deferred || []).some(function (x) { return String(x) === String(id); });
+      // Правило одно на всех — js/backlog.js. С 14.08 встреча срабатывает на ЛЮБОЙ
+      // отказ, а не только на заявку №6, поэтому здесь спрашиваем не про один id,
+      // а про наличие выбранного хозяина.
+      return !!window.imp.refusedOwner(lf.deferred || []);
     }
     return true;
   }

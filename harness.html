@@ -148,8 +148,8 @@
 <script src="js/main.js?v=7"></script>
 <script src="js/api.js?v=5"></script>
 <script src="js/dialog.js?v=1"></script>
-<script src="js/backlog.js?v=3"></script>
-<script src="js/scenes.js?v=51"></script>
+<script src="js/backlog.js?v=5"></script>
+<script src="js/scenes.js?v=53"></script>
 <script src="js/mechanics.js?v=32"></script>
 <script src="js/mech-fields.js?v=21"></script>
 <script src="js/case-text.js?v=1"></script>
@@ -211,8 +211,9 @@
     if (!lm) return false;
     if (when === 'overspend') return !!M.list.sums(lm, ctx()).over;
     if (when === 'severova') {
-      var d = (lm.decided || {})['a' + window.imp.severovaId];
-      return d === 'later' || d === 'never';
+      // Правило одно на всех — js/backlog.js. С 14.08 встреча у каждого, кто хоть
+      // что-то отложил или отклонил, а не только у отказавших заявке №6.
+      return !!refusedPick();
     }
     return true;
   }
@@ -279,9 +280,27 @@
   // история нужна — там каждый вызов к API без памяти, — а чату нет.
   // Подстановки маршрута: {name} и единственная числовая пара {people}/{money} —
   // тот же счётчик, который человек видит на экране разбора.
+  // Кого модель встретит на выходе. Сбор отказов здесь, правило выбора — в
+  // js/backlog.js, тот же вызов, что у движка страницы.
+  function refusedIds() {
+    var lm = run && run.mech && run.mech.list;
+    if (!lm || !lm.decided) return [];
+    var ids = [];
+    Object.keys(lm.decided).forEach(function (k) {
+      var d = lm.decided[k];
+      if (d === 'later' || d === 'never') ids.push(String(k).replace(/^a/, ''));
+    });
+    return ids;
+  }
+  function refusedPick() { return window.imp.refusedOwner(refusedIds()); }
+
   function sub(t) {
     var lm = run.mech.list, tt = lm ? M.list.sums(lm, ctx()) : null;
+    var pk = window.imp.refusedParts(refusedIds());
     return String(t == null ? '' : t).split('{name}').join(run.tag)
+      .split('{whoName}').join(pk.whoName)
+      .split('{who}').join(pk.who)
+      .split('{title}').join(pk.title)
       .replace('{people}', tt ? String(tt.people) : '')
       .replace('{money}', tt ? num(tt.money) : '');
   }
