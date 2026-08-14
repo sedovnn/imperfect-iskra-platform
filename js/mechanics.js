@@ -47,6 +47,69 @@
     host.addEventListener('click', handler);
   }
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // РЕЕСТР СЛОВ ЭКРАНА — единственный источник подписей и подсказок (13.08).
+  //
+  // ЗАЧЕМ. Слова полей жили в двух местах: здесь, в разметке верстаков, и своей
+  // копией в js/mech-fields.js — форме, которую заполняет модель в харнессе. Копии
+  // разошлись, и это ловилось дважды за один день: человек читал «Как пришли к такой
+  // идее?», модель получала «как пришли к такой идее»; человек видел подсказку
+  // «например: A усиливает B», модель — многоточие. То есть паритет, ради которого
+  // прогоны моделей вообще имеют смысл, ломался на наших же словах.
+  //
+  // ПРАВИЛО. Ни одной подписи и ни одной подсказки поля больше не набирается на
+  // месте — только отсюда. Форма харнесса собирается из этого же реестра, файл
+  // вычитки берёт слова оттуда же. Расхождение теперь невозможно не потому, что я
+  // помню, а потому, что копии нет. Строгость держит eval/lint_harness.js.
+  //
+  // ЧЕГО ЗДЕСЬ НЕТ. Заголовки счётчиков («связок: N», «вариантов: N») и служебные
+  // кнопки («убрать», «+ тезис») — они не поля ответа, модель их не заполняет.
+  var COPY = {
+    theses: {
+      section: 'Тезисы',
+      item:    { ph: 'ваш тезис' },
+      src:     { label: 'Подтвердить заметкой в материалах',
+                 ph: 'или словами: если ссылаетесь на материалы — где именно (необязательно)' },
+      worst:   'Самый тревожный симптом',
+      why:     { label: 'Почему именно это', ph: 'ваш ответ' },
+      links:   'Как тезисы связаны друг с другом',
+      link:    'Связка',
+      lwhy:    { label: 'Что из чего вытекает', ph: 'например: A усиливает B' },
+      lconc:   { label: 'Что из этого следует для Агеева' }
+    },
+    variants: {
+      section: 'Ваши варианты',
+      gist:    { label: 'Вариант' },
+      from:    { label: 'Как пришли к такой идее?' }
+    },
+    list: {
+      crit:    { label: 'Почему именно так', ph: 'ваш ответ' },
+      choices: 'берём / не сейчас / не делаем'
+    },
+    seal: {
+      phrase:  { ph: 'ваш ответ' }
+    },
+    futures: {
+      section: 'Варианты будущего',
+      card:    { ph: 'ваш ответ' },
+      bet:     'наиболее вероятный',
+      betPick: 'отметить наиболее вероятным',
+      betwhy:  { ph: 'ваш ответ' }
+    },
+    goal: {
+      became:  { label: 'Чем стала компания' },
+      gave:    { label: 'Чем пришлось пожертвовать', ph: 'необязательно' },
+      years:   'Через сколько лет'
+    },
+    letter: {
+      what:    { label: 'Что мы делаем' },
+      why:     { label: 'Почему именно это' },
+      how:     { label: 'Как мы туда идём' },
+      works:   { label: 'Почему эта стратегия сработает' }
+    }
+  };
+  window.imp.mechCopy = COPY;
+
   function field(ctx, o) {
     var id = o.id;
     // Пустая подпись НЕ рисуется: пустой <label> держал строку и давал пустоту над
@@ -168,10 +231,10 @@
             '<button type="button" class="s2-act" data-anchorclose="' + x.id + '">скрыть</button></div>';
         } else {
           h += '<button type="button" class="s2-act mx-anchor-open" data-anchoropen="' + x.id + '">' +
-            'Подтвердить заметкой в материалах' + (marks.length ? ' (' + marks.length + ')' : '') + '</button>';
+            COPY.theses.src.label + (marks.length ? ' (' + marks.length + ')' : '') + '</button>';
         }
         h += '<input type="text" class="mx-input mx-input-thin" data-answer="1" data-anchor="' + x.id + '"' +
-          ' placeholder="или словами: если ссылаетесь на материалы — где именно (необязательно)" value="' +
+          ' placeholder="' + ctx.esc(COPY.theses.src.ph) + '" value="' +
           ctx.esc(x.anchor) + '" />';
         return h;
       };
@@ -179,7 +242,7 @@
         // ⚠ Слот отмеченного стоит ПЕРВЫМ и появляется только когда симптом отмечен
         // (правка владельца 07.08): пустая рамка «пока ничего» внизу занимала экран
         // обещанием, а отмеченное — то, ради чего Агеев просил отметить отдельно.
-        var h = '<div class="mx-slot-host"></div>' + head('Тезисы', normCount(m.cards.length, NORM));
+        var h = '<div class="mx-slot-host"></div>' + head(COPY.theses.section, normCount(m.cards.length, NORM));
         m.cards.forEach(function (x, i) {
           h += '<div class="mx-card' + (m.first === x.id ? ' is-first' : '') + '" data-card="' + x.id + '">' +
             '<div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span>' +
@@ -190,11 +253,11 @@
                 // Сама метка — КНОПКА: повторный клик её снимает, и об этом сказано
                 // в title, иначе обратимость есть, но невидима.
                 ? '<button type="button" class="s2-act is-on mx-flag" data-first="' + x.id +
-                  '" title="Нажмите ещё раз, чтобы снять метку">Самый тревожный симптом</button>'
-                : '<button type="button" class="s2-act" data-first="' + x.id + '">Самый тревожный симптом</button>') +
+                  '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.theses.worst) + '</button>'
+                : '<button type="button" class="s2-act" data-first="' + x.id + '">' + ctx.esc(COPY.theses.worst) + '</button>') +
               (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + x.id + '">убрать</button>' : '') +
             '</div></div>' +
-            '<textarea class="mx-input" data-answer="1" rows="3" data-text="' + x.id + '" placeholder="ваш тезис">' + ctx.esc(x.text) + '</textarea>' +
+            '<textarea class="mx-input" data-answer="1" rows="3" data-text="' + x.id + '" placeholder="' + ctx.esc(COPY.theses.item.ph) + '">' + ctx.esc(x.text) + '</textarea>' +
             // Подпись нейтральная (правка ревью №14): «Где в материалах это видно»
             // внушало, что легитимны только тезисы из пакета, а выход за кейс —
             // ровно граница АК-1 3→4.
@@ -209,19 +272,19 @@
         // в списке связок появлялись только после следующей перерисовки, то есть
         // когда участник добавлял ещё один тезис. Поймано владельцем 07.08.
 
-        h += head('Как тезисы связаны друг с другом', '<span class="mx-count">связок: ' + m.links.length + '</span>');
+        h += head(COPY.theses.links, '<span class="mx-count">связок: ' + m.links.length + '</span>');
         m.links.forEach(function (lk, li) {
           var refs = lk.ids.map(function (id) {
             var x = byId(id); return x ? '«' + ctx.esc(cut(x.text, 40)) + '»' : '';
           }).filter(Boolean).join(' + ');
-          h += '<div class="mx-link"><div class="mx-card-top"><span class="mx-link-n">Связка ' + (li + 1) + '</span>' +
+          h += '<div class="mx-link"><div class="mx-card-top"><span class="mx-link-n">' + ctx.esc(COPY.theses.link) + ' ' + (li + 1) + '</span>' +
             '<div class="mx-acts"><button type="button" class="s2-act" data-linkdel="' + li + '">убрать</button></div></div>' +
             '<p class="mx-link-refs">' + refs + '</p>' +
             // Пример на буквах и в ДВА звена (правка ревью №8): трёхзвенный
             // «A→B→C» рисовал форму верха АК-2 — многозвенная цепочка обязана
             // прийти сама, а не быть подсказана плейсхолдером.
-            field(ctx, { id: 'mxLw' + li, f: 'lwhy', i: li, label: 'Что из чего вытекает', rows: 2, ph: 'например: A усиливает B', val: lk.why }) +
-            field(ctx, { id: 'mxLc' + li, f: 'lconc', i: li, label: 'Что из этого следует для Агеева', rows: 2, val: lk.conclusion }) +
+            field(ctx, { id: 'mxLw' + li, f: 'lwhy', i: li, label: COPY.theses.lwhy.label, rows: 2, ph: COPY.theses.lwhy.ph, val: lk.why }) +
+            field(ctx, { id: 'mxLc' + li, f: 'lconc', i: li, label: COPY.theses.lconc.label, rows: 2, val: lk.conclusion }) +
             '</div>';
         });
         h += '<div class="mx-pick-host"></div>';
@@ -235,9 +298,9 @@
             var f = m.first != null && byId(m.first) ? String(byId(m.first).text).trim() : '';
             slot.innerHTML = f
               ? '<div class="mx-slot">' +
-                  '<span class="mx-title">Самый тревожный симптом</span>' +
+                  '<span class="mx-title">' + ctx.esc(COPY.theses.worst) + '</span>' +
                   '<p class="mx-quote">' + ctx.br(f) + '</p>' +
-                  field(ctx, { id: 'mxWhy', f: 'why', label: 'Почему именно это', rows: 2, ph: 'ваш ответ', val: m.why }) +
+                  field(ctx, { id: 'mxWhy', f: 'why', label: COPY.theses.why.label, rows: 2, ph: COPY.theses.why.ph, val: m.why }) +
                 '</div>'
               : '';
             var w2 = slot.querySelector('#mxWhy');
@@ -383,12 +446,12 @@
     },
     render: function (host, m, ctx) {
       var draw = function () {
-        var h = head('Ваши варианты', '<span class="mx-count">вариантов: ' + m.rays.length + '</span>');
+        var h = head(COPY.variants.section, '<span class="mx-count">вариантов: ' + m.rays.length + '</span>');
         m.rays.forEach(function (r, i) {
           h += '<div class="mx-card"><div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span>' +
             '<div class="mx-acts">' + (m.rays.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') + '</div></div>' +
-            field(ctx, { id: 'mxG' + i, f: 'gist', i: i, label: 'Вариант', val: r.gist }) +
-            field(ctx, { id: 'mxF' + i, f: 'from', i: i, label: 'Как пришли к такой идее?', rows: 2, val: r.from }) +
+            field(ctx, { id: 'mxG' + i, f: 'gist', i: i, label: COPY.variants.gist.label, val: r.gist }) +
+            field(ctx, { id: 'mxF' + i, f: 'from', i: i, label: COPY.variants.from.label, rows: 2, val: r.from }) +
             '</div>';
         });
         h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
@@ -600,7 +663,7 @@
         var sm2 = ctx.mech('seal') || {};
         if (!(sm2.returned && sm2.confirmed == null)) {
           h += '<div class="mx-card">' +
-            field(ctx, { id: 'mxCrit', f: 'crit', label: 'Почему именно так', rows: 5, val: m.criteria }) + '</div>';
+            field(ctx, { id: 'mxCrit', f: 'crit', label: COPY.list.crit.label, rows: 5, ph: COPY.list.crit.ph, val: m.criteria }) + '</div>';
         }
         host.innerHTML = h;
 
@@ -777,7 +840,7 @@
           h += ctx.speech(m.changed && ctx.probeReturn ? ctx.probeReturn : ctx.probe);
           h += '<span class="chat-name chat-name-mine">Вы</span>' +
             '<div class="s2-mine">' +
-            field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: 'ваш ответ', label: '',
+            field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: COPY.seal.phrase.ph, label: '',
               val: m.why }) + '</div>';
         }
         host.innerHTML = h;
@@ -814,7 +877,7 @@
     },
     render: function (host, m, ctx) {
       var draw = function () {
-        var h = head('Варианты будущего', '<span class="mx-count">вариантов: ' + m.cards.length + '</span>');
+        var h = head(COPY.futures.section, '<span class="mx-count">вариантов: ' + m.cards.length + '</span>');
         m.cards.forEach(function (t, i) {
           // Кнопка выбора появляется ТОЛЬКО у заполненной карточки: на пустой она
           // предлагала бы отметить ничто. «Наиболее вероятным», не «как вероятный»
@@ -825,13 +888,13 @@
           // а не только переставляется.
           var ctrl = m.bet === i
             ? '<button type="button" class="s2-act is-on mx-flag" data-bet="' + i +
-              '" title="Нажмите ещё раз, чтобы снять метку">наиболее вероятный</button>'
-            : (String(t).trim() ? '<button type="button" class="s2-act" data-bet="' + i + '">отметить наиболее вероятным</button>' : '');
+              '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.futures.bet) + '</button>'
+            : (String(t).trim() ? '<button type="button" class="s2-act" data-bet="' + i + '">' + ctx.esc(COPY.futures.betPick) + '</button>' : '');
           h += '<div class="mx-card' + (m.bet === i ? ' is-first' : '') + '">' +
             '<div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span><div class="mx-acts">' + ctrl +
             (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') +
             '</div></div>' +
-            '<textarea class="mx-input" data-answer="1" rows="3" data-fu="' + i + '" placeholder="ваш ответ">' + ctx.esc(t) + '</textarea>' +
+            '<textarea class="mx-input" data-answer="1" rows="3" data-fu="' + i + '" placeholder="' + ctx.esc(COPY.futures.card.ph) + '">' + ctx.esc(t) + '</textarea>' +
             '</div>';
         });
         h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
@@ -842,7 +905,7 @@
           h += ctx.speech(ctx.probe) +
             '<span class="chat-name chat-name-mine">Вы</span>' +
             '<div class="s2-mine">' +
-              field(ctx, { id: 'mxBw', f: 'betwhy', label: '', rows: 2, ph: 'ваш ответ', val: m.betWhy }) +
+              field(ctx, { id: 'mxBw', f: 'betwhy', label: '', rows: 2, ph: COPY.futures.betwhy.ph, val: m.betWhy }) +
             '</div>';
         }
         host.innerHTML = h;
@@ -926,10 +989,10 @@
           // Поле оставлено — у верхнего уровня есть вариант «отдача за пределами участия
           // автора», и срок помогает его прочитать, — но стоит после содержания.
           '<div class="mx-card">' +
-            field(ctx, { id: 'mxGb', f: 'became', label: 'Чем стала компания', rows: 5, val: m.became }) +
-            field(ctx, { id: 'mxGg', f: 'gave', label: 'Чем пришлось пожертвовать', opt: 1, rows: 4, ph: 'необязательно', val: m.gave }) +
+            field(ctx, { id: 'mxGb', f: 'became', label: COPY.goal.became.label, rows: 5, val: m.became }) +
+            field(ctx, { id: 'mxGg', f: 'gave', label: COPY.goal.gave.label, opt: 1, rows: 4, ph: COPY.goal.gave.ph, val: m.gave }) +
           '</div>' +
-          head('Через сколько лет', '<span class="mx-count mx-opt">по желанию — можно не отвечать</span>') +
+          head(COPY.goal.years, '<span class="mx-count mx-opt">по желанию — можно не отвечать</span>') +
           // ⚠ КРУПНОГО ЧИСЛА НЕТ (решение владельца 09.08, вариант 3). Оно меняло
           // ширину и кегль на каждом движении и дёргало ряд. Вместо него шкала
           // подписана делениями, а выбранное деление подсвечивается; точный срок
@@ -998,12 +1061,9 @@
   // голосом), а не структура шкалы: судья по-прежнему читает содержание, а не
   // считает заполненные строки.
   // ═════════════════════════════════════════════════════════════════════════
-  var LETTER = [
-    ['what', 'Что мы делаем'],
-    ['why', 'Почему именно это'],
-    ['how', 'Как мы туда идём'],
-    ['works', 'Почему эта стратегия сработает']
-  ];
+  // ⚠ Подписи письма — из реестра, а не списком здесь: копия расходилась с формой
+  // харнесса (все четыре поля, 13.08).
+  var LETTER = ['what', 'why', 'how', 'works'].map(function (k) { return [k, COPY.letter[k].label]; });
   M.letter = {
     init: function () { return { what: '', why: '', how: '', works: '' }; },
     fields: LETTER,
@@ -1042,7 +1102,7 @@
       return '<li>' + ctx.br(c.text) + (String(c.anchor).trim() ? ' <i>(' + ctx.br(c.anchor) + ')</i>' : '') + '</li>';
     }).join('') + '</ol>';
     var f = m.cards.filter(function (c) { return c.id === m.first; })[0];
-    if (f) h += p('Самый тревожный симптом', ctx.br(f.text) + '<br /><b>Почему:</b> ' + ctx.br(m.why));
+    if (f) h += p(COPY.theses.worst, ctx.br(f.text) + '<br /><b>Почему:</b> ' + ctx.br(m.why));
     if (m.links.length) {
       h += p('Связки (' + m.links.length + ')', '');
       m.links.forEach(function (lk) {
@@ -1095,7 +1155,7 @@
   M.futures.answerHtml = function (m, ctx) {
     return m.cards.filter(function (t) { return String(t).trim(); }).map(function (t, i) {
       return '<p style="margin:0 0 8px;">' + ctx.br(t) +
-        (m.bet === i ? '<br /><i>наиболее вероятный' + (String(m.betWhy).trim() ? ': ' + ctx.br(m.betWhy) : '') + '</i>' : '') + '</p>';
+        (m.bet === i ? '<br /><i>' + ctx.esc(COPY.futures.bet) + (String(m.betWhy).trim() ? ': ' + ctx.br(m.betWhy) : '') + '</i>' : '') + '</p>';
     }).join('') || '<i>не заполнено</i>';
   };
 

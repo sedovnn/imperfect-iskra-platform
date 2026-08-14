@@ -34,6 +34,32 @@
   var DEC = { 'берём': 'take', 'берем': 'take', 'не сейчас': 'later', 'не делаем': 'never' };
   var DEC_BACK = { take: 'берём', later: 'не сейчас', never: 'не делаем' };
 
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ФОРМЫ СОБИРАЮТСЯ ИЗ РЕЕСТРА ЭКРАНА (13.08). Ни одна подпись и ни одна подсказка
+  // здесь больше не набирается: всё из window.imp.mechCopy, который объявлен в
+  // mechanics.js и оттуда же рисует экран участника. Копии слов больше нет — значит
+  // разойтись нечему. До этого копия была, и она расходилась: человек читал
+  // «Как пришли к такой идее?», модель получала «как пришли к такой идее»; человек
+  // видел подсказку «например: A усиливает B», модель — многоточие.
+  var C = window.imp.mechCopy;
+
+  // ⚠ ПОЗИЦИОННЫЕ ПОЛЯ. Часть полей экран подписывает НЕ словом, а местом: тезис — это
+  // пронумерованная карточка с подсказкой в поле, вариант будущего — тоже. Модели такое
+  // поле назвать надо, иначе в JSON у него не будет ключа. Здесь и только здесь мы
+  // придумываем слово, и каждое объявлено с причиной — чтобы проверка паритета могла
+  // отличить осознанное имя от расхождения, которое просто забыли починить.
+  var FORM_ONLY = {
+    'Тезис':          'на экране это пронумерованная карточка без подписи, подсказка в поле — «' + C.theses.item.ph + '»',
+    'Связка':         'на экране «' + C.theses.link + ' 1», «' + C.theses.link + ' 2» — номер вместо подписи',
+    'Вариант будущего': 'на экране пронумерованная карточка без подписи, подсказка — «' + C.futures.card.ph + '»',
+    'Почему именно этот': 'на экране это вопрос Лемеха под областью, а не подпись поля',
+    'Мой ход':        'на экране это две кнопки, «← Вернуться и изменить» и «Подтвердить →», а не поле',
+    'Одна фраза':     'на экране поле без подписи, подсказка — «' + C.seal.phrase.ph + '»',
+    'Через сколько лет': 'на экране это ползунок с заголовком «' + C.goal.years + '», а не текстовое поле',
+    'Решения':        'на экране это двадцать карточек с тремя кнопками, а не поле'
+  };
+  window.imp.mechFormOnly = FORM_ONLY;
+
   function numToId(n) {
     var B = window.imp.backlog, i = parseInt(String(n).replace(/\D/g, ''), 10);
     var it = B[i - 1];
@@ -127,7 +153,12 @@
       var d = state.decided['a' + it.id];
       if (d) out['№' + window.imp.backlogNum(it.id)] = DEC_BACK[d] || String(d);
     });
-    return { 'решения': out, 'Почему именно так': String(state.criteria || '') };
+    // ⚠ КЛЮЧИ ТЕ ЖЕ, ЧТО У ПУСТОЙ ФОРМЫ, и берутся из реестра: иначе модель на возврате
+    // получает форму с другими именами полей, чем на первом заходе. Проверка сверяет
+    // состав ключей заполненной формы с пустой.
+    var out2 = { 'Решения': out };
+    out2[C.list.crit.label] = String(state.criteria || '');
+    return out2;
   };
 
   // ── ПОЛЯ ────────────────────────────────────────────────────────────────────
@@ -138,18 +169,22 @@
   window.imp.mechFields = {
     theses: {
       form: {
-        'тезисы': [{ 'тезис': '…', 'откуда это в материалах': '… (необязательно)' }],
-        'самый тревожный': 'номер тезиса из списка выше',
-        'Почему именно это': '…',
-        'связки': [{ 'тезисы': ['номера тезисов'], 'Что из чего вытекает': '…', 'Что из этого следует для Агеева': '…' }]
+        // Слова и подсказки — из реестра экрана; ключи карточек — из FORM_ONLY.
+        [C.theses.section]: [{ 'Тезис': C.theses.item.ph,
+                               [C.theses.src.label]: C.theses.src.ph }],
+        [C.theses.worst]: 'номер тезиса из списка выше',
+        [C.theses.why.label]: C.theses.why.ph,
+        [C.theses.links]: [{ 'Связка': ['номера тезисов'],
+                             [C.theses.lwhy.label]: C.theses.lwhy.ph,
+                             [C.theses.lconc.label]: 'ваш ответ' }]
       },
       toState: function (o) {
-        var cards = (o['тезисы'] || o.cards || []).map(function (c, i) {
+        var cards = (o[C.theses.section] || o['тезисы'] || o.cards || []).map(function (c, i) {
           return { id: i + 1, text: String(c['тезис'] || c.text || c || ''), anchor: String(c['откуда это в материалах'] || c.anchor || '') };
         });
-        var first = parseInt(String(o['самый тревожный'] || o.first || '').replace(/\D/g, ''), 10);
-        var links = (o['связки'] || o.links || []).map(function (l) {
-          return { ids: (l['тезисы'] || l.ids || []).map(function (n) { return parseInt(String(n).replace(/\D/g, ''), 10); }).filter(Boolean),
+        var first = parseInt(String(o[C.theses.worst] || o['самый тревожный'] || o.first || '').replace(/\D/g, ''), 10);
+        var links = (o[C.theses.links] || o['связки'] || o.links || []).map(function (l) {
+          return { ids: (l['Связка'] || l['тезисы'] || l.ids || []).map(function (n) { return parseInt(String(n).replace(/\D/g, ''), 10); }).filter(Boolean),
                    why: String(l['Что из чего вытекает'] || l['что из чего вытекает'] || l.why || ''),
                    conclusion: String(l['Что из этого следует для Агеева'] || l['что из этого следует для Агеева'] || l.conclusion || '') };
         });
@@ -164,9 +199,10 @@
       // («суть», «где вы это подсмотрели», латиница) продолжаем ПРИНИМАТЬ: модель могла
       // ответить по-своему, и ронять из-за этого прогон незачем — но предлагаем только
       // нынешние.
-      form: { 'варианты': [{ 'Вариант': '…', 'Как пришли к такой идее?': '…' }] },
+      form: { [C.variants.section]: [{ [C.variants.gist.label]: 'ваш ответ',
+                                        [C.variants.from.label]: 'ваш ответ' }] },
       toState: function (o) {
-        return { rays: (o['варианты'] || o.rays || []).map(function (r) {
+        return { rays: (o[C.variants.section] || o['варианты'] || o.rays || []).map(function (r) {
           return { name: String(r['название'] || r.name || ''),
                    gist: String(r['Вариант'] || r['вариант'] || r['суть'] || r.gist || ''),
                    from: String(r['Как пришли к такой идее?'] || r['как пришли к такой идее'] || r['где вы это подсмотрели'] || r.from || '') };
@@ -190,11 +226,13 @@
       // позиция «№20», сам себе противоречил бы.
       get form() {
         var B = window.imp.backlog, n = window.imp.backlogNum, dec = {};
-        B.forEach(function (it) { dec['№' + n(it.id)] = 'берём / не сейчас / не делаем'; });
-        return { 'решения': dec, 'Почему именно так': '…' };
+        B.forEach(function (it) { dec['№' + n(it.id)] = C.list.choices; });
+        var f = { 'Решения': dec };
+        f[C.list.crit.label] = C.list.crit.ph;
+        return f;
       },
       toState: function (o) {
-        var src = o['решения'] || o.decided || {}, decided = {};
+        var src = o['Решения'] || o['решения'] || o.decided || {}, decided = {};
         Object.keys(src).forEach(function (k) {
           var id = /^a\d+$/.test(k) ? parseInt(k.slice(1), 10) : numToId(k);
           var v = String(src[k] || '').trim().toLowerCase();
@@ -217,12 +255,12 @@
     // подтверждения, как на экране (onCta: «Утверждаю» день не двигает, а открывает
     // поле объяснения). Возврат тянет за собой повторный разбор заявок: правится он.
     seal: {
-      form: { 'мой ход': 'подтверждаю / возвращаюсь и меняю' },
+      form: { 'Мой ход': 'подтверждаю / возвращаюсь и меняю' },
       // После возврата назад нельзя: «Вернуться можно один раз».
-      formHeld: { 'мой ход': 'подтверждаю' },
-      formPhrase: { 'одна фраза': '…' },
+      formHeld: { 'Мой ход': 'подтверждаю' },
+      formPhrase: { 'Одна фраза': C.seal.phrase.ph },
       isBack: function (o) {
-        return /возвра|меня/i.test(String((o && (o['мой ход'] || o.move)) || ''));
+        return /возвра|меня/i.test(String((o && (o['Мой ход'] || o['мой ход'] || o.move)) || ''));
       },
       // back — что накопил харнесс за возврат: { returned: true, snap: '…' }.
       // ⚠ `changed` считает механика, сравнивая слепок ДО правки с тем, что стало:
@@ -230,7 +268,7 @@
       // живёт в mechanics.js; здесь только её вызов.
       toState: function (o, back, ctx) {
         var st = { confirmed: true, returned: !!(back && back.returned),
-                   why: String((o && (o['одна фраза'] || o.why)) || ''),
+                   why: String((o && (o['Одна фраза'] || o['одна фраза'] || o.why)) || ''),
                    snap: (back && back.snap) || null };
         st.changed = ctx ? !!window.imp.mechanics.seal.changed(st, ctx) : false;
         return st;
@@ -238,16 +276,21 @@
     },
 
     futures: {
-      form: { 'варианты': ['…', '…'], 'наиболее вероятный': 'номер варианта из списка выше',
-              'почему именно этот': '…' },
+      get form() {
+        var f = {};
+        f[C.futures.section] = [C.futures.card.ph, C.futures.card.ph];
+        f[C.futures.bet] = 'номер варианта из списка выше';
+        f['Почему именно этот'] = C.futures.betwhy.ph;
+        return f;
+      },
       toState: function (o) {
-        var cards = (o['варианты'] || o.cards || []).map(function (c) {
+        var cards = (o[C.futures.section] || o['варианты'] || o.cards || []).map(function (c) {
           return String(typeof c === 'string' ? c : (c['Вариант'] || c['вариант'] || c.text || ''));
         });
-        var b = o['наиболее вероятный'] !== undefined ? o['наиболее вероятный'] : o.bet;
+        var b = o[C.futures.bet] !== undefined ? o[C.futures.bet] : (o['наиболее вероятный'] !== undefined ? o['наиболее вероятный'] : o.bet);
         var ix = parseInt(String(b == null ? '' : b).replace(/\D/g, ''), 10);
         return { cards: cards, bet: isNaN(ix) ? null : Math.max(0, ix - 1),
-                 betWhy: String(o['почему именно этот'] || o.betWhy || '') };
+                 betWhy: String(o['Почему именно этот'] || o['почему именно этот'] || o.betWhy || '') };
       }
     },
 
@@ -256,17 +299,18 @@
       // На экране ползунок лет переехал под поля, потому что по методологии v10 «число лет
       // не поднимает уровень». Форма модели обязана идти тем же порядком: она читает то же
       // и в той же последовательности, что человек.
-      form: { 'Чем стала компания': '…', 'Чем пришлось пожертвовать': '… (необязательно)',
-              'через сколько лет': 'число (необязательно)' },
+      form: { [C.goal.became.label]: 'ваш ответ', [C.goal.gave.label]: C.goal.gave.ph,
+              [C.goal.years]: 'число (необязательно)' },
       toState: function (o) {
-        var y = parseInt(String(o['через сколько лет'] || o.years || '').replace(/\D/g, ''), 10);
+        var y = parseInt(String(o[C.goal.years] || o['через сколько лет'] || o.years || '').replace(/\D/g, ''), 10);
         return { years: isNaN(y) ? null : y, became: String(o['Чем стала компания'] || o['чем стала компания'] || o.became || ''),
                  gave: String(o['Чем пришлось пожертвовать'] || o['чем пришлось пожертвовать'] || o.gave || '') };
       }
     },
 
     letter: {
-      form: { 'Что мы делаем': '…', 'Почему именно это': '…', 'Как мы туда идём': '…',
+      form: { [C.letter.what.label]: 'ваш ответ', [C.letter.why.label]: 'ваш ответ',
+              [C.letter.how.label]: 'ваш ответ',
               'Почему эта стратегия сработает': '…' },
       toState: function (o) {
         return { what: String(o['Что мы делаем'] || o['что мы делаем'] || o.what || ''),
