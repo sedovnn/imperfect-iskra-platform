@@ -89,7 +89,26 @@
       </div>
     </header>
 
-    <div class="hs-wrap">
+    <!-- ⚠ ХАРНЕСС ПОД ПАРОЛЕМ (14.08, решение владельца). Страница открывает служебный
+         инструмент: она собирает промпты с полным текстом кейса и пишет прогоны в
+         таблицу. Пароль в клиенте НЕ лежит — проверяется на бэкенде (action
+         verifyPassword), как у витрины и кабинета. Признак входа живёт в
+         sessionStorage, то есть только в этой вкладке и до её закрытия. -->
+    <div class="gate" id="hsGateBox">
+      <div class="gate-card">
+        <p class="kicker">Служебное</p>
+        <h2>Введите пароль</h2>
+        <p class="section-lead" style="margin:0 0 20px;">Тот же пароль, что у кабинета фасилитатора.</p>
+        <div class="field">
+          <label for="hsPass">Пароль</label>
+          <input type="password" id="hsPass" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" />
+        </div>
+        <div class="form-error" id="hsPassErr">Неверный пароль.</div>
+        <button class="btn btn-primary btn-block" id="hsPassBtn">Войти →</button>
+      </div>
+    </div>
+
+    <div class="hs-wrap" id="hsBody" style="display:none;">
       <div class="hs-top">
         <label class="field-inline"><span>Метка модели</span>
           <input type="text" class="cab-inp cab-inp-wide" id="hsTag" placeholder="Опус 5" /></label>
@@ -154,6 +173,35 @@
 <script src="js/mech-fields.js?v=25"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
+<script>
+/* Пароль на служебную страницу. Пароля в клиенте нет: проверяет бэкенд
+   (action verifyPassword), тот же путь, что у витрины и кабинета. */
+(function () {
+  var AUTH = 'imp_harness_auth';
+  var box = document.getElementById('hsGateBox');
+  var body = document.getElementById('hsBody');
+  var inp = document.getElementById('hsPass');
+  var btn = document.getElementById('hsPassBtn');
+  var err = document.getElementById('hsPassErr');
+  function reveal() { box.style.display = 'none'; body.style.display = ''; }
+  if (sessionStorage.getItem(AUTH) === '1') reveal();
+  function submit() {
+    var pw = (inp.value || '').trim();
+    if (!pw) { err.classList.add('show'); return; }
+    err.classList.remove('show');
+    // Без бэкенда проверять негде — страница локальная, пускаем.
+    if (!window.imp.isApiConfigured()) { sessionStorage.setItem(AUTH, '1'); reveal(); return; }
+    btn.disabled = true; btn.textContent = 'Проверяю…';
+    window.imp.callApi('verifyPassword', { password: pw }).then(function (res) {
+      btn.disabled = false; btn.textContent = 'Войти →';
+      if (res && res.ok) { sessionStorage.setItem(AUTH, '1'); reveal(); }
+      else { err.classList.add('show'); inp.focus(); }
+    });
+  }
+  btn.addEventListener('click', submit);
+  inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+})();
+</script>
 <script>
 (function () {
   // ⚠ ОШИБКА ДОЛЖНА БЫТЬ ВИДНА. Страница восемь раз звала window.imp.confirm, а
