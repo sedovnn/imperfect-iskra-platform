@@ -261,8 +261,22 @@
     border: 1px solid var(--hint); border-radius: var(--radius);
     font-size: var(--fs-dense); color: var(--muted);
   }
-  .pick input:checked + span { border-color: var(--accent-text); color: var(--accent-text); }
   .pick input:focus-visible + span { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
+
+  /* ВЫБРАННОЕ СОСТОЯНИЕ — один рецепт на все переключатели.
+     Заливка вермилионовым тинтом: подпись на нём даёт 4.66:1.
+     Одной заливки мало — против белого она даёт 1.10:1, то есть человеку
+     с плохим различением цвета её не видно. Поэтому рамка усилена вторым
+     контуром внутрь: 2px без сдвига раскладки. */
+  .pick input:checked + span,
+  .scale .opt input:checked + span,
+  .ten .opt input:checked + span {
+    background: var(--accent-tint);
+    border-color: var(--accent-text);
+    box-shadow: inset 0 0 0 1px var(--accent-text);
+    color: var(--accent-text);
+  }
+  .scale .opt input:checked + span .v { color: var(--accent-text); }
 
   /* шкала — подписаны все пять точек, а не только концы */
   .scale { margin-bottom: 24px; max-width: 640px; }
@@ -270,15 +284,16 @@
   .scale .opts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
   .scale .opt { position: relative; }
   .scale .opt input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
-  .scale .opt span {
-    display: flex; flex-direction: column; gap: 5px; align-items: flex-start;
-    min-height: 38px; padding: 8px 10px;
+  /* ПРЯМОЙ дочерний селектор. Через «.scale .opt span» правило доставалось и
+     вложенному span с цифрой: цифра получала свою рамку, отступы и min-height
+     38px — отсюда была вложенная рамка и раздутая высота варианта. */
+  .scale .opt > span {
+    display: flex; flex-direction: column; gap: 3px; align-items: flex-start;
+    min-height: 38px; padding: 7px 10px;
     border: 1px solid var(--hint); border-radius: var(--radius);
     font-size: var(--fs-util); color: var(--muted);
   }
-  .scale .opt .v { font-size: var(--fs-dense); font-weight: 500; color: var(--ink); }
-  .scale .opt input:checked + span { border-color: var(--accent-text); color: var(--accent-text); }
-  .scale .opt input:checked + span .v { color: var(--accent-text); }
+  .scale .opt .v { font-size: var(--fs-read); font-weight: 500; color: var(--ink); line-height: 1.1; }
   .scale .opt input:focus-visible + span { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
 
   .ten { display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 4px; }
@@ -288,7 +303,7 @@
     display: flex; align-items: center; justify-content: center; min-height: 38px;
     border: 1px solid var(--hint); border-radius: var(--radius); font-size: var(--fs-dense);
   }
-  .ten .opt input:checked + span { border-color: var(--accent-text); color: var(--accent-text); font-weight: 500; }
+  .ten .opt input:checked + span { font-weight: 500; }
   .ten .opt input:focus-visible + span { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
   .ten-ends { display: flex; justify-content: space-between; font-size: var(--fs-util); color: var(--muted); margin-top: 6px; }
 
@@ -531,7 +546,7 @@
         </li>
         <li>
           <p class="when">2 минуты</p>
-          <p class="t">Список коллег</p>
+          <p class="t">Список команды</p>
           <p class="d">Имя обязательно, почта — нет: ссылку можно отправить в чате.</p>
         </li>
         <li>
@@ -566,7 +581,7 @@
       <div class="card">
         <p class="kicker">Почему отвечают честно</p>
         <p style="margin-top:10px">Вам видно, кто ответил. Что именно написал — не видно ни вам, ни нам.</p>
-        <p class="note" style="margin-top:10px">Отчёт закрыт, пока не ответят трое: в группе меньше человека узнают по манере писать.</p>
+        <p class="note" style="margin-top:10px">Отчёт закрыт, пока не ответят трое: по двум ответам автора легко узнать по манере писать.</p>
       </div>
 
       <div style="margin-top:32px">
@@ -619,7 +634,7 @@
   <ul class="path">
     <li data-done="true">О команде</li>
     <li aria-current="true">Мои приоритеты</li>
-    <li>Коллеги</li>
+    <li>Кто отвечает</li>
     <li>Ответы и отчёт</li>
   </ul>
 
@@ -673,7 +688,7 @@
   <ul class="path">
     <li data-done="true">О команде</li>
     <li aria-current="true">Мои приоритеты</li>
-    <li>Коллеги</li>
+    <li>Кто отвечает</li>
     <li>Ответы и отчёт</li>
   </ul>
 
@@ -800,7 +815,7 @@
 </section>
 
 <!-- ============================ КОЛЛЕГИ ============================ -->
-<section class="screen" id="s-people" data-title="Кто отвечает — карта приоритетов" data-name="коллеги">
+<section class="screen" id="s-people" data-title="Кто отвечает — карта приоритетов" data-name="команда">
 
   <div class="head">
     <span class="logo">futureproof
@@ -813,7 +828,7 @@
   <ul class="path">
     <li data-done="true">О команде</li>
     <li data-done="true">Мои приоритеты</li>
-    <li aria-current="true">Коллеги</li>
+    <li aria-current="true">Кто отвечает</li>
     <li>Ответы и отчёт</li>
   </ul>
 
@@ -850,11 +865,11 @@
         </tbody>
       </table>
 
-      <p style="margin-top:16px"><button type="button" class="btn btn-3">Добавить ещё коллег</button></p>
+      <p style="margin-top:16px"><button type="button" class="btn btn-3">Добавить человека</button></p>
 
       <div class="rule-top" style="margin-top:28px">
         <div class="btn-row">
-          <a class="btn btn-1" href="#s-board" data-go="s-board">Позвать коллег</a>
+          <a class="btn btn-1" href="#s-board" data-go="s-board">Позвать команду</a>
           <span class="note">Письма уйдут от вашего имени с адреса pr.fproof.ru</span>
         </div>
         <p class="note" style="margin-top:12px">Отчёт собирается от трёх ответов.</p>
@@ -887,7 +902,7 @@
   <ul class="path">
     <li data-done="true">О команде</li>
     <li data-done="true">Мои приоритеты</li>
-    <li data-done="true">Коллеги</li>
+    <li data-done="true">Кто отвечает</li>
     <li aria-current="true">Ответы и отчёт</li>
   </ul>
 
