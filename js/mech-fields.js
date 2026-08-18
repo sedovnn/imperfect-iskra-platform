@@ -286,7 +286,7 @@
       mainToState: function (o) {
         return { picked: true,
                  mainText: String(o[C.variants.main.label] || o['ваша основная рекомендация'] || ''),
-                 mainWhy: String(o[C.variants.mainWhy.label] || o['почему она, а не то, что перечислили выше'] || '') };
+                 mainWhy: String(o[C.variants.mainWhy.label] || o['Почему она, а не то, что перечислили выше'] || o['почему она, а не то, что перечислили выше'] || '') };
       }
     },
 

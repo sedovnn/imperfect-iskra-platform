@@ -109,7 +109,7 @@
       // а не перечисленное. Вопрос «почему она, а не эти» и есть выбор между
       // соразмерными путями, которого требует v10 стр. 1271.
       main:    { label: 'Ваша основная рекомендация', ph: 'ваш ответ' },
-      mainWhy: { label: 'Почему она, а не то, что перечислили выше', ph: 'ваш ответ' }
+      mainWhy: { label: 'Почему именно она', ph: 'ваш ответ' }
     },
     list: {
       crit:    { label: 'Почему именно так', ph: 'ваш ответ' },
@@ -484,15 +484,21 @@
       // веер сдан. Ниже два поля: сама рекомендация и почему она, а не эти.
       var drawMain = function () {
         var live = m.rays.filter(function (r) { return String(r.gist).trim(); });
-        var h = ctx.speech(ctx.probe) + head(COPY.variants.sealed, '');
-        live.forEach(function (r, i) {
-          h += '<div class="mx-card mx-card-ro"><div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span></div>' +
-            '<div class="mx-ray-gist">' + ctx.br(ctx.esc(r.gist)) + '</div></div>';
-        });
-        h += '<div class="mx-card">' +
-             field(ctx, { id: 'mxMT', f: 'mainText', label: COPY.variants.main.label,
-                          ph: COPY.variants.main.ph, rows: 3, val: m.mainText }) +
-             field(ctx, { id: 'mxMW', f: 'mainWhy', label: COPY.variants.mainWhy.label,
+        var h = ctx.speech(ctx.probe);
+        if (live.length) {
+          h += head(COPY.variants.sealed, '');
+          live.forEach(function (r, i) {
+            h += '<div class="mx-card mx-card-ro"><div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span></div>' +
+              '<div class="mx-ray-gist">' + ctx.br(ctx.esc(r.gist)) + '</div></div>';
+          });
+        }
+        h += head(COPY.variants.main.label, '') +
+             '<div class="mx-card">' +
+             field(ctx, { id: 'mxMT', f: 'mainText', label: '',
+                          ph: COPY.variants.main.ph, rows: 3, val: m.mainText }) + '</div>' +
+             head(COPY.variants.mainWhy.label, '') +
+             '<div class="mx-card">' +
+             field(ctx, { id: 'mxMW', f: 'mainWhy', label: '',
                           ph: COPY.variants.mainWhy.ph, rows: 3, val: m.mainWhy }) + '</div>';
         host.innerHTML = h;
         var mt = host.querySelector('[data-f="mainText"]');

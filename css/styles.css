@@ -986,6 +986,49 @@ body.imp-drawer-open .dock-rail { display: none; }
 }
 .sc-measures b { color: var(--ink); font-weight: 600; }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   ПОЛОСА ДЕМО (18.08, решение владельца)
+   Строка «что мерит этот шаг» переехала из-под заголовка вниз: фиксированная
+   полоса во всю ширину, вермилион, места хватает на комментарии. Рабочая область
+   не перекрывается — engine.js меряет высоту полосы и кладёт её в --demo-chrome
+   и --demo-bottom, на которых уже сидят .frame, скролл рабочего тела и плавающие
+   кнопки. Вермилион взят литералами семьи --accent* из :root: на body.p-assess
+   вся семья подменена голубой, а полоса — хром вокруг продукта, не его часть.
+   Участнику она не видна ни при каких условиях: рисуется только при isDemo.
+   ══════════════════════════════════════════════════════════════════════════ */
+.demo-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+  background: #fff2ec; border-top: 2px solid #ff4800;
+  padding: 12px max(16px, calc((100vw - var(--maxw)) / 2 + var(--frame-pad)));
+  font-size: var(--fs-op-sm); line-height: 1.5; color: #7a3a22;
+  max-height: 42vh; overflow-y: auto;
+}
+.demo-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 7px; }
+.demo-tag {
+  font-size: var(--fs-util); font-weight: 700; text-transform: uppercase;
+  letter-spacing: var(--label-track); color: #fff; background: #ff4800;
+  border-radius: 3px; padding: 2px 7px;
+}
+.demo-step { font-size: var(--fs-read); font-weight: 700; color: #c73500; }
+.demo-where { color: #a3705c; }
+.demo-row { display: flex; gap: 10px; align-items: baseline; margin: 0 0 4px; }
+.demo-k {
+  flex: 0 0 128px; font-size: var(--fs-util); text-transform: uppercase;
+  letter-spacing: var(--label-track); color: #a3705c; font-weight: 700;
+}
+.demo-v { flex: 1 1 auto; min-width: 0; }
+.demo-v b { color: #c73500; font-weight: 700; }
+.demo-v code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em;
+  background: #ffe3d6; border-radius: 3px; padding: 1px 5px; color: #8a2f00;
+}
+.demo-note { display: block; margin: 3px 0 0; color: #8a5c48; }
+@media (max-width: 720px) {
+  .demo-row { display: block; }
+  .demo-k { margin: 0 0 2px; }
+  .demo-bar { max-height: 50vh; }
+}
+
 .cheat-block > summary::-webkit-details-marker { display: none; }
 /* ⚠ ТРЕУГОЛЬНИК — БРЕНД-ФОРМА, НЕ ЮНИКОД (правка владельца 12.08). Символы ▸ и ▾
    рисует шрифт: пропорция своя, вершина скруглена, и рядом со стрелкой futureproof в

@@ -1304,23 +1304,79 @@
   // S.measures из scenes.js, инверсия таблицы судей; расхождение ловит
   // eval/lint_measures.js.
   function measuresLine(act) {
-    if (!isDemo) return '';   // isDemo — значение, а не функция (см. объявление выше)
+    // Строка под заголовком шага СНЯТА 18.08 (решение владельца): то же содержимое
+    // теперь стоит нижней полосой, крупно и вермилионом, — см. demoBar().
+    return '';
+  }
+
+  // ⚠ ПОЛОСА ДЕМО — ФИКСИРОВАННАЯ, И РАБОЧАЯ ОБЛАСТЬ ПОДЖИМАЕТСЯ ПОД НЕЁ.
+  // Высота меряется живьём и уезжает в --demo-chrome и --demo-bottom: на них уже
+  // завязаны .frame, скролл-контейнер рабочего тела и плавающие кнопки (round-fab,
+  // dock-rail). Переменные существовали в CSS с прежней версии, но ставить их было
+  // некому: файла demo.js, на который ссылался комментарий, в проекте нет. Без этого
+  // полоса легла бы поверх кнопки «Ответить».
+  // Вермилион здесь НЕ через --accent: на странице ассессмента вся семья акцента
+  // подменена на голубую (body.p-assess), и --accent там синий. Полоса — это хром
+  // вокруг продукта, а не его часть, поэтому берёт вермилион своими токенами.
+  var demoBarEl = null;
+  function demoBarHtml(scene, act) {
     var key = act && (act.save || act.mech);
     var m = key && S.measures ? S.measures[key] : null;
-    if (!m) return '';
     var named = function (arr) {
       return arr.map(function (a) {
         var n = S.abilityNames && S.abilityNames[a];
-        return '<b>' + esc(a) + '</b>' + (n ? ' · ' + esc(n) : '');
-      }).join('; ');
+        return '<b>' + esc(a) + '</b>' + (n ? ' ' + esc(n) : '');
+      }).join(' &nbsp;·&nbsp; ');
     };
-    var parts = [];
-    if (m.main.length) parts.push('меряет: ' + named(m.main));
-    if (m.control.length) parts.push('контроль: ' + named(m.control));
-    if (!parts.length && m.note) parts.push(esc(m.note));
-    else if (m.note) parts.push(esc(m.note));
-    if (!parts.length) return '';
-    return '<div class="sc-measures">демо · ' + parts.join(' &nbsp;·&nbsp; ') + '</div>';
+    var rows = '';
+    var row = function (k, v) {
+      return v ? '<div class="demo-row"><span class="demo-k">' + esc(k) + '</span>' +
+                 '<span class="demo-v">' + v + '</span></div>' : '';
+    };
+    if (m && m.main.length) rows += row('меряет', named(m.main));
+    if (m && m.control.length) rows += row('контроль', named(m.control));
+    if (m && !m.main.length && !m.control.length) rows += row('в балл', 'отдельной способности за шагом не закреплено');
+    // Флаги элиситации: машинный факт о шаге, и для демо он важнее всего остального —
+    // из него видно, спрошен признак прямо или участник принёс его сам.
+    var fl = (act && act.elicited) || [];
+    if (fl.length) {
+      rows += row('спрошено прямо', fl.map(function (f) { return '<code>' + esc(f) + '</code>'; }).join(' ') +
+        '<span class="demo-note">признак, проявленный только здесь, судья читает как вызванный: от него требуется качество, а не факт раскрытия</span>');
+    } else if (m) {
+      rows += row('спрошено прямо', '<span class="demo-note">ничего — всё, что проявится в этом окне, засчитывается как спонтанное и в полную силу</span>');
+    }
+    if (m && m.note) rows += row('примечание', '<span class="demo-note">' + esc(m.note) + '</span>');
+    if (!rows) return '';
+    var t = stepTitle(act);
+    t = t ? t.charAt(0).toUpperCase() + t.slice(1) : (scene ? esc(scene.name) : '');
+    return '<div class="demo-top"><span class="demo-tag">демо</span>' +
+      '<span class="demo-step">' + esc(t) + '</span>' +
+      (scene ? '<span class="demo-where">' + esc(scene.place || scene.name) + ', ' + esc(scene.where) + '</span>' : '') +
+      '</div>' + rows;
+  }
+
+  function demoBar(scene, act) {
+    if (!isDemo) return;
+    if (!demoBarEl) {
+      demoBarEl = document.createElement('div');
+      demoBarEl.className = 'demo-bar';
+      demoBarEl.id = 'demoBar';
+      document.body.appendChild(demoBarEl);
+      if (window.ResizeObserver) new ResizeObserver(demoBarFit).observe(demoBarEl);
+      window.addEventListener('resize', demoBarFit);
+    }
+    var h = demoBarHtml(scene, act);
+    demoBarEl.innerHTML = h;
+    demoBarEl.style.display = h ? '' : 'none';
+    demoBarFit();
+  }
+
+  function demoBarFit() {
+    if (!demoBarEl) return;
+    var h = demoBarEl.style.display === 'none' ? 0 : demoBarEl.offsetHeight;
+    var r = document.documentElement.style;
+    r.setProperty('--demo-chrome', h + 'px');
+    r.setProperty('--demo-bottom', h + 'px');
   }
 
   function sceneHead(scene, act) {
@@ -1985,6 +2041,9 @@
     // оставлен, чтобы читались прогоны, начатые до правки.
     var scene = S.scenes[curSceneIx];
     now.insertAdjacentHTML('beforeend', sceneHead(scene, cur && cur.act));
+    // Полоса демо обновляется на каждый шаг вместе с шапкой: она живёт вне рабочей
+    // колонки (фиксирована к окну), поэтому рисуется вызовом, а не строкой в разметке.
+    demoBar(scene, cur && cur.act);
 
     // Проход по актам ТЕКУЩЕЙ сцены. Реплики накапливаются и отдаются тому шагу,
     // перед которым стоят: у шага с полем fold они превращаются в один узел
