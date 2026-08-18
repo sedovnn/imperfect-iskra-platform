@@ -112,23 +112,28 @@
   /* ======================================================================
      СЛУЖЕБНАЯ ШАПКА ПРОТОТИПА — не часть продукта
      ====================================================================== */
+  /* Панель прототипа. Намеренно НЕ похожа на продукт: моноширинный шрифт,
+     ни грамма вермилиона, активный экран — простая белая плашка. Пока здесь
+     стоял брендовый шрифт и вермилионная плашка, панель читалась как
+     настоящая навигация продукта. В продукте её нет вовсе. */
   .proto {
     position: sticky; top: 0; z-index: 40;
     background: var(--ink); color: var(--surface);
-    padding: 8px var(--frame-pad);
-    display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: center;
+    padding: 6px var(--frame-pad);
+    display: flex; flex-wrap: wrap; gap: 2px 16px; align-items: center;
+    font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
     font-size: var(--fs-util);
   }
-  .proto b { font-weight: 500; margin-right: 8px; }
+  .proto b { font-weight: 400; margin-right: 6px; }
   .proto nav { display: flex; flex-wrap: wrap; gap: 2px; }
   .proto button {
     appearance: none; background: none; border: 0; cursor: pointer;
-    color: var(--surface); font: inherit; padding: 7px 9px;
-    min-height: 38px; border-radius: var(--radius);
+    color: var(--surface); font: inherit; padding: 6px 8px;
+    min-height: 38px; border-radius: 3px;
   }
-  .proto button[aria-current="true"] { background: var(--accent); }
-  .proto button:hover:not([aria-current="true"]) { background: var(--accent-text); }
-  .proto button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .proto button[aria-current="true"] { background: var(--surface); color: var(--ink); }
+  .proto button:hover:not([aria-current="true"]) { background: var(--muted); }
+  .proto button:focus-visible { outline: 2px solid var(--surface); outline-offset: 2px; }
   .proto .hint { color: var(--faint); }
 
   /* ======================================================================
@@ -142,7 +147,10 @@
   .c-6b { grid-column: 7 / span 6; }
   .c-12 { grid-column: 1 / span 12; }
 
-  .screen { display: none; padding: 32px 0 96px; }
+  /* Прокрутка по ссылке на раздел не должна загонять его под липкую панель.
+     Высоту панели скрипт кладёт в --bar-h: на телефоне она переносится
+     в три строки и доходит до 129px. В продукте панели нет, --bar-h = 0. */
+  .screen { display: none; padding: 32px 0 96px; scroll-margin-top: calc(var(--bar-h, 0px) + 16px); }
   .screen[data-active="true"] { display: block; }
 
   /* ======================================================================
@@ -167,9 +175,14 @@
     min-height: 38px; padding: 9px 16px; border-radius: var(--radius);
     border: 1px solid transparent; text-decoration: none;
   }
-  .btn-1 { background: var(--accent); color: var(--surface); font-weight: 500; }
-  .btn-1:hover { background: var(--accent-hover); }
-  .btn-2 { background: var(--surface); color: var(--ink); border-color: var(--faint); }
+  /* Подпись главной кнопки — ЧЕРНИЛАМИ по вермилиону: 5.22:1.
+     Белым по вермилиону было 3.40:1 — главная кнопка платформы не проходила AA
+     (tokens.json об этом и предупреждает: accent не годится для мелкого текста).
+     Наведение даёт внутреннюю обводку, а не затемнение: затемнение до
+     accentHover уронило бы контраст с чернилами до 3.88:1. */
+  .btn-1 { background: var(--accent); color: var(--ink); font-weight: 500; }
+  .btn-1:hover { box-shadow: inset 0 0 0 2px var(--ink); }
+  .btn-2 { background: var(--surface); color: var(--ink); border-color: var(--hint); }
   .btn-2:hover { border-color: var(--ink); }
   .btn-3 {
     background: none; border: 0; padding: 9px 0; color: var(--accent-text);
@@ -183,12 +196,13 @@
      ДОРОЖКА ШАГОВ. Пройденное приглушено, текущее основным цветом:
      подсветка ведёт вперёд, а не назад.
      ====================================================================== */
+  /* Будущие шаги были набраны --faint: 1.65:1 на белом, то есть текст,
+     который нельзя прочитать. Все шаги кроме текущего — --muted (5.1:1). */
   .path {
     display: flex; flex-wrap: wrap; gap: 6px 20px;
-    font-size: var(--fs-util); color: var(--faint); padding: 18px 0 0;
+    font-size: var(--fs-util); color: var(--muted); padding: 18px 0 0;
     text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500;
   }
-  .path li[data-done="true"] { color: var(--muted); }
   .path li[aria-current="true"] { color: var(--ink); }
 
   /* ======================================================================
@@ -221,26 +235,30 @@
   .field { display: block; margin-bottom: 20px; max-width: 640px; }
   .field .lab { display: block; font-weight: 500; margin-bottom: 4px; }
   .field .sub { display: block; font-size: var(--fs-util); color: var(--muted); margin-bottom: 6px; }
+  /* Рамки элементов управления — --hint (3.47:1): WCAG 1.4.11 требует 3:1.
+     Стояли --rule (1.39:1) и --faint (1.65:1) — границы поля и переключателя
+     были неразличимы. --hint остаётся только для рамок: как ТЕКСТ он даёт
+     3.47:1 и не проходит, поэтому плейсхолдеры теперь --muted. */
   input[type="text"], input[type="email"] {
     font: inherit; color: var(--ink); width: 100%; background: var(--field);
-    border: 1px solid var(--rule); border-radius: var(--radius);
+    border: 1px solid var(--hint); border-radius: var(--radius);
     padding: 10px 12px; min-height: 38px;
   }
   input:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
-  ::placeholder { color: var(--hint); }
+  ::placeholder { color: var(--muted); }
 
   fieldset { border: 0; margin: 0; padding: 0; }
   legend { padding: 0; }
 
   .prio { border-top: 1px solid var(--rule); padding: 16px 0; max-width: 640px; }
-  .prio .n { font-size: var(--fs-util); color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
+  .prio .n { display: block; font-size: var(--fs-util); color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; }
 
   .pick { display: flex; flex-direction: column; gap: 8px; max-width: 640px; }
   .pick label { position: relative; }
   .pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
   .pick span {
     display: flex; align-items: center; min-height: 38px; padding: 9px 12px;
-    border: 1px solid var(--faint); border-radius: var(--radius);
+    border: 1px solid var(--hint); border-radius: var(--radius);
     font-size: var(--fs-dense); color: var(--muted);
   }
   .pick input:checked + span { border-color: var(--accent-text); color: var(--accent-text); }
@@ -255,7 +273,7 @@
   .scale .opt span {
     display: flex; flex-direction: column; gap: 5px; align-items: flex-start;
     min-height: 38px; padding: 8px 10px;
-    border: 1px solid var(--faint); border-radius: var(--radius);
+    border: 1px solid var(--hint); border-radius: var(--radius);
     font-size: var(--fs-util); color: var(--muted);
   }
   .scale .opt .v { font-size: var(--fs-dense); font-weight: 500; color: var(--ink); }
@@ -268,7 +286,7 @@
   .ten .opt input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
   .ten .opt span {
     display: flex; align-items: center; justify-content: center; min-height: 38px;
-    border: 1px solid var(--faint); border-radius: var(--radius); font-size: var(--fs-dense);
+    border: 1px solid var(--hint); border-radius: var(--radius); font-size: var(--fs-dense);
   }
   .ten .opt input:checked + span { border-color: var(--accent-text); color: var(--accent-text); font-weight: 500; }
   .ten .opt input:focus-visible + span { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
@@ -474,15 +492,15 @@
 <body>
 
 <div class="proto">
-  <b>Прототип · карта приоритетов</b>
+  <b>прототип</b>
   <nav id="nav" aria-label="экраны прототипа"></nav>
-  <span class="hint">фикстура «команда роста», данные выдуманы</span>
+  <span class="hint">этой панели в продукте нет · данные выдуманы</span>
 </div>
 
 <div class="frame">
 
 <!-- ============================ ЛЕНДИНГ ============================ -->
-<section class="screen" id="s-landing" data-name="лендинг" data-active="true">
+<section class="screen" id="s-landing" data-title="Карта приоритетов команды — futureproof" data-name="лендинг" data-active="true">
 
   <div class="head">
     <span class="logo">futureproof
@@ -496,7 +514,7 @@
     <h1>Ваши приоритеты дошли до людей?</h1>
     <p class="sub">Команда напишет свои приоритеты года, не видя ваших. Через неделю увидите, что дошло.</p>
     <div class="btn-row">
-      <a class="btn btn-1" href="#s-survey1" data-go="s-survey1">Заполнить анкету первой</a>
+      <a class="btn btn-1" href="#s-survey1" data-go="s-survey1">Заполнить свою анкету</a>
       <a class="btn btn-2" href="#s-report" data-go="s-report">Пример отчёта</a>
     </div>
     <p class="fine">В примере числа выдуманы</p>
@@ -581,21 +599,21 @@
 
   <div class="rule-top" style="margin-top:48px">
     <div class="btn-row">
-      <a class="btn btn-1" href="#s-survey1" data-go="s-survey1">Заполнить анкету первой</a>
+      <a class="btn btn-1" href="#s-survey1" data-go="s-survey1">Заполнить свою анкету</a>
       <span class="note">Отчёт будет через неделю</span>
     </div>
   </div>
 </section>
 
 <!-- ============================ АНКЕТА 1 ============================ -->
-<section class="screen" id="s-survey1" data-name="анкета 1">
+<section class="screen" id="s-survey1" data-title="Ваши приоритеты — карта приоритетов" data-name="анкета 1">
 
   <div class="head">
     <span class="logo">futureproof
       <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="#ff4800"/></svg>
       <span class="prod">карта приоритетов</span>
     </span>
-    <span class="where">Команда роста</span>
+    <span class="where">Замер: команда роста</span>
   </div>
 
   <ul class="path">
@@ -613,16 +631,16 @@
 
       <div style="margin-top:28px">
         <div class="prio">
-          <p class="n">Приоритет 1</p>
-          <input type="text" value="Выйти на самоокупаемость по новым каналам" maxlength="200" />
+          <label class="n" for="prio1">Приоритет 1</label>
+          <input id="prio1" type="text" value="Выйти на самоокупаемость по новым каналам" maxlength="200" />
         </div>
         <div class="prio">
-          <p class="n">Приоритет 2</p>
-          <input type="text" value="Сократить срок вывода продукта с девяти месяцев до пяти" maxlength="200" />
+          <label class="n" for="prio2">Приоритет 2</label>
+          <input id="prio2" type="text" value="Сократить срок вывода продукта с девяти месяцев до пяти" maxlength="200" />
         </div>
         <div class="prio">
-          <p class="n">Приоритет 3</p>
-          <input type="text" placeholder="Например: перевести поддержку на самообслуживание" maxlength="200" />
+          <label class="n" for="prio3">Приоритет 3</label>
+          <input id="prio3" type="text" placeholder="Например: перевести поддержку на самообслуживание" maxlength="200" />
         </div>
         <p style="margin-top:14px"><button type="button" class="btn btn-3">Добавить ещё приоритет</button></p>
       </div>
@@ -642,14 +660,14 @@
 </section>
 
 <!-- ============================ АНКЕТА 2–4 ============================ -->
-<section class="screen" id="s-survey2" data-name="анкета 2–4">
+<section class="screen" id="s-survey2" data-title="Ваши приоритеты — карта приоритетов" data-name="анкета 2–4">
 
   <div class="head">
     <span class="logo">futureproof
       <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="#ff4800"/></svg>
       <span class="prod">карта приоритетов</span>
     </span>
-    <span class="where">Команда роста</span>
+    <span class="where">Замер: команда роста</span>
   </div>
 
   <ul class="path">
@@ -768,7 +786,7 @@
       <div class="rule-top" style="margin-top:36px">
         <div class="consent">
           <input type="checkbox" id="c1" />
-          <label for="c1">Согласен на обработку ответов, включая анализ ии-сервисом за пределами России. Уходят только формулировки, без имени и адреса.</label>
+          <label for="c1">Даю согласие на обработку ответов, включая анализ ии-сервисом за пределами России. Уходят только формулировки, без имени и адреса.</label>
         </div>
         <div class="btn-row">
           <a class="btn btn-1" href="#s-people" data-go="s-people">Отправить ответы</a>
@@ -782,14 +800,14 @@
 </section>
 
 <!-- ============================ КОЛЛЕГИ ============================ -->
-<section class="screen" id="s-people" data-name="коллеги">
+<section class="screen" id="s-people" data-title="Кто отвечает — карта приоритетов" data-name="коллеги">
 
   <div class="head">
     <span class="logo">futureproof
       <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="#ff4800"/></svg>
       <span class="prod">карта приоритетов</span>
     </span>
-    <span class="where">Команда роста · сбор до 19 августа</span>
+    <span class="where">Замер: команда роста · сбор до 19 августа</span>
   </div>
 
   <ul class="path">
@@ -856,14 +874,14 @@
 </section>
 
 <!-- ============================ СТАТУСЫ ============================ -->
-<section class="screen" id="s-board" data-name="статусы">
+<section class="screen" id="s-board" data-title="Кто уже ответил — карта приоритетов" data-name="статусы">
 
   <div class="head">
     <span class="logo">futureproof
       <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="#ff4800"/></svg>
       <span class="prod">карта приоритетов</span>
     </span>
-    <span class="where">Команда роста · сбор до 19 августа</span>
+    <span class="where">Замер: команда роста · сбор до 19 августа</span>
   </div>
 
   <ul class="path">
@@ -922,14 +940,14 @@
 </section>
 
 <!-- ============================ ОТЧЁТ ============================ -->
-<section class="screen" id="s-report" data-name="отчёт">
+<section class="screen" id="s-report" data-title="Отчёт: команда роста — карта приоритетов" data-name="отчёт">
 
   <div class="head">
     <span class="logo">futureproof
       <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="#ff4800"/></svg>
       <span class="prod">карта приоритетов</span>
     </span>
-    <span class="where">Команда роста · 11 ответов · собран 12 августа · открыт до 11 сентября</span>
+    <span class="where">Замер: команда роста · 11 ответов · собран 12 августа · открыт до 11 сентября</span>
   </div>
 
   <div class="demo-bar">
@@ -1039,6 +1057,7 @@
         <span style="width:20%">60 почти всё</span>
         <span style="width:20%">80 всё</span>
       </div>
+      <p class="sr">Балл 47 из 100. Диапазоны: 0–40 не дошло, 40–60 часть, 60–80 почти всё, 80–100 всё.</p>
     </div>
 
     <p class="of" style="margin-top:16px">Нужен, чтобы сравнить себя через полгода.</p>
@@ -1094,12 +1113,12 @@
       <span data-n="known" style="width:53%">Сказали или есть в документе — 53%</span>
       <span data-n="guess" style="width:47%">Догадались сами — 47%</span>
     </div>
-    <p class="sr">Догадались сами или не помнят источник — 47 процентов. Руководитель сказал прямо 34, есть в документе 19, вывел сам 31, не помнит 16.</p>
+    <p class="sr">Догадались сами или не помнят источник — 47 процентов. Руководитель сказал прямо 34, есть в документе 19, вывод по контексту 31, не помнит 16.</p>
 
     <ul>
       <li><span class="p num">34%</span><span>Руководитель сказал прямо</span></li>
       <li><span class="p num">19%</span><span>Есть в документе или okr</span></li>
-      <li><span class="p num">31%</span><span>Вывел сам из контекста</span></li>
+      <li><span class="p num">31%</span><span>Вывод по контексту, никто не говорил</span></li>
       <li><span class="p num">16%</span><span>Не помню, просто так делаем</span></li>
     </ul>
   </div>
@@ -1244,14 +1263,14 @@
 </section>
 
 <!-- ============================ ОТВЕТЫ УШЛИ ============================ -->
-<section class="screen" id="s-thanks" data-name="ответы ушли">
+<section class="screen" id="s-thanks" data-title="Ответы ушли — карта приоритетов" data-name="ответы ушли">
 
   <div class="head">
     <span class="logo">futureproof
       <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="#ff4800"/></svg>
       <span class="prod">карта приоритетов</span>
     </span>
-    <span class="where">Команда роста</span>
+    <span class="where">Замер: команда роста</span>
   </div>
 
   <div class="grid" style="margin-top:48px">
@@ -1294,7 +1313,7 @@
     nav.appendChild(b);
   });
 
-  function show(id) {
+  function show(id, quiet) {
     var found = false;
     screens.forEach(function (s) {
       var on = s.id === id;
@@ -1305,7 +1324,9 @@
     Array.prototype.forEach.call(nav.children, function (b) {
       b.setAttribute('aria-current', b.getAttribute('data-target') === id ? 'true' : 'false');
     });
-    if (location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
+    var cur = screens.filter(function (s) { return s.id === id; })[0];
+    if (cur && cur.dataset.title) document.title = cur.dataset.title;
+    if (!quiet && location.hash !== '#' + id) history.replaceState(null, '', '#' + id);
     window.scrollTo(0, 0);
   }
 
@@ -1350,7 +1371,15 @@
   var printBtn = document.getElementById('printBtn');
   if (printBtn) printBtn.addEventListener('click', function () { window.print(); });
 
-  show((location.hash || '').replace('#', '') || 's-landing');
+  function measureBar() {
+    var bar = document.querySelector('.proto');
+    document.documentElement.style.setProperty('--bar-h', (bar ? bar.offsetHeight : 0) + 'px');
+  }
+  measureBar();
+  window.addEventListener('resize', measureBar);
+
+  var start = (location.hash || '').replace('#', '');
+  show(start || 's-landing', !start);
 })();
 </script>
 </body>
