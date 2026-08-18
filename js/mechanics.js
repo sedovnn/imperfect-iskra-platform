@@ -88,6 +88,9 @@
     },
     variants: {
       section: 'Ваши варианты',
+      // Заголовок ВТОРОГО такта: список уже сдан и лежит только для сверки — под ним
+      // не «ваши варианты», которые можно дописать, а то, что вы уже перечислили.
+      sealed:  'Что вы перечислили',
       gist:    { label: 'Вариант' },
       from:    { label: 'Как пришли к такой идее?' },
       // ⚠ ВТОРОЙ ТАКТ ДОБАВЛЕН 14.08 (решение владельца). Агеев говорил «основная
@@ -326,10 +329,11 @@
         // маркерами chainReal и conclusionFollows. В одном поле они сливаются, и
         // различать пришлось бы на глаз.
         h += head(COPY.theses.links, '');
-        h += field(ctx, { id: 'mxLw', f: 'linkWhy', label: COPY.theses.lwhy.label,
+        h += '<div class="mx-card">' +
+             field(ctx, { id: 'mxLw', f: 'linkWhy', label: COPY.theses.lwhy.label,
                           rows: 3, ph: COPY.theses.lwhy.ph, val: m.linkWhy }) +
              field(ctx, { id: 'mxLc', f: 'linkConc', label: COPY.theses.lconc.label,
-                          rows: 3, ph: COPY.theses.lconc.ph, val: m.linkConc });
+                          rows: 3, ph: COPY.theses.lconc.ph, val: m.linkConc }) + '</div>';
         host.innerHTML = h;
 
         // Части, зависящие от текста карточек. Зовётся и из draw(), и на каждый ввод
@@ -480,15 +484,16 @@
       // веер сдан. Ниже два поля: сама рекомендация и почему она, а не эти.
       var drawMain = function () {
         var live = m.rays.filter(function (r) { return String(r.gist).trim(); });
-        var h = ctx.speech(ctx.probe) + head(COPY.variants.section, '');
+        var h = ctx.speech(ctx.probe) + head(COPY.variants.sealed, '');
         live.forEach(function (r, i) {
           h += '<div class="mx-card mx-card-ro"><div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span></div>' +
             '<div class="mx-ray-gist">' + ctx.br(ctx.esc(r.gist)) + '</div></div>';
         });
-        h += field(ctx, { id: 'mxMT', f: 'mainText', label: COPY.variants.main.label,
+        h += '<div class="mx-card">' +
+             field(ctx, { id: 'mxMT', f: 'mainText', label: COPY.variants.main.label,
                           ph: COPY.variants.main.ph, rows: 3, val: m.mainText }) +
              field(ctx, { id: 'mxMW', f: 'mainWhy', label: COPY.variants.mainWhy.label,
-                          ph: COPY.variants.mainWhy.ph, rows: 3, val: m.mainWhy });
+                          ph: COPY.variants.mainWhy.ph, rows: 3, val: m.mainWhy }) + '</div>';
         host.innerHTML = h;
         var mt = host.querySelector('[data-f="mainText"]');
         if (mt) mt.addEventListener('input', function () { m.mainText = mt.value; ctx.save(); ctx.sync(); });

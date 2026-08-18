@@ -3196,6 +3196,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Отмеченный самый тревожный симптом и свой вариант в списке — «своё» помечено
    левой чертой цветом бренда: та же фигура, что у .dir в прототипе, но токеном. */
 .mx-card.is-first, .bl-card.mx-own { border-color: var(--jb-ink); background: var(--band); }
+/* Сданный веер во втором такте вариантов: карточки участника, поэтому голубые по
+   общему правилу, но править их уже нельзя — рамка глуше, номер тише. Классы
+   .mx-card-ro и .mx-ray-gist появились 14.08 вместе со вторым тактом и до 18.08
+   не имели ни одного правила: текст ложился дефолтным кеглем. */
+.mx-card-ro { border-color: var(--band-line); }
+.mx-card-ro .bl-n { color: var(--muted-soft); }
+.mx-ray-gist { font-size: var(--fs-dense); line-height: 1.55; color: var(--ink); }
 .mx-card-top { display: flex; align-items: baseline; gap: 8px; margin: 0 0 6px; }
 .mx-acts { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
 /* ⚠ Ряд решений прижат к НИЗУ карточки (правка 07.08). Карточки в строке грида равны
