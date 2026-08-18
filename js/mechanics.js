@@ -1052,7 +1052,7 @@
           // автора», и срок помогает его прочитать, — но стоит после содержания.
           '<div class="mx-card">' +
             field(ctx, { id: 'mxGb', f: 'became', label: COPY.goal.became.label, rows: 5, val: m.became }) +
-            field(ctx, { id: 'mxGg', f: 'gave', label: COPY.goal.gave.label, opt: 1, rows: 4, ph: COPY.goal.gave.ph, val: m.gave }) +
+            field(ctx, { id: 'mxGg', f: 'gave', label: COPY.goal.gave.label, rows: 4, val: m.gave }) +
           '</div>' +
           head(COPY.goal.years, '<span class="mx-count mx-opt">по желанию — можно не отвечать</span>') +
           // ⚠ КРУПНОГО ЧИСЛА НЕТ (решение владельца 09.08, вариант 3). Оно меняло
