@@ -183,11 +183,33 @@
   // причинность размылась — потолок здесь защищает признак, а не дисциплину.
   // ═════════════════════════════════════════════════════════════════════════
   var NORM = 12;
+  // Связи как массив. У записей 14–18.08 их не было — там два плоских поля; поднимаем
+  // их в первую строку массива, чтобы читатели были одни для всех записей.
+  function tiesOf(m) {
+    if (!Array.isArray(m.ties)) {
+      var w = String(m.linkWhy || '').trim(), c = String(m.linkConc || '').trim();
+      m.ties = (w || c) ? [{ why: m.linkWhy || '', conc: m.linkConc || '' }] : [{ why: '', conc: '' }];
+    }
+    if (!m.ties.length) m.ties.push({ why: '', conc: '' });
+    return m.ties;
+  }
+
   M.theses = {
     init: function () {
       // links/pending остались пустыми ради записей до 14.08: сводки и рендер судьи
       // читают оба вида — прежние объекты связок и нынешние два поля.
+      // ⚠ СВЯЗЕЙ МОЖЕТ БЫТЬ НЕСКОЛЬКО (правка владельца 19.08). С 14.08 их было ровно
+      // две строки на весь шаг, и форма единственного числа сообщала, что связь одна.
+      // Для АК-2 это узко: верх лестницы — замкнутый контур, а его редко опишешь одной
+      // связью. Приглашение множественности только МЕХАНИЧЕСКОЕ — пустая пара полей и
+      // кнопка, как у вариантов и у карточек будущего; словами не просим.
+      // Конструктор связок (выбор 2–4 карточек номерами) НЕ возвращаем: из-за него в
+      // живом прогоне участник свалил все двадцать четыре карточки в одну связку «всё
+      // связано». Здесь по-прежнему свободный текст, участник ссылается на номера словами.
+      // linkWhy/linkConc и links остаются пустыми ради прежних записей: их читают и
+      // сводка, и рендер судьи (записи 14–18.08 и до 14.08 соответственно).
       return { cards: [{ id: 1, text: '', anchor: '' }], nextId: 2, first: null, why: '',
+               ties: [{ why: '', conc: '' }],
                linkWhy: '', linkConc: '', links: [], pending: [] };
     },
     gate: function (m, ctx) {
@@ -329,11 +351,18 @@
         // маркерами chainReal и conclusionFollows. В одном поле они сливаются, и
         // различать пришлось бы на глаз.
         h += head(COPY.theses.links, '');
-        h += '<div class="mx-card">' +
-             field(ctx, { id: 'mxLw', f: 'linkWhy', label: COPY.theses.lwhy.label,
-                          rows: 3, ph: COPY.theses.lwhy.ph, val: m.linkWhy }) +
-             field(ctx, { id: 'mxLc', f: 'linkConc', label: COPY.theses.lconc.label,
-                          rows: 3, ph: COPY.theses.lconc.ph, val: m.linkConc }) + '</div>';
+        var ties = tiesOf(m);
+        ties.forEach(function (tie, ti) {
+          h += '<div class="mx-card"><div class="mx-card-top"><span class="bl-n">' + (ti + 1) + '</span>' +
+               '<div class="mx-acts">' + (ties.length > 1
+                 ? '<button type="button" class="s2-act" data-tiedel="' + ti + '">убрать</button>' : '') +
+               '</div></div>' +
+               field(ctx, { id: 'mxLw' + ti, f: 'tieWhy', i: ti, label: COPY.theses.lwhy.label,
+                            rows: 3, ph: COPY.theses.lwhy.ph, val: tie.why }) +
+               field(ctx, { id: 'mxLc' + ti, f: 'tieConc', i: ti, label: COPY.theses.lconc.label,
+                            rows: 3, ph: COPY.theses.lconc.ph, val: tie.conc }) + '</div>';
+        });
+        h += '<button type="button" class="mx-add" data-tieadd="1">+ ещё связь</button>';
         host.innerHTML = h;
 
         // Части, зависящие от текста карточек. Зовётся и из draw(), и на каждый ввод
@@ -379,10 +408,16 @@
         // перерисовке. Поймано стендом.
         // Два свободных поля вместо конструктора связок (14.08). Индекса у них нет —
         // это не элементы списка, а поля шага.
-        var lw = host.querySelector('[data-f="linkWhy"]');
-        if (lw) lw.addEventListener('input', function () { m.linkWhy = lw.value; ctx.save(); ctx.sync(); });
-        var lc = host.querySelector('[data-f="linkConc"]');
-        if (lc) lc.addEventListener('input', function () { m.linkConc = lc.value; ctx.save(); ctx.sync(); });
+        // Связи индексируются: ключ поля в data-f, номер строки в data-i — так же, как
+        // у вариантов. Прежние плоские linkWhy/linkConc на экране больше не рисуются.
+        host.querySelectorAll('[data-f="tieWhy"], [data-f="tieConc"]').forEach(function (el) {
+          el.addEventListener('input', function () {
+            var t = tiesOf(m)[Number(el.dataset.i)];
+            if (!t) return;
+            if (el.dataset.f === 'tieWhy') t.why = el.value; else t.conc = el.value;
+            ctx.save(); ctx.sync();
+          });
+        });
       };
       // ⚠ ДЕЛЕГИРОВАННЫЙ КЛИК ВЕШАЕТСЯ ОДИН РАЗ, СНАРУЖИ draw(). Внутри draw() он
       // копился: innerHTML меняет потомков, но слушатель сидит на самом host, и
@@ -411,6 +446,12 @@
           }
           if (t.getAttribute && t.getAttribute('data-add')) {
             m.cards.push({ id: m.nextId++, text: '', anchor: '' }); ctx.save(); draw(); ctx.sync(); return;
+          }
+          if ((a = t.getAttribute && t.getAttribute('data-tiedel'))) {
+            tiesOf(m).splice(Number(a), 1); ctx.save(); draw(); ctx.sync(); return;
+          }
+          if (t.getAttribute && t.getAttribute('data-tieadd')) {
+            tiesOf(m).push({ why: '', conc: '' }); ctx.save(); draw(); ctx.sync(); return;
           }
           if ((a = t.getAttribute && t.getAttribute('data-anchoropen'))) { picking[Number(a)] = true; draw(); return; }
           if ((a = t.getAttribute && t.getAttribute('data-anchorclose'))) { picking[Number(a)] = false; draw(); return; }
@@ -1166,10 +1207,14 @@
     var f = m.cards.filter(function (c) { return c.id === m.first; })[0];
     if (f) h += p(COPY.theses.worst, ctx.br(f.text) + '<br /><b>Почему:</b> ' + ctx.br(m.why));
     // Два поля про связи (с 14.08). Показываем их, если заполнены.
-    if (String(m.linkWhy || '').trim() || String(m.linkConc || '').trim()) {
+    var tt = tiesOf(m).filter(function (x) { return String(x.why).trim() || String(x.conc).trim(); });
+    if (tt.length) {
       h += p(COPY.theses.links, '');
-      if (String(m.linkWhy || '').trim()) h += p(COPY.theses.lwhy.label, ctx.br(m.linkWhy));
-      if (String(m.linkConc || '').trim()) h += p(COPY.theses.lconc.label, ctx.br(m.linkConc));
+      tt.forEach(function (x, i) {
+        if (tt.length > 1) h += p('Связь ' + (i + 1), '');
+        if (String(x.why).trim()) h += p(COPY.theses.lwhy.label, ctx.br(x.why));
+        if (String(x.conc).trim()) h += p(COPY.theses.lconc.label, ctx.br(x.conc));
+      });
     }
     // Прежние связки-объекты — только у записей до 14.08.
     if ((m.links || []).length) {
