@@ -212,6 +212,10 @@
       // Пометки едут на сервер и НЕ едут судье: buildJudgeInput_ собирает вход по
       // списку окон из V2_JUDGE_TASKS, и колонки marksJson для него не существует.
       marks: state.marks || [],
+      // Ответ на вопрос ПОСЛЕ дня («вспоминалась ли реальная компания») — по тому же
+      // праву и с тем же ограничением, что пометки: в лист едет, судье нет. Судья,
+      // прочитавший название прототипа, начал бы судить стратегию этой компании.
+      debrief: state.debrief || null,
       cursor: state.cursor,
       started: !!state.started,
       finished: !!state.finished,
@@ -2294,9 +2298,41 @@
   // Счётчика «N / 6» в шапке нет (решение владельца 04.08, СПЕК §4.4: прогресс дня живёт
   // только на межэтапном экране). Если возвращать — сначала правится §4.4.
 
+  // ⚠ ВЫКЛЮЧАТЕЛЬ ВОПРОСА ПОСЛЕ ДНЯ (пункт А4, 19.08). true — на финальном экране
+  // спрашиваем про узнавание прототипа; false — экран как был. Он здесь, а не в
+  // сценах, потому что это не шаг маршрута: маршрут читают судья и харнесс, а этот
+  // вопрос не должен доехать ни до одного из них. Пилотные прогоны на людях — да,
+  // прогоны моделей — нет (harness.html не грузит этот файл).
+  var ASK_DEBRIEF = true;
+
+  function askDebrief() {
+    var box = el('debriefBox'), ta = el('debriefText'), btn = el('debriefSend');
+    if (!box || !ta || !btn) return;
+    // В демо не спрашиваем: демо смотрят с витрины, там нет ни участника, ни прогона,
+    // и запись в лист некуда прицепить.
+    if (!ASK_DEBRIEF || isDemo) return;
+    // Уже ответили (вернулись на экран после обновления страницы) — не спрашиваем
+    // второй раз, но и не прячем ответ: человек видит, что его записали.
+    if (state.debrief) { box.style.display = 'block'; ta.value = String(state.debrief.text || '');
+      ta.setAttribute('disabled', 'disabled'); btn.style.display = 'none';
+      el('debriefDone').style.display = 'block'; return; }
+    box.style.display = 'block';
+    btn.addEventListener('click', function () {
+      state.debrief = { text: String(ta.value || '').trim(), at: nowIso() };
+      saveState();
+      ta.setAttribute('disabled', 'disabled');
+      btn.style.display = 'none';
+      el('debriefDone').style.display = 'block';
+      // Ответ приходит ПОСЛЕ последней синхронизации дня, поэтому отправляем сразу
+      // сами: отложенный по таймеру sync может не успеть до закрытия вкладки.
+      sync();
+    });
+  }
+
   function showFinish() {
     el('assessRoot').style.display = 'none';
     el('finishOverlay').style.display = 'flex';
+    askDebrief();
     // Из демо выход ведёт на витрину, а не на вход по номеру (решение владельца
     // 04.08): демо смотрят с витрины, и отправлять человека на страницу входа
     // участника значит показывать ему гейт, к которому у него нет номера.
