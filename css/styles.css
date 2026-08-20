@@ -89,6 +89,14 @@
      потому что плотные списки портфеля шестнадцатым кеглем не помещаются, — эти две
      дописаны в документ вместе с их работой.
      Глубокая адаптация бренд-платформы под инструмент — отдельный проход позже. */
+  /* ⚠ ШКАЛА СВЕДЕНА К ДЕВЯТИ СТУПЕНЯМ (правка владельца 19.08). Было восемнадцать
+     кеглей, из них шесть дробных — 10,5 / 11,5 / 12,5 / 13,5 / 14,5 / 15,5 — в
+     четырнадцати местах: от соседней ступени они отличались на полпикселя, как
+     решение это не читается, а неровность видна. И семнадцать мест были написаны
+     числом мимо токенов, причём семь просто повторяли существующий токен. Теперь
+     ЧИСЕЛ В КЕГЛЯХ НЕТ ВООБЩЕ: 59 объявлений переведены на токены, дробные
+     сведены к ближайшей ступени, 19px и 24px — к 20. Новый кегль заводить только
+     новым токеном с причиной, иначе шкала расползётся снова. */
   --fs-place: 26px;   /* место сцены, заголовок межсценового экрана */
   --fs-read: 16px;    /* всё, что читают: реплики, поле ответа, установка, свод */
   --fs-dense: 14px;   /* плотные списки: карточки портфеля, выписки, справка */
@@ -313,7 +321,7 @@ a { color: inherit; }
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: var(--fs-op);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.14em;
@@ -357,7 +365,7 @@ h2 {
 }
 
 .section-lead {
-  font-size: 16px;
+  font-size: var(--fs-read);
   line-height: 1.6;
   color: var(--muted);
   max-width: 42ch;
@@ -387,21 +395,21 @@ h2 {
 .skill .num {
   font-family: var(--ff-display);
   font-weight: 900;
-  font-size: 26px;
+  font-size: var(--fs-place);
   color: var(--lime-dim);
   -webkit-text-stroke: 1.5px var(--ink);
 }
 
 .skill h3 {
   font-family: var(--ff-body);
-  font-size: 15.5px;
+  font-size: var(--fs-read);
   font-weight: 700;
   line-height: 1.3;
   margin: 0;
 }
 
 .skill p {
-  font-size: 13.5px;
+  font-size: var(--fs-op);
   line-height: 1.5;
   color: var(--muted);
   margin: 0;
@@ -414,7 +422,7 @@ h2 {
 .case-body p.quote {
   font-family: var(--ff-display);
   font-weight: 600;
-  font-size: 19px;
+  font-size: var(--fs-op-xl);
   color: var(--ink);
   line-height: 1.4;
 }/* .case-brief селектор поднимает специфичность выше .case-content p (0,1,1),
@@ -423,7 +431,7 @@ h2 {
   margin: 14px 0 0;
   padding-top: 12px;
   border-top: 1px solid var(--lime-line);
-  font-size: 13px;
+  font-size: var(--fs-op);
   color: var(--muted);
 }
 .intro-note {
@@ -472,20 +480,20 @@ h2 {
   border: 2px solid var(--ink);
   font-family: var(--ff-display);
   font-weight: 800;
-  font-size: 13px;
+  font-size: var(--fs-op);
   padding: 4px 10px;
   border-radius: 999px;
 }
 
 .step h3 {
   font-family: var(--ff-body);
-  font-size: 16px;
+  font-size: var(--fs-read);
   font-weight: 700;
   margin: 14px 0 10px;
 }
 
 .step p {
-  font-size: 14px;
+  font-size: var(--fs-dense);
   line-height: 1.55;
   color: var(--muted);
   margin: 0;
@@ -497,7 +505,7 @@ h2 {
 
 .logi h4 {
   font-family: var(--ff-body);
-  font-size: 14px;
+  font-size: var(--fs-dense);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -505,7 +513,7 @@ h2 {
 }
 
 .logi p {
-  font-size: 14px;
+  font-size: var(--fs-dense);
   line-height: 1.55;
   color: var(--muted);
   margin: 0;
@@ -524,7 +532,7 @@ footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: var(--fs-op);
   color: var(--muted); /* 7.13:1 — AA даже для меты футера */
   flex-wrap: wrap;
   gap: 12px;
@@ -556,7 +564,7 @@ footer {
 
 .field label {
   display: block;
-  font-size: 13px;
+  font-size: var(--fs-op);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -568,7 +576,7 @@ footer {
 .field input[type="text"], .field input[type="email"], .field input[type="password"], .field select {
   width: 100%;
   font-family: var(--ff-body);
-  font-size: 15px;
+  font-size: var(--fs-op-h);
   padding: 14px 16px;
   border: 1.5px solid #d8dadd;
   border-radius: 10px;
@@ -598,7 +606,7 @@ footer {
 /* .bib по умолчанию — крупная «нашивка» (30px, для отдельных экранов). В любой
    шапке она служебная и мелкая. Правило было заскоплено только на .station-header,
    поэтому на своём ряду экрана сборки Р6 номер вылезал во всю величину. */
-.station-header .bib, .finalize-top .bib { font-size: 14px; padding: 6px 12px; }
+.station-header .bib, .finalize-top .bib { font-size: var(--fs-dense); padding: 6px 12px; }
 /* --- опасное действие: удаление (семантический красный, не бренд-акцент) --- */
 .btn-danger { background: var(--ink); color: #ff7a6b; border-color: var(--ink); }
 .btn-danger:hover { box-shadow: 6px 6px 0 #ff7a6b, 6px 6px 0 1px var(--ink); }
@@ -608,7 +616,7 @@ footer {
   position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 12px);
   z-index: 4000; max-width: min(520px, calc(100vw - 32px));
   background: var(--ink); color: var(--paper);
-  font-family: var(--ff-body); font-size: 14px; line-height: 1.45;
+  font-family: var(--ff-body); font-size: var(--fs-dense); line-height: 1.45;
   padding: 14px 18px; border-radius: var(--radius); border: 1px solid var(--ink);
   opacity: 0; transition: opacity .2s ease, transform .2s cubic-bezier(.2,.8,.2,1);
 }
@@ -626,7 +634,7 @@ footer {
   border-radius: var(--radius); padding: 28px 28px 24px;
   max-width: 460px; width: 100%; border: 1px solid var(--hairline);
 }
-.imp-confirm-msg { font-family: var(--ff-body); font-size: 15px; line-height: 1.55; margin: 0 0 22px; }
+.imp-confirm-msg { font-family: var(--ff-body); font-size: var(--fs-op-h); line-height: 1.55; margin: 0 0 22px; }
 .imp-confirm-actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -646,12 +654,12 @@ footer {
   outline-offset: 2px;
 }
 .field-hint {
-  font-size: 12.5px;
+  font-size: var(--fs-util);
   color: var(--muted); /* 7.13:1 — подпись поля должна проходить AA (используется и на register) */
   margin-top: 6px;
 }
 .links-intro p:not(.kicker) {
-  font-size: 15px;
+  font-size: var(--fs-op-h);
   line-height: 1.65;
   max-width: var(--w-read);
 }
@@ -803,7 +811,7 @@ footer {
   padding: 8px 12px;
   margin: 0 0 14px;
   border-radius: var(--radius);
-  font-size: 14px;
+  font-size: var(--fs-dense);
   line-height: 1.5;
 }
 .pp-type-btn.is-on { background: var(--accent-tint); border-color: var(--accent); font-weight: 600; }
@@ -861,7 +869,7 @@ footer {
   border-bottom: 1px solid var(--hairline);
 }
 .finalize-top .station-sep { color: var(--hairline); }
-.finalize-top .finalize-screen-name { font-size: 15px; font-weight: 700; margin: 0; }
+.finalize-top .finalize-screen-name { font-size: var(--fs-op-h); font-weight: 700; margin: 0; }
 
 /* «Ваша линия» — полоса решений под шапкой (spine.js), одинаковая на ст.2/3 и в
    комнатах. Приглушённая: серая подложка + волосяная линия, без лаймового сигнала
@@ -875,7 +883,7 @@ footer {
   padding: 8px 24px;
   border-bottom: 1px solid var(--hairline);
   background: #fafafa;
-  font-size: 12.5px;
+  font-size: var(--fs-util);
 }
 
 /* «Мои ответы» и «Кейс» — обычные кнопки ШАПКИ (case-ref.js кладёт их первыми
@@ -916,7 +924,7 @@ footer {
   border: none;
   border-radius: 12px 0 0 12px;
   font-family: var(--ff-body);
-  font-size: 13px;
+  font-size: var(--fs-op);
   font-weight: 600;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -976,7 +984,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 .cheat-block > summary {
   cursor: pointer;
   padding: 10px 14px;
-  font-size: 13.5px;
+  font-size: var(--fs-op);
   font-weight: 600;
   list-style: none;
 }
@@ -1044,7 +1052,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 .cheat-body { padding: 2px 14px 12px; }
 .cheat-h {
   margin: 10px 0 4px;
-  font-size: 11px;
+  font-size: var(--fs-op-sm);
   text-transform: uppercase;
   letter-spacing: .06em;
   color: var(--muted);
@@ -1053,7 +1061,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   display: flex;
   gap: 10px;
   padding: 3px 0;
-  font-size: 13px;
+  font-size: var(--fs-op);
   line-height: 1.45;
   border-top: 1px solid var(--hairline);
 }
@@ -1068,7 +1076,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 @media (max-width: 600px) {
   /* мобильный: только фолбэк-рельс; в шапке кнопки живут по .btn-sm и переносятся
      вместе с остальным правым блоком (.station-header flex-wrap) */
-  .dock-rail .dossier-dock, .dock-rail .case-ref-dock { font-size: 12px; padding: 12px 6px; }
+  .dock-rail .dossier-dock, .dock-rail .case-ref-dock { font-size: var(--fs-util); padding: 12px 6px; }
   /* разделитель после переноса строки выглядел бы висящей чертой — убираем */
   .hdr-ref-group::after { display: none; }
 }
@@ -1143,14 +1151,14 @@ body.imp-drawer-open .dock-rail { display: none; }
 }
 
 .consent label {
-  font-size: 13px;
+  font-size: var(--fs-op);
   line-height: 1.5;
   color: var(--muted);
 }
 .device-warning.show { display: flex; }
 
 .form-error {
-  font-size: 13px;
+  font-size: var(--fs-op);
   color: #c4362b;
   margin-top: -10px;
   margin-bottom: 16px;
@@ -1174,12 +1182,12 @@ body.imp-drawer-open .dock-rail { display: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: var(--fs-op-xl);
   margin-bottom: 20px;
 }
 
 .confirm h2 { margin-bottom: 12px; }
-.confirm p { color: var(--muted); font-size: 15px; line-height: 1.6; margin-bottom: 28px; }
+.confirm p { color: var(--muted); font-size: var(--fs-op-h); line-height: 1.6; margin-bottom: 28px; }
 .round-card.round2 { background: var(--ink); color: var(--paper); }
 .round-card.round2 .round-meta { color: #b9bbbe; }
 .round-card.round2 p { color: #c7c9cc; }
@@ -1204,7 +1212,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   background: repeating-linear-gradient(to bottom, var(--ink) 0 6px, transparent 6px 12px);
 }
 .tag {
-  font-size: 11.5px;
+  font-size: var(--fs-util);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1230,11 +1238,11 @@ body.imp-drawer-open .dock-rail { display: none; }
 .role .role-tag {
   font-family: var(--ff-display);
   font-weight: 900;
-  font-size: 15px;
+  font-size: var(--fs-op-h);
 }
 
 .role p {
-  font-size: 12.5px;
+  font-size: var(--fs-util);
   line-height: 1.5;
   color: var(--muted);
   margin: 0;
@@ -1249,12 +1257,12 @@ body.imp-drawer-open .dock-rail { display: none; }
 }
 
 .axis .axis-name {
-  font-size: 13.5px;
+  font-size: var(--fs-op);
   font-weight: 700;
 }
 
 .axis .axis-opts {
-  font-size: 13.5px;
+  font-size: var(--fs-op);
   color: var(--muted);
 }
 
@@ -1267,7 +1275,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 .bib {
   font-family: var(--ff-display);
   font-weight: 900;
-  font-size: 14px;
+  font-size: var(--fs-dense);
   background: var(--ink);
   color: var(--lime);
   border: 1px solid var(--ink);
@@ -1368,12 +1376,12 @@ body.imp-drawer-open .dock-rail { display: none; }
   min-width: 0;
 }
 
-.station-header-left .logo { font-size: 18px; }
+.station-header-left .logo { font-size: var(--fs-logo); }
 
 .station-sep { color: var(--muted-soft); }
 
 .station-name {
-  font-size: 14px;
+  font-size: var(--fs-dense);
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -1389,7 +1397,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 }
 
 .station-hint {
-  font-size: 12px;
+  font-size: var(--fs-util);
   color: var(--muted-soft);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -1434,11 +1442,11 @@ body.imp-drawer-open .dock-rail { display: none; }
      (см. .station-body), поэтому полезная ширина ссылок не теряется. */
   padding: 20px 14px 20px var(--frame-pad);
   overflow-y: auto;
-  font-size: 13px;
+  font-size: var(--fs-op);
 }
 
 .case-nav-title {
-  font-size: 11px;
+  font-size: var(--fs-op-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1464,7 +1472,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   margin-top: 14px;
   border-top: 1px solid var(--hairline);
   padding-top: 12px;
-  font-size: 11px;
+  font-size: var(--fs-op-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -1479,7 +1487,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   text-decoration: none;
   color: var(--muted);
   line-height: 1.35;
-  font-size: 13px;
+  font-size: var(--fs-op);
 }
 
 .case-nav-link:hover { background: #f5f5f5; color: var(--ink); }
@@ -1533,12 +1541,12 @@ body.imp-drawer-open .dock-rail { display: none; }
 
 .case-content h2 {
   font-family: var(--ff-display);
-  font-size: 18px;
+  font-size: var(--fs-logo);
   font-weight: 800;
   margin: 0 0 16px;
 }
 .case-content p {
-  font-size: 14.5px;
+  font-size: var(--fs-dense);
   line-height: 1.68;
   color: var(--muted);
   margin: 0 0 14px;
@@ -1553,7 +1561,7 @@ blockquote.letter, blockquote.dialogue {
   border-radius: 12px;
 }
 
-blockquote.letter p, blockquote.dialogue p { font-size: 14px; margin: 0 0 12px; }
+blockquote.letter p, blockquote.dialogue p { font-size: var(--fs-dense); margin: 0 0 12px; }
 blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom: 0; }
 .appx-divider {
   font-family: var(--ff-display);
@@ -1620,7 +1628,7 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
 table {
   border-collapse: collapse;
   width: 100%;
-  font-size: 13px;
+  font-size: var(--fs-op);
 }
 
 table th, table td {
@@ -1715,7 +1723,7 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
 .rationale-block textarea, .card textarea, .card input[type="text"] {
   width: 100%;
   font-family: var(--ff-body);
-  font-size: 14px;
+  font-size: var(--fs-dense);
   padding: 10px 12px;
   border: 1.5px solid #d8dadd;
   border-radius: 10px;
@@ -1753,7 +1761,7 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
   margin: 0;
   align-self: flex-start;
   max-width: 100%;
-  font-size: 13px;
+  font-size: var(--fs-op);
   line-height: 1.7;
   color: var(--muted);
   cursor: pointer;
@@ -1764,7 +1772,7 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
    строки. Раньше два вида карточек были почти неотличимы. */
 .card .problem-quote-none {
   margin: 0;
-  font-size: 12.5px;
+  font-size: var(--fs-util);
   line-height: 1.45;
   color: var(--muted-soft);
   font-style: italic;
@@ -1781,7 +1789,7 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
 
 .card label {
   display: block;
-  font-size: 11px;
+  font-size: var(--fs-op-sm);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1811,9 +1819,9 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
 /* панель «откуда вывод об ИИ-помощи» в карточке */
 .ai-sig { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
 .ai-sig-row { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 12px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--hairline); }
-.ai-sig-k { font-size: 12px; font-weight: 600; color: var(--muted); }
-.ai-sig-v { font-size: 13px; font-weight: 600; color: var(--ink); }
-.ai-sig-h { grid-column: 2; font-size: 11.5px; color: var(--muted-soft); }
+.ai-sig-k { font-size: var(--fs-util); font-weight: 600; color: var(--muted); }
+.ai-sig-v { font-size: var(--fs-op); font-weight: 600; color: var(--ink); }
+.ai-sig-h { grid-column: 2; font-size: var(--fs-util); color: var(--muted-soft); }
 
 /* Разбор участника — боковой drawer: панель справа, список слева остаётся виден. */
 /* зоны в «Управлении»: Доступ (обычная) + Сброс/Удаление (боксы-деструктив) */
@@ -2450,13 +2458,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-ab-name { font-size: var(--fs-op); font-weight: 600; flex: 1 1 auto; }
 .cab-ab-line { flex: 0 0 100%; font-size: var(--fs-op-sm); color: var(--muted-soft); padding-left: 14px; }
 .cab-ab-flag {
-  font-size: 10.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
   color: var(--accent-ink); background: var(--accent-tint); padding: 2px 7px; border-radius: 4px;
 }
 .cab-ab.has-flag > summary { background: var(--accent-tint); }
 .cab-ab-body { padding: 2px 0 16px 14px; }
 .cab-ab-h {
-  font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
   color: var(--muted-soft); margin: 14px 0 6px;
 }
 .cab-ab-why { font-size: var(--fs-op); line-height: 1.55; max-width: var(--w-read); white-space: pre-wrap; }
@@ -2645,7 +2653,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   /* ⚠ ЗНАК КРУПНЕЕ ТЕКСТА (правка владельца 19.08). Стрелка шла тем же кеглем,
      что проза, и в кружке 26px читалась как соринка: цель — не слово, а мишень,
      и она должна быть видна с расстояния, на котором в неё целятся. */
-  font: inherit; font-size: 22px; line-height: 1; color: var(--muted-soft);
+  font: inherit; font-size: var(--fs-op-xl); line-height: 1; color: var(--muted-soft);
 }
 .toc-collapse:hover { background: var(--hairline); }
 .toc-collapse:hover { color: var(--ink); }
@@ -2697,7 +2705,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   color: var(--muted); padding: 12px 0 0;
 }
 /* Тот же кегль, что у стрелки свёртки: это один и тот же знак в двух состояниях. */
-.toc-rail-arrow { font-size: 22px; line-height: 1; }
+.toc-rail-arrow { font-size: var(--fs-op-xl); line-height: 1; }
 /* Подпись читается снизу вверх — как на корешке книги: так её читают, не наклоняя
    голову к экрану, и она не спорит с направлением самой колонки. */
 .toc-rail-label {
@@ -3360,7 +3368,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   width: 17px; height: 17px; margin-left: 7px; padding: 0;
   border: 1px solid var(--band-line); border-radius: 50%;
   background: var(--band); color: var(--jb-ink);
-  font-family: var(--ff-body); font-size: 11px; font-weight: 700; line-height: 1;
+  font-family: var(--ff-body); font-size: var(--fs-op-sm); font-weight: 700; line-height: 1;
   cursor: pointer; vertical-align: 1px;
 }
 .off-i:hover { border-color: var(--jb-ink); }
