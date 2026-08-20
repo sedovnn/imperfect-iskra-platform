@@ -174,6 +174,20 @@
     return '<div class="mx-head"><span class="mx-title">' + title + '</span>' + (right || '') + '</div>';
   }
 
+  // ⚠ ПОДПИСЬ ПОЛЯ — НАД ГОЛУБОЙ КАРТОЧКОЙ, А НЕ ВНУТРИ (решение владельца 19.08).
+  // И сама карточка встаёт как ответ участника в диалоге: три четверти колонки,
+  // прижата вправо. Смысл тот же, что у правила «голубой = вы»: своё видно как своё,
+  // а подпись — это вопрос платформы, ей внутри своего блока не место.
+  // Заголовок и карточка лежат в одной обёртке: иначе заголовок остался бы у левого
+  // края, а поле уехало вправо, и связь между ними читалась бы через всю колонку.
+  function answerBox(ctx, label, o) {
+    var f = {};
+    for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) f[k] = o[k];
+    f.label = '';
+    return '<div class="mx-ansbox">' + head(label, '') +
+           '<div class="mx-card">' + field(ctx, f) + '</div></div>';
+  }
+
   var M = {};
 
   // ═════════════════════════════════════════════════════════════════════════
@@ -533,14 +547,10 @@
               '<div class="mx-ray-gist">' + ctx.br(ctx.esc(r.gist)) + '</div></div>';
           });
         }
-        h += head(COPY.variants.main.label, '') +
-             '<div class="mx-card">' +
-             field(ctx, { id: 'mxMT', f: 'mainText', label: '',
-                          ph: COPY.variants.main.ph, rows: 3, val: m.mainText }) + '</div>' +
-             head(COPY.variants.mainWhy.label, '') +
-             '<div class="mx-card">' +
-             field(ctx, { id: 'mxMW', f: 'mainWhy', label: '',
-                          ph: COPY.variants.mainWhy.ph, rows: 3, val: m.mainWhy }) + '</div>';
+        h += answerBox(ctx, COPY.variants.main.label,
+               { id: 'mxMT', f: 'mainText', ph: COPY.variants.main.ph, rows: 3, val: m.mainText }) +
+             answerBox(ctx, COPY.variants.mainWhy.label,
+               { id: 'mxMW', f: 'mainWhy', ph: COPY.variants.mainWhy.ph, rows: 3, val: m.mainWhy });
         host.innerHTML = h;
         var mt = host.querySelector('[data-f="mainText"]');
         if (mt) mt.addEventListener('input', function () { m.mainText = mt.value; ctx.save(); ctx.sync(); });
@@ -765,8 +775,8 @@
         // править карточки, а не переписывать основание (правка владельца 07.08).
         var sm2 = ctx.mech('seal') || {};
         if (!(sm2.returned && sm2.confirmed == null)) {
-          h += '<div class="mx-card">' +
-            field(ctx, { id: 'mxCrit', f: 'crit', label: COPY.list.crit.label, rows: 5, ph: COPY.list.crit.ph, val: m.criteria }) + '</div>';
+          h += answerBox(ctx, COPY.list.crit.label,
+            { id: 'mxCrit', f: 'crit', rows: 5, ph: COPY.list.crit.ph, val: m.criteria });
         }
         host.innerHTML = h;
 
@@ -920,14 +930,21 @@
                     // заголовки не давали взвесить, с тем ли списком идти к правлению:
                     // из чего сложились люди и деньги в строке сверху, было не видно,
                     // а помнить цены наизусть — не работа участника.
-                    return '<li>' + ctx.esc(r.title) +
+                    return '<li>' +
+                      '<span class="off-t">' + ctx.esc(r.title) +
+                        '<button type="button" class="off-i" aria-label="описание заявки">i</button>' +
+                      '</span>' +
                       '<span class="off-cost">' + ctx.esc(r.who) + ' · ' + r.people + ' чел. · ' +
-                      ctx.num(r.money) + ' млрд</span></li>'; }).join('') + '</ul>'
+                      ctx.num(r.money) + ' млрд</span>' +
+                      (r.argument ? '<p class="off-arg">' + ctx.esc(r.argument) + '</p>' : '') +
+                      '</li>'; }).join('') + '</ul>'
                 : '<p class="bl-empty">пока ничего</p>');
           });
         }
         // Реплики после таблицы: «Ну что, с этим к ним идти? / Финализируем?»
-        if (m.confirmed == null) h += ctx.speech(ctx.ask);
+        // Черта отделяет разбор от разговора: выше — то, что участник разложил,
+        // ниже — вопрос Агеева. Без неё реплики читались как подпись к списку.
+        if (m.confirmed == null) h += '<div class="mx-rule"></div>' + ctx.speech(ctx.ask);
         if (m.confirmed != null) {
           // ⚠ Список выше СВЁРНУТ до итоговой строки: участник его только что
           // подтвердил, и повторять три стопки под вопросом Агеева незачем.
@@ -947,6 +964,12 @@
               val: m.why }) + '</div>';
         }
         host.innerHTML = h;
+        host.addEventListener('click', function (e) {
+          var b = e.target.closest && e.target.closest('.off-i');
+          if (!b) return;
+          var li = b.closest('li');
+          if (li) li.classList.toggle('is-open');
+        });
         var w = host.querySelector('#mxSeal');
         if (w) w.addEventListener('input', function () { m.why = w.value; ctx.save(); ctx.sync(); });
       };
@@ -1091,10 +1114,8 @@
           // поднимает уровень. Срок работает только как проверка достоверности дистанции».
           // Поле оставлено — у верхнего уровня есть вариант «отдача за пределами участия
           // автора», и срок помогает его прочитать, — но стоит после содержания.
-          '<div class="mx-card">' +
-            field(ctx, { id: 'mxGb', f: 'became', label: COPY.goal.became.label, rows: 5, val: m.became }) +
-            field(ctx, { id: 'mxGg', f: 'gave', label: COPY.goal.gave.label, rows: 4, val: m.gave }) +
-          '</div>' +
+          answerBox(ctx, COPY.goal.became.label, { id: 'mxGb', f: 'became', rows: 5, val: m.became }) +
+          answerBox(ctx, COPY.goal.gave.label, { id: 'mxGg', f: 'gave', rows: 4, val: m.gave }) +
           head(COPY.goal.years, '<span class="mx-count mx-opt">по желанию — можно не отвечать</span>') +
           // ⚠ КРУПНОГО ЧИСЛА НЕТ (решение владельца 09.08, вариант 3). Оно меняло
           // ширину и кегль на каждом движении и дёргало ряд. Вместо него шкала
@@ -1181,9 +1202,9 @@
       // Напоминание — рамкой и читаемым кеглем, а не служебной строкой: оно про то,
       // чем пользоваться, пока пишешь письмо (правка владельца 07.08).
       host.innerHTML = (ctx.lead ? '<p class="case-intro-marks">' + ctx.esc(ctx.lead) + '</p>' : '') +
-        '<div class="mx-card">' + LETTER.map(function (f) {
-        return field(ctx, { id: 'mxL_' + f[0], f: f[0], label: f[1], rows: 4, val: m[f[0]] });
-      }).join('') + '</div>';
+        LETTER.map(function (f) {
+        return answerBox(ctx, f[1], { id: 'mxL_' + f[0], f: f[0], rows: 4, val: m[f[0]] });
+      }).join('');
       LETTER.forEach(function (f) {
         var el = host.querySelector('#mxL_' + f[0]);
         el.addEventListener('input', function () { m[f[0]] = el.value; ctx.save(); ctx.sync(); });
