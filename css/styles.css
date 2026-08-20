@@ -758,7 +758,6 @@ footer {
      узкой колонке, а места писать по-прежнему хватает. */
   width: 66.6%;
   min-width: min(100%, 400px);
-  max-width: var(--w-form);
   margin-left: auto;
 }
 .s2-mine > * { width: 100%; max-width: none; }
@@ -2891,7 +2890,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    к правому краю такой колонки, отрывался от разговора на целый экран пустоты.
    Мера письма (--w-form) — верхняя граница и для разговора: всё, что участник
    читает и пишет, лежит в одной колонке текста, а не расползается по монитору. */
-.talk-scroll > * { max-width: var(--w-form); }
+
 /* Первая шапка сцены в колонке не отбивается сверху: 38px нужны как РАЗДЕЛИТЕЛЬ
    между разговорами, а над первым разговором отбивать нечего — там край колонки. */
 #talkCurrent > .sc-head:first-child { margin-top: 4px; }
@@ -3265,7 +3264,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
      узкой колонке, а места писать по-прежнему хватает. */
   width: 66.6%;
   min-width: min(100%, 400px);
-  max-width: var(--w-form);
   /* Воздух сверху: заголовок «Почему именно так» подходил вплотную к карточкам
      разбора и читался как подпись к последней из них. */
   margin: 22px 0 20px auto;
@@ -3365,7 +3363,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mx-host[data-mech="letter"] > *:not(.chat):not(.talk-folded):not(.talk-kept) {
   width: 66.6%;
   min-width: min(100%, 400px);
-  max-width: var(--w-form);
   margin-left: auto;
 }
 /* ⚠ Второй раз не сжимаем ТОЛЬКО там, где сжат сам верстак. У разбора заявок и
@@ -3432,7 +3429,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
      узкой колонке, а места писать по-прежнему хватает. */
   width: 66.6%;
   min-width: min(100%, 400px);
-  max-width: var(--w-form);
   margin-left: auto;
 }
 /* Внутри уже сжатого хоста ответные блоки не сжимаются второй раз — иначе на одном

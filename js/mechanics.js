@@ -160,7 +160,12 @@
         ? '<input type="text" id="' + id + '" class="mx-input" data-answer="1"' +
           ' data-f="' + o.f + '"' + (o.i != null ? ' data-i="' + o.i + '"' : '') +
           ' placeholder="' + ctx.esc(o.ph || '') + '" value="' + ctx.esc(o.val || '') + '" />'
-        : '<textarea id="' + id + '" class="mx-input" data-answer="1" rows="' + (o.rows || 3) + '"' +
+        // ⚠ ВЫСОТА У ВСЕХ ПОЛЕЙ ОДНА (правка владельца 19.08). Каждый верстак
+        // передавал свои rows — 2, 3, 4, 5, — и на одном экране рядом стояли поля
+        // разной высоты. Стартуют все с трёх строк, дальше растут под текст
+        // (autoGrow в engine.js). Параметр o.rows намеренно игнорируется: пока он
+        // читался, любая новая механика снова заводила свой размер.
+        : '<textarea id="' + id + '" class="mx-input" data-answer="1" rows="3"' +
           ' data-f="' + o.f + '"' + (o.i != null ? ' data-i="' + o.i + '"' : '') +
           ' placeholder="' + ctx.esc(o.ph || 'ваш ответ') + '">' + ctx.esc(o.val || '') + '</textarea>');
   }
