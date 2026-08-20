@@ -3186,7 +3186,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    «почему эти» листать список обратно не нужно */
 .bl-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; align-items: start; }
 .bl-col-head {
-  font-size: var(--fs-util); font-weight: 600; padding: 0 0 8px; margin-bottom: 8px;
+  /* ⚠ КРУПНЕЕ СВОИХ СТРОК (правка владельца 19.08). Стоял 12-м при строках 14-м
+     и читался подписью к предыдущему блоку. Ступени 13 и 14 не чинят — они не выше
+     строки; первая работающая ступень шкалы 16. */
+  font-size: var(--fs-read); font-weight: 600; padding: 0 0 8px; margin-bottom: 8px;
   border-bottom: 1px solid var(--hairline);
 }
 .bl-col-head span { font-weight: 400; color: var(--muted-soft); }
@@ -3692,7 +3695,9 @@ li.is-open .off-arg {
 
 /* печать (С3б): итог крупно, список раздельно и в лицо */
 .mx-seal-total {
-  font-size: var(--fs-place); font-weight: 700; font-variant-numeric: tabular-nums;
+  /* Ступенью ниже (20): 26 — это кегль заголовка этапа, внутри листа он спорил
+     с самим листом. */
+  font-size: var(--fs-op-xl); font-weight: 700; font-variant-numeric: tabular-nums;
   padding: 0 0 4px;
 }
 /* Строка списка на печати повторяет строку стопки: заголовок, под ним автор и
