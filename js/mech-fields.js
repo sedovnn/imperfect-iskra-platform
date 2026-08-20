@@ -410,10 +410,10 @@
       form: { [C.goal.became.label]: 'ваш ответ', [C.goal.gave.label]: C.goal.gave.ph,
               [C.goal.years]: 'число (необязательно)' },
       toState: function (o) {
-        var y = parseInt(String(o[C.goal.years] || o['через сколько лет'] || o.years || '').replace(/\D/g, ''), 10);
+        var y = parseInt(String(o[C.goal.years] || o['Через сколько лет'] || o['через сколько лет'] || o.years || '').replace(/\D/g, ''), 10);
         return { years: isNaN(y) ? null : y,
-                 became: String(o[C.goal.became.label] || o['Чем стала компания'] || o['чем стала компания'] || o.became || ''),
-                 gave: String(o[C.goal.gave.label] || o['Чем пришлось пожертвовать'] || o['чем пришлось пожертвовать'] || o.gave || '') };
+                 became: String(o[C.goal.became.label] || o['Ожидаемый образ компании'] || o['Чем «Искра» стала к этому сроку'] || o['Чем стала компания'] || o['чем стала компания'] || o.became || ''),
+                 gave: String(o[C.goal.gave.label] || o['Что отдаём за это уже сейчас'] || o['Чем пришлось пожертвовать'] || o['чем пришлось пожертвовать'] || o.gave || '') };
       }
     },
 
