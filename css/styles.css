@@ -3256,12 +3256,33 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    --line в этой теме чёрный (#181818), и черта читалась как рамка. */
 .mx-rule { border-top: 1px solid var(--hairline); margin: 22px 0 18px; }
 
-/* Карточка заявки: номер в строку с названием и того же цвета, цена — внизу слева
-   рядом с решениями, как итог под заявкой. */
-.bl-card-title > .bl-n { color: inherit; margin-right: 8px; font-variant-numeric: tabular-nums; }
+/* Карточка заявки: номер в строку с названием, тем же кеглем и цветом и с точкой —
+   иначе он читается как отдельная метка, а не как «третья заявка». Цена — внизу
+   слева, по краю карточки, как итог под заявкой. */
+.bl-card-title > .bl-n {
+  color: inherit; font-size: inherit; font-weight: inherit;
+  margin: 0 6px 0 0; font-variant-numeric: tabular-nums;
+}
+.bl-card-title > .bl-n::after { content: '.'; }
 .bl-card-foot { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
-.bl-card-foot .bl-card-cost { margin-right: auto; }
+.bl-card-foot .bl-card-cost { margin: 0 auto 0 0; }
 .bl-card-foot .mx-acts { margin-left: 0; }
+
+/* ── КАРТОЧКА-ОТВЕТ СО СВОИМ НОМЕРОМ ──
+   Номер стоит СНАРУЖИ голубого: внутри он занимал строку или отжимал поле, а это
+   порядковый номер ответа, а не его часть. Подписи полей уехали внутрь как
+   подсказки — подпись над полем и подсказка в поле говорили одно и то же дважды. */
+.mx-item { display: flex; align-items: flex-start; gap: 10px; }
+.mx-item > .mx-item-n {
+  flex: none; padding-top: 14px; min-width: 1.2em; text-align: right;
+  font-size: var(--fs-util); font-weight: 700; color: var(--muted-soft);
+  font-variant-numeric: tabular-nums;
+}
+.mx-item > .mx-card { flex: 1 1 auto; min-width: 0; }
+/* Ряд действий под полем и справа: метка и «убрать» — это то, что делают с уже
+   написанным, значит стоят после него. */
+.mx-acts-foot { justify-content: flex-end; margin-top: 8px; }
+.mx-acts-foot:empty { display: none; }
 
 /* Номер ответа — у верхнего левого угла поля, а не строкой над ним. */
 .mx-numrow { display: flex; gap: 8px; align-items: flex-start; }
@@ -3273,11 +3294,18 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* «ВЫ» и отметка о фиксации держатся справа, как и сам пузырь. */
 .win-fixed { text-align: right; }
 
-/* ── ОТВЕТНАЯ ОБЛАСТЬ ВЕРСТАКА = ОТВЕТ В ДИАЛОГЕ ──
+/* ── ОТВЕТНАЯ ОБЛАСТЬ ВЕРСТАКА = ОТВЕТ В ДИАЛОГЕ
+   ⚠ Перечислены поимённо, а не «все кроме разбора заявок»: у печати тоже не поле
+   ответа, а список решений и реплики Агеева, и сжатие уводило вправо весь экран
+   вместе с его словами. Своё поле на печати сдвигает .s2-mine собственным правилом. ──
    Все верстаки, кроме разбора заявок, встают справа на три четверти колонки:
    то же место и та же мера, что у своей реплики в разговоре. Заголовки едут
    вместе с полями, потому что сжимается весь хост, а не отдельные карточки. */
-.mx-host[data-mech]:not([data-mech="list"]) {
+.mx-host[data-mech="theses"],
+.mx-host[data-mech="variants"],
+.mx-host[data-mech="futures"],
+.mx-host[data-mech="goal"],
+.mx-host[data-mech="letter"] {
   /* ⚠ 2/3 И ПОРОГ 400px (правка владельца 19.08). Было 3/4 при пороге 560px,
      и при открытой панели материалов колонка ~460px — доля не срабатывала ни разу,
      ответ всегда занимал всю ширину. С порогом 400px смещение вправо видно и на
@@ -3289,8 +3317,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 }
 /* Внутри уже сжатого хоста ответные блоки не сжимаются второй раз — иначе на одном
    экране оказываются голубые области двух разных ширин (поймано на печати). */
-.mx-host[data-mech]:not([data-mech="list"]) .mx-ansbox,
-.mx-host[data-mech]:not([data-mech="list"]) .s2-mine {
+.mx-host[data-mech="theses"] .mx-ansbox, .mx-host[data-mech="theses"] .s2-mine,
+.mx-host[data-mech="variants"] .mx-ansbox, .mx-host[data-mech="variants"] .s2-mine,
+.mx-host[data-mech="futures"] .mx-ansbox, .mx-host[data-mech="futures"] .s2-mine,
+.mx-host[data-mech="goal"] .mx-ansbox, .mx-host[data-mech="goal"] .s2-mine,
+.mx-host[data-mech="letter"] .mx-ansbox, .mx-host[data-mech="letter"] .s2-mine {
   width: 100%; min-width: 0; max-width: none; margin-left: 0;
 }
 

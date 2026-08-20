@@ -266,8 +266,8 @@
         // который их порождал, на экране нет, но рендер судьи и сводка их ещё читают.
         var links = raw.filter(function (l) { return l && (l['Связка'] || l['тезисы'] || l.ids); }).map(function (l) {
           return { ids: (l['Связка'] || l['тезисы'] || l.ids || []).map(function (n) { return parseInt(String(n).replace(/\D/g, ''), 10); }).filter(Boolean),
-                   why: String(l[C.theses.lwhy.label] || l['Что из чего вытекает'] || l['что из чего вытекает'] || l.why || ''),
-                   conclusion: String(l[C.theses.lconc.label] || l['Какой из этого вывод для компании'] || l['Что из этого следует для Агеева'] || l['что из этого следует для Агеева'] || l.conclusion || '') };
+                   why: String(l[C.theses.lwhy.label] || l['Что с чем связано и как'] || l['Что из чего вытекает'] || l['что из чего вытекает'] || l.why || ''),
+                   conclusion: String(l[C.theses.lconc.label] || l['Какие из этого выводы для самой компании?'] || l['Какой из этого вывод для компании'] || l['Что из этого следует для Агеева'] || l['что из этого следует для Агеева'] || l.conclusion || '') };
         });
         return { cards: cards, nextId: cards.length + 1, first: first || null,
                  why: String(o[C.theses.why.label] || o['Почему именно это'] || o['почему именно это'] || o.why || ''),

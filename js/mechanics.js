@@ -69,13 +69,17 @@
       section: 'Наблюдения',
       item:    { ph: 'ваше наблюдение' },
       src:     { label: 'Подтвердить заметкой в материалах',
-                 ph: 'или словами: если ссылаетесь на материалы — где именно (необязательно)' },
+                 ph: 'или словами (необязательно)' },
       worst:   'Самый тревожный симптом',
       why:     { label: 'Почему именно это?', ph: 'ваш ответ' },
       links:   'Как наблюдения связаны друг с другом',
       // ⚠ ПОДПИСЬ «Связка» УБРАНА 14.08 вместе с конструктором связок: нумерованных
       // связок на экране больше нет, вместо них два свободных поля.
-      lwhy:    { label: 'Что с чем связано и как', ph: 'например: A усиливает B, потому что…' },
+      // ⚠ ПОДПИСЬ ПЕРЕЕХАЛА В САМО ПОЛЕ (решение владельца 19.08): подпись над полем
+      // и подсказка внутри говорили одно и то же дважды и съедали высоту карточки.
+      // Реестр держит и то и другое: подпись — ключ для формы модели и строка для
+      // судьи, подсказка — то, что видит человек. Слова в них одни.
+      lwhy:    { label: 'Что связано с чем и как', ph: 'Что связано с чем и как. Например: 1 усиливает 2, потому что…' },
       // ⚠ ФОРМУЛИРОВКА ПЕРЕПИСАНА 14.08 (решение владельца). Было «Что из этого
       // следует для Агеева». Участник честно не понимал, чего просят: «следует» —
       // это мысль или действие? а «для Агеева» читалось как «что ему с этого».
@@ -84,7 +88,7 @@
       // к нему декларативно». Значит нужен прямо назван артефакт — ВЫВОД — и объект
       // — КОМПАНИЯ. Слово «вывод» участник уже читает у Агеева («иначе получу готовые
       // выводы и не пойму, откуда они взялись»), поэтому это не наша лексика.
-      lconc:   { label: 'Какие из этого выводы для самой компании?', ph: 'ваш ответ' }
+      lconc:   { label: 'Какие выводы из этого следуют для самой компании?', ph: 'Какие выводы из этого следуют для самой компании?' }
     },
     variants: {
       section: 'Ваши варианты',
@@ -180,6 +184,14 @@
   // а подпись — это вопрос платформы, ей внутри своего блока не место.
   // Заголовок и карточка лежат в одной обёртке: иначе заголовок остался бы у левого
   // края, а поле уехало вправо, и связь между ними читалась бы через всю колонку.
+  // ⚠ НОМЕР СНАРУЖИ КАРТОЧКИ (решение владельца 19.08). Внутри голубого он съедал
+  // строку или отжимал поле влево, а это порядковый номер ответа, а не его часть.
+  // Подписи полей при этом уехали внутрь как подсказки: подпись над полем и
+  // подсказка в поле говорили одно и то же дважды.
+  function numbered(n, inner) {
+    return '<div class="mx-item"><span class="mx-item-n">' + n + '</span>' + inner + '</div>';
+  }
+
   function answerBox(ctx, label, o) {
     var f = {};
     for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) f[k] = o[k];
@@ -320,9 +332,15 @@
         // обещанием, а отмеченное — то, ради чего Агеев просил отметить отдельно.
         var h = '<div class="mx-slot-host"></div>' + head(COPY.theses.section, normCount(m.cards.length, NORM));
         m.cards.forEach(function (x, i) {
-          h += '<div class="mx-card' + (m.first === x.id ? ' is-first' : '') + '" data-card="' + x.id + '">' +
-            '<div class="mx-card-top">' +
-            '<div class="mx-acts">' +
+          h += numbered(i + 1, '<div class="mx-card' + (m.first === x.id ? ' is-first' : '') + '" data-card="' + x.id + '">' +
+            '<textarea class="mx-input" data-answer="1" rows="3" data-text="' + x.id + '" placeholder="' + ctx.esc(COPY.theses.item.ph) + '">' + ctx.esc(x.text) + '</textarea>' +
+            // Подпись нейтральная (правка ревью №14): «Где в материалах это видно»
+            // внушало, что легитимны только тезисы из пакета, а выход за кейс —
+            // ровно граница АК-1 3→4.
+            anchorHtml(x) +
+            // Метка «самый тревожный симптом» и «убрать» — ПОД полем и справа
+            // (решение владельца 19.08): сверху они отжимали поле и спорили с опорой.
+            '<div class="mx-acts mx-acts-foot">' +
               (m.first === x.id
                 // Метка-заголовок без стрелки и без глагола (лор §С1): «самым
                 // тревожным →» читалось командой, а это пометка, а не переход.
@@ -332,14 +350,8 @@
                   '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.theses.worst) + '</button>'
                 : '<button type="button" class="s2-act" data-first="' + x.id + '">' + ctx.esc(COPY.theses.worst) + '</button>') +
               (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + x.id + '">убрать</button>' : '') +
-            '</div></div>' +
-            '<div class="mx-numrow"><span class="bl-n">' + (i + 1) + '</span>' +
-            '<textarea class="mx-input" data-answer="1" rows="3" data-text="' + x.id + '" placeholder="' + ctx.esc(COPY.theses.item.ph) + '">' + ctx.esc(x.text) + '</textarea></div>' +
-            // Подпись нейтральная (правка ревью №14): «Где в материалах это видно»
-            // внушало, что легитимны только тезисы из пакета, а выход за кейс —
-            // ровно граница АК-1 3→4.
-            anchorHtml(x) +
-            '</div>';
+            '</div>' +
+            '</div>');
         });
         h += '<button type="button" class="mx-add" data-add="1">+ наблюдение</button>';
 
@@ -368,14 +380,14 @@
         h += head(COPY.theses.links, '');
         var ties = tiesOf(m);
         ties.forEach(function (tie, ti) {
-          h += '<div class="mx-card"><div class="mx-card-top"><span class="bl-n">' + (ti + 1) + '</span>' +
-               '<div class="mx-acts">' + (ties.length > 1
-                 ? '<button type="button" class="s2-act" data-tiedel="' + ti + '">убрать</button>' : '') +
-               '</div></div>' +
-               field(ctx, { id: 'mxLw' + ti, f: 'tieWhy', i: ti, label: COPY.theses.lwhy.label,
+          h += numbered(ti + 1, '<div class="mx-card">' +
+               field(ctx, { id: 'mxLw' + ti, f: 'tieWhy', i: ti, label: '',
                             rows: 3, ph: COPY.theses.lwhy.ph, val: tie.why }) +
-               field(ctx, { id: 'mxLc' + ti, f: 'tieConc', i: ti, label: COPY.theses.lconc.label,
-                            rows: 3, ph: COPY.theses.lconc.ph, val: tie.conc }) + '</div>';
+               field(ctx, { id: 'mxLc' + ti, f: 'tieConc', i: ti, label: '',
+                            rows: 3, ph: COPY.theses.lconc.ph, val: tie.conc }) +
+               '<div class="mx-acts mx-acts-foot">' + (ties.length > 1
+                 ? '<button type="button" class="s2-act" data-tiedel="' + ti + '">убрать</button>' : '') +
+               '</div></div>');
         });
         h += '<button type="button" class="mx-add" data-tieadd="1">+ ещё связь</button>';
         host.innerHTML = h;
@@ -562,11 +574,11 @@
       var draw = function () {
         var h = head(COPY.variants.section, '<span class="mx-count">вариантов: ' + m.rays.length + '</span>');
         m.rays.forEach(function (r, i) {
-          h += '<div class="mx-card"><div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span>' +
-            '<div class="mx-acts">' + (m.rays.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') + '</div></div>' +
-            field(ctx, { id: 'mxG' + i, f: 'gist', i: i, label: COPY.variants.gist.label, val: r.gist }) +
-            field(ctx, { id: 'mxF' + i, f: 'from', i: i, label: COPY.variants.from.label, rows: 2, val: r.from }) +
-            '</div>';
+          h += numbered(i + 1, '<div class="mx-card">' +
+            field(ctx, { id: 'mxG' + i, f: 'gist', i: i, label: '', ph: COPY.variants.gist.label, val: r.gist }) +
+            field(ctx, { id: 'mxF' + i, f: 'from', i: i, label: '', ph: COPY.variants.from.label, rows: 2, val: r.from }) +
+            '<div class="mx-acts mx-acts-foot">' + (m.rays.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') + '</div>' +
+            '</div>');
         });
         h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
         host.innerHTML = h;
@@ -1022,13 +1034,11 @@
             ? '<button type="button" class="s2-act is-on mx-flag" data-bet="' + i +
               '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.futures.bet) + '</button>'
             : (String(t).trim() ? '<button type="button" class="s2-act" data-bet="' + i + '">' + ctx.esc(COPY.futures.betPick) + '</button>' : '');
-          h += '<div class="mx-card' + (m.bet === i ? ' is-first' : '') + '">' +
-            '<div class="mx-card-top"><div class="mx-acts">' + ctrl +
+          h += numbered(i + 1, '<div class="mx-card' + (m.bet === i ? ' is-first' : '') + '">' +
+            '<textarea class="mx-input" data-answer="1" rows="3" data-fu="' + i + '" placeholder="' + ctx.esc(COPY.futures.card.ph) + '">' + ctx.esc(t) + '</textarea>' +
+            '<div class="mx-acts mx-acts-foot">' + ctrl +
             (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') +
-            '</div></div>' +
-            '<div class="mx-numrow"><span class="bl-n">' + (i + 1) + '</span>' +
-            '<textarea class="mx-input" data-answer="1" rows="3" data-fu="' + i + '" placeholder="' + ctx.esc(COPY.futures.card.ph) + '">' + ctx.esc(t) + '</textarea></div>' +
-            '</div>';
+            '</div></div>');
         });
         h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
         // ⚠ Вопрос Лемеха — РЕПЛИКА, а не подпись поля (правка владельца 09.08).
@@ -1093,7 +1103,7 @@
     yearsLabel: yearsLabel,
     gate: function (m, ctx) {
       if (ctx.isDemo) return '';
-      return String(m.became).trim() ? '' : '«Чем стала компания» — обязательно. Срок и цена по желанию.';
+      return String(m.became).trim() ? '' : '«' + COPY.goal.became.label + '» — обязательно. Срок и цена по желанию.';
     },
     foot: function () { return { note: '', cta: 'Ответить →' }; },
     locked: function (m, ctx) {
@@ -1303,8 +1313,8 @@
 
   M.goal.answerHtml = function (m, ctx) {
     return (m.years ? '<p style="margin:0;">через ' + yearsLabel(m.years) + ' лет</p>' : '') +
-      p('Чем стала компания', ctx.br(m.became)) +
-      (String(m.gave).trim() ? p('Чем пришлось пожертвовать', ctx.br(m.gave)) : '');
+      p(COPY.goal.became.label, ctx.br(m.became)) +
+      (String(m.gave).trim() ? p(COPY.goal.gave.label, ctx.br(m.gave)) : '');
   };
 
   M.letter.answerHtml = function (m, ctx) {
