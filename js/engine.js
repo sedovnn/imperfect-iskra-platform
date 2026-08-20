@@ -535,7 +535,11 @@
   function faceHtml(who) {
     if (!who) return '';
     var f = (S.faces && S.faces[who]) || null;
-    var ini = who.split(/\s+/).map(function (w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
+    // ⚠ ИНИЦИАЛЫ ТОЛЬКО ИЗ БУКВ (правка 19.08). Брался первый символ каждого слова
+    // как есть, и при имени вроде «Т. Ким» в кружок попадала точка, а при пустой
+    // подстановке — запятая: кружок выглядел сломанным, а не безымянным.
+    var ini = who.replace(/[^\p{L}\s]/gu, ' ').split(/\s+/)
+      .filter(Boolean).map(function (w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
     var cls = 'chat-face' + (f && f.mood ? ' is-' + f.mood : '');
     if (f && f.src) {
       return '<span class="' + cls + '" style="background-image:url(' + esc(f.src) + ')" aria-hidden="true"></span>';
@@ -567,7 +571,9 @@
       // Ремарка — своей строкой курсивом ПОД именем (решение владельца 07.08): в
       // одну строку с именем она читалась как часть должности.
       out += '<div class="' + cls + '"' + attr + '><div class="chat-msg them"' + (act.who ? ' data-who="' + esc(subst(act.who)) + '"' : '') + '>' +
-        (name ? '<span class="chat-name">' + faceHtml(subst(act.who)) + esc(name) + '</span>' : '') +
+        // Подпись рисуется, только если в ней есть буквы: подстановка может вернуть
+        // пустое или знак препинания, и тогда над репликой висел бы кружок с запятой.
+        (/\p{L}/u.test(name) ? '<span class="chat-name">' + faceHtml(subst(act.who)) + esc(name) + '</span>' : '') +
         // ⚠ Ремарка рисуется и БЕЗ имени: у реплики «обращаясь к Дарье» говорящий тот
         // же, поэтому имени нет, а ремарка есть — и раньше она пропадала совсем.
         (i === 0 && act.note ? '<span class="chat-note">' + esc(act.note) + '</span>' : '') +

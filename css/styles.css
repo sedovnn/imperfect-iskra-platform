@@ -2633,7 +2633,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   margin-left: auto; border: none; background: none; cursor: pointer;
   width: 26px; height: 26px; border-radius: 50%; flex: none;
   display: inline-flex; align-items: center; justify-content: center;
-  font: inherit; font-size: var(--fs-read); line-height: 1; color: var(--muted-soft);
+  /* ⚠ ЗНАК КРУПНЕЕ ТЕКСТА (правка владельца 19.08). Стрелка шла тем же кеглем,
+     что проза, и в кружке 26px читалась как соринка: цель — не слово, а мишень,
+     и она должна быть видна с расстояния, на котором в неё целятся. */
+  font: inherit; font-size: 22px; line-height: 1; color: var(--muted-soft);
 }
 .toc-collapse:hover { background: var(--hairline); }
 .toc-collapse:hover { color: var(--ink); }
@@ -2684,7 +2687,8 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   cursor: pointer; font: inherit; line-height: 1;
   color: var(--muted); padding: 12px 0 0;
 }
-.toc-rail-arrow { font-size: var(--fs-read); }
+/* Тот же кегль, что у стрелки свёртки: это один и тот же знак в двух состояниях. */
+.toc-rail-arrow { font-size: 22px; line-height: 1; }
 /* Подпись читается снизу вверх — как на корешке книги: так её читают, не наклоняя
    голову к экрану, и она не спорит с направлением самой колонки. */
 .toc-rail-label {
