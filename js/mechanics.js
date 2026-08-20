@@ -188,6 +188,15 @@
   // строку или отжимал поле влево, а это порядковый номер ответа, а не его часть.
   // Подписи полей при этом уехали внутрь как подсказки: подпись над полем и
   // подсказка в поле говорили одно и то же дважды.
+  // ⚠ ЗАЩИТА ОТ СЛУЧАЙНОГО УДАЛЕНИЯ (решение владельца 19.08). «Убрать» стоит рядом
+  // с полем, и один промах стирал написанное без следа — отмены у верстаков нет.
+  // Спрашиваем ТОЛЬКО когда есть что терять: подтверждение на пустой карточке было
+  // бы шумом, из-за которого перестают читать и сам вопрос.
+  function askDrop(filled) {
+    if (!filled) return true;
+    return window.confirm('Удалить? Написанное здесь не восстановить.');
+  }
+
   function numbered(n, inner) {
     return '<div class="mx-item"><span class="mx-item-n">' + n + '</span>' + inner + '</div>';
   }
@@ -465,6 +474,8 @@
           }
           if ((a = t.getAttribute && t.getAttribute('data-del'))) {
             var id = Number(a);
+            var gone = m.cards.filter(function (x) { return x.id === id; })[0];
+            if (!askDrop(gone && (String(gone.text).trim() || String(gone.anchor).trim()))) return;
             m.cards = m.cards.filter(function (x) { return x.id !== id; });
             if (m.first === id) m.first = null;
             // Связок как объектов больше нет: текст про связи живёт в двух полях шага
@@ -475,7 +486,9 @@
             m.cards.push({ id: m.nextId++, text: '', anchor: '' }); ctx.save(); draw(); ctx.sync(); return;
           }
           if ((a = t.getAttribute && t.getAttribute('data-tiedel'))) {
-            tiesOf(m).splice(Number(a), 1); ctx.save(); draw(); ctx.sync(); return;
+            var tt = tiesOf(m), tie = tt[Number(a)];
+            if (!askDrop(tie && (String(tie.why).trim() || String(tie.conc).trim()))) return;
+            tt.splice(Number(a), 1); ctx.save(); draw(); ctx.sync(); return;
           }
           if (t.getAttribute && t.getAttribute('data-tieadd')) {
             tiesOf(m).push({ why: '', conc: '' }); ctx.save(); draw(); ctx.sync(); return;
@@ -591,7 +604,11 @@
       // один раз, снаружи draw() — см. пояснение в M.theses
       wireClick(host, function (e) {
         var a = e.target.getAttribute && e.target.getAttribute('data-del');
-        if (a) { m.rays.splice(Number(a), 1); ctx.save(); draw(); ctx.sync(); return; }
+        if (a) {
+          var ray = m.rays[Number(a)];
+          if (!askDrop(ray && (String(ray.gist).trim() || String(ray.from).trim()))) return;
+          m.rays.splice(Number(a), 1); ctx.save(); draw(); ctx.sync(); return;
+        }
         if (e.target.getAttribute && e.target.getAttribute('data-add')) {
           m.rays.push({ gist: '', from: '' }); ctx.save(); draw(); ctx.sync();
         }
@@ -1073,7 +1090,9 @@
         }
         a = e.target.getAttribute && e.target.getAttribute('data-del');
         if (a) {
-          var i = Number(a); m.cards.splice(i, 1);
+          var i = Number(a);
+          if (!askDrop(String(m.cards[i] || '').trim())) return;
+          m.cards.splice(i, 1);
           if (m.bet === i) m.bet = null; else if (m.bet != null && m.bet > i) m.bet--;
           ctx.save(); draw(); ctx.sync(); return;
         }

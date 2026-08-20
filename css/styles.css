@@ -3284,6 +3284,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mx-acts-foot { justify-content: flex-end; margin-top: 8px; }
 .mx-acts-foot:empty { display: none; }
 
+/* Кнопка «+ наблюдение» / «+ ещё связь» встаёт ровно под голубой карточкой:
+   номер вынесен влево и сдвигает карточку на свою ширину плюс зазор, а кнопка
+   раньше начиналась от края колонки и висела шире поля. */
+.mx-add { margin-left: calc(1.2em + 10px); width: calc(100% - 1.2em - 10px); }
+
 /* Номер ответа — у верхнего левого угла поля, а не строкой над ним. */
 .mx-numrow { display: flex; gap: 8px; align-items: flex-start; }
 .mx-numrow > .bl-n { flex: none; padding-top: 8px; font-variant-numeric: tabular-nums; }
