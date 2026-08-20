@@ -3289,6 +3289,22 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    раньше начиналась от края колонки и висела шире поля. */
 .mx-add { margin-left: calc(1.2em + 10px); width: calc(100% - 1.2em - 10px); }
 
+/* ── РАЗБОР ЗАЯВОК КАК ДОКУМЕНТ ──
+   На печати участник смотрит не на список, а на то, что Агеев понесёт правлению.
+   Поэтому лист: белое поле, рамка, поля по краям и скруглённые углы. Реплики
+   Агеева остаются снаружи — он говорит про документ, а не внутри него. */
+.mx-doc {
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 22px 24px 26px;
+  margin: 0 0 4px;
+  box-shadow: 0 1px 2px rgba(24, 24, 24, .04);
+}
+.mx-doc .mx-seal-total { margin-top: 0; }
+.mx-doc > .bl-col-head:first-of-type { margin-top: 18px !important; }
+.mx-doc .off-list:last-child { margin-bottom: 0; }
+
 /* Номер ответа — у верхнего левого угла поля, а не строкой над ним. */
 .mx-numrow { display: flex; gap: 8px; align-items: flex-start; }
 .mx-numrow > .bl-n { flex: none; padding-top: 8px; font-variant-numeric: tabular-nums; }
