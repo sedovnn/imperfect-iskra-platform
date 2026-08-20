@@ -2087,14 +2087,16 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    и поле оставалось браузерным: прямые углы, отступ 2px, кегль 13.33px.
    Рецепт тот же, что у .mx-input, кегль — читаемый (--fs-read). */
 .win-input {
-  min-height: 200px;
+  /* ⚠ min-height: 200px УБРАН (правка владельца 19.08). Девять строк перебивали
+     rows="3", и на одном экране соседние поля отличались втрое. Высоту задаёт
+     только rows и рост под текст (autoGrow). */
   width: 100%;
   border: 1px solid var(--hairline);
   border-radius: var(--radius);
-  padding: 10px 12px;
+  padding: 7px 9px;
   font-family: inherit;
-  font-size: var(--fs-read);
-  line-height: 1.6;
+  font-size: var(--fs-dense);
+  line-height: 1.55;
   color: var(--ink);
   background: var(--paper);
   resize: vertical;
