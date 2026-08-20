@@ -171,7 +171,7 @@
   // вариантов у участника не просили. Дальше правило прежнее: любая правка текста
   // ниже поднимает эту версию, и вместе с ней — версию в бэкенде. Публикуются они
   // одним заходом; разойдутся — судейство откажет само, и это защита.
-  S.version = 's-2026-08-19.16';
+  S.version = 's-2026-08-19.17';
 
   // Сцепка с остальными источниками: расхождение — повод падать на сборке.
   S.caseVersion = 'case-v8';
@@ -257,25 +257,25 @@
     'Олег Брагин':    { src: 'assets/faces/bragin.jpg',   mood: 'casual' },
     'Дарья':          { src: 'assets/faces/darya.jpg',    mood: 'casual' },
     'Марина Северова':{ src: 'assets/faces/severova.jpg', mood: 'casual' },
-    // ⚠ ПОРТРЕТ ЕСТЬ У КАЖДОГО ХОЗЯИНА ЗАЯВКИ (решение владельца 19.08). На выходе
-    // из офиса участника догоняет владелец самой дорогой по людям отказанной заявки —
-    // кто именно, зависит от его решений. Портрет был только у Северовой, у остальных
-    // движок рисовал инициалы, и кружок читался пустым. До собственных портретов
-    // всем поставлен один снимок: пустой кружок хуже, чем повторяющийся.
-    'Антон Кравец':      { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Павел Заславский':  { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Лев Гринберг':      { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Тимур Ким':         { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Руслан Валиев':     { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Елена Соболева':    { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Игорь Мещеряков':   { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Ольга Данилова':    { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Сергей Ерохин':     { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Наталья Аронова':   { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Дмитрий Кузьмин':   { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Юрий Панкратов':    { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Вера Терехина':     { src: 'assets/faces/severova.jpg', mood: 'casual' },
-    'Геннадий Матвеев':  { src: 'assets/faces/severova.jpg', mood: 'casual' }
+    // ⚠ ДВА ПОРТРЕТА ПО ПОЛУ ИМЕНИ (решение владельца 19.08). На выходе из офиса
+    // участника догоняет владелец самой дорогой по людям отказанной заявки — кто
+    // именно, зависит от его решений, а хозяев пятнадцать. Своих снимков на всех нет,
+    // поэтому лица два: мужское и женское. Список явный, а не по окончанию имени:
+    // «Илья» и «Никита» сломали бы любую догадку по букве.
+    'Антон Кравец':        { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Павел Заславский':    { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Лев Гринберг':        { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Тимур Ким':           { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Руслан Валиев':       { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Елена Соболева':      { src: 'assets/faces/severova.jpg', mood: 'casual' },
+    'Игорь Мещеряков':     { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Ольга Данилова':      { src: 'assets/faces/severova.jpg', mood: 'casual' },
+    'Сергей Ерохин':       { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Наталья Аронова':     { src: 'assets/faces/severova.jpg', mood: 'casual' },
+    'Дмитрий Кузьмин':     { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Юрий Панкратов':      { src: 'assets/faces/man.jpg', mood: 'casual' },
+    'Вера Терехина':       { src: 'assets/faces/severova.jpg', mood: 'casual' },
+    'Геннадий Матвеев':    { src: 'assets/faces/man.jpg', mood: 'casual' }
   };
 
   S.interlude = {
