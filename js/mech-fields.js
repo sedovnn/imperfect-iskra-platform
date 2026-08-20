@@ -398,6 +398,10 @@
         var b = o[C.futures.bet] !== undefined ? o[C.futures.bet] : (o['наиболее вероятный'] !== undefined ? o['наиболее вероятный'] : o.bet);
         var ix = parseInt(String(b == null ? '' : b).replace(/\D/g, ''), 10);
         return { cards: cards, bet: isNaN(ix) ? null : Math.max(0, ix - 1),
+                 // asked: у модели такта два нет — форма приходит целиком, значит
+                 // второй такт для неё уже пройден. Иначе харнесс отдал бы состояние,
+                 // в котором вопрос Лемеха ещё не задан, а ответ на него уже есть.
+                 asked: true,
                  betWhy: String(o['Почему именно этот'] || o['почему именно этот'] || o.betWhy || '') };
       }
     },

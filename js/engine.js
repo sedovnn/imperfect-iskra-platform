@@ -591,6 +591,26 @@
     return out;
   }
 
+  // ⚠ ПОЛЯ ОТВЕТА РАСТУТ ПОД ТЕКСТ (решение владельца 19.08). Высота задавалась
+  // атрибутом rows и была разной на разных шагах — от двух строк до девяти: на
+  // одном экране рядом стояли поля двух разных размеров, а пустое поле в девять
+  // строк занимало половину экрана обещанием. Теперь у всех одна стартовая высота
+  // (три строки), дальше поле растёт ровно под то, что написано.
+  // Слушатель ОДИН на документе: верстаки перерисовываются целиком на каждое
+  // действие, и вешать обработчик на каждое поле значило бы вешать его заново.
+  var AUTO_RE = /(^|\s)(win-input|mx-input)(\s|$)/;
+  function autoGrow(ta) {
+    if (!ta || ta.tagName !== 'TEXTAREA' || !AUTO_RE.test(ta.className)) return;
+    if (ta.classList.contains('mx-input-thin')) return;   // однострочная опора
+    ta.style.height = 'auto';
+    ta.style.height = ta.scrollHeight + 'px';
+  }
+  function autoGrowAll(root) {
+    (root || document).querySelectorAll('textarea.win-input, textarea.mx-input')
+      .forEach(autoGrow);
+  }
+  document.addEventListener('input', function (e) { autoGrow(e.target); });
+
   function meHtml(text, at) {
     var t = String(text == null ? '' : text).trim();
     return '<div class="chat"><div class="chat-msg me"><span class="chat-name">Вы</span>' +
@@ -1466,7 +1486,7 @@
         // data-answer="1" — метка для сборщика телеметрии: он считает ТОЛЬКО поля
         // ответа. Без метки поле не попадёт в замер вставок и набора, то есть
         // маркер ИИ по этому окну не сработает.
-        '<textarea id="winInput" class="win-input" data-answer="1" rows="9" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
+        '<textarea id="winInput" class="win-input" data-answer="1" rows="3" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
       '</div>' +
       // ⚠ Класс НЕ .win-foot: узел с этим классом render() уносит в подвал колонки,
       // и «Ответить» уехала бы туда же, к «Дальше».
@@ -2311,6 +2331,9 @@
       scroller.scrollTop += head.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 12;
     }
     if (cur && cur.scene) lastSceneId = cur.scene.id;
+    // Поля, приехавшие с сохранённым текстом, подгоняются сразу: иначе длинный
+    // ответ прошлого шага показался бы в три строки со скроллом внутри.
+    autoGrowAll(now);
   }
 
   // Счётчика «N / 6» в шапке нет (решение владельца 04.08, СПЕК §4.4: прогресс дня живёт
