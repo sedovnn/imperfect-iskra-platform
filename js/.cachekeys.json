@@ -10,11 +10,11 @@
   }
  },
  "js/backlog.js": {
-  "sha": "8f58fb73bdd7",
+  "sha": "7a6a737fae54",
   "keys": {
-   "assessment.html": 5,
-   "cabinet.html": 5,
-   "harness.html": 5
+   "assessment.html": 6,
+   "cabinet.html": 6,
+   "harness.html": 6
   }
  },
  "js/boot-loading.js": {
@@ -101,12 +101,12 @@
   }
  },
  "js/scenes.js": {
-  "sha": "df22232f7659",
+  "sha": "ca3bd2ec1bf5",
   "keys": {
-   "assessment.html": 78,
-   "cabinet.html": 78,
-   "harness.html": 78,
-   "role.html": 78
+   "assessment.html": 79,
+   "cabinet.html": 79,
+   "harness.html": 79,
+   "role.html": 79
   }
  },
  "js/typo.js": {
