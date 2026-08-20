@@ -321,7 +321,7 @@
         var h = '<div class="mx-slot-host"></div>' + head(COPY.theses.section, normCount(m.cards.length, NORM));
         m.cards.forEach(function (x, i) {
           h += '<div class="mx-card' + (m.first === x.id ? ' is-first' : '') + '" data-card="' + x.id + '">' +
-            '<div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span>' +
+            '<div class="mx-card-top">' +
             '<div class="mx-acts">' +
               (m.first === x.id
                 // Метка-заголовок без стрелки и без глагола (лор §С1): «самым
@@ -333,7 +333,8 @@
                 : '<button type="button" class="s2-act" data-first="' + x.id + '">' + ctx.esc(COPY.theses.worst) + '</button>') +
               (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + x.id + '">убрать</button>' : '') +
             '</div></div>' +
-            '<textarea class="mx-input" data-answer="1" rows="3" data-text="' + x.id + '" placeholder="' + ctx.esc(COPY.theses.item.ph) + '">' + ctx.esc(x.text) + '</textarea>' +
+            '<div class="mx-numrow"><span class="bl-n">' + (i + 1) + '</span>' +
+            '<textarea class="mx-input" data-answer="1" rows="3" data-text="' + x.id + '" placeholder="' + ctx.esc(COPY.theses.item.ph) + '">' + ctx.esc(x.text) + '</textarea></div>' +
             // Подпись нейтральная (правка ревью №14): «Где в материалах это видно»
             // внушало, что легитимны только тезисы из пакета, а выход за кейс —
             // ровно граница АК-1 3→4.
@@ -703,12 +704,17 @@
         // ссылкой «почему» смысла не было: это единственное, из чего участник понимает,
         // за что просят людей и деньги, и решение без него принимать нечем.
         var card = function (r) {
+          // ⚠ НОМЕР В СТРОКУ С НАЗВАНИЕМ, ЦЕНА — ВНИЗ (правка владельца 19.08).
+          // Номер стоял отдельной строкой над заголовком и читался как ярлык, а цена
+          // висела в правом верхнем углу — то есть до того, за что просят. Теперь
+          // номер — часть названия и того же цвета, а люди и деньги стоят внизу
+          // слева, как итог под заявкой.
           return '<div class="bl-card">' +
-            '<div class="bl-card-top"><span class="bl-n">' + ctx.blNum(r.id) + '</span>' + priceOf(r) + '</div>' +
-            '<div class="bl-card-title">' + ctx.esc(r.title) + '</div>' +
+            '<div class="bl-card-title"><span class="bl-n">' + ctx.blNum(r.id) + '</span>' +
+              ctx.esc(r.title) + '</div>' +
             (r.who ? '<div class="bl-card-who">' + ctx.esc(r.who) + '</div>' : '') +
             (r.argument ? '<p class="bl-card-arg">' + ctx.esc(r.argument) + '</p>' : '') +
-            acts(r) +
+            '<div class="bl-card-foot">' + priceOf(r) + acts(r) + '</div>' +
             '</div>';
         };
 
@@ -1017,10 +1023,11 @@
               '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.futures.bet) + '</button>'
             : (String(t).trim() ? '<button type="button" class="s2-act" data-bet="' + i + '">' + ctx.esc(COPY.futures.betPick) + '</button>' : '');
           h += '<div class="mx-card' + (m.bet === i ? ' is-first' : '') + '">' +
-            '<div class="mx-card-top"><span class="bl-n">' + (i + 1) + '</span><div class="mx-acts">' + ctrl +
+            '<div class="mx-card-top"><div class="mx-acts">' + ctrl +
             (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') +
             '</div></div>' +
-            '<textarea class="mx-input" data-answer="1" rows="3" data-fu="' + i + '" placeholder="' + ctx.esc(COPY.futures.card.ph) + '">' + ctx.esc(t) + '</textarea>' +
+            '<div class="mx-numrow"><span class="bl-n">' + (i + 1) + '</span>' +
+            '<textarea class="mx-input" data-answer="1" rows="3" data-fu="' + i + '" placeholder="' + ctx.esc(COPY.futures.card.ph) + '">' + ctx.esc(t) + '</textarea></div>' +
             '</div>';
         });
         h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
