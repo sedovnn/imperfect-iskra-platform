@@ -432,11 +432,11 @@
     if (t.indexOf('{over}') >= 0) {
       var ts = listSums() || totals();
       var parts = [];
-      if (ts.people > LIM.people) parts.push(String(ts.people) + ' ' + plural(ts.people, 'человек', 'человека', 'человек') + ' — при бюджете в ' + String(LIM.people));
+      if (ts.people > LIM.people) parts.push(String(ts.people) + ' ' + plural(ts.people, 'человек', 'человека', 'человек') + ' — при лимите в ' + String(LIM.people));
       if (ts.money > LIM.money) parts.push(num(ts.money) + ' млрд — при бюджете в ' + num(LIM.money));
       // Такт условный и выпадает только при переборе; если он всё же пришёл без
       // превышения (демо, сбой счёта), фраза не должна остаться рваной.
-      if (!parts.length) parts.push(String(ts.people) + ' ' + plural(ts.people, 'человек', 'человека', 'человек') + ' — при бюджете в ' + String(LIM.people));
+      if (!parts.length) parts.push(String(ts.people) + ' ' + plural(ts.people, 'человек', 'человека', 'человек') + ' — при лимите в ' + String(LIM.people));
       t = t.split('{over}').join(parts.join(', и '));
     }
     return t;
