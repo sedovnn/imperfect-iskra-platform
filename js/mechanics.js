@@ -366,7 +366,7 @@
             '</div>') +
             '</div>');
         });
-        h += '<button type="button" class="mx-add" data-add="1">+ наблюдение</button>';
+        h += numbered('', '<button type="button" class="mx-add" data-add="1">+ наблюдение</button>');
 
         // ⚠ Слот и список выбора связок ЗАВИСЯТ ОТ ТЕКСТА КАРТОЧЕК, поэтому вынесены
         // в отдельные узлы: при наборе перерисовывать весь верстак нельзя (каретка
@@ -402,7 +402,7 @@
                  ? '<button type="button" class="s2-act" data-tiedel="' + ti + '">убрать</button>' : '') +
                '</div></div>');
         });
-        h += '<button type="button" class="mx-add" data-tieadd="1">+ ещё связь</button>';
+        h += numbered('', '<button type="button" class="mx-add" data-tieadd="1">+ ещё связь</button>');
         host.innerHTML = h;
 
         // Части, зависящие от текста карточек. Зовётся и из draw(), и на каждый ввод
@@ -597,7 +597,7 @@
             '<div class="mx-acts mx-acts-foot">' + (m.rays.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') + '</div>' +
             '</div>');
         });
-        h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
+        h += numbered('', '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>');
         host.innerHTML = h;
         host.querySelectorAll('[data-f]').forEach(function (el) {
           el.addEventListener('input', function () {
@@ -1079,7 +1079,7 @@
             (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') +
             '</div></div>');
         });
-        h += '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>';
+        h += numbered('', '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>');
         // ⚠ Вопрос Лемеха — РЕПЛИКА, а не подпись поля (правка владельца 09.08).
         // Устроено так же, как вопрос Агеева в печати: пузырь собеседника, под ним
         // своя карточка с полем, кнопка «Ответить» — под карточкой (foot.inCard).
