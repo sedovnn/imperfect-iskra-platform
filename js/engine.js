@@ -544,6 +544,21 @@
     step();
   }
 
+  // ⚠ ПОДБОРЩИК ЗАБЫТЫХ ПУЗЫРЕЙ. Реплики внутри верстака помечаются к показу там же,
+  // где рисуется сам верстак, — а верстак умеет перерисовывать себя сам, без общего
+  // render(): выбор наиболее вероятного будущего, подтверждение списка, «ещё вариант».
+  // В такой перерисовке новый пузырь получал метку, но запускать показ было некому, и
+  // он оставался прозрачным навсегда. Все такие перерисовки идут от щелчка, поэтому
+  // после каждого щелчка проверяем: если показ не идёт, а помеченные пузыри есть —
+  // показываем их.
+  function revealSweep() {
+    if (revealTimer) return;
+    var host = el('talkCurrent');
+    if (!host || !host.querySelector('[data-reveal="1"]')) return;
+    revealRun(host);
+  }
+  document.addEventListener('click', function () { setTimeout(revealSweep, 0); });
+
   // ── КРУЖОК С ЛИЦОМ СОБЕСЕДНИКА ──
   // Файл кладётся в platform/assets/faces/<id>.jpg (96×96, круг рисует CSS). Пока
   // файла нет, в кружке стоят инициалы — это не заглушка «на потом», а честный
@@ -613,6 +628,11 @@
     if (!ta || ta.tagName !== 'TEXTAREA' || !AUTO_RE.test(ta.className)) return;
     if (ta.classList.contains('mx-input-thin')) return;   // однострочная опора
     ta.style.height = 'auto';
+    // ⚠ У СКРЫТОГО ПОЛЯ ВЫСОТУ НЕ ТРОГАЕМ. Рабочая область на время монолога
+    // спрятана (.is-await → display:none), а у спрятанного узла scrollHeight
+    // равен нулю: замер в этот момент прибивал полю height:0 навсегда. Пока поле
+    // не на экране, высоту держит rows — а подогнать успеем в openWork.
+    if (!ta.scrollHeight) { ta.style.height = ''; return; }
     ta.style.height = ta.scrollHeight + 'px';
   }
   function autoGrowAll(root) {
@@ -1465,6 +1485,52 @@
   // выключена: подвал — это ход по маршруту, а ходить, не ответив, нельзя.
   // Раньше кнопка была одна и делала оба дела разом: фиксировала ответ и уносила
   // экран, так что своего ответа участник не видел ни секунды.
+  // ── ОКНО НА НЕСКОЛЬКО ВОПРОСОВ (act.parts) ─────────────────────────────────
+  // Штерн спрашивает три вещи: путь, где встанем и как тогда быть. Одним полем на
+  // три вопроса отвечают на последний — так устроено внимание, и проверка текстов
+  // (eval/lint_questions.js) ловит это как отдельную ошибку. Поэтому у каждого
+  // вопроса своё поле, а сам вопрос стоит подписью над ним: видно, куда что писать.
+  //
+  // ⚠ ХРАНИТСЯ ПО-ПРЕЖНЕМУ ОДНОЙ СТРОКОЙ, под тем же ключом ответа. Судейство
+  // читает окно `path` из своей колонки листа (backend v2StepText_), и завести
+  // второй и третий ключ значило бы трогать состав заданий судьи ради правки
+  // экрана. Части склеиваются через свои же вопросы: судья получает ответ, у
+  // которого видно, что к чему относится, а не общий абзац.
+  function partsJoin(act, vals) {
+    return (act.parts || []).map(function (p, i) {
+      var t = String(vals[i] == null ? '' : vals[i]).trim();
+      return t ? p.q + '\n' + t : '';
+    }).filter(Boolean).join('\n\n');
+  }
+  // Обратный разбор — по строкам-вопросам. Если участник дословно напишет вопрос
+  // своим ответом, часть текста переедет в соседнее поле; потерять при этом ничего
+  // нельзя, а вероятность такого совпадения ниже цены отдельного ключа хранения.
+  function partsSplit(act, text) {
+    var qs = (act.parts || []).map(function (p) { return p.q; });
+    var out = qs.map(function () { return ''; });
+    var lines = String(text || '').split('\n');
+    var at = -1, buf = [];
+    var flush = function () { if (at >= 0) out[at] = buf.join('\n').trim(); buf = []; };
+    lines.forEach(function (ln) {
+      var ix = qs.indexOf(ln.trim());
+      if (ix >= 0) { flush(); at = ix; return; }
+      if (at >= 0) buf.push(ln);
+    });
+    flush();
+    return out;
+  }
+  function partsHtml(act, vals) {
+    return (act.parts || []).map(function (p, i) {
+      return '<div class="mx-ansbox">' +
+        '<div class="mx-head"><span class="mx-title">' + esc(p.q) + '</span></div>' +
+        '<div class="mx-card">' +
+          '<textarea class="win-input" data-answer="1" data-part="' + i + '" rows="3"' +
+            ' aria-label="' + esc(p.q) + '" placeholder="' + esc(p.ph || act.placeholder || 'ваш ответ') + '">' +
+            esc(vals[i] || '') + '</textarea>' +
+        '</div></div>';
+    }).join('');
+  }
+
   function windowBlock(act, locked) {
     var d = document.createElement('div');
     d.className = 's2-block';
@@ -1491,13 +1557,18 @@
       // «Мои ответы» и строка, которую получает судья.
       // «ВЫ» над пузырём справа, кнопка под пузырём справа — оба ВНЕ голубого
       // (правка владельца 07.08).
-      '<span class="chat-name chat-name-mine">Вы</span>' +
-      '<div class="s2-mine">' +
-        // data-answer="1" — метка для сборщика телеметрии: он считает ТОЛЬКО поля
-        // ответа. Без метки поле не попадёт в замер вставок и набора, то есть
-        // маркер ИИ по этому окну не сработает.
-        '<textarea id="winInput" class="win-input" data-answer="1" rows="3" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
-      '</div>' +
+      // Окно на несколько вопросов рисуется карточками с подписями, обычное — одним
+      // полем в голубом. «Вы» стоит только над одиночным полем: у карточек подпись
+      // над каждой своя, и общее «Вы» спорило бы с ними за место заголовка.
+      (act.parts
+        ? partsHtml(act, partsSplit(act, val))
+        : '<span class="chat-name chat-name-mine">Вы</span>' +
+          '<div class="s2-mine">' +
+            // data-answer="1" — метка для сборщика телеметрии: он считает ТОЛЬКО поля
+            // ответа. Без метки поле не попадёт в замер вставок и набора, то есть
+            // маркер ИИ по этому окну не сработает.
+            '<textarea id="winInput" class="win-input" data-answer="1" rows="3" aria-label="' + esc(act.label) + '" placeholder="' + esc(act.placeholder || 'ваш ответ') + '">' + esc(val) + '</textarea>' +
+          '</div>') +
       // ⚠ Класс НЕ .win-foot: узел с этим классом render() уносит в подвал колонки,
       // и «Ответить» уехала бы туда же, к «Дальше».
       // .btn-sm, а не полный размер: в подвале стоит «Дальше» полным кеглем, и две
@@ -1507,23 +1578,32 @@
       '</div>' + footHtml;
     wireNext();
 
-    var ta = d.querySelector('#winInput');
+    // Значение окна: у одиночного — само поле, у составного — склейка частей.
+    // Дальше по коду работают только read()/focusFirst(), и обе формы окна ходят
+    // через них одинаково.
+    var tas = act.parts ? [].slice.call(d.querySelectorAll('[data-part]')) : [];
+    var read = act.parts
+      ? function () { return partsJoin(act, tas.map(function (t) { return t.value; })); }
+      : function () { return d.querySelector('#winInput').value; };
+    var ta = act.parts ? { get value() { return read(); } } : d.querySelector('#winInput');
     // Поле растёт под ответ: писать письмо правлению в одиннадцать видимых строк,
     // не видя начала, — это про выносливость, а не про мышление. Обратной связи о
     // качестве или объёме здесь нет: реплики не меняются, ничего не подсвечивается.
-    var grow = function () {
-      ta.style.height = 'auto';
-      ta.style.height = Math.max(200, ta.scrollHeight + 2) + 'px';
-    };
-    ta.addEventListener('input', function (e) {
-      state.answers[act.save] = e.target.value;
-      grow();
-      saveState();
+    // ⚠ СВОЕГО РОСТА ЗДЕСЬ БОЛЬШЕ НЕТ (правка владельца 20.08). Стоял второй,
+    // старший близнец autoGrow с полом `Math.max(200, …)`, и он ставил полю
+    // height: 200px прямо в стиль узла — поверх rows="3" и поверх CSS. Из-за него
+    // окна ответа так и оставались в девять строк после того, как из .win-input
+    // убрали min-height: 200px: правили таблицу стилей, а высоту задавал скрипт.
+    // Рост ведёт общий autoGrow — один на все поля платформы (см. AUTO_RE выше).
+    (act.parts ? tas : [ta]).forEach(function (t) {
+      t.addEventListener('input', function () {
+        state.answers[act.save] = read();
+        saveState();
+      });
     });
-    setTimeout(grow, 0);
     d.querySelector('#commitBtn').addEventListener('click', function () {
       var go = function () {
-        state.answers[act.save] = ta.value;
+        state.answers[act.save] = read();
         state.answersAt[act.save] = nowIso();
         saveState();
         // ⚠ act.flow — РАЗГОВОР ПРОДОЛЖАЕТСЯ САМ (правка владельца 07.08). В кофейне
@@ -1542,14 +1622,14 @@
       // принимаем как есть, флагуем и идём дальше. Любой непустой текст проходит,
       // включая «не знаю» и встречный вопрос, — на содержание мы не давим.
       // В демо гейт не работает: витрина должна пролистываться.
-      if (!String(ta.value).trim()) {
+      if (!String(read()).trim()) {
         if (isDemo) { go(); return; }
         // Ситуативная часть — из сцены (кто ждёт и почему), а инвариантная
         // приписка одна на все окна и живёт здесь: так она не может разойтись
         // по сценам, как не может разойтись строка настроя межсценового экрана.
         window.imp.alert((act.silence ? act.silence + ' ' : '') +
           'Ответьте своими словами — если сказать нечего, напишите это словами.');
-        try { ta.focus(); } catch (e) {}
+        try { (act.parts ? tas[0] : ta).focus(); } catch (e) {}
         return;
       }
       go();
@@ -1592,7 +1672,22 @@
       // Реплика собеседника внутри верстака (act.probe в scenes.js): печать
       // спрашивает «Почему уверены?» уже после подтверждения, и это его слова, а не
       // подпись поля. Рисует их сама механика — только она знает свой второй шаг.
-      speech: function (sp) { return sp ? speechHtml({ who: sp.who, note: sp.note, bubbles: sp.bubbles }, false) : ''; },
+      // ⚠ ПОЯВЛЯЮТСЯ ПО ОДНОЙ, КАК В РАЗГОВОРЕ (правка владельца 20.08). Стояло
+      // staged=false, и реплики внутри верстака выпрыгивали разом: Агеев возвращался
+      // за придержанной рекомендацией двумя пузырями сразу, а весь остальной день
+      // говорит по одной реплике. Ключ показа собирается из id акта и имени поля —
+      // он обязан быть постоянным между перерисовками, иначе память показанных
+      // пузырей (shownBubbles) не сработает и монолог проигрывался бы заново на
+      // каждый набранный символ.
+      speech: function (sp) {
+        if (!sp) return '';
+        var slot = act && sp === act.probe ? 'probe'
+                 : act && sp === act.probeReturn ? 'probeReturn'
+                 : act && sp === act.before ? 'before'
+                 : act && sp === act.ask ? 'ask' : 'sp';
+        return speechHtml({ who: sp.who, note: sp.note, bubbles: sp.bubbles },
+                          true, ((act && act.id) || 'mx') + '/' + slot);
+      },
       // Пузырь участника — тот же, что у свободного ответа: если верстак кончается
       // фразой, она обязана выглядеть как сказанное, а не как сводка.
       mine: function (text) { return meHtml(text, null); },
@@ -2263,6 +2358,8 @@
     var openWork = function () {
       var waits = now.querySelectorAll('.is-await');
       for (var wi = 0; wi < waits.length; wi++) waits[wi].classList.remove('is-await');
+      // Поле только что показалось — теперь его можно измерить и подогнать под текст.
+      autoGrowAll(now);
       if (actHost) {
         var bs2 = actHost.querySelectorAll('[data-wait-off]');
         for (var bj = 0; bj < bs2.length; bj++) { bs2[bj].disabled = false; bs2[bj].removeAttribute('data-wait-off'); }
