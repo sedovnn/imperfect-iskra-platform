@@ -1011,7 +1011,13 @@
           // у того, кто вернулся, посмотрел и ничего не тронул, — спрашивать про
           // несделанное. Ему идёт тот же вопрос, что и не возвращавшемуся: он уверен в
           // этом составе решений, только теперь уверен после пересмотра.
-          h += ctx.speech(m.changed && ctx.probeReturn ? ctx.probeReturn : ctx.probe);
+          // ⚠ ИЗМЕНИВШЕМУ — ОБА ВОПРОСА ПОДРЯД (решение владельца 19.08). Раньше это
+          // было «или-или»: вернувшийся и изменивший слышал только «что решили
+          // изменить», а на чём стоит уверенность в получившемся составе — уже нет.
+          // Сначала про изменение, потом про уверенность: порядок такой, потому что
+          // второе спрашивается про состав, который получился после первого.
+          if (m.changed && ctx.probeReturn) h += ctx.speech(ctx.probeReturn);
+          h += ctx.speech(ctx.probe);
           h += '<span class="chat-name chat-name-mine">Вы</span>' +
             '<div class="s2-mine">' +
             field(ctx, { id: 'mxSeal', f: 'seal', rows: 2, ph: COPY.seal.phrase.ph, label: '',
@@ -1081,13 +1087,23 @@
             ? '<button type="button" class="s2-act is-on mx-flag" data-bet="' + i +
               '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.futures.bet) + '</button>'
             : (String(t).trim() ? '<button type="button" class="s2-act" data-bet="' + i + '">' + ctx.esc(COPY.futures.betPick) + '</button>' : '');
-          h += numbered(i + 1, '<div class="mx-card' + (m.bet === i ? ' is-first' : '') + '">' +
-            '<textarea class="mx-input" data-answer="1" rows="3" data-fu="' + i + '" placeholder="' + ctx.esc(COPY.futures.card.ph) + '">' + ctx.esc(t) + '</textarea>' +
-            '<div class="mx-acts mx-acts-foot">' + ctrl +
-            (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') +
-            '</div></div>');
+          // ⚠ НА ВТОРОМ ТАКТЕ ВЕЕР ЗАКРЫТ (решение владельца 19.08). Лемех уже спросил
+          // про отмеченный вариант — дописывать остальные в этот момент значит менять
+          // предмет вопроса на ходу. Карточки не прячем: отмеченный должен остаться
+          // виден и подсвечен, чтобы было понятно, о чём именно спрашивают. Прочие
+          // гаснут, кнопки уходят.
+          h += numbered(i + 1, '<div class="mx-card' + (m.bet === i ? ' is-first' : '') +
+            (m.asked ? ' is-sealed' : '') + '">' +
+            '<textarea class="mx-input" data-answer="1" rows="3" data-fu="' + i + '"' +
+            (m.asked ? ' readonly' : '') +
+            ' placeholder="' + ctx.esc(COPY.futures.card.ph) + '">' + ctx.esc(t) + '</textarea>' +
+            (m.asked ? '' :
+              '<div class="mx-acts mx-acts-foot">' + ctrl +
+              (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') +
+              '</div>') +
+            '</div>');
         });
-        h += numbered('', '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>');
+        if (!m.asked) h += numbered('', '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>');
         // ⚠ Вопрос Лемеха — РЕПЛИКА, а не подпись поля (правка владельца 09.08).
         // Устроено так же, как вопрос Агеева в печати: пузырь собеседника, под ним
         // своя карточка с полем, кнопка «Ответить» — под карточкой (foot.inCard).

@@ -3320,6 +3320,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    выравнивание. */
 .mx-item > .mx-add { flex: 1 1 auto; min-width: 0; }
 
+/* Сданный веер будущих: карточки гаснут, отмеченная остаётся голубой и с рамкой —
+   видно, о каком именно варианте спрашивает Лемех. */
+.mx-card.is-sealed { background: var(--soft); border-color: var(--hairline); }
+.mx-card.is-sealed .mx-input { background: var(--soft); color: var(--muted); cursor: default; resize: none; }
+.mx-card.is-sealed.is-first { background: var(--band); border-color: var(--jb-ink); }
+.mx-card.is-sealed.is-first .mx-input { background: var(--paper); color: var(--ink); }
+
 /* ── РАЗБОР ЗАЯВОК КАК ДОКУМЕНТ ──
    На печати участник смотрит не на список, а на то, что Агеев понесёт правлению.
    Поэтому лист: белое поле, рамка, поля по краям и скруглённые углы. Реплики
