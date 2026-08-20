@@ -309,13 +309,18 @@
           });
         });
       };
-      var anchorHtml = function (x) {
+      // ⚠ МЕТКА СТОИТ В ОДНОМ РЯДУ С ОПОРОЙ (решение владельца 19.08). Под полем
+      // отдельной строкой она занимала лишнюю полосу, а по смыслу это соседи: и то
+      // и другое — что участник делает с уже написанным наблюдением. Ряд приходит
+      // сюда готовым, чтобы место метки решалось в одном месте, а не в двух.
+      var anchorHtml = function (x, actsHtml) {
         var marks = ctx.marks ? ctx.marks() : [];
         var h = '';
         if (x.anchorRef) {
           h += '<div class="mx-anchor"><span class="mx-anchor-k">выписка из материалов</span>' +
             '<blockquote class="mark-quote">' + ctx.esc(x.anchor) + '</blockquote>' +
-            '<button type="button" class="s2-act" data-anchoroff="' + x.id + '">убрать опору</button></div>';
+            '<button type="button" class="s2-act" data-anchoroff="' + x.id + '">убрать опору</button></div>' +
+            (actsHtml ? '<div class="mx-acts mx-acts-foot">' + actsHtml.replace(/^<div[^>]*>|<\/div>$/g, '') + '</div>' : '');
           return h;
         }
         if (picking[x.id]) {
@@ -327,8 +332,10 @@
             : '<p class="mx-hint">Заметок пока нет. Выделите фрагмент в материалах справа — появится кнопка «отметить».</p>') +
             '<button type="button" class="s2-act" data-anchorclose="' + x.id + '">скрыть</button></div>';
         } else {
-          h += '<button type="button" class="s2-act mx-anchor-open" data-anchoropen="' + x.id + '">' +
-            COPY.theses.src.label + (marks.length ? ' (' + marks.length + ')' : '') + '</button>';
+          h += '<div class="mx-card-row">' +
+            '<button type="button" class="s2-act mx-anchor-open" data-anchoropen="' + x.id + '">' +
+            COPY.theses.src.label + (marks.length ? ' (' + marks.length + ')' : '') + '</button>' +
+            (actsHtml || '') + '</div>';
         }
         h += '<input type="text" class="mx-input mx-input-thin" data-answer="1" data-anchor="' + x.id + '"' +
           ' placeholder="' + ctx.esc(COPY.theses.src.ph) + '" value="' +
@@ -346,10 +353,7 @@
             // Подпись нейтральная (правка ревью №14): «Где в материалах это видно»
             // внушало, что легитимны только тезисы из пакета, а выход за кейс —
             // ровно граница АК-1 3→4.
-            anchorHtml(x) +
-            // Метка «самый тревожный симптом» и «убрать» — ПОД полем и справа
-            // (решение владельца 19.08): сверху они отжимали поле и спорили с опорой.
-            '<div class="mx-acts mx-acts-foot">' +
+            anchorHtml(x, '<div class="mx-acts">' +
               (m.first === x.id
                 // Метка-заголовок без стрелки и без глагола (лор §С1): «самым
                 // тревожным →» читалось командой, а это пометка, а не переход.
@@ -359,7 +363,7 @@
                   '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.theses.worst) + '</button>'
                 : '<button type="button" class="s2-act" data-first="' + x.id + '">' + ctx.esc(COPY.theses.worst) + '</button>') +
               (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + x.id + '">убрать</button>' : '') +
-            '</div>' +
+            '</div>') +
             '</div>');
         });
         h += '<button type="button" class="mx-add" data-add="1">+ наблюдение</button>';
@@ -803,7 +807,9 @@
         }
 
         h += '<div class="bl-list">' + (und.length
-          ? '<div class="bl-zone-h">не решено <b>' + und.length + '</b></div><div class="bl-grid">' + und.map(card).join('') + '</div>'
+          // ⚠ Число тем же кеглем, что и слово, и отделено точкой (правка владельца
+          // 19.08): жирный мелкий счётчик читался приклеенным к заголовку.
+          ? '<div class="bl-zone-h">не решено <span class="bl-zone-n">· ' + und.length + '</span></div><div class="bl-grid">' + und.map(card).join('') + '</div>'
           : '<div class="bl-zone-h">все ' + t.n + ' решены</div>') + '</div>';
 
         // На втором проходе критерии не спрашиваются заново: участник вернулся

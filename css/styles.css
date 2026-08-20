@@ -218,6 +218,9 @@ a { color: inherit; }
 }
 /* Числа внутри подзаголовка зон портфеля остаются служебными. */
 .bl-zone-h b { font-size: var(--fs-util); }
+/* Счётчик у заголовка зоны — тем же кеглем и разрядкой, что слово, только тише:
+   это часть той же строки, а не отдельная метка. */
+.bl-zone-h .bl-zone-n { font-size: inherit; font-weight: inherit; color: var(--muted-soft); }
 
 /* ---------- nav ---------- */
 
@@ -3283,6 +3286,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    написанным, значит стоят после него. */
 .mx-acts-foot { justify-content: flex-end; margin-top: 8px; }
 .mx-acts-foot:empty { display: none; }
+/* Ряд под полем: опора слева, метка и «убрать» справа — соседи по смыслу. */
+.mx-card-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 0; }
+.mx-card-row > .mx-acts { margin-left: auto; }
 
 /* Кнопка «+ наблюдение» / «+ ещё связь» встаёт ровно под голубой карточкой:
    номер вынесен влево и сдвигает карточку на свою ширину плюс зазор, а кнопка
