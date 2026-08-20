@@ -1916,7 +1916,7 @@
   // необратимо. Теперь: свёрнуто — строка-заголовок, под ней оставленные пузыри;
   // раскрыто — ВЕСЬ монолог подряд, в исходном порядке, а оставленные прячутся,
   // чтобы не задваиваться. Прятать их умеет CSS по details[open].
-  function foldedSpeech(act, speeches) {
+  function foldedSpeech(act, speeches, hideKept) {
     var keptActs = [], foldCount = 0;
     speeches.forEach(function (a) {
       var bs = a.bubbles || [];
@@ -1940,7 +1940,7 @@
         speeches.map(function (a) { return speechHtml(a); }).join('') + '</div>';
       frag.appendChild(det);
     }
-    if (keptActs.length) {
+    if (keptActs.length && !hideKept) {
       var box = document.createElement('div');
       box.className = 's2-block talk-kept';
       box.innerHTML = keptActs.map(function (a) { return speechHtml(a); }).join('');
@@ -2162,7 +2162,13 @@
       var awaitEnter = current && takesEnter && !entered;
       // Свёрнут монолог у пройденного шага и у верстака, к которому уже приступили.
       if (fold && pending.length && (past || (current && takesEnter && entered))) {
-        now.appendChild(foldedSpeech(st.act, pending));
+        // Второй такт верстака (варианты, будущее) задаёт свой вопрос — оставленную
+        // реплику первого такта в этот момент прячем: иначе на экране два вопроса,
+        // и только один из них живой.
+        var mspec = st.act.mech && window.imp.mechanics && window.imp.mechanics[st.act.mech];
+        var mstate = st.act.mech && state.mech && state.mech[st.act.mech];
+        var hideK = !!(mspec && mspec.hideKept && mstate && mspec.hideKept(mstate));
+        now.appendChild(foldedSpeech(st.act, pending, hideK));
         pending = [];
       } else {
         flush(current);

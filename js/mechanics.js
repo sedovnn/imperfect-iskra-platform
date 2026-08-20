@@ -559,6 +559,8 @@
       if (m.picked == null) { m.picked = true; ctx.save(); ctx.redraw(); return false; }
       return true;
     },
+    // На втором такте вопрос задаёт сам верстак — реплика первого такта прячется.
+    hideKept: function (m) { return m.picked != null; },
     locked: function (m) {
       var n = m.rays.filter(function (r) { return String((r.name || '') + r.gist).trim(); }).length;
       return '<b>' + n + '</b> ' + plural(n, 'вариант', 'варианта', 'вариантов') +
@@ -1058,6 +1060,7 @@
       if (!m.asked && m.bet != null) { m.asked = true; ctx.save(); ctx.redraw(); return false; }
       return true;
     },
+    hideKept: function (m) { return !!m.asked; },
     locked: function (m) {
       var n = m.cards.filter(function (t) { return String(t).trim(); }).length;
       return '<b>' + n + '</b> ' + plural(n, 'вариант', 'варианта', 'вариантов') + ' будущего' +
