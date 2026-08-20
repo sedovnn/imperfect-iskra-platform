@@ -3411,36 +3411,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* «ВЫ» и отметка о фиксации держатся справа, как и сам пузырь. */
 .win-fixed { text-align: right; }
 
-/* ── ОТВЕТНАЯ ОБЛАСТЬ ВЕРСТАКА = ОТВЕТ В ДИАЛОГЕ
-   ⚠ Перечислены поимённо, а не «все кроме разбора заявок»: у печати тоже не поле
-   ответа, а список решений и реплики Агеева, и сжатие уводило вправо весь экран
-   вместе с его словами. Своё поле на печати сдвигает .s2-mine собственным правилом. ──
-   Все верстаки, кроме разбора заявок, встают справа на три четверти колонки:
-   то же место и та же мера, что у своей реплики в разговоре. Заголовки едут
-   вместе с полями, потому что сжимается весь хост, а не отдельные карточки. */
-.mx-host[data-mech="theses"],
-.mx-host[data-mech="variants"],
-.mx-host[data-mech="futures"],
-.mx-host[data-mech="goal"],
-.mx-host[data-mech="letter"] {
-  /* ⚠ 2/3 И ПОРОГ 400px (правка владельца 19.08). Было 3/4 при пороге 560px,
-     и при открытой панели материалов колонка ~460px — доля не срабатывала ни разу,
-     ответ всегда занимал всю ширину. С порогом 400px смещение вправо видно и на
-     узкой колонке, а места писать по-прежнему хватает. */
-  width: 66.6%;
-  min-width: min(100%, 400px);
-  margin-left: auto;
-}
-/* Внутри уже сжатого хоста ответные блоки не сжимаются второй раз — иначе на одном
-   экране оказываются голубые области двух разных ширин (поймано на печати). */
-.mx-host[data-mech="theses"] .mx-ansbox, .mx-host[data-mech="theses"] .s2-mine,
-.mx-host[data-mech="variants"] .mx-ansbox, .mx-host[data-mech="variants"] .s2-mine,
-.mx-host[data-mech="futures"] .mx-ansbox, .mx-host[data-mech="futures"] .s2-mine,
-.mx-host[data-mech="goal"] .mx-ansbox, .mx-host[data-mech="goal"] .s2-mine,
-.mx-host[data-mech="letter"] .mx-ansbox, .mx-host[data-mech="letter"] .s2-mine {
-  width: 100%; min-width: 0; max-width: none; margin-left: 0;
-}
-
 /* ⓘ у строки решения: список сжат до заголовков, а обоснование участник читал
    один раз на экране сортировки. Кружок открывает его на месте. */
 .off-t { display: inline; }
