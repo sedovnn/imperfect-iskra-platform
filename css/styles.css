@@ -3281,6 +3281,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .bl-card-foot { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: auto; padding-top: 8px; }
 .bl-card-foot .bl-card-cost { margin: 0 auto 0 0; }
 .bl-card-foot .mx-acts { margin-left: 0; }
+/* Автор заявки — курсивом: это подпись под названием, голос человека, а не факт
+   о заявке. Цена — чёрным: это величина, по которой участник считает бюджет,
+   и тише названия она быть не должна. */
+.bl-card-who { font-style: italic; }
+.bl-card-foot .bl-card-cost { color: var(--ink); }
 
 /* ── КАРТОЧКА-ОТВЕТ СО СВОИМ НОМЕРОМ ──
    Номер стоит СНАРУЖИ голубого: внутри он занимал строку или отжимал поле, а это
@@ -3300,6 +3305,63 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Ряд под полем: опора слева, метка и «убрать» справа — соседи по смыслу. */
 .mx-card-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 0; }
 .mx-card-row > .mx-acts { margin-left: auto; }
+
+/* Кнопка «+ наблюдение» / «+ ещё связь» встаёт ровно под голубой карточкой:
+   номер вынесен влево и сдвигает карточку на свою ширину плюс зазор, а кнопка
+   раньше начиналась от края колонки и висела шире поля. */
+.mx-add { margin-left: calc(1.2em + 10px); width: calc(100% - 1.2em - 10px); }
+
+/* ── РАЗБОР ЗАЯВОК КАК ДОКУМЕНТ ──
+   На печати участник смотрит не на список, а на то, что Агеев понесёт правлению.
+   Поэтому лист: белое поле, рамка, поля по краям и скруглённые углы. Реплики
+   Агеева остаются снаружи — он говорит про документ, а не внутри него. */
+.mx-doc {
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 22px 24px 26px;
+  margin: 0 0 4px;
+  box-shadow: 0 1px 2px rgba(24, 24, 24, .04);
+}
+.mx-doc .mx-seal-total { margin-top: 0; }
+.mx-doc > .bl-col-head:first-of-type { margin-top: 18px !important; }
+.mx-doc .off-list:last-child { margin-bottom: 0; }
+
+/* Номер ответа — у верхнего левого угла поля, а не строкой над ним. */
+.mx-numrow { display: flex; gap: 8px; align-items: flex-start; }
+.mx-numrow > .bl-n { flex: none; padding-top: 8px; font-variant-numeric: tabular-nums; }
+.mx-numrow > .mx-input { flex: 1 1 auto; min-width: 0; }
+/* Ряд действий без номера может остаться пустым — тогда он не занимает высоту. */
+.mx-card-top:empty, .mx-card-top:has(> .mx-acts:empty) { display: none; }
+
+/* «ВЫ» и отметка о фиксации держатся справа, как и сам пузырь. */
+.win-fixed { text-align: right; }
+
+/* ── ОТВЕТНАЯ ОБЛАСТЬ ВЕРСТАКА = ОТВЕТ В ДИАЛОГЕ ──
+   Всё, что участник заполняет, стоит там же и той же мерой, что своя реплика в
+   разговоре: две трети колонки, прижато вправо.
+   ⚠ СЖИМАЕТСЯ НЕ ХОСТ, А ЕГО ДЕТИ (правка владельца 19.08). Сжатие всего верстака
+   уводило вправо и реплики собеседника внутри него — Агеев во втором такте
+   вариантов говорил из правой трети экрана, хотя речь героя всегда идёт от левого
+   края. Исключены `.chat` (речь) и `.talk-folded` (свёрнутый монолог): они живут по
+   правилам разговора, а не ответа.
+   Разбор заявок и печать в список не входят: там не поле ответа, а сетка карточек
+   и лист решений. */
+.mx-host[data-mech="theses"] > *:not(.chat):not(.talk-folded):not(.talk-kept),
+.mx-host[data-mech="variants"] > *:not(.chat):not(.talk-folded):not(.talk-kept),
+.mx-host[data-mech="futures"] > *:not(.chat):not(.talk-folded):not(.talk-kept),
+.mx-host[data-mech="goal"] > *:not(.chat):not(.talk-folded):not(.talk-kept),
+.mx-host[data-mech="letter"] > *:not(.chat):not(.talk-folded):not(.talk-kept) {
+  width: 66.6%;
+  min-width: min(100%, 400px);
+  max-width: var(--w-form);
+  margin-left: auto;
+}
+/* Уже сжатые дети не сжимаются второй раз. */
+.mx-host[data-mech] .mx-ansbox,
+.mx-host[data-mech] .s2-mine {
+  width: 100%; min-width: 0; max-width: none; margin-left: 0;
+}
 
 /* Кнопка «+ наблюдение» / «+ ещё связь» встаёт ровно под голубой карточкой:
    номер вынесен влево и сдвигает карточку на свою ширину плюс зазор, а кнопка
@@ -3426,6 +3488,10 @@ li.is-open .off-arg {
    resize оставлен вертикальный — участник вправе растянуть сам. */
 textarea.mx-input, textarea.win-input { overflow-y: hidden; }
 textarea.mx-input-thin { overflow: hidden; }
+
+/* Раскрытая свёртка показывает весь монолог по порядку — оставленные пузыри
+   прячутся, иначе конец монолога шёл бы дважды. */
+details.talk-folded[open] + .talk-kept { display: none; }
 /* Логистика перехода на межэтапном экране: крупнее строки настроя, но тише места и
    времени — это рассказ о том, что произошло между этапами. */
 .interlude-bridge { margin: 10px 0 18px; }
@@ -3718,6 +3784,7 @@ textarea.mx-input-thin { overflow: hidden; }
 .off-cost {
   display: block; margin-top: 2px;
   font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums;
+  font-style: italic;
 }
 
 /* слайдер срока (С5). Дефолта нет: пока не сдвинут, значение «не выбрано» —
