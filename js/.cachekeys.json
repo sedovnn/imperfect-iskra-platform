@@ -101,12 +101,12 @@
   }
  },
  "js/scenes.js": {
-  "sha": "c521d742dede",
+  "sha": "791e2bd82f6c",
   "keys": {
-   "assessment.html": 102,
-   "cabinet.html": 102,
-   "harness.html": 102,
-   "role.html": 102
+   "assessment.html": 103,
+   "cabinet.html": 103,
+   "harness.html": 103,
+   "role.html": 103
   }
  },
  "js/typo.js": {
