@@ -170,7 +170,7 @@
 <script src="js/backlog.js?v=6"></script>
 <script src="js/scenes.js?v=114"></script>
 <script src="js/mechanics.js?v=64"></script>
-<script src="js/mech-fields.js?v=32"></script>
+<script src="js/mech-fields.js?v=33"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -498,6 +498,16 @@
         (probe.length ? probe.join('\n') + '\n\n' : '') +
         (ask.length ? ask.join('\n') + '\n\n' : '') +
         howTo + JSON.stringify(form, null, 1);
+    } else if (act && Array.isArray(act.parts) && act.parts.length) {
+      // ⚠ ОКНО НА НЕСКОЛЬКО ВОПРОСОВ СПРАШИВАЕТСЯ ФОРМОЙ (правка 21.08). На экране у
+      // этого шага столько полей, сколько вопросов, и над каждым стоит его вопрос —
+      // три вопроса Штерна. Прежде здесь стояло общее «Поле „Путь". Напишите ответ
+      // обычным текстом»: модель отдавала один абзац, человек — размеченные части, и
+      // судья получал по одному шагу разный материал. Ключи формы — те же вопросы,
+      // склейку в ответ делает общий window.imp.winParts.
+      body = (say2('lead').length ? say2('lead').join('\n') + '\n\n' : '') +
+        'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n' +
+        JSON.stringify(window.imp.winParts.form(act), null, 1);
     } else {
       body = (say2('lead').length ? say2('lead').join('\n') + '\n\n' : '') +
         'Поле «' + step.label + '». Напишите ответ обычным текстом.';
@@ -622,6 +632,35 @@
     run.sentSetup = true;
 
     if (!s.mech) {
+      // ⚠ ОКНО НА НЕСКОЛЬКО ВОПРОСОВ ЧИТАЕТСЯ ФОРМОЙ. Спрашивали JSON — значит и
+      // разбираем JSON, и складываем в ту же одну строку, что сохраняет экран: вопрос,
+      // под ним ответ. Иначе под ключом ответа лежал бы сырой JSON, и судья читал бы
+      // фигурные скобки вместо ответа участника.
+      var wAct = null;
+      S.route().forEach(function (r) { if (r.sceneIx === s.ix && r.actIx === s.actIx) wAct = r.act; });
+      if (wAct && Array.isArray(wAct.parts) && wAct.parts.length) {
+        var wObj;
+        try {
+          var wt = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+          wObj = JSON.parse(wt.slice(wt.indexOf('{'), wt.lastIndexOf('}') + 1));
+        } catch (e) {
+          el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(e.message) +
+            '. Попросите модель вернуть один объект, начиная с «{».</p>';
+          return;
+        }
+        var joined = window.imp.winParts.toText(wAct, wObj);
+        if (!String(joined).trim()) {
+          el('hsGate').innerHTML = '<p class="hs-gate">Ни одно поле не заполнено. ' +
+            'Ключи обязаны совпадать с вопросами: ' +
+            esc(wAct.parts.map(function (p) { return '«' + p.q + '»'; }).join(', ')) +
+            '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
+          return;
+        }
+        run.answers[s.key] = joined;
+        run.answersAt[s.key] = new Date().toISOString();
+        save(); render(); say('шаг принят');
+        return;
+      }
       run.answers[s.key] = raw;
       run.answersAt[s.key] = new Date().toISOString();
       save(); render(); say('шаг принят');

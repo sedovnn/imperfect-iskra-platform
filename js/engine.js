@@ -1533,36 +1533,32 @@
   // Штерн спрашивает три вещи: путь, где встанем и как тогда быть. Одним полем на
   // три вопроса отвечают на последний — так устроено внимание, и проверка текстов
   // (eval/lint_questions.js) ловит это как отдельную ошибку. Поэтому у каждого
-  // вопроса своё поле, а сам вопрос стоит подписью над ним: видно, куда что писать.
+  // вопроса своё поле, а сам вопрос стоит подписью над ним.
   //
-  // ⚠ ХРАНИТСЯ ПО-ПРЕЖНЕМУ ОДНОЙ СТРОКОЙ, под тем же ключом ответа. Судейство
-  // читает окно `path` из своей колонки листа (backend v2StepText_), и завести
-  // второй и третий ключ значило бы трогать состав заданий судьи ради правки
-  // экрана. Части склеиваются через свои же вопросы: судья получает ответ, у
-  // которого видно, что к чему относится, а не общий абзац.
+  // ⚠ СКЛЕЙКА И РАЗБОР ЛЕЖАТ В js/mech-fields.js, а не здесь: ту же строку под тем же
+  // ключом ответа собирают ещё пошаговая страница и скрипт прогона по API. Пока она
+  // была написана только тут, у модели спрашивали один абзац там, где человек
+  // заполняет три поля, — и судья получал по одному шагу разный материал (поймано
+  // сверкой 21.08). Хранится по-прежнему ОДНОЙ строкой под тем же ключом: судейство
+  // читает окно `path` из своей колонки листа.
   function partsJoin(act, vals) {
+    var o = {};
+    (act.parts || []).forEach(function (p, i) { o[p.q] = vals[i]; });
+    return window.imp.winParts.toText(act, o);
+  }
+  function partsSplit(act, text) { return window.imp.winParts.split(act, text); }
+  function partsHtml(act, vals) {
     return (act.parts || []).map(function (p, i) {
-      var t = String(vals[i] == null ? '' : vals[i]).trim();
-      return t ? p.q + '\n' + t : '';
-    }).filter(Boolean).join('\n\n');
+      return '<div class="mx-ansbox">' +
+        '<div class="mx-head"><span class="mx-title">' + esc(p.q) + '</span></div>' +
+        '<div class="mx-card">' +
+          '<textarea class="win-input" data-answer="1" data-part="' + i + '" rows="3"' +
+            ' aria-label="' + esc(p.q) + '" placeholder="' + esc(p.ph || act.placeholder || 'ваш ответ') + '">' +
+            esc(vals[i] || '') + '</textarea>' +
+        '</div></div>';
+    }).join('');
   }
-  // Обратный разбор — по строкам-вопросам. Если участник дословно напишет вопрос
-  // своим ответом, часть текста переедет в соседнее поле; потерять при этом ничего
-  // нельзя, а вероятность такого совпадения ниже цены отдельного ключа хранения.
-  function partsSplit(act, text) {
-    var qs = (act.parts || []).map(function (p) { return p.q; });
-    var out = qs.map(function () { return ''; });
-    var lines = String(text || '').split('\n');
-    var at = -1, buf = [];
-    var flush = function () { if (at >= 0) out[at] = buf.join('\n').trim(); buf = []; };
-    lines.forEach(function (ln) {
-      var ix = qs.indexOf(ln.trim());
-      if (ix >= 0) { flush(); at = ix; return; }
-      if (at >= 0) buf.push(ln);
-    });
-    flush();
-    return out;
-  }
+
   // ⚠ В ЗАФИКСИРОВАННОМ ОТВЕТЕ ВОПРОСЫ ЖИРНЫМ (правка владельца 21.08). В пузыре
   // лежат три вопроса и три ответа одной лентой, и без выделения не видно, где
   // кончается вопрос и начинается ответ. Начертание — только на экране: под ключом
@@ -1577,18 +1573,6 @@
     // Написали не в поля, а мимо разметки (или ответ из прежнего прогона) — показываем
     // как есть, иначе пузырь окажется пустым при непустом ответе.
     return out || br(String(val || ''));
-  }
-
-  function partsHtml(act, vals) {
-    return (act.parts || []).map(function (p, i) {
-      return '<div class="mx-ansbox">' +
-        '<div class="mx-head"><span class="mx-title">' + esc(p.q) + '</span></div>' +
-        '<div class="mx-card">' +
-          '<textarea class="win-input" data-answer="1" data-part="' + i + '" rows="3"' +
-            ' aria-label="' + esc(p.q) + '" placeholder="' + esc(p.ph || act.placeholder || 'ваш ответ') + '">' +
-            esc(vals[i] || '') + '</textarea>' +
-        '</div></div>';
-    }).join('');
   }
 
   function windowBlock(act, locked) {
