@@ -57,9 +57,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "acb7260e3ccd",
+  "sha": "061f371ececf",
   "keys": {
-   "assessment.html": 82
+   "assessment.html": 83
   }
  },
  "js/main.js": {
@@ -75,9 +75,9 @@
   }
  },
  "js/mech-fields.js": {
-  "sha": "875875d2752a",
+  "sha": "c401cfee4a58",
   "keys": {
-   "harness.html": 33
+   "harness.html": 34
   }
  },
  "js/mechanics.js": {

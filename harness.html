@@ -170,7 +170,7 @@
 <script src="js/backlog.js?v=6"></script>
 <script src="js/scenes.js?v=114"></script>
 <script src="js/mechanics.js?v=64"></script>
-<script src="js/mech-fields.js?v=33"></script>
+<script src="js/mech-fields.js?v=34"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -255,7 +255,9 @@
   // Северову решает id позиции из backlog.js.
   function applies(when) {
     if (!when) return true;
-    var lm = run && run.mech.list;
+    // run.mech у неначатого прогона нет вовсе: `run && run.mech.list` падало на
+    // `run.mech` ровно так же, как done() выше.
+    var lm = run && run.mech && run.mech.list;
     if (!lm) return false;
     if (when === 'overspend') return !!M.list.sums(lm, ctx()).over;
     if (when === 'severova') {
@@ -300,7 +302,8 @@
     S.route().forEach(function (r) {
       var a = r.act;
       if (a.kind === 'window' || a.kind === 'mechanic') {
-        out.push({ key: a.save, mech: a.kind === 'mechanic' ? a.mech : null, when: a.when || '',
+        out.push({ key: a.save, mech: a.kind === 'mechanic' ? a.mech : null,
+                   when: a.when || '', unless: a.unless || '',
                    label: a.kind === 'mechanic' ? (TITLES[a.mech] || a.mech) : (a.label || a.save),
                    scene: r.scene.name, ix: r.sceneIx, actIx: r.actIx });
       }
@@ -312,11 +315,29 @@
   // Пока у разбора идёт такт счёта, шаг НЕ пройден: раскладка лежит черновиком, чтобы
   // харнесс мог посчитать по ней сумму и показать её модели.
   function done(s) {
+    // ⚠ ПРОГОН МОЖЕТ БЫТЬ НЕ НАЧАТ (правка 21.08). Здесь читалось run.listStage без
+    // проверки, и на пустой странице любое обращение к done() падало с «Cannot read
+    // properties of null». Ронялся не только столбик шагов: кнопка «Принять и дальше»
+    // зовёт current(), то есть done(), — обработчик умирал молча, и нажатие до начала
+    // прогона не делало ВООБЩЕ ничего, без единого слова оператору.
+    if (!run) return false;
     if (s.mech === 'list' && (run.listStage === 'sum' || run.listStage === 'why')) return false;
     if (s.mech === 'variants' && run.variantsStage === 'main') return false;
     return s.mech ? run.mech[s.mech] !== undefined : run.answers[s.key] !== undefined;
   }
-  function skipped(s) { return !!s.when && !applies(s.when); }
+  // ⚠ `unless` — ТО ЖЕ УСЛОВИЕ НАОБОРОТ, И ХАРНЕСС ЕГО НЕ ЗНАЛ (правка 21.08).
+  // В сценах на нём разведён вопрос про плату: перебравшему Агеев говорит про
+  // превышение (`when: 'overspend'`), уложившемуся — про состав решений
+  // (`unless: 'overspend'`). Проверялся только `when`, поэтому реплика с `unless`
+  // проходила ВСЕГДА — и модель слышала ОБА вопроса там, где человек слышит один.
+  // Устроено так же, как в движке (engine.js, applies): отрицание того же счёта, а не
+  // второе независимое условие, — два условия рано или поздно разъедутся.
+  function actApplies(a) {
+    if (!a) return true;
+    if (a.unless) return !applies(a.unless);
+    return a.when ? applies(a.when) : true;
+  }
+  function skipped(s) { return !actApplies(s); }
   function current() {
     for (var i = 0; i < STEPS.length; i++) if (!done(STEPS[i]) && !skipped(STEPS[i])) return i;
     return -1;
@@ -343,15 +364,27 @@
   }
   function refusedPick() { return window.imp.refusedOwner(refusedIds()); }
 
+  // ⚠ ПОДСТАНОВКИ — ВСЕ, КАКИЕ ЕСТЬ В СЦЕНАХ (правка 21.08). Здесь стояли {name},
+  // {who}, {title}, {whoName}, {people} и {money} — и не было {over} и {futureRef},
+  // которые появились в сценах 19.08. Модель получала реплику Агеева буквально: «Так.
+  // Подождите. У вас получилось {over}» — с фигурными скобками, — а человек в этом же
+  // месте читает названное превышение. {people} и {money} в сценах больше не
+  // встречаются, но приём их оставлен: записи прежних прогонов их несут.
+  // Сам расчёт {over} и {futureRef} — в js/mech-fields.js, общий с экраном: реплика с
+  // подстановкой это вопрос, и считать его двумя кодами значит спросить разное.
   function sub(t) {
     var lm = run.mech.list, tt = lm ? M.list.sums(lm, ctx()) : null;
     var pk = window.imp.refusedParts(refusedIds());
-    return String(t == null ? '' : t).split('{name}').join(run.tag)
+    var SF = window.imp.subFacts;
+    var out = String(t == null ? '' : t).split('{name}').join(run.tag)
       .split('{whoName}').join(pk.whoName)
       .split('{who}').join(pk.who)
       .split('{title}').join(pk.title)
       .replace('{people}', tt ? String(tt.people) : '')
       .replace('{money}', tt ? num(tt.money) : '');
+    if (out.indexOf('{over}') >= 0) out = out.split('{over}').join(SF.over(tt, LIM, SF.plural, num));
+    if (out.indexOf('{futureRef}') >= 0) out = out.split('{futureRef}').join(SF.futureRef(run.mech.futures));
+    return out;
   }
 
   // Реплики, произнесённые МЕЖДУ прошлым шагом и этим. Раньше на каждом шаге
@@ -373,7 +406,7 @@
       if (r.sceneIx > toStep.ix || (r.sceneIx === toStep.ix && r.actIx >= toStep.actIx)) return;
       if (!after(r)) return;
       var a = r.act;
-      if (a.when && !applies(a.when)) return;
+      if (!actApplies(a)) return;
       var mine = !fromStep || r.sceneIx > fromStep.ix || r.actIx > fromStep.actIx;
       // У самого прошлого шага берём только `after` — его bubbles модель уже слышала.
       if (mine) S.speechLines(a, 'bubbles').forEach(function (l) { out.push(sub(l)); });
@@ -619,8 +652,19 @@
   });
 
   el('hsAccept').addEventListener('click', function () {
+    if (!run) {
+      el('hsGate').innerHTML = '<p class="hs-note">Прогон не начат. Впишите метку модели и нажмите «Начать прогон».</p>';
+      return;
+    }
     var cur = current();
-    if (cur < 0) return;
+    // ⚠ НА ЗАКОНЧЕННОМ ПРОГОНЕ ОБЪЯСНЯЕМ, А НЕ МОЛЧИМ (правка 21.08). Здесь стоял
+    // пустой `return`: кнопка нажималась, вставленный текст никуда не шёл, и на экране
+    // не менялось ничего — оператор не мог понять, принято или нет.
+    if (cur < 0) {
+      el('hsGate').innerHTML = '<p class="hs-note">Прогон закончен: все шаги пройдены. ' +
+        'Скачайте копию или залейте в лист ниже, а для нового прогона нажмите «Начать заново».</p>';
+      return;
+    }
     var s = STEPS[cur], raw = el('hsAnswer').value.trim();
     if (!raw) { window.imp.alert('Вставьте ответ модели.'); return; }
     el('hsGate').innerHTML = '';
@@ -844,6 +888,14 @@
     run.mechAt[s.mech] = new Date().toISOString();
     if (s.mech === 'seal') delete run.sealStage;
     if (s.mech === 'list') delete run.listStage;
+    // ⚠ МЕТКУ ТАКТА ОБЯЗАТЕЛЬНО СНЯТЬ (правка 21.08). Здесь её не снимали, и шаг
+    // рекомендаций не заканчивался никогда: done() отдельной строкой считает шаг
+    // НЕ пройденным, пока идёт второй такт (variantsStage === 'main'), — а метка
+    // оставалась висеть. Оператор нажимал «Принять и дальше», ответ записывался,
+    // страница говорила «верстак зафиксирован» и рисовала тот же самый шаг заново:
+    // со стороны это читается как «принимает что угодно и не переключается».
+    // У печати и разбора такие же метки снимаются строками выше — эта была забыта.
+    if (s.mech === 'variants') delete run.variantsStage;
     // ⚠ ПОСЛЕ ВОЗВРАТА ПЕЧАТЬ НЕ СПРАШИВАЕТ ХОД ЗАНОВО. У человека это делает сама
     // механика разбора: `onCta` ставит печати confirmed = true и прыгает на неё, поэтому
     // после правки заявок он слышит сразу «Что решили изменить и почему?». Модель же

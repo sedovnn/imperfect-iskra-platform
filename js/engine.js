@@ -434,20 +434,16 @@
     // вероятный вариант» звучит нелепо: выбирать было не из чего. Если несколько —
     // он его отметил, и вопрос идёт именно про отмеченный. Машинный факт того же
     // сорта, что {over}: зависит от числа заполненных карточек, а не от их текста.
+    // ⚠ САМ РАСЧЁТ ЖИВЁТ В js/mech-fields.js (window.imp.subFacts). Здесь он был
+    // написан только для экрана, и оба харнесса про эти подстановки не знали вовсе:
+    // модель получала «У вас получилось {over}» с фигурными скобками там, где человек
+    // читает названное превышение (сверка 21.08). Реплика с подстановкой — это вопрос,
+    // на который отвечают; разойтись в нём значит спросить у модели другое.
     if (t.indexOf('{futureRef}') >= 0) {
-      var fm = state.mech && state.mech.futures;
-      var many = fm && (fm.cards || []).filter(function (x) { return String(x).trim(); }).length > 1;
-      t = t.split('{futureRef}').join(many ? 'наиболее вероятный вариант' : 'ваш вариант будущего');
+      t = t.split('{futureRef}').join(window.imp.subFacts.futureRef(state.mech && state.mech.futures));
     }
     if (t.indexOf('{over}') >= 0) {
-      var ts = listSums() || totals();
-      var parts = [];
-      if (ts.people > LIM.people) parts.push(String(ts.people) + ' ' + plural(ts.people, 'человек', 'человека', 'человек') + ' — при лимите в ' + String(LIM.people));
-      if (ts.money > LIM.money) parts.push(num(ts.money) + ' млрд — при бюджете в ' + num(LIM.money));
-      // Такт условный и выпадает только при переборе; если он всё же пришёл без
-      // превышения (демо, сбой счёта), фраза не должна остаться рваной.
-      if (!parts.length) parts.push(String(ts.people) + ' ' + plural(ts.people, 'человек', 'человека', 'человек') + ' — при лимите в ' + String(LIM.people));
-      t = t.split('{over}').join(parts.join(', и '));
+      t = t.split('{over}').join(window.imp.subFacts.over(listSums() || totals(), LIM, plural, num));
     }
     return t;
   }
