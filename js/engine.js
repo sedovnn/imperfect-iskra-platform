@@ -713,6 +713,12 @@
   }
 
   function renderMarks() {
+    // ⚠ ОБЪЯСНЕНИЕ УХОДИТ, КОГДА ЕМУ НАУЧИЛИСЬ (правка владельца 21.08). Абзац про
+    // механику заметок стоит над самим списком, и с первой же заметкой он начинает
+    // отнимать место у того, ради чего вкладку открывают. Возвращается, если
+    // участник удалил всё: тогда объяснение снова единственное, что здесь есть.
+    var mnote = el('marksNote');
+    if (mnote) mnote.style.display = (state.marks || []).length ? 'none' : '';
     var host = el('supMarksBody');
     if (!host) return;
     var list = state.marks || [];
@@ -907,10 +913,18 @@
     if (back) back.addEventListener('click', backToReading);
     // Ссылки на приложения в тексте кейса и путь от подсветки к своей выписке.
     host.addEventListener('click', function (e) {
-      var mk = e.target.closest && e.target.closest('.case-mk');
-      if (mk) { focusMark(mk.getAttribute('data-mk')); return; }
+      // ⚠ СНАЧАЛА ССЫЛКА, ПОТОМ ОТМЕТКА (правка владельца 21.08). Отметка красит
+      // текстовые узлы, поэтому у фразы со ссылкой на приложение <mark> оказывается
+      // ВНУТРИ <a> — и щелчок попадал в отметку, а не в ссылку: стоило отметить
+      // фрагмент, и ссылка на приложение перестала открываться. Порядок обязан быть
+      // такой: ссылка — то, о чём участник просит щелчком прямо, а отметка — след,
+      // и её путь к своей выписке уступает.
       var a = e.target.closest && e.target.closest('[data-appx]');
-      if (!a) return;
+      if (!a) {
+        var mk = e.target.closest && e.target.closest('.case-mk');
+        if (mk) focusMark(mk.getAttribute('data-mk'));
+        return;
+      }
       e.preventDefault();
       goToAppendix(a.getAttribute('data-appx'));
     });
