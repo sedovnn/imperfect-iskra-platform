@@ -1909,6 +1909,13 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
 .chat + .chat { margin-top: 0; }
 .chat { margin-bottom: 20px; }            /* перед формой нужен воздух */
 .chat:has(+ .chat) { margin-bottom: 8px; } /* между репликами — теснее */
+/* ⚠ ПРОДОЛЖЕНИЕ ТОГО ЖЕ ГОЛОСА — тот же зазор, что между пузырями одной реплики.
+   Снимаем сверху, а не задаём снизу: зазор принадлежит margin-bottom предыдущего
+   блока, а тот лежит в своём .s2-block и селектором отсюда не достаётся. Число —
+   пара к зазору между голосами: замер 21.08 — между разными голосами 26px, между
+   пузырями одного голоса внутри реплики 8px, значит снять надо 18. Меняется только
+   вместе с margin-bottom выше. */
+.chat.is-cont { margin-top: -18px; }
 /* ⚠ ПУЗЫРЬ ПО РАЗМЕРУ РЕПЛИКИ (правка владельца 19.08). Ширина была ровно 76%
    у любой строки, и короткое «Бывает.» растягивалось в ту же полосу, что абзац. */
 .chat-msg { max-width: 76%; width: fit-content; }
@@ -3056,6 +3063,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   background: var(--soft); font-size: var(--fs-read); line-height: 1.55; color: var(--muted);
 }
 .case-intro-marks:empty { display: none; }
+/* ⚠ В ВЕРСТАКЕ ЭТА РАМКА — УКАЗАТЕЛЬ, А НЕ ЧТЕНИЕ (правка владельца 21.08). Во
+   вкладке заметок в ней абзац, который читают, — там кегль читаемый и остаётся.
+   Над письмом в ней одна строка «где лежат прежние ответы»: на неё смотрят
+   мельком, и читаемым кеглем она спорила с самим письмом. */
+.mx-host .case-intro-marks { font-size: var(--fs-dense); }
 
 /* Мера — та же, что у кейса и справки (см. .who-row): выписка и своя строка это
    бегущий текст, и на широком окне они шли на 110 знаков в строке. Поле под выписку
@@ -3299,8 +3311,17 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    подпись поля и заголовок ползунка («О каком периоде времени вы говорите?»), и два
    разных начертания на одном экране читаются как недоделка. Названия разделов
    («Наблюдения», «Варианты») тем же начертанием — они здесь такого же ранга. */
-.mx-host .mx-title {
-  font-size: var(--label-size);
+/* ⚠ ДВА СЕЛЕКТОРА, А НЕ ОДИН. .mx-host покрывает верстаки, но у окна на несколько
+   вопросов (три вопроса Штерна) верстака нет вовсе — там карточки рисует движок,
+   и по .mx-host они не попадали: подписи остались капсом в 16px, пока рядом на
+   других шагах уже были строчными. Общее у обоих — .mx-ansbox. */
+.mx-host .mx-title, .mx-ansbox .mx-title {
+  /* ⚠ КЕГЛЬ ТЕКСТА В САМОМ ПОЛЕ (правка владельца 21.08). Сначала взяли самый
+     мелкий в системе — --label-size (11px), — и подпись оказалась МЕЛЬЧЕ того, что
+     участник в это поле пишет: вопрос читался тише ответа. Подпись обязана быть
+     не мельче своего поля, поэтому --fs-dense: тот же кегль, что у .mx-input.
+     Отличают её вес и цвет, а не размер. */
+  font-size: var(--fs-dense);
   text-transform: none;
   letter-spacing: normal;
 }
@@ -3952,6 +3973,11 @@ details.talk-folded[open] + .talk-kept { display: none; }
    разметке сверху вниз, поэтому поле встаёт ровно после своей реплики. */
 .mx-ansbox.is-staged { display: none; }
 .mx-ansbox.is-staged.is-in { display: block; animation: bubbleIn .3s ease both; }
+/* То же для ответной области, которая не карточка с подписью, а своя реплика
+   («Вы» + голубое поле): обёртка обязана быть геометрически пустой, иначе поле
+   съедет — доля и прижим вправо живут на .s2-mine внутри неё. */
+.mx-hold.is-staged { display: none; }
+.mx-hold.is-staged.is-in { display: block; animation: bubbleIn .3s ease both; }
 @keyframes bubbleIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .s2-block.is-await, .is-await { display: none; }
 @media (prefers-reduced-motion: reduce) {

@@ -579,9 +579,21 @@
     return '<span class="' + cls + '" aria-hidden="true">' + esc(ini) + '</span>';
   }
 
-  function speechHtml(act, staged, keyPrefix) {
+  // Имя говорящего у реплики. Пустая строка значит «продолжает предыдущий»: так
+  // авторски размечена, например, реплика «обращаясь к Дарье» — говорит тот же
+  // Брагин. Прогон реплик держит это имя и передаёт следующей (см. prevWho ниже).
+  function speechWho(act) { return subst((act && act.who) || ''); }
+
+  function speechHtml(act, staged, keyPrefix, prevWho) {
     var out = '';
     var pre = keyPrefix || act.id || act.who || 'sp';
+    // ⚠ ОДИН ГОЛОС — ОДНО ИМЯ (правка владельца 21.08). Реплики в сцене разбиты на
+    // отдельные акты (у каждого своя ремарка, своё условие, свой ключ показа), и
+    // каждый акт печатал имя и кружок заново: Брагин представлялся четыре раза за
+    // один разговор. Имя ставим только там, где голос СМЕНИЛСЯ. Акт без who —
+    // продолжение по определению.
+    var who = speechWho(act);
+    var cont = prevWho != null && (!who || who === prevWho);
     // Фильтр ДО перебора, а не внутри: имя говорящего и ремарка привязаны к первому
     // пузырю, и пропуск первого молча стирал бы подпись реплики.
     (act.bubbles || []).filter(bubbleShown).forEach(function (b, i) {
@@ -589,11 +601,13 @@
       // догоняет хозяин отказанной им заявки — кто именно, известно только в момент
       // отрисовки, поэтому в сцене стоит {whoName}. Для остальных реплик подстановок
       // в имени нет и subst здесь ничего не меняет.
-      var name = i === 0 ? subst(act.who || '') : '';
+      var name = (i === 0 && !cont) ? who : '';
       var actLine = i === 0 ? (b.act || act.act || '') : (b.act || '');
       // Уже показанный пузырь рисуется на месте и без анимации; новый ждёт очереди.
       var rk = pre + ':' + i;
-      var cls = 'chat';
+      // Первый пузырь продолжения прижимается к предыдущей реплике: зазор такой же,
+      // как между пузырями одного голоса (см. .chat.is-cont в таблице стилей).
+      var cls = 'chat' + (i === 0 && cont ? ' is-cont' : '');
       var attr = '';
       if (staged) {
         cls += ' is-staged';
@@ -2010,7 +2024,7 @@
     var d = document.createElement('div');
     d.className = 's2-block';
     var html = speechHtml({ who: after.who, note: after.note, bubbles: after.bubbles }, true, key + '/after');
-    if (after.then) html += speechHtml({ who: after.then.who, note: after.then.note, bubbles: after.then.bubbles }, true, key + '/after2');
+    if (after.then) html += speechHtml({ who: after.then.who, note: after.then.note, bubbles: after.then.bubbles }, true, key + '/after2', subst(after.who || ''));
     d.innerHTML = html;
     return d;
   }
@@ -2081,13 +2095,29 @@
           '<span class="talk-folded-n">' + foldCount + ' ' +
             plural(foldCount, 'реплика', 'реплики', 'реплик') + ' · показать</span>' +
         '</summary><div class="talk-folded-body">' +
-        speeches.map(function (a) { return speechHtml(a); }).join('') + '</div>';
+        (function () {
+          var prev = null;
+          return speeches.map(function (a) {
+            var h = speechHtml(a, false, null, prev);
+            if (speechWho(a)) prev = speechWho(a);
+            return h;
+          }).join('');
+        })() + '</div>';
       frag.appendChild(det);
     }
     if (keptActs.length && !hideKept) {
       var box = document.createElement('div');
       box.className = 's2-block talk-kept';
-      box.innerHTML = keptActs.map(function (a) { return speechHtml(a); }).join('');
+      // Свой прогон: в свёрнутом виде на экране только оставленные пузыри, и «кто
+      // говорил перед этим» считается по ним, а не по спрятанному монологу.
+      box.innerHTML = (function () {
+        var prev = null;
+        return keptActs.map(function (a) {
+          var h = speechHtml(a, false, null, prev);
+          if (speechWho(a)) prev = speechWho(a);
+          return h;
+        }).join('');
+      })();
       frag.appendChild(box);
     }
     return frag;
@@ -2269,10 +2299,14 @@
     // staged = реплики ТЕКУЩЕГО шага: они появляются по одной. У пройденных шагов
     // показывать нечего — они уже прочитаны.
     var flush = function (staged) {
+      // prev тянется через весь прогон: акты соседние, и голос между ними чаще
+      // всего тот же. Акт без who имя не меняет — он продолжение.
+      var prev = null;
       pending.forEach(function (a) {
         var b = document.createElement('div');
         b.className = 's2-block';
-        b.innerHTML = speechHtml(a, staged);
+        b.innerHTML = speechHtml(a, staged, null, prev);
+        if (speechWho(a)) prev = speechWho(a);
         now.appendChild(b);
       });
       pending = [];
