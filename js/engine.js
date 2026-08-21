@@ -627,17 +627,31 @@
   function autoGrow(ta) {
     if (!ta || ta.tagName !== 'TEXTAREA' || !AUTO_RE.test(ta.className)) return;
     if (ta.classList.contains('mx-input-thin')) return;   // однострочная опора
+    // ⚠ НЕ МЕРЯЕМ СКРЫТОЕ ПОЛЕ И НЕ МЕРЯЕМ В КАДР ПОКАЗА (правка владельца 21.08).
+    // Рабочая область на время монолога спрятана (.is-await → display:none), а поля
+    // внутри верстака ждут своей очереди (.mx-ansbox.is-staged). У спрятанного узла
+    // мерить нечего; хуже — у узла, ТОЛЬКО ЧТО показанного, браузер в том же кадре
+    // отдаёт scrollHeight от прежней раскладки: пустое поле в три строки (81px)
+    // мерилось как 188. Оттуда и брались «то три строки, то девять» — и прежний
+    // пол 200px, которым эту разницу когда-то накрыли. Поэтому: пока поля нет на
+    // экране, высоту держит rows, а замер откладывается на следующий кадр
+    // (autoGrowSoon ниже, зовётся из openWork).
+    if (!ta.offsetHeight) { ta.style.height = ''; return; }
     ta.style.height = 'auto';
-    // ⚠ У СКРЫТОГО ПОЛЯ ВЫСОТУ НЕ ТРОГАЕМ. Рабочая область на время монолога
-    // спрятана (.is-await → display:none), а у спрятанного узла scrollHeight
-    // равен нулю: замер в этот момент прибивал полю height:0 навсегда. Пока поле
-    // не на экране, высоту держит rows — а подогнать успеем в openWork.
-    if (!ta.scrollHeight) { ta.style.height = ''; return; }
-    ta.style.height = ta.scrollHeight + 'px';
+    // ⚠ РАМКУ ПРИБАВЛЯЕМ ОБРАТНО. box-sizing: border-box, а scrollHeight рамок не
+    // содержит — поле, выросшее под текст, выходило на 2px ниже соседнего, ещё не
+    // тронутого: на экране с четырьмя полями подряд разница видна.
+    ta.style.height = (ta.scrollHeight + (ta.offsetHeight - ta.clientHeight)) + 'px';
   }
   function autoGrowAll(root) {
     (root || document).querySelectorAll('textarea.win-input, textarea.mx-input')
       .forEach(autoGrow);
+  }
+  // Тот же обход, но следующим кадром: зовётся там, где поля только что показались,
+  // и мерить их в этом же кадре нельзя (см. autoGrow).
+  function autoGrowSoon(root) {
+    if (window.requestAnimationFrame) window.requestAnimationFrame(function () { autoGrowAll(root); });
+    else setTimeout(function () { autoGrowAll(root); }, 0);
   }
   document.addEventListener('input', function (e) { autoGrow(e.target); });
 
@@ -1691,6 +1705,17 @@
       // Пузырь участника — тот же, что у свободного ответа: если верстак кончается
       // фразой, она обязана выглядеть как сказанное, а не как сводка.
       mine: function (text) { return meHtml(text, null); },
+      // ⚠ ОЧЕРЕДЬ ПОКАЗА ДЛЯ УЗЛА ВЕРСТАКА (правка владельца 21.08). Пузыри внутри
+      // верстака встают по одному, а поля ответа стояли на экране с самого начала.
+      // Механика зовёт stageAttr для своего блока и получает класс с меткой — дальше
+      // им распоряжается тот же revealRun, что и пузырями, в том же порядке разметки.
+      // Ключ обязан быть постоянным между перерисовками: без памяти показанных узлов
+      // поле пряталось бы заново на каждый набранный символ.
+      stageAttr: function (key) {
+        var rk = ((act && act.id) || 'mx') + '/' + key;
+        if (shownBubbles[rk]) return { cls: ' is-staged is-in', attr: '' };
+        return { cls: ' is-staged', attr: ' data-reveal="1" data-rk="' + esc(rk) + '"' };
+      },
       probe: (act && act.probe) || null,
       probeReturn: (act && act.probeReturn) || null,
       // Реплики вокруг верстака: before — над рабочей областью, ask — под ней.
@@ -2358,8 +2383,8 @@
     var openWork = function () {
       var waits = now.querySelectorAll('.is-await');
       for (var wi = 0; wi < waits.length; wi++) waits[wi].classList.remove('is-await');
-      // Поле только что показалось — теперь его можно измерить и подогнать под текст.
-      autoGrowAll(now);
+      // Поля только что показались — мерить их можно уже следующим кадром.
+      autoGrowSoon(now);
       if (actHost) {
         var bs2 = actHost.querySelectorAll('[data-wait-off]');
         for (var bj = 0; bj < bs2.length; bj++) { bs2[bj].disabled = false; bs2[bj].removeAttribute('data-wait-off'); }

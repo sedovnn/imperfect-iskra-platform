@@ -210,7 +210,11 @@
     var f = {};
     for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) f[k] = o[k];
     f.label = '';
-    return '<div class="mx-ansbox">' + head(label, '') +
+    // Поле встаёт после реплик собеседника, а не вместе с ними: очередь ведёт движок
+    // (stageAttr → revealRun), ключ — имя поля, чтобы память показанных узлов
+    // сработала при перерисовке верстака.
+    var st = ctx.stageAttr ? ctx.stageAttr('ans:' + (o.f || o.id || label)) : { cls: '', attr: '' };
+    return '<div class="mx-ansbox' + st.cls + '"' + st.attr + '>' + head(label, '') +
            '<div class="mx-card">' + field(ctx, f) + '</div></div>';
   }
 
@@ -702,6 +706,15 @@
     onCta: function (m, ctx) {
       var sm = ctx.mech('seal');
       if (sm && sm.returned && sm.confirmed == null) {
+        // ⚠ «ИЗМЕНИЛ» СЧИТАЕТСЯ ЗДЕСЬ ЖЕ (правка владельца 21.08). Здесь стояло
+        // только `sm.confirmed = true`, и это выключало весь признак: единственное
+        // место, где считался sm.changed, — ветка `confirmed == null` в M.seal.onCta,
+        // а к ней участник после этой строки уже не попадал. Получалось наоборот:
+        // вопрос «Что решили изменить и почему?» есть ТОЛЬКО у вернувшегося, а сам
+        // возврат его и гасил. Кто менял разбор — того Агеев про изменение не
+        // спрашивал, и ПР-2 теряла поступок, ради которого возврат и существует.
+        // Формула одна на оба места (sealChanged), считаем до подтверждения.
+        sm.changed = sealChanged(sm, ctx);
         sm.confirmed = true;
         ctx.save();
         if (ctx.jumpToMech('seal')) return false;
