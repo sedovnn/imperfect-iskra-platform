@@ -91,12 +91,18 @@
       lconc:   { label: 'Какие выводы из этого следуют для самой компании?', ph: 'Какие выводы из этого следуют для самой компании?' }
     },
     variants: {
-      section: 'Ваши варианты',
+      // ⚠ НЕ «ВАРИАНТЫ», А «РЕКОМЕНДАЦИИ» (правка владельца 21.08). Агеев весь шаг
+      // говорит «рекомендация» — просит основную придержать, потом за ней
+      // возвращается, — а рабочая область называла то же самое вариантами. Участник
+      // получал два слова на одну вещь и должен был догадаться, что это одно и то же.
+      // «Варианты будущего» у Лемеха этой правкой НЕ затронуты: там варианты и есть —
+      // состояния мира, а не действия компании (стены ГА-1/МК-2, v10).
+      section: 'Ваши рекомендации',
       // Заголовок ВТОРОГО такта: список уже сдан и лежит только для сверки — под ним
       // не «ваши варианты», которые можно дописать, а то, что вы уже перечислили.
       sealed:  'Что вы перечислили',
-      gist:    { label: 'Вариант' },
-      from:    { label: 'Как вы пришли к такой идее?' },
+      gist:    { label: 'Рекомендация' },
+      from:    { label: 'Как вы пришли к этой идее?' },
       // ⚠ ВТОРОЙ ТАКТ ДОБАВЛЕН 14.08 (решение владельца). Агеев говорил «основная
       // рекомендация у вас уже готова, но придержите её пока» — и не возвращался
       // за ней НИ РАЗУ до вечернего письма: обещание «пока» день не выполнял.
@@ -546,7 +552,7 @@
       if (ctx.isDemo) return '';
       if (m.picked == null) {
         return m.rays.some(function (r) { return String(r.gist).trim(); })
-          ? '' : 'Нужен хотя бы один вариант с непустой сутью.';
+          ? '' : 'Нужна хотя бы одна рекомендация с непустой сутью.';
       }
       if (!String(m.mainText).trim()) return 'Напишите вашу основную рекомендацию.';
       if (!String(m.mainWhy).trim()) return 'Скажите, почему она, а не то, что перечислили выше.';
@@ -567,7 +573,7 @@
     hideKept: function (m) { return m.picked != null; },
     locked: function (m) {
       var n = m.rays.filter(function (r) { return String((r.name || '') + r.gist).trim(); }).length;
-      return '<b>' + n + '</b> ' + plural(n, 'вариант', 'варианта', 'вариантов') +
+      return '<b>' + n + '</b> ' + plural(n, 'рекомендация', 'рекомендации', 'рекомендаций') +
         ' <span class="bl-locked-hint">целиком — во вкладке «Мои ответы»</span>';
     },
     render: function (host, m, ctx) {
@@ -600,7 +606,7 @@
       };
       if (m.picked != null) { drawMain(); return; }
       var draw = function () {
-        var h = head(COPY.variants.section, '<span class="mx-count">вариантов: ' + m.rays.length + '</span>');
+        var h = head(COPY.variants.section, '<span class="mx-count">рекомендаций: ' + m.rays.length + '</span>');
         m.rays.forEach(function (r, i) {
           h += numbered(i + 1, '<div class="mx-card">' +
             field(ctx, { id: 'mxG' + i, f: 'gist', i: i, label: '', ph: COPY.variants.gist.label, val: r.gist }) +
@@ -608,7 +614,7 @@
             '<div class="mx-acts mx-acts-foot">' + (m.rays.length > 1 ? '<button type="button" class="s2-act" data-del="' + i + '">убрать</button>' : '') + '</div>' +
             '</div>');
         });
-        h += numbered('', '<button type="button" class="mx-add" data-add="1">+ ещё вариант</button>');
+        h += numbered('', '<button type="button" class="mx-add" data-add="1">+ ещё рекомендацию</button>');
         host.innerHTML = h;
         host.querySelectorAll('[data-f]').forEach(function (el) {
           el.addEventListener('input', function () {
@@ -1439,7 +1445,7 @@
   // а engine.js и кабинет читают один список. Написание строчное: это подпись
   // внутри окна, а первую букву поднимает тот, кто ставит её в начало строки.
   window.imp.mechTitles = {
-    theses: 'наблюдения и связи', variants: 'варианты', list: 'разбор заявок',
+    theses: 'наблюдения и связи', variants: 'рекомендации', list: 'разбор заявок',
     seal: 'чат правления', futures: 'варианты будущего', goal: 'цель', letter: 'письмо правлению'
   };
   window.imp.mechUtil = { field: field, head: head, normCount: normCount, cut: cut, plural: plural, NORM: NORM };

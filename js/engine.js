@@ -669,10 +669,12 @@
   }
   document.addEventListener('input', function (e) { autoGrow(e.target); });
 
-  function meHtml(text, at) {
+  // html — уже готовая разметка пузыря (составное окно выделяет в ней вопросы).
+  // Когда её нет, текст экранируется здесь, как и раньше.
+  function meHtml(text, at, html) {
     var t = String(text == null ? '' : text).trim();
     return '<div class="chat"><div class="chat-msg me"><span class="chat-name">Вы</span>' +
-      '<div class="chat-bubble">' + (t ? br(t) : '<i>промолчали</i>') + '</div></div></div>' +
+      '<div class="chat-bubble">' + (t ? (html || br(t)) : '<i>промолчали</i>') + '</div></div></div>' +
       // ⚠ БЕЗ ЧАСОВ (решение владельца 07.08): реальное время сбивает относительно
       // времени лора — участник видит «14:27» там, где в истории «понедельник, 10:00».
       // Сам штамп в состоянии остаётся: answersAt уходит на сервер и нужен судейству.
@@ -1561,6 +1563,22 @@
     flush();
     return out;
   }
+  // ⚠ В ЗАФИКСИРОВАННОМ ОТВЕТЕ ВОПРОСЫ ЖИРНЫМ (правка владельца 21.08). В пузыре
+  // лежат три вопроса и три ответа одной лентой, и без выделения не видно, где
+  // кончается вопрос и начинается ответ. Начертание — только на экране: под ключом
+  // ответа по-прежнему лежит чистый текст, судья читает его без разметки.
+  function partsBubbleHtml(act, val) {
+    var vals = partsSplit(act, val);
+    var out = (act.parts || []).map(function (p, i) {
+      var t = String(vals[i] == null ? '' : vals[i]).trim();
+      if (!t) return '';
+      return '<b>' + esc(p.q) + '</b><br />' + br(t);
+    }).filter(Boolean).join('<br /><br />');
+    // Написали не в поля, а мимо разметки (или ответ из прежнего прогона) — показываем
+    // как есть, иначе пузырь окажется пустым при непустом ответе.
+    return out || br(String(val || ''));
+  }
+
   function partsHtml(act, vals) {
     return (act.parts || []).map(function (p, i) {
       return '<div class="mx-ansbox">' +
@@ -1589,9 +1607,12 @@
       if (nb) nb.addEventListener('click', function () { if (!nb.disabled) advance(); });
     };
     // Пройденный шаг: только пузырь ответа, без подвала — ход уже сделан.
-    if (locked) { d.innerHTML = meHtml(val, state.answersAt[act.save]); return d; }
+    var mine = function () {
+      return meHtml(val, state.answersAt[act.save], act.parts ? partsBubbleHtml(act, val) : null);
+    };
+    if (locked) { d.innerHTML = mine(); return d; }
     // Ответ зафиксирован, но шаг ещё текущий: пузырь на месте, ход — за участником.
-    if (answered) { d.innerHTML = meHtml(val, state.answersAt[act.save]) + footHtml; wireNext(); return d; }
+    if (answered) { d.innerHTML = mine() + footHtml; wireNext(); return d; }
     d.innerHTML =
       // ⚠ Подписи поля («Путь, точки слома и из чего собираем») на экране больше НЕТ
       // (решение владельца 07.08): вопрос уже задан репликой, и подпись повторяла его
