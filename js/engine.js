@@ -716,7 +716,7 @@
         // набора поле не идёт. Именно из-за обратного пришлось убрать заметки.
         '<textarea class="mark-note" rows="2" data-note="' + m.id + '" placeholder="личный комментарий, не идёт в оценку">' + esc(m.note || '') + '</textarea>' +
         '<div class="mark-acts">' +
-          '<button type="button" class="mark-act" data-show="' + m.id + '">показать в кейсе</button>' +
+          '<button type="button" class="mark-act" data-show="' + m.id + '">показать в материалах</button>' +
           '<button type="button" class="mark-act" data-del="' + m.id + '">убрать</button>' +
         '</div></div>';
     }).join('');

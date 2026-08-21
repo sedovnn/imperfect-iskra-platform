@@ -324,7 +324,7 @@
         if (x.anchorRef) {
           h += '<div class="mx-anchor"><span class="mx-anchor-k">выписка из материалов</span>' +
             '<blockquote class="mark-quote">' + ctx.esc(x.anchor) + '</blockquote>' +
-            '<button type="button" class="s2-act" data-anchoroff="' + x.id + '">убрать опору</button></div>' +
+            '<button type="button" class="s2-act" data-anchoroff="' + x.id + '">убрать заметку</button></div>' +
             (actsHtml ? '<div class="mx-acts mx-acts-foot">' + actsHtml.replace(/^<div[^>]*>|<\/div>$/g, '') + '</div>' : '');
           return h;
         }
