@@ -1168,7 +1168,11 @@
     var state = document.getElementById('cabJudgeState');
     var step = function (n) {
       state.textContent = 'оцениваю… (заданий обработано: ' + n + ')';
-      return window.imp.callApi('runJudgeQueue', { password: pw, max: 3 }).then(function (r) {
+      // ⚠ bib ОБЯЗАТЕЛЕН (правка владельца 21.08). Без него бэкенд разбирал очередь
+      // подряд, кто бы в ней ни лежал: нажимаешь «Оценить» у 001002, а судится 001001 —
+      // чужими деньгами и в чужой отчёт, — а кабинет считает эти задания сделанными для
+      // 1002 и в конце открывает его карточку, где баллов по-прежнему нет.
+      return window.imp.callApi('runJudgeQueue', { password: pw, max: 3, bib: bib }).then(function (r) {
         if (!r || !r.ok) { state.textContent = 'сбой очереди — попробуйте ещё раз'; btn.disabled = false; return; }
         var total = n + (r.done || 0);
         if (r.errors && r.errors.length) {
@@ -1176,7 +1180,11 @@
         }
         if (r.left > 0) return step(total);
         btn.disabled = false;
-        state.textContent = 'готово: ' + total + ' заданий';
+        // Чужие недобранные строки называем вслух: они в листе есть, но этой кнопкой
+        // не разбираются — иначе фасилитатор решит, что очередь пуста.
+        var alien = Math.max(0, (r.leftAll || 0) - (r.left || 0));
+        state.textContent = 'готово: ' + total + ' заданий' +
+          (alien ? ' · в очереди осталось ' + alien + ' у других участников' : '');
         return refresh().then(function () { openCard({ bib: bib, fio: '' }); });
       });
     };
