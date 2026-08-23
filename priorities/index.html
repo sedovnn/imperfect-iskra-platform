@@ -410,13 +410,6 @@
   .sources li { display: flex; gap: 14px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-dense); }
   .sources li .p { width: 4ch; flex: none; font-weight: 500; }
 
-  .dist li { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--rule); }
-  .dist li:first-child { border-top: 0; }
-  .dist .cnt { font-size: var(--fs-util); color: var(--muted); }
-  .dist .strip { grid-column: 1 / -1; height: 8px; background: var(--field); border-radius: var(--radius); }
-  .dist .strip i { display: block; height: 100%; background: var(--faint); border-radius: var(--radius); }
-  .dist li[data-mine="true"] .name { font-weight: 500; }
-  .dist li[data-mine="true"] .strip i { background: var(--accent); }
 
   /* повезут ли — три средних, без произведения в другом масштабе */
   .carry li { border-top: 1px solid var(--rule); padding: 16px 0; }
@@ -650,9 +643,8 @@
     /* Вторая страница идёт в две колонки: столбцом всё это занимает
        вдвое больше листа, чем есть. Порядок чтения сохраняется —
        сверху вниз по левой колонке, потом по правой. */
-    .p2, .p2b { column-count: 2; column-gap: 8mm; }
+    .p2b { column-count: 2; column-gap: 8mm; }
     .p2b .part:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
-    .p2 > .block:first-child { margin-top: 0; }
     .snap { padding: 9pt; gap: 6mm; margin-top: 8pt; }
     .snap-big { font-size: 46pt; }
     .gap-big { font-size: 22pt; }
@@ -1258,7 +1250,7 @@
             <span class="pct num">64%</span>
           </div>
           <div class="track"><div class="val" data-kind="mine" style="width:64%"></div></div>
-          <p class="verdict">Совпало частично · 7 из 11 · деньги</p>
+          <p class="verdict">Совпало частично · 7 из 11 · деньги · главным его назвали 5 из 11</p>
         </li>
         <li>
           <div class="t"><span class="name">Сократить срок вывода продукта с девяти месяцев до пяти</span><span class="pct num">45%</span></div>
@@ -1290,7 +1282,7 @@
       </ol>
     </div>
 
-    <div class="block">
+    <div class="block page-break">
       <h3>Что назвала команда, а вы этого не говорили</h3>
       <ul class="plainlist" style="margin-top:16px">
         <li><span class="pl-name">Навести порядок в отчётности</span><span class="pl-dir">процессы</span><span class="pl-pct num">45%</span></li>
@@ -1312,30 +1304,6 @@
       </details>
     </div>
 
-    <div class="p2 page-break">
-    <div class="block">
-      <h3>Если оставить один приоритет</h3>
-      <ul class="dist" style="margin-top:16px">
-        <li data-mine="true">
-          <span class="name">Самоокупаемость новых каналов <span class="badge">ваш выбор</span></span>
-          <span class="cnt num">5 из 11</span>
-          <span class="strip"><i style="width:45%"></i></span>
-        </li>
-        <li data-mine="false">
-          <span class="name">Навести порядок в отчётности</span><span class="cnt num">3 из 11</span>
-          <span class="strip"><i style="width:27%"></i></span>
-        </li>
-        <li data-mine="false">
-          <span class="name">Срок вывода продукта</span><span class="cnt num">2 из 11</span>
-          <span class="strip"><i style="width:18%"></i></span>
-        </li>
-        <li data-mine="false">
-          <span class="name">Сильная команда в аналитике</span><span class="cnt num">1 из 11</span>
-          <span class="strip"><i style="width:9%"></i></span>
-        </li>
-      </ul>
-    </div>
-    </div><!-- /.p2 -->
   </section>
 
   <div class="p2b">
