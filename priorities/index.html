@@ -648,8 +648,12 @@
   .res-pr[data-ref="1"] .prv { background: none; box-shadow: inset 0 0 0 1px var(--hint); }
   .grade[data-g="bad"] .res-pr[data-ref="0"] .prv { background: var(--accent); }
 
-  /* одна величина против порога: порог нарисован, поэтому 248 из 1000 не
-     нужно ни с чем сравнивать в голове */
+  /* Одна величина против порога — и знаменателя нет.
+     «Из 1000» не делало работы: 1000 достижимо только при 10 / 10 / 10,
+     а порог стоит примерно на половине шкалы. Знаменатель подсказывал
+     сравнивать с максимумом, которого не бывает, и 248 читалось как
+     катастрофа, хотя сравнивать надо с порогом. Порог нарисован
+     засечкой, число названо рядом. */
   .res-gauge { display: block; position: relative; width: 100%; height: 12px;
     margin-top: 14px; background: var(--tick); border-radius: 6px; }
   .res-gauge .gv { display: block; height: 100%; background: var(--ink); border-radius: 6px; }
@@ -1531,9 +1535,9 @@
       <div class="res">
         <button type="button" class="res-sq" aria-expanded="false" aria-controls="res9">
           <span class="res-plus" aria-hidden="true">+</span>
-          <span class="res-fig"><span class="num">248</span> <span class="res-of">из 1000</span></span>
+          <span class="res-fig"><span class="num">248</span> <span class="res-of">порог 512</span></span>
           <span class="res-viz" data-kind="gauge" data-max="1000" data-a="248" data-mark="512" aria-hidden="true"></span>
-          <span class="res-cap">порог 512</span>
+          <span class="res-cap">произведение трёх шкал</span>
         </button>
         <div class="res-full" id="res9">
 <ul class="plainlist">
