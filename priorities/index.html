@@ -2088,6 +2088,26 @@
     return many;
   }
   var WORDS = { 2: 'двух', 3: 'трёх', 4: 'четырёх' };
+
+  /* ДОЛЯ ЛЮДЕЙ. До двадцати человек руководитель думает счётом: «5 из 11» он
+     держит в голове и может проверить. От двадцати одного он управляет
+     массой, и точнее для него процент: «61 из 74» — это «понятно, что
+     много», а 82% — измеримо. Поэтому выше двадцати процент становится
+     главным числом, а счёт уходит во вторую строку как проверка.
+     Обратно к счёту он возвращается там, где числа маленькие: в панелях по
+     темам и в приложении «3 из 74» честнее, чем «4%». */
+  var pct = function (part, whole) { return Math.round(part / whole * 100) + '%'; };
+  function fig(part, whole) {
+    return whole <= 20
+      ? { f: part, o: 'из ' + whole }
+      : { f: pct(part, whole), o: part + ' из ' + whole };
+  }
+  function said(part, whole) {
+    return whole <= 20
+      ? part + ' из ' + whole
+      : pct(part, whole) + ' — ' + part + ' ' + plur(part, 'человек', 'человека', 'человек') +
+        ' из ' + whole;
+  }
   var round1 = function (x) { return x.toFixed(1); };
 
   /* ---------- сборка данных варианта ---------- */
@@ -2146,11 +2166,14 @@
     V.push({ g: grade(d.main / A, 1 / 3, 2 / 3), id: 'v1',
       h: d.main / A < 0.5 ? 'Команда не знает, что для вас главное'
                           : 'Главный приоритет команда знает',
-      s: 'Главным ваш приоритет назвали ' + d.main + ' из ' + A + '. ' +
+      s: 'Главным ваш приоритет назвали ' + said(d.main, A) + '. ' +
          (d.main / A < 0.5 ? 'Значит на планёрке каждый второй расставит задачи по-своему.'
                            : 'На планёрке порядок задач спорить не придётся.'),
-      fig: d.main, of: 'из ' + A, vz: viz(d, d.main, A), cap: 'назвали это главным',
-      panel: pl(d.own.map(function (o, i) { return [o.name + (i === 0 ? ' — ваш выбор' : ''), o.dir, o.named + ' из ' + A]; })) });
+      fig: fig(d.main, A).f, of: fig(d.main, A).o, vz: viz(d, d.main, A), cap: 'назвали это главным',
+      panel: pl(d.own.map(function (o, i) {
+        return [o.name + (i === 0 ? ' — ваш выбор' : ''), o.dir,
+                A <= 20 ? o.named + ' из ' + A : pct(o.named, A)];
+      })) });
 
     var notReached = d.own.length - d.reached;
     V.push({ g: grade(d.reached / d.own.length, 0.5, 1), id: 'v2',
@@ -2162,20 +2185,23 @@
       s: notReached === 0
         ? 'Каждый из четырёх назвала минимум треть команды.'
         : notReached === d.own.length
-          ? 'Каждый из ' + d.own.length + ' знает меньше трети команды: для неё этих приоритетов в этом году нет.'
+          ? 'Каждый из ' + (WORDS[d.own.length] || d.own.length) +
+            ' знает меньше трети команды: для неё этих приоритетов в этом году нет.'
           : notReached + ' из ' + d.own.length + ' знает меньше трети команды: для неё этих приоритетов в этом году нет.',
       fig: notReached || d.own.length, of: 'из ' + d.own.length,
       vz: '<span class="res-viz" data-kind="dots" data-a="' + d.own.length + '" data-b="' + (notReached || d.own.length) + '" aria-hidden="true"></span>',
       cap: notReached ? 'приоритетов не дошло' : 'приоритетов дошло',
-      panel: pl(d.own.map(function (o) { return [o.name, o.dir, o.named + ' из ' + A]; })) });
+      panel: pl(d.own.map(function (o) {
+        return [o.name, o.dir, A <= 20 ? o.named + ' из ' + A : pct(o.named, A)];
+      })) });
 
     V.push({ g: grade(1 - d.guessed / A, 0.5, 0.75), id: 'v3',
       h: d.guessed / A > 0.33 ? 'Приоритеты живут в догадках, а не в словах'
                               : 'Приоритеты команда знает от вас, а не из догадок',
-      s: d.guessed + ' из ' + A + ' вывели их из контекста или не помнят, откуда знают.',
-      fig: d.guessed, of: 'из ' + A, vz: viz(d, d.guessed, A), cap: 'догадались сами',
-      panel: pl([['Слышали от вас напрямую', '', (A - d.guessed) + ' из ' + A],
-                 ['Вывели сами или не помнят', '', d.guessed + ' из ' + A]]) });
+      s: said(d.guessed, A) + ' вывели их из контекста или не помнят, откуда знают.',
+      fig: fig(d.guessed, A).f, of: fig(d.guessed, A).o, vz: viz(d, d.guessed, A), cap: 'догадались сами',
+      panel: pl([['Слышали от вас напрямую', '', A <= 20 ? (A - d.guessed) + ' из ' + A : pct(A - d.guessed, A)],
+                 ['Вывели сами или не помнят', '', A <= 20 ? d.guessed + ' из ' + A : pct(d.guessed, A)]]) });
 
     var u = d.st.scales[2];
     V.push({ g: grade(u, 5, 7.5), id: 'v4',
@@ -2196,7 +2222,7 @@
       h: d.st.emptyDirs ? 'Есть направление, про которое не сказал никто'
                         : 'Все четыре направления заняты',
       s: d.st.emptyDirs
-        ? 'Ни в вашем списке, ни у команды — 0 из ' + A + '. Это либо осознанный отказ, либо дыра.'
+        ? 'Про него не сказал ни один из ' + A + ' — ни вы, ни команда. Это либо осознанный отказ, либо дыра.'
         : 'В каждом направлении есть хотя бы один приоритет.',
       fig: d.st.emptyDirs || 4, of: 'из 4',
       vz: '<span class="res-viz" data-kind="dots" data-a="4" data-b="' + (d.st.emptyDirs || 4) + '" aria-hidden="true"></span>',
@@ -2255,8 +2281,8 @@
       h: d.outside / A > 0.25
         ? 'Часть команды тянет темы, которых нет в вашем списке'
         : 'Команда занята тем, что есть в вашем списке',
-      s: d.outside + ' из ' + A + ' человек работают над темами вне вашего списка. Всего таких тем: ' + d.themes + '.',
-      fig: d.outside, of: 'из ' + A, vz: viz(d, d.outside, A), cap: 'тянут свои темы',
+      s: said(d.outside, A) + ' работают над темами вне вашего списка. Всего таких тем: ' + d.themes + '.',
+      fig: fig(d.outside, A).f, of: fig(d.outside, A).o, vz: viz(d, d.outside, A), cap: 'тянут свои темы',
       panel: pl(top) + (restCount > 0
         ? '<p class="res-note">В отчёте пять самых частых. Остальные ' + restCount +
           ' — в приложении отдельной страницей: в окне они не читаются.</p>'
