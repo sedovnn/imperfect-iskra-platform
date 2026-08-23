@@ -653,7 +653,13 @@
      а порог стоит примерно на половине шкалы. Знаменатель подсказывал
      сравнивать с максимумом, которого не бывает, и 248 читалось как
      катастрофа, хотя сравнивать надо с порогом. Порог нарисован
-     засечкой, число названо рядом. */
+     засечкой, число названо рядом.
+
+     Порог — 500, как в методике. Восемь по каждой шкале даёт 512, то есть
+     порог пройден: поэтому узким местом считается шкала ниже восьми, а не
+     ниже семи (7³ = 343 — при семёрке «узких мест нет» и «заряда не
+     хватает» могли напечататься вместе). Меняется порог узкого места, а
+     не порог заряда. */
   .res-gauge { display: block; position: relative; width: 100%; height: 12px;
     margin-top: 14px; background: var(--tick); border-radius: 6px; }
   .res-gauge .gv { display: block; height: 100%; background: var(--ink); border-radius: 6px; }
@@ -1557,13 +1563,13 @@
     <div class="vd">
       <h2 class="vd-h">Приоритеты не станут работой, хотя силы есть</h2>
       <p class="vd-say">Приоритеты нравятся — 7,2 из 10, вера в себя — 7,5. Но срочность 4,6, а
-      три шкалы перемножаются: 248 при пороге 512. Одна провалённая обнуляет две сильные —
+      три шкалы перемножаются: 248 при пороге 500. Одна провалённая обнуляет две сильные —
       среднее это спрятало бы.</p>
       <div class="res">
         <button type="button" class="res-sq" aria-expanded="false" aria-controls="res9">
           <span class="res-plus" aria-hidden="true">+</span>
-          <span class="res-fig"><span class="num">248</span> <span class="res-of">порог 512</span></span>
-          <span class="res-viz" data-kind="gauge" data-max="1000" data-a="248" data-mark="512" aria-hidden="true"></span>
+          <span class="res-fig"><span class="num">248</span> <span class="res-of">порог 500</span></span>
+          <span class="res-viz" data-kind="gauge" data-max="1000" data-a="248" data-mark="500" aria-hidden="true"></span>
           <span class="res-cap">произведение трёх шкал</span>
         </button>
         <div class="res-full" id="res9">
@@ -1573,8 +1579,8 @@
           <li><span class="pl-name">Этим нужно заниматься здесь и сейчас</span><span class="pl-dir">вы 9</span><span class="pl-pct num">4,6</span></li>
         </ul>
         <p class="res-note">Средние по команде из 11 ответов, шкала 0–10. Три шкалы
-        перемножаются: 7,2 × 7,5 × 4,6 = 248. Порог — 512, то есть восемь по каждой: если ни
-        одна шкала не ниже восьми, произведение его проходит.</p>
+        перемножаются: 7,2 × 7,5 × 4,6 = 248, порог — 500. Узким местом считается шкала ниже
+        восьми: восемь по каждой даёт 512, то есть порог пройден.</p>
         </div>
       </div>
     </div>
