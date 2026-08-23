@@ -566,6 +566,8 @@
     background: var(--surface); color: var(--ink); border: 1px solid var(--hint);
   }
   .vopt:hover { border-color: var(--ink); }
+  .vopt-n { color: var(--muted); }
+  .vopt[aria-pressed="true"] .vopt-n { color: var(--faint); }
   .vopt[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
   .vopt:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
   #vout { margin-top: 8px; }
@@ -2058,7 +2060,7 @@
     { key: 'strong', name: 'сильная',
       subs: { match: 82, inside: 76, main: 80, concrete: 68 },
       mainShare: 0.82, ownShares: [0.82, 0.73, 0.64, 0.55],
-      guessShare: 0.09, scales: [8.4, 8.6, 8.1], noConcrete: 0,
+      guessShare: 0.09, scales: [8.0, 8.1, 7.4], noConcrete: 0,
       emptyDirs: 0, themes0: 3, outsideShare: 0.18 }
   ];
 
@@ -2100,13 +2102,13 @@
   function fig(part, whole) {
     return whole <= 20
       ? { f: part, o: 'из ' + whole }
-      : { f: pct(part, whole), o: part + ' из ' + whole };
+      : { f: pct(part, whole), o: '(' + part + ' из ' + whole + ')' };
   }
   function said(part, whole) {
     return whole <= 20
       ? part + ' из ' + whole
-      : pct(part, whole) + ' — ' + part + ' ' + plur(part, 'человек', 'человека', 'человек') +
-        ' из ' + whole;
+      : pct(part, whole) + ' (' + part + ' ' + plur(part, 'человек', 'человека', 'человек') +
+        ' из ' + whole + ')';
   }
   var round1 = function (x) { return x.toFixed(1); };
 
@@ -2289,11 +2291,14 @@
         : '') });
 
     V.push({ g: grade(d.product, 400, 500), id: 'v9',
-      h: d.product < 500 ? 'Приоритеты не станут работой, хотя силы есть'
-                         : 'Команда готова взяться',
+      h: d.product < 400 ? 'Приоритеты не станут работой, хотя силы есть'
+        : d.product < 500 ? 'До готовности не хватает совсем немного'
+        : 'Команда готова взяться',
       s: 'Приоритеты нравятся — ' + n(d.st.scales[0]) + ' из 10, вера в себя — ' + n(d.st.scales[1]) +
          ', срочность — ' + n(d.st.scales[2]) + '. Три шкалы перемножаются: ' + d.product + ' при пороге 500.',
-      fig: d.product, of: 'из 500',
+      /* «585 из 500» — сломанная конструкция: число больше знаменателя.
+         Если порог взят, знаменателя нет, есть взятый порог. */
+      fig: d.product, of: d.product < 500 ? 'из 500' : 'порог 500 взят',
       vz: '<span class="res-viz" data-kind="gauge" data-max="500" data-a="' + d.product + '" aria-hidden="true"></span>',
       cap: 'произведение трёх шкал',
       panel: pl([['Приоритеты понятны, нравятся и важны', 'вы ' + YOU[0], n(d.st.scales[0])],
@@ -2439,10 +2444,14 @@
   }
 
   /* ---------- переключатели ---------- */
-  var cur = { st: STRENGTH[1], sz: SIZES[0] };
+  /* Открываем на 38 ответах: на 11 доля людей показывается счётом, и
+     правило «от 21 — процент» с первого экрана не видно. */
+  var cur = { st: STRENGTH[1], sz: SIZES[1] };
   function buttons(host, items, key) {
     host.innerHTML = items.map(function (it) {
-      return '<button type="button" class="vopt" data-k="' + it.key + '">' + it.name + '</button>';
+      return '<button type="button" class="vopt" data-k="' + it.key + '">' + it.name +
+        (it.answered ? ' <span class="vopt-n num">' + it.answered + ' ответов</span>' : '') +
+        '</button>';
     }).join('');
     host.addEventListener('click', function (e) {
       var b = e.target.closest('.vopt');
