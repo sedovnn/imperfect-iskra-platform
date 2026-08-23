@@ -623,13 +623,17 @@
     border-radius: var(--radius); padding: 14px; font: inherit; color: inherit;
   }
   .res-sq:hover, .res-sq[aria-expanded="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .res-sq[data-flat="true"] { cursor: default; }
+  .res-sq[data-flat="true"]:hover { border-color: var(--hint); box-shadow: none; }
   .res-sq:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
+  /* Плюс значит одно: за квадратом есть что смотреть. Он НЕ поворачивается
+     при открытии — на наведении окно открыто и так, поэтому поворот
+     сообщал состояние, которого нет. У квадрата без панели плюса нет. */
   .res-plus {
     position: absolute; top: 10px; right: 12px;
     font-size: var(--fs-read); line-height: 1; color: var(--muted);
   }
   .res-sq:hover .res-plus, .res-sq[aria-expanded="true"] .res-plus { color: var(--ink); }
-  .res-sq[aria-expanded="true"] .res-plus { transform: rotate(45deg); }
   .res-fig { display: block; line-height: 1; white-space: nowrap; }
   /* цифра окна — ступень заголовка блока: восьмой кегль на шкале
      не нужен, а самая крупная цифра в отчёте остаётся одна — балл */
@@ -1675,6 +1679,7 @@
           <li><span class="pl-name">Единый бэклог вместо трёх</span><span class="pl-dir">процессы</span><span class="pl-pct num">1 из 11</span></li>
           <li><span class="pl-name">Описать зоны ответственности</span><span class="pl-dir">люди</span><span class="pl-pct num">1 из 11</span></li>
         </ul>
+        <p><button type="button" class="btn btn-3" data-go="s-appendix">Полный список — в приложении</button></p>
         </div>
       </div>
     </div>
@@ -2118,8 +2123,9 @@
   }
   var sq = function (id, fig, of, vz, cap, panel) {
     return '<div class="res">' +
-      '<button type="button" class="res-sq" aria-expanded="false"' + (panel ? ' aria-controls="' + id + '"' : '') + '>' +
-      '<span class="res-plus" aria-hidden="true">+</span>' +
+      '<button type="button" class="res-sq" aria-expanded="false"' +
+      (panel ? ' aria-controls="' + id + '"' : ' data-flat="true" tabindex="-1"') + '>' +
+      (panel ? '<span class="res-plus" aria-hidden="true">+</span>' : '') +
       '<span class="res-fig"><span class="num">' + fig + '</span> <span class="res-of">' + of + '</span></span>' +
       vz + '<span class="res-cap">' + cap + '</span></button>' +
       (panel ? '<div class="res-full" id="' + id + '">' + panel + '</div>' : '') + '</div>';
@@ -2194,7 +2200,17 @@
         : 'В каждом направлении есть хотя бы один приоритет.',
       fig: d.st.emptyDirs || 4, of: 'из 4',
       vz: '<span class="res-viz" data-kind="dots" data-a="4" data-b="' + (d.st.emptyDirs || 4) + '" aria-hidden="true"></span>',
-      cap: d.st.emptyDirs ? 'направлений пустых' : 'направления заняты', panel: null });
+      cap: d.st.emptyDirs ? 'направлений пустых' : 'направления заняты',
+      panel: '<div class="scroll"><table class="bsc"><thead><tr><th>Направление</th><th>Ваши</th>' +
+        '<th>Назвала команда</th></tr></thead><tbody>' +
+        [['Деньги', 1, 1], ['Клиенты', 0, 0], ['Процессы', 2, 3], ['Люди', 1, 4]]
+          .map(function (r, i) {
+            var empty = d.st.emptyDirs > 0 && i === 1 || d.st.emptyDirs > 1 && i === 3;
+            return '<tr' + (empty ? ' data-empty="true"' : '') + '><td>' + r[0] +
+              '</td><td class="num" data-l="Ваши">' + (empty ? 0 : r[1]) +
+              '</td><td class="num" data-l="Назвала команда">' +
+              (empty ? 0 : Math.round(r[2] * A / 11)) + '</td></tr>';
+          }).join('') + '</tbody></table></div>' });
 
     V.push({ g: grade(d.st.subs.match, 35, 65), id: 'v6',
       h: d.st.subs.inside > d.st.subs.match
@@ -2217,7 +2233,11 @@
         : 'В каждой формулировке есть признак готовности.',
       fig: d.st.noConcrete || 4, of: 'из 4',
       vz: '<span class="res-viz" data-kind="dots" data-a="4" data-b="' + (d.st.noConcrete || 4) + '" aria-hidden="true"></span>',
-      cap: d.st.noConcrete ? 'без конкретики' : 'с конкретикой', panel: null });
+      cap: d.st.noConcrete ? 'без конкретики' : 'с конкретикой',
+      panel: pl(d.own.map(function (o, i) {
+        return [o.name, i < d.st.noConcrete ? 'не видно результата' : 'признак готовности есть',
+                i < d.st.noConcrete ? 'нет' : 'есть'];
+      })) });
 
     /* ЗДЕСЬ ломался счёт тем: «8 тем» на 11 человек и «23 темы» на 74 —
        разные вещи, и в панель они не влезают. Считаем ЛЮДЕЙ. */
@@ -2249,7 +2269,13 @@
          ', срочность — ' + n(d.st.scales[2]) + '. Три шкалы перемножаются: ' + d.product + ' при пороге 500.',
       fig: d.product, of: 'из 500',
       vz: '<span class="res-viz" data-kind="gauge" data-max="500" data-a="' + d.product + '" aria-hidden="true"></span>',
-      cap: 'произведение трёх шкал', panel: null });
+      cap: 'произведение трёх шкал',
+      panel: pl([['Приоритеты понятны, нравятся и важны', 'вы ' + YOU[0], n(d.st.scales[0])],
+                 ['Верим, что сделаем', 'вы ' + YOU[1], n(d.st.scales[1])],
+                 ['Этим нужно заниматься здесь и сейчас', 'вы ' + YOU[2], n(d.st.scales[2])]]) +
+        '<p class="res-note">Три шкалы перемножаются: ' + n(d.st.scales[0]) + ' × ' +
+        n(d.st.scales[1]) + ' × ' + n(d.st.scales[2]) + ' = ' + d.product +
+        ', порог — 500. Узким местом считается шкала ниже восьми: восемь по каждой даёт 512.</p>' });
 
     return V;
   }
@@ -2357,29 +2383,30 @@
 
     /* приложение появляется только когда список перестаёт влезать в окно */
     /* Приложение — ОТДЕЛЬНАЯ страница, а не хвост отчёта: длинный список
-       посреди документа сбивает чтение, а из отчёта нужна одна ссылка. */
+       посреди документа сбивает чтение.
+
+       Приложение есть ВСЕГДА и всегда держит полный список. Сначала я
+       заводил его только когда тем больше восьми — и получилось состояние,
+       которое ловится с первого взгляда: заходишь на страницу приложения
+       напрямую, а там «не понадобилось» и ни одной темы, потому что
+       содержимое зависело от переключателя на другом экране. Одно
+       состояние вместо двух: список полный, ссылка на месте. Сколько тем
+       показать в окне вердикта — отдельный вопрос, и он решается там. */
+    html += '<p class="appx-link"><button type="button" class="btn btn-3" data-go="s-appendix">' +
+      'Все ' + d.themes + ' ' + plur(d.themes, 'тема', 'темы', 'тем') + ' — в приложении</button></p>';
+
     var ax = document.getElementById('axout');
-    if (d.themes > 8) {
-      html += '<p class="appx-link"><button type="button" class="btn btn-3" data-go="s-appendix">' +
-        'Все ' + d.themes + ' ' + plur(d.themes, 'тема', 'темы', 'тем') + ' — в приложении</button></p>';
-      ax.innerHTML = '<p class="unit-k">Приложение к отчёту</p>' +
-        '<h1 class="vt-h">Темы, которые команда тянет сама: ' + d.themes + '</h1>' +
-        '<p class="vt-lead">В отчёте пять самых частых. Полный список здесь: во всплывающем окне ' +
-        d.themes + ' ' + plur(d.themes, 'строка', 'строки', 'строк') +
-        ' не читаются, а прокрутка внутри окна прячет половину.</p>' +
-        '<ul class="plainlist">' + THEMES.slice(0, d.themes).map(function (t, i) {
-          return '<li><span class="pl-name">' + t + '</span><span class="pl-pct num">' +
-            Math.max(1, Math.round(d.outside / (i + 1.6))) + ' из ' + d.A + '</span></li>';
-        }).join('') + '</ul>' +
-        '<p><button type="button" class="btn btn-2" data-go="s-variants">Вернуться в отчёт</button></p>';
-    } else {
-      ax.innerHTML = '<p class="unit-k">Приложение к отчёту</p>' +
-        '<h1 class="vt-h">Приложение не понадобилось</h1>' +
-        '<p class="grade-empty">В этом варианте все ' + d.themes + ' ' +
-        plur(d.themes, 'тема', 'темы', 'тем') +
-        ' читаются в самом отчёте, в окне вердикта.</p>' +
-        '<p><button type="button" class="btn btn-2" data-go="s-variants">Вернуться в отчёт</button></p>';
-    }
+    ax.innerHTML = '<p class="unit-k">Приложение к отчёту</p>' +
+      '<h1 class="vt-h">Темы, которые команда тянет сама: ' + d.themes + '</h1>' +
+      '<p class="vt-lead">' + (d.themes > 8
+        ? 'В отчёте пять самых частых. Полный список здесь: во всплывающем окне ' + d.themes +
+          ' ' + plur(d.themes, 'строка', 'строки', 'строк') + ' не читаются.'
+        : 'Здесь весь список целиком. В отчёте он тоже показан полностью — тем немного.') + '</p>' +
+      '<ul class="plainlist">' + THEMES.slice(0, d.themes).map(function (t, i) {
+        return '<li><span class="pl-name">' + t + '</span><span class="pl-pct num">' +
+          Math.max(1, Math.round(d.outside / (i + 1.6))) + ' из ' + d.A + '</span></li>';
+      }).join('') + '</ul>' +
+      '<p><button type="button" class="btn btn-2" data-go="s-variants">Вернуться в отчёт</button></p>';
 
     out.innerHTML = html;
     if (window.impDrawViz) window.impDrawViz(out);
