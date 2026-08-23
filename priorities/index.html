@@ -471,26 +471,6 @@
   .comp-keys li:last-child { border-bottom: 0; }
   .comp-keys .v { margin-left: auto; font-weight: 500; }
 
-  /* ---------- «повезут ли»: произведение трёх шкал ----------
-     Второй вопрос отчёта. Балл отвечает «дошли ли приоритеты», это —
-     «повезут ли их». Перемножение, а не среднее: одна провалённая шкала
-     обнуляет остальные, и это ровно то, что должно быть видно.
-     Шкала 0–1000, как в методике: приводить к сотне значит объяснять
-     клиенту, зачем мы поделили обратно на десять. Решение владельца.
-     Чтобы 248 не читалось как «катастрофа» рядом с 47 из 100, рядом
-     назван порог — 512. Это 8 × 8 × 8: если ни одна из трёх шкал не ниже
-     восьми, произведение порог проходит, и «узких мест нет» больше не
-     может напечататься вместе с «заряда не хватает». В SCORING.md порог
-     500 и порог узкого места 7 не сходились: 7³ = 343. */
-  .carry { margin-top: 30px; border-top: 1px solid var(--rule); padding-top: 16px; }
-  .carry-row {
-    display: grid; gap: 6px var(--gap); margin-top: 10px; align-items: start;
-    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
-  }
-  .carry-n { font-size: var(--fs-place); font-weight: 500; letter-spacing: -0.02em; line-height: 1; }
-  .carry-of { font-size: var(--fs-util); font-weight: 400; color: var(--muted); }
-  .carry-say { max-width: var(--w-read); }
-  .carry-mul { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; }
 
   /* ======================================================================
      ОТЧЁТ — одна идиома
@@ -526,9 +506,6 @@
   .teaser .score-big { font-size: clamp(40px, 4.4vw, 64px); }
 
   /* забираемый текст — единственное место, где в отчёте есть плашка */
-  .take { background: var(--field); border-radius: var(--radius); padding: 18px; margin-top: 16px; }
-  .take p { font-size: var(--fs-dense); max-width: var(--w-read); margin-bottom: 10px; }
-  .take p:last-child { margin-bottom: 0; }
 
 
 
@@ -592,6 +569,7 @@
     letter-spacing: -0.02em; color: var(--ink);
   }
   .grade[data-g="bad"] .grade-n { color: var(--accent); }
+  .grade-empty { font-size: var(--fs-dense); color: var(--muted); margin-top: 18px; }
   .grade-t {
     font-size: var(--fs-util); font-weight: 500; text-transform: uppercase;
     letter-spacing: 0.1em; color: var(--muted);
@@ -645,7 +623,11 @@
 
   /* точки: одна точка — один человек или один приоритет.
      Заливка = то, что посчитано в цифре; подпись говорит, что это. */
-  .res-viz { display: block; margin-top: 10px; }
+  /* width НЕ по содержимому: окно — flex-колонка с align-items: flex-start,
+     поэтому дорожка брала ширину своей подписи. У «команда»/«вы 9» и
+     «с вами»/«между собой 52» выходили разные шкалы, и полосы разных окон
+     нельзя было сравнивать. */
+  .res-viz { display: block; width: 100%; margin-top: 10px; }
   .res-viz[data-kind="dots"] { display: grid; gap: 5px; justify-content: start; }
   .res-d { width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box; }
   .res-d[data-on="0"] { border: 1px solid var(--hint); }
@@ -655,7 +637,7 @@
   .grade[data-g="bad"] .res-d[data-on="1"] { background: var(--accent); }
 
   /* две величины: заливка — про что вердикт, контур — с чем сравниваем */
-  .res-pr { display: block; font-size: var(--fs-util); color: var(--muted); }
+  .res-pr { display: block; width: 100%; font-size: var(--fs-util); color: var(--muted); }
   .res-pr + .res-pr { margin-top: 6px; }
   .res-pr .prl { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .res-pr .prt {
@@ -665,6 +647,17 @@
   .res-pr .prv { display: block; height: 100%; background: var(--ink); border-radius: 4px; }
   .res-pr[data-ref="1"] .prv { background: none; box-shadow: inset 0 0 0 1px var(--hint); }
   .grade[data-g="bad"] .res-pr[data-ref="0"] .prv { background: var(--accent); }
+
+  /* одна величина против порога: порог нарисован, поэтому 248 из 1000 не
+     нужно ни с чем сравнивать в голове */
+  .res-gauge { display: block; position: relative; width: 100%; height: 12px;
+    margin-top: 14px; background: var(--tick); border-radius: 6px; }
+  .res-gauge .gv { display: block; height: 100%; background: var(--ink); border-radius: 6px; }
+  .grade[data-g="bad"] .res-gauge .gv { background: var(--accent); }
+  .res-gauge .gm {
+    position: absolute; top: -4px; bottom: -4px; width: 2px;
+    background: var(--ink); border-radius: 1px;
+  }
 
   /* раскрытие: наведение, фокус или нажатие на касании */
   .res-full {
@@ -684,7 +677,6 @@
   /* ---------- что делать ---------- */
   .todo { margin-top: 56px; border-top: 2px solid var(--ink); padding-top: 14px; }
   .td-h { font-size: var(--fs-find); margin-top: 6px; max-width: 40ch; letter-spacing: -0.01em; text-wrap: balance; }
-  .td-take { margin-top: 32px; border-top: 1px solid var(--rule); padding-top: 18px; }
 
   /* ---------- подвал-оглавление ---------- */
   .rep-foot {
@@ -783,7 +775,7 @@
     .vd { grid-template-columns: 1fr; }
     .vd-h, .vd-say, .res { grid-column: 1; grid-row: auto; }
     .res { margin-top: 14px; }
-    .carry-row, .offer-row { grid-template-columns: 1fr; }
+    .offer-row { grid-template-columns: 1fr; }
     .res-full { left: 0; right: auto; width: min(560px, 88vw); }
     .plainlist li { grid-template-columns: minmax(0, 1fr) 7ch; }
     .facts2 li { grid-template-columns: 1fr; gap: 4px; }
@@ -828,7 +820,7 @@
     .rep { grid-template-columns: 1fr; }
     body { font-size: 9.5pt; line-height: 1.3; }
     :root { --fs-place: 15pt; --fs-find: 11pt; --fs-read: 9.5pt; --fs-dense: 8.6pt; --fs-util: 7.4pt; }
-    .unit, .take, .bars li, .plainlist li, .offer, .bsc tr { break-inside: avoid; }
+    .unit, .bars li, .plainlist li, .offer, .bsc tr { break-inside: avoid; }
     h1, h2, .sec, .unit-k { break-after: avoid; }
     .offer-row { grid-template-columns: repeat(3, 1fr); }
     .res-sq { display: none !important; }
@@ -1355,7 +1347,7 @@
   <!-- ================= ЗАКЛЮЧЕНИЕ ================= -->
   <div class="verdict-top" id="rep-1">
     <p class="unit-k">Заключение</p>
-    <h1 class="vt-h">Пять выводов из девяти стоит разобрать с командой</h1>
+    <h1 class="vt-h">Шесть выводов из девяти стоит разобрать с командой</h1>
     <p class="vt-lead">Команда оценила ясность приоритетов на 4,1 из 5 — людям кажется, что им
     понятно. Дело не в несогласии: приоритеты не проговорены так, чтобы их можно было
     повторить.</p>
@@ -1398,25 +1390,11 @@
       <p class="hs-warn">Оценку делает ИИ, возможны неточности: балл — ориентир, а не приговор.
       Устойчивым он становится от 5 ответов.</p>
     </details>
-
-    <div class="carry">
-      <p class="unit-k">Повезут ли</p>
-      <div class="carry-row">
-        <p class="carry-n num">248 <span class="carry-of">из 1000</span></p>
-        <div>
-          <p class="carry-say">Балл выше отвечает, дошли ли приоритеты. Это — повезут ли их.
-          Три шкалы перемножены, а не усреднены: одна провалённая обнуляет две сильные,
-          и среднее это спрятало бы. Провалена срочность — 4,6 при вашей 9.</p>
-          <p class="carry-mul">7,2 × 7,5 × 4,6 = 248. Порог — 512, то есть восемь по каждой
-          из трёх шкал.</p>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- ================= РАЗОБРАТЬ НА ВСТРЕЧЕ ================= -->
   <div class="grade" data-g="bad" id="rep-2">
-    <p class="grade-k"><span class="grade-n num">5</span><span class="grade-t">Разобрать на встрече</span></p>
+    <p class="grade-k"><span class="grade-n num">6</span><span class="grade-t">Разобрать на встрече</span></p>
 
     <div class="vd">
       <h2 class="vd-h">Команда не знает, что для вас главное</h2>
@@ -1545,6 +1523,31 @@
       </div>
     </div>
 
+    <div class="vd">
+      <h2 class="vd-h">Приоритеты не станут работой, хотя силы есть</h2>
+      <p class="vd-say">Приоритеты нравятся — 7,2 из 10, вера в себя — 7,5. Но срочность 4,6, а
+      три шкалы перемножаются: 248 при пороге 512. Одна провалённая обнуляет две сильные —
+      среднее это спрятало бы.</p>
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res9">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">248</span> <span class="res-of">из 1000</span></span>
+          <span class="res-viz" data-kind="gauge" data-max="1000" data-a="248" data-mark="512" aria-hidden="true"></span>
+          <span class="res-cap">порог 512</span>
+        </button>
+        <div class="res-full" id="res9">
+<ul class="plainlist">
+          <li><span class="pl-name">Приоритеты понятны, нравятся и важны</span><span class="pl-dir">вы 9</span><span class="pl-pct num">7,2</span></li>
+          <li><span class="pl-name">Верим, что сделаем</span><span class="pl-dir">вы 8</span><span class="pl-pct num">7,5</span></li>
+          <li><span class="pl-name">Этим нужно заниматься здесь и сейчас</span><span class="pl-dir">вы 9</span><span class="pl-pct num">4,6</span></li>
+        </ul>
+        <p class="res-note">Средние по команде из 11 ответов, шкала 0–10. Три шкалы
+        перемножаются: 7,2 × 7,5 × 4,6 = 248. Порог — 512, то есть восемь по каждой: если ни
+        одна шкала не ниже восьми, произведение его проходит.</p>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ================= ДЕРЖАТЬ В ВИДУ ================= -->
@@ -1623,35 +1626,14 @@
 
   <!-- ================= ЗДЕСЬ ВСЁ ХОРОШО ================= -->
   <div class="grade" data-g="ok" id="rep-4">
-    <p class="grade-k"><span class="grade-n num">1</span><span class="grade-t">Оставить как есть</span></p>
-
-    <div class="vd">
-      <h2 class="vd-h">Команда верит, что справится</h2>
-      <p class="vd-say">Приоритеты нравятся и кажутся важными — 7,2 из 10, вера в себя —
-      7,5. Это ресурс: людей не надо убеждать, что задача им по силам.</p>
-      <div class="res">
-        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res9">
-          <span class="res-plus" aria-hidden="true">+</span>
-          <span class="res-fig"><span class="num">7,2</span> <span class="res-of">из 10</span></span>
-          <span class="res-viz" data-kind="pair" data-max="10" data-a="7,2" data-la="нравятся" data-b="7,5" data-lb="верят в себя" aria-hidden="true"></span>
-          <span class="res-cap">команда о себе</span>
-        </button>
-        <div class="res-full" id="res9">
-<ul class="plainlist">
-          <li><span class="pl-name">Приоритеты понятны, нравятся и важны</span><span class="pl-dir">вы 9</span><span class="pl-pct num">7,2</span></li>
-          <li><span class="pl-name">Верим, что сделаем</span><span class="pl-dir">вы 8</span><span class="pl-pct num">7,5</span></li>
-        </ul>
-        <p class="res-note">Средние по команде из 11 ответов, шкала 0–10.</p>
-        </div>
-      </div>
-    </div>
-
+    <p class="grade-k"><span class="grade-n num">0</span><span class="grade-t">Оставить как есть</span></p>
+    <p class="grade-empty">В этом отчёте таких выводов нет.</p>
   </div>
 
   <!-- ================= ЧТО ДЕЛАТЬ ================= -->
   <div class="todo" id="rep-5">
     <p class="unit-k">Что делать</p>
-    <h2 class="td-h">Пять вердиктов из девяти — не про людей, а про то, что стратегия
+    <h2 class="td-h">Шесть вердиктов из девяти — не про людей, а про то, что стратегия
     ещё не собрана</h2>
 
 
@@ -1660,15 +1642,15 @@
       <div class="offer-row">
         <div class="offer">
           <p class="of-t">Разобрать это заключение</p>
-          <p class="of-d">Полчаса по вашим пяти вердиктам: что говорить команде, в каком порядке
+          <p class="of-d">Полчаса по вашим шести вердиктам: что говорить команде, в каком порядке
           и что делать, если срочность не купят со второго раза.</p>
           <p class="of-w">Бесплатно, один раз на отчёт</p>
           <p><button type="button" class="btn btn-1">Запросить консультацию</button></p>
         </div>
         <div class="offer">
           <p class="of-t">Собрать стратегию — stratos</p>
-          <p class="of-d">Четыре вердикта из пяти — про передачу, а не про сам выбор. В списке нет
-          отказов, нет ресурса и нет горизонта: приоритеты есть, стратегии пока нет.</p>
+          <p class="of-d">В списке нет отказов, нет ресурса и нет горизонта: приоритеты
+          есть, стратегии пока нет.</p>
           <p class="of-w">Мастерская на команду</p>
           <p><button type="button" class="btn btn-2">Что такое stratos</button></p>
         </div>
@@ -1682,28 +1664,13 @@
       </div>
     </div>
 
-    <div class="td-take">
-      <p class="unit-k">Что написать своему руководителю</p>
-      <div class="take">
-        <p>Команда оценила ясность приоритетов на 4,1 из 5, но главным мой приоритет назвали 5 из 11.</p>
-        <p>5 человек из 11 вывели приоритеты сами или не помнят источник.</p>
-        <p>Направление «клиенты» не назвал ни один из 11 участников.</p>
-        <p>Прошу два часа на встречу по приоритетам и то же самое по остальным командам отдела.</p>
-      </div>
-      <div class="btn-row">
-        <button type="button" class="btn btn-2" data-copy="текст руководителю">Скопировать текст</button>
-        <span class="unit-say">Четыре факта из отчёта без имён — по ответу нельзя узнать человека,
-        это условие анонимности. Отправляете из своей почты.</span>
-      </div>
-    </div>
-
   </div>
 
   <nav class="rep-foot" aria-label="разделы заключения">
     <a href="#rep-1">Заключение</a>
-    <a href="#rep-2">Разобрать · 5</a>
+    <a href="#rep-2">Разобрать · 6</a>
     <a href="#rep-3">Держать в виду · 3</a>
-    <a href="#rep-4">Оставить как есть · 1</a>
+    <a href="#rep-4">Оставить как есть · 0</a>
     <a href="#rep-5">Что делать</a>
     <button type="button" class="btn btn-3">Посмотреть ответы целиком</button>
     <button type="button" class="btn btn-3" id="printBtn">Сохранить в pdf</button>
@@ -1882,6 +1849,17 @@
         d.setAttribute('data-on', i < b ? '1' : '0');
         v.appendChild(d);
       }
+    } else if (kind === 'gauge') {
+      var gmax = numOf(v.getAttribute('data-max'));
+      v.className = 'res-gauge';
+      var gv = document.createElement('span');
+      gv.className = 'gv';
+      gv.style.width = (numOf(v.getAttribute('data-a')) / gmax * 100) + '%';
+      v.appendChild(gv);
+      var gm = document.createElement('span');
+      gm.className = 'gm';
+      gm.style.left = (numOf(v.getAttribute('data-mark')) / gmax * 100) + '%';
+      v.appendChild(gm);
     } else if (kind === 'pair') {
       var max = numOf(v.getAttribute('data-max'));
       [['a', 'la', '0'], ['b', 'lb', '1']].forEach(function (k) {
