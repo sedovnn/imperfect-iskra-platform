@@ -96,7 +96,7 @@
   /* разрядку сжимаем только на крупных ступенях: на 16px она создавала
      второе сочетание там, где рецепт один */
   h1, h2, h3, h4 { font-weight: 500; margin: 0; line-height: 1.1; }
-  h1, h2, .part-h, .snap-big, .gap-big, .find h3 { letter-spacing: -0.01em; }
+  h1, h2, .unit-answer, .score-big, .unit-h, .two-num .tn-v { letter-spacing: -0.01em; }
   p { margin: 0; }
   ul, ol { margin: 0; padding: 0; list-style: none; }
   .num { font-variant-numeric: tabular-nums; }
@@ -382,9 +382,9 @@
   .bars .pct { flex: none; font-weight: 500; }
   .bars .track { margin-top: 8px; height: 20px; background: var(--field); border-radius: var(--radius); }
   .bars .val { height: 100%; border-radius: var(--radius); }
-  .bars .val[data-kind="mine"] { background: var(--faint); }
+  /* приглушены; вермилион только там, где не совпало */
+  .bars .val { background: var(--faint); }
   .bars .val[data-miss="true"] { background: var(--accent); }
-  .bars .val[data-kind="theirs"] { border: 2px solid var(--accent); background: var(--accent-tint); }
   .bars .verdict { font-size: var(--fs-util); color: var(--muted); margin-top: 6px; }
 
 
@@ -392,17 +392,19 @@
   /* полоса показывает ОДНО: сколько людей догадались сами. четыре отрезка
      не нужны — их числа стоят списком ниже. вермилион на догадках, потому что
      блок именно про них: подсветка идёт на находку, а не на хорошую новость. */
-  .sources .stack { display: flex; height: 26px; border-radius: var(--radius); overflow: hidden; margin-top: 14px; }
-  .sources .stack i { display: block; }
   /* тёмный сегмент вместо вермилионного: акцент без второго цвета на экране */
-  .sources .stack i[data-n="known"] { background: var(--faint); }
-  .sources .stack i[data-n="guess"] { background: var(--ink); }
-  .sources .keys { display: flex; font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
-  .sources .keys span { flex: none; }
-  .sources .keys span[data-n="guess"] { color: var(--muted); }
-  .sources ul { margin-top: 20px; max-width: 520px; }
-  .sources li { display: flex; gap: 14px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-dense); }
-  .sources li .p { width: 4ch; flex: none; font-weight: 500; }
+  /* составная полоса «откуда знают»: показывает одно — долю догадок.
+     Тёмный сегмент вместо вермилионного: вермилион в блоке уже занят
+     главным расхождением. */
+  .stack {
+    display: flex; height: 26px; margin-top: 16px;
+    border-radius: var(--radius); overflow: hidden; background: var(--tick);
+  }
+  .stack i { display: block; }
+  .stack i[data-n="known"] { background: var(--faint); }
+  .stack i[data-n="guess"] { background: var(--ink); }
+  .keys { display: flex; font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
+  .keys span { flex: none; padding-right: 8px; }
 
 
   /* повезут ли — три средних, без произведения в другом масштабе */
@@ -414,13 +416,7 @@
   .carry .say { font-size: var(--fs-util); color: var(--muted); margin-top: 8px; max-width: var(--w-read); }
 
 
-  .upward .card p { max-width: var(--w-read); margin-bottom: 10px; font-size: var(--fs-dense); }
-  .upward .card p:last-child { margin-bottom: 0; }
 
-  /* длинный текст серым читается хуже всего: в карточке он чернилами */
-  .next .card { background: var(--accent-tint); }
-  .next .card .note { color: var(--ink); }
-  .next .card .btn-3 { font-size: var(--fs-dense); }
 
   .demo-bar {
     background: var(--field); border-radius: var(--radius);
@@ -435,51 +431,11 @@
     overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
   }
 
-  /* ======================================================================
-     ОТЧЁТ: четыре блока
-     Разделены толстой линией, номером блока и воздухом — без рамок и
-     цветных полос. Первый блок сидит на плашке --field, чтобы читался
-     как главный, а не как ещё один раздел.
-     ====================================================================== */
-  .rep-tools {
-    display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
-    padding: 16px 0; border-bottom: 1px solid var(--rule);
-  }
-  /* это инструменты, а не содержание: кегль как у подписей */
-  .rep-tools .btn { font-size: var(--fs-dense); }
-  .rep-tools .note { font-size: var(--fs-util); }
 
-  .part { margin-top: 56px; border-top: 2px solid var(--ink); padding-top: 14px; }
-  .part-n {
-    font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--muted);
-  }
-  .part-h { font-size: var(--fs-place); margin-top: 6px; max-width: var(--w-body); }
 
   /* ---------- 1 · снимок ---------- */
-  .snap {
-    display: grid; gap: var(--gap);
-    grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 3fr);
-    background: var(--field); border-radius: var(--radius);
-    padding: 24px; margin-top: 20px;
-  }
-  .snap-big {
-    font-size: clamp(56px, 7vw, 104px); line-height: 0.82; font-weight: 500;
-    color: var(--accent); letter-spacing: -0.03em;
-  }
-  .snap-unit { font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
-  .snap-band { font-size: var(--fs-read); font-weight: 500; margin-top: 12px; }
 
 
-  .snap-gap { border-left: 1px solid var(--rule); padding-left: var(--gap); }
-  .gap-two { display: flex; flex-direction: column; gap: 18px; margin-top: 10px; }
-  /* та же ступень, что заголовок блока: крупная акцентная цифра в отчёте
-     должна быть одна — балл в снимке */
-  .gap-big {
-    display: block; font-size: var(--fs-place); line-height: 1;
-    font-weight: 500; color: var(--ink);
-  }
-  .gap-u { display: block; font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
 
   /* ======================================================================
      ФОРМЫ ГРАФИКИ — ровно три на весь отчёт
@@ -528,6 +484,112 @@
   .carry .n { font-weight: 500; max-width: 44ch; }
   .carry .say { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; max-width: var(--w-read); }
 
+  /* ======================================================================
+     ОТЧЁТ — одна идиома
+     Единица: метка → заголовок-вывод → доказательство → подпись.
+     Раздел — только метка-разделитель. Плашка --field значит ровно одно:
+     это текст, который забирают из отчёта.
+     ====================================================================== */
+  .rep {
+    display: grid; gap: var(--gap);
+    grid-template-columns: minmax(0, var(--w-body)) minmax(0, 1fr);
+    align-items: start; margin-top: 8px;
+  }
+  /* Место в раскладке задано явно, а не порядком в разметке: в разметке
+     оглавление идёт первым (так его находит скринридер), на экране
+     содержание слева, оглавление справа. */
+  .rep-body { grid-column: 1; grid-row: 1; min-width: 0; }
+  .rep-nav  { grid-column: 2; grid-row: 1; }
+
+  /* оглавление: держится в поле зрения на длинном документе */
+  .rep-nav { position: sticky; top: calc(var(--bar-h, 0px) + 24px); }
+  .rep-nav ol { counter-reset: rn; margin-top: 10px; }
+  .rep-nav li { counter-increment: rn; }
+  .rep-nav a {
+    display: flex; gap: 10px; align-items: baseline;
+    min-height: 38px; padding: 6px 0;
+    color: var(--ink); text-decoration: none;
+    border-bottom: 1px solid var(--rule); font-size: var(--fs-dense);
+  }
+  .rep-nav a::before { content: counter(rn); color: var(--muted); }
+  .rep-nav a:hover { color: var(--accent-text); }
+  .rep-nav a:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
+  .rep-nav-tools { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 18px; }
+  .rep-nav-tools .btn { font-size: var(--fs-dense); }
+
+  /* метка-разделитель раздела */
+  .sec {
+    border-top: 2px solid var(--ink); margin-top: 48px; padding-top: 12px;
+    font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--ink);
+  }
+  .sec:first-of-type { margin-top: 24px; }
+
+  /* единица */
+  .unit { border-top: 1px solid var(--rule); margin-top: 24px; padding-top: 20px; }
+  .sec + .unit { border-top: 0; margin-top: 20px; padding-top: 0; }
+  .unit-k {
+    font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .unit-answer { font-size: var(--fs-place); margin-top: 8px; max-width: 26ch; }
+  .unit-h { font-size: var(--fs-find); margin-top: 6px; max-width: 34ch; }
+  .unit-say {
+    font-size: var(--fs-dense); color: var(--muted);
+    margin-top: 12px; max-width: var(--w-read);
+  }
+  .unit .btn-row { margin-top: 16px; }
+  .unit .btn-row .unit-say { margin-top: 0; }
+
+  /* балл */
+  .score-line { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; margin-top: 14px; }
+  .score-big {
+    font-size: clamp(52px, 6vw, 88px); line-height: 0.82;
+    font-weight: 500; color: var(--accent); letter-spacing: -0.03em;
+  }
+  .score-of { font-size: var(--fs-util); color: var(--muted); }
+
+  /* два числа рядом — разрыв самооценки */
+  .two-num { display: flex; flex-wrap: wrap; gap: 24px 56px; margin-top: 16px; }
+  .two-num .tn-v { display: block; font-size: var(--fs-place); font-weight: 500; letter-spacing: -0.01em; }
+  .two-num .tn-k { display: block; font-size: var(--fs-util); color: var(--muted); margin-top: 6px; max-width: 26ch; }
+
+  /* два коротких факта — доказательство без графика */
+  .facts2 { margin-top: 16px; }
+  .facts2 li {
+    display: grid; grid-template-columns: 8ch minmax(0, 1fr); gap: 16px;
+    padding: 12px 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-dense);
+  }
+  .facts2 li:last-child { border-bottom: 0; }
+  .facts2 .f2-n { font-weight: 500; }
+
+  /* три вопроса на встречу */
+  .asks { margin-top: 20px; border-top: 1px solid var(--rule); }
+  .asks li { padding: 11px 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-dense); }
+  .asks li:last-child { border-bottom: 0; }
+
+  /* снимок на лендинге: та же единица, но на плашке — здесь она отделяет
+     пример от текста страницы, а не значит «забери это» */
+  .teaser {
+    background: var(--field); border-radius: var(--radius);
+    padding: 20px; margin-top: 40px; max-width: var(--w-body);
+  }
+  .teaser .score-big { font-size: clamp(40px, 4.4vw, 64px); }
+
+  /* забираемый текст — единственное место, где в отчёте есть плашка */
+  .take { background: var(--field); border-radius: var(--radius); padding: 18px; margin-top: 16px; }
+  .take p { font-size: var(--fs-dense); max-width: var(--w-read); margin-bottom: 10px; }
+  .take p:last-child { margin-bottom: 0; }
+
+  /* источники знания */
+  .srcs { margin-top: 18px; }
+  .srcs li {
+    display: flex; gap: 14px; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-dense);
+  }
+  .srcs li:last-child { border-bottom: 0; }
+  .srcs .p { width: 4ch; flex: none; font-weight: 500; }
+
   /* ---------- 2 · приоритеты ---------- */
   .badge {
     display: inline-block; vertical-align: 2px; margin-left: 8px;
@@ -558,29 +620,6 @@
   .fold[open] .fold-open { display: none; }
   .fold[open] .fold-close { display: inline; }
 
-  /* ======================================================================
-     НАХОДКИ. Заголовок находки — вывод, под ним доказательство.
-     Вермилион достаётся ОДНОЙ находке — первой. Остальные различаются
-     не цветом, а тем, что у них разное доказательство.
-     ====================================================================== */
-  .find {
-    max-width: var(--w-body); margin-top: 28px;
-    border-top: 1px solid var(--rule); padding-top: 22px;
-  }
-  .find[data-rank="1"] {
-    background: var(--accent-tint); border-top: 0; border-radius: var(--radius);
-    padding: 22px; margin-top: 24px;
-  }
-  .find-n {
-    font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--muted);
-  }
-  .find h3 { font-size: var(--fs-find); margin-top: 6px; max-width: 34ch; }
-  .find-say {
-    font-size: var(--fs-dense); margin-top: 10px; max-width: var(--w-read);
-  }
-  .find .axis-ends, .find .stack, .find .scroll { margin-top: 20px; }
-  .find[data-rank="1"] .axis { border-top-color: var(--faint); }
 
   /* ---------- 3 · сбалансированные показатели ---------- */
   .bsc td, .bsc th { padding: 11px 16px 11px 0; }
@@ -604,29 +643,11 @@
   .steps-num .sn-t { font-weight: 500; }
   .steps-num .sn-d { font-size: var(--fs-dense); color: var(--muted); margin-top: 4px; max-width: var(--w-read); }
 
-  .ask-list { margin-top: 24px; border-top: 1px solid var(--rule); padding-top: 16px; }
-  .ask-list ul { margin-top: 10px; }
-  .ask-list li { padding: 10px 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-dense); }
-  .ask-list li:last-child { border-bottom: 0; }
 
   /* ---------- снимок на лендинге ---------- */
-  /* Ширина ограничена: иначе на 1440px полосы уезжают к правому краю и
-     теряют связь с подписями. */
-  .snap-teaser {
-    background: var(--field); border-radius: var(--radius);
-    padding: 20px; margin-top: 40px; max-width: 660px;
-  }
-  .snap-teaser .row { display: flex; flex-wrap: wrap; gap: 12px 32px; align-items: flex-end; }
-  .snap-teaser .big {
-    font-size: clamp(44px, 5vw, 72px); line-height: 0.82; font-weight: 500;
-    color: var(--accent); letter-spacing: -0.03em;
-  }
-  .snap-teaser .u { font-size: var(--fs-util); color: var(--muted); }
-  .snap-teaser .band { font-size: var(--fs-read); font-weight: 500; }
 
   .print-only { display: none; }
   /* без этого правила h3 брал браузерный дефолт 1.17em = 18,7px */
-  .summary-print h3 { font-size: var(--fs-read); }
 
   /* ======================================================================
      ТЕЛЕФОН — 4 колонки, брейкпоинт 900px
@@ -639,10 +660,23 @@
     .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .c-8, .c-4, .c-6, .c-6b, .c-12 { grid-column: 1 / span 4; }
     .hero { padding: 36px 0 28px; }
-    .snap { grid-template-columns: 1fr; padding: 18px; }
-    .snap-gap { border-left: 0; padding-left: 0; border-top: 1px solid var(--rule); padding-top: 18px; }
-    .mini li, .snap-teaser .mini li { grid-template-columns: minmax(0, 1fr) 56px 3ch; }
+    /* оглавление отчёта на телефоне уходит наверх горизонтальной строкой */
+    .rep { grid-template-columns: 1fr; }
+    .rep-body, .rep-nav { grid-column: 1; grid-row: auto; }
+    .rep-nav { position: static; order: -1; }
+    .rep-nav ol { display: flex; flex-wrap: wrap; gap: 0 18px; }
+    .rep-nav a { border-bottom: 0; }
+    .rep-nav-tools { flex-direction: row; margin-top: 8px; }
+    .two-num { gap: 18px 32px; }
     .plainlist li { grid-template-columns: minmax(0, 1fr) 4ch; }
+    .facts2 li { grid-template-columns: 1fr; gap: 4px; }
+    /* числовая таблица в столбик теряет смысл: два голых числа без подписи.
+       На узком экране подпись столбца встаёт перед числом. */
+    .bsc td[data-l]::before {
+      content: attr(data-l) " — "; color: var(--muted);
+      font-size: var(--fs-util); text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .bsc td:first-child { font-weight: 500; }
     .pl-dir { grid-column: 1 / -1; }
     /* порядковую шкалу в две колонки читают зигзагом: один столбец */
     .scale .opts { grid-template-columns: 1fr; }
@@ -663,58 +697,24 @@
      не должен разбираться в pdf заново. Меняются только плотность,
      разрывы страниц и то, что в бумаге бессмысленно, — кнопки и гармошка.
      ====================================================================== */
+  /* ======================================================================
+     ПЕЧАТЬ — пока только чтобы страница печаталась читаемо.
+     Раскладку в две страницы соберём заново, когда форма основной
+     страницы устоится: решение владельца.
+     ====================================================================== */
   @media print {
-    @page { size: A4; margin: 11mm 12mm 11mm; }
-
-    /* печатается только тот экран, который открыт: кнопка pdf стоит в отчёте */
+    @page { size: A4; margin: 12mm; }
     .screen { display: none !important; }
     .screen[data-active="true"] { display: block !important; padding: 0 !important; }
     .frame { max-width: none; padding: 0; }
-
-    .proto, .rep-tools, .demo-bar, .btn-row, .btn, details.how,
-    .fold summary, .path { display: none !important; }
-
-    /* «Что показать наверх» в бумаге не печатается: это шаблон для письма
-       с кнопкой «скопировать», а все три факта из него уже стоят выше —
-       в снимке, в источниках и в таблице направлений. В pdf это дубль. */
-    .upward { display: none !important; }
-
-    .print-only { display: block !important; }
-
-    body { font-size: 8.8pt; line-height: 1.26; }
-    :root { --fs-place: 12pt; --fs-find: 10pt; --fs-read: 8.8pt; --fs-dense: 7.9pt; --fs-util: 6.9pt; --gap: 7mm; }
-
-    .head { padding: 0 0 5pt; }
-    .part { margin-top: 7pt; padding-top: 5pt; break-inside: auto; }
-
-    /* Вторая страница идёт в две колонки: столбцом всё это занимает
-       вдвое больше листа, чем есть. Порядок чтения сохраняется —
-       сверху вниз по левой колонке, потом по правой. */
-    .p2b { column-count: 2; column-gap: 8mm; }
-    .p2b .part:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
-    .snap { padding: 9pt; gap: 6mm; margin-top: 8pt; }
-    .snap-big { font-size: 46pt; }
-    .gap-big { font-size: 22pt; }
-    .block { margin-top: 6pt; padding-top: 5pt; }
-    .bars li, .plainlist li, .mini li, .steps-num li, .ask-list li, .carry li { padding: 3.6pt 0; }
-    .ask-list { margin-top: 10pt; padding-top: 7pt; }
-    .upward .card p { margin-bottom: 4pt; }
-    .steps-num li { padding-left: 30pt; }
-    .steps-num li::before { width: 18pt; height: 18pt; top: 3.6pt; }
-    .card { padding: 6pt; }
-    /* отступы таблиц заданы в px и в печать не переносились: 24px на строку */
-    th, td, .bsc td, .bsc th { padding: 4pt 7pt 4pt 0; }
-    /* номер блока в строку с заголовком — экономит по строке на каждом блоке */
-    .part-n { display: inline; margin-right: 8pt; }
-    .part-h { display: inline; }
-
-    /* страница 2 начинается с тем, названных командой */
-    .page-break { break-before: page; }
-    /* .part в этот список НЕ входит: блок большой и обязан переноситься,
-       иначе каждый уезжает на свою страницу. */
-    .block, .snap, .card, .steps-num li, .bars li, .plainlist li, .mini li,
-    .ask-list li, .carry li, .bsc tr { break-inside: avoid; }
-    h1, h2, h3 { break-after: avoid; }
+    .proto, .rep-nav, .demo-bar, .btn-row, .btn, details.how, .fold summary, .path { display: none !important; }
+    .rep { grid-template-columns: 1fr; }
+    body { font-size: 9.5pt; line-height: 1.3; }
+    :root { --fs-place: 15pt; --fs-find: 11pt; --fs-read: 9.5pt; --fs-dense: 8.6pt; --fs-util: 7.4pt; }
+    .unit, .take, .bars li, .plainlist li, .steps-num li, .asks li, .carry li, .bsc tr { break-inside: avoid; }
+    h1, h2, .sec, .unit-k { break-after: avoid; }
+    .sec { break-before: page; }
+    .sec:first-of-type { break-before: auto; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -753,13 +753,16 @@
     <p class="fine">В примере числа выдуманы</p>
   </div>
 
+  <!-- снимок результата до регистрации: тот же приём, что в отчёте, —
+       метка, заголовок-вывод, доказательство, подпись -->
   <div class="grid">
     <div class="c-8">
-      <div class="snap-teaser">
-        <p class="kicker">Так выглядит результат</p>
-        <div class="row" style="margin-top:12px">
-          <span><span class="big num">47</span> <span class="u">из 100</span></span>
-          <span class="band">Совпадаете частично</span>
+      <div class="teaser">
+        <p class="unit-k">Так выглядит результат</p>
+        <h2 class="unit-h">Совпадаете частично</h2>
+        <div class="score-line">
+          <span class="score-big num">47</span>
+          <span class="score-of">из 100</span>
         </div>
         <div class="comp" aria-hidden="true">
           <i style="width:15.6%"></i><i style="width:13.0%"></i><i style="width:9.1%"></i><i style="width:9.2%"></i>
@@ -771,7 +774,7 @@
           <li><span class="n">Виден признак готовности</span><span class="v num">9,2</span></li>
         </ul>
         <p class="sr">Балл 47 из 100, вклад частей 15,6 / 13,0 / 9,1 / 9,2.</p>
-        <p class="note" style="margin-top:16px">Команде кажется, что понятно, — 4,1 из 5. Хотя бы треть назвала два приоритета из четырёх.</p>
+        <p class="unit-say">Команде кажется, что понятно, — 4,1 из 5. Хотя бы треть назвала два приоритета из четырёх.</p>
         <p style="margin-top:12px"><a class="btn btn-3" href="#s-report" data-go="s-report">Открыть пример целиком</a></p>
       </div>
     </div>
@@ -1197,11 +1200,21 @@
 </section>
 
 <!-- ============================ ОТЧЁТ ============================
-     Четыре блока, визуально разделённые. Пояснений к тому, что видно на
-     экране, нет: в каждой строке приоритета стоит слово-приговор, и легенда
-     к нему не нужна.
-     Порядок в разметке подобран так, чтобы печать делилась на две страницы
-     без второй вёрстки: разрыв стоит перед «Что назвала команда».
+     ОДНА ИДИОМА НА ВЕСЬ ОТЧЁТ.
+     Документ — вертикальная череда одинаковых по устройству единиц:
+
+         МЕТКА (что это)
+         Заголовок — вывод, а не название данных
+         доказательство (одна из трёх форм графики)
+         подпись под доказательством
+
+     Раздел — только метка-разделитель, без своего заголовка: иначе
+     появляется лишний уровень и заголовки разделов спорят с заголовками
+     единиц. Плашка --field значит ровно одно: это текст, который человек
+     забирает из отчёта. Больше плашек в отчёте нет.
+
+     Порядок чтения — как человек читает такой отчёт один раз:
+     что случилось → насколько плохо → где именно → почему → что делать.
      ============================================================== -->
 <section class="screen" id="s-report" data-title="Отчёт — продуктовая команда" data-name="отчёт">
 
@@ -1213,34 +1226,43 @@
     <span class="where">Продуктовая команда · 11 ответов · собран 12 августа · открыт до 11 сентября</span>
   </div>
 
-  <div class="rep-tools">
-    <button type="button" class="btn btn-2" id="printBtn">Сохранить в pdf</button>
-    <button type="button" class="btn btn-2" data-copy="priorities.fproof.ru/v/8c41d9e7a2">Скопировать ссылку</button>
-    <button type="button" class="btn btn-3">Отключить ссылку</button>
-    <span class="note">По ссылке отчёт открывается целиком, без имён</span>
-  </div>
+  <div class="rep">
+    <!-- правая колонка: оглавление длинного документа. Заодно она даёт
+         содержанию одну ширину, а не растягивает полосы на всю рамку. -->
+    <nav class="rep-nav" aria-label="разделы отчёта">
+      <p class="unit-k">В отчёте</p>
+      <ol>
+        <li><a href="#rep-1">Ответ</a></li>
+        <li><a href="#rep-2">Приоритеты</a></li>
+        <li><a href="#rep-3">Что мы нашли</a></li>
+        <li><a href="#rep-4">Что делать</a></li>
+      </ol>
+      <div class="rep-nav-tools">
+        <button type="button" class="btn btn-2" id="printBtn">Сохранить в pdf</button>
+        <button type="button" class="btn btn-3" data-copy="priorities.fproof.ru/v/8c41d9e7a2">Скопировать ссылку</button>
+      </div>
+    </nav>
 
-  <div class="demo-bar">
-    <b>Это пример</b>
-    <span>Команда, числа и формулировки выдуманы</span>
-  </div>
+    <div class="rep-body">
 
-  <!-- ================= 1 · СНИМОК ================= -->
-  <section class="part" id="rep-1">
-    <p class="part-n">Блок 1 из 4</p>
-    <h1 class="part-h">Снимок</h1>
+      <p class="demo-bar"><b>Это пример</b> <span>Команда, числа и формулировки выдуманы</span></p>
 
-    <div class="snap">
-      <div class="snap-score">
-        <p class="snap-big num">47</p>
-        <p class="snap-unit">из 100</p>
-        <p class="snap-band">Совпадаете <span class="pen">частично</span></p>
+      <!-- ================= 1 · ОТВЕТ ================= -->
+      <p class="sec" id="rep-1">Блок 1 из 4 · Ответ</p>
+
+      <div class="unit">
+        <p class="unit-k">Главное</p>
+        <h1 class="unit-answer">Команда сошлась с вами по <span class="pen">двум приоритетам из четырёх</span></h1>
+        <p class="unit-say">Отчёт про синхронизацию в понимании стратегии, а не про людей. В нём нет имён и нет ни строки о том, кто чего не понял.</p>
       </div>
 
-      <div class="snap-sub">
-        <p class="kicker">Из чего собран</p>
-        <!-- Состав, а не четыре доли: длина сегмента — вклад части в балл,
-             сумма сегментов и есть 47. Незалитый хвост — то, что не набрали. -->
+      <div class="unit">
+        <p class="unit-k">Общий балл</p>
+        <h2 class="unit-h">Совпадаете частично</h2>
+        <div class="score-line">
+          <span class="score-big num">47</span>
+          <span class="score-of">из 100 · нужен, чтобы сравнить себя через полгода</span>
+        </div>
         <div class="comp" aria-hidden="true">
           <i style="width:15.6%"></i><i style="width:13.0%"></i><i style="width:9.1%"></i><i style="width:9.2%"></i>
         </div>
@@ -1250,11 +1272,11 @@
           <li><span class="n">Согласие по главному</span><span class="v num">9,1</span></li>
           <li><span class="n">Виден признак готовности</span><span class="v num">9,2</span></li>
         </ul>
-        <p class="sr">Балл 47 из 100. Вклад частей: совпадение с вашим списком 15,6, согласие внутри команды 13,0, согласие по главному 9,1, виден признак готовности 9,2.</p>
+        <p class="sr">Балл 47 из 100. Вклад частей: 15,6, 13,0, 9,1 и 9,2.</p>
+        <p class="unit-say">Длина сегмента — вклад части в балл. Сумма — 46,9, то есть те же 47.</p>
         <details class="how">
           <summary>Как считается балл</summary>
           <div>
-            <p class="note">Числа считает код. Модель отвечала на один вопрос: об одном ли эти две фразы. Вклад части — её балл, умноженный на вес.</p>
             <table>
               <thead><tr><th>Часть</th><th>Балл</th><th>Вес</th><th>Вклад</th></tr></thead>
               <tbody>
@@ -1264,154 +1286,118 @@
                 <tr><td>Виден признак готовности</td><td class="num">61</td><td class="num">15%</td><td class="num">9,2</td></tr>
               </tbody>
             </table>
-            <p class="note" style="margin-top:12px">Сумма вкладов — 46,9, округляется до 47. При менее пяти ответах вместо формулировок выводятся общие темы, а балл читается как направление.</p>
+            <p class="unit-say">Числа считает код. Модель отвечала на один вопрос: об одном ли эти две фразы. При менее пяти ответах балл читается как направление.</p>
           </div>
         </details>
       </div>
 
-      <div class="snap-gap">
-        <p class="kicker">Команде кажется, что понятно</p>
-        <div class="gap-two">
-          <div><span class="gap-big num">4,1</span><span class="gap-u">из 5 — так команда оценила ясность</span></div>
-          <div><span class="gap-big num">2</span><span class="gap-u">приоритета из 4 назвала хотя бы треть</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= 2 · ПРИОРИТЕТЫ ================= -->
-  <section class="part" id="rep-2">
-    <p class="part-n">Блок 2 из 4</p>
-    <h2 class="part-h">Приоритеты</h2>
-
-    <div class="block">
-      <h3>Ваши четыре</h3>
-      <ul class="bars" style="margin-top:16px">
-        <li>
-          <div class="t">
-            <span class="name">Выйти на самоокупаемость по новым каналам <span class="badge">главный</span></span>
-            <span class="pct num">64%</span>
-          </div>
-          <div class="track"><div class="val" data-kind="mine" style="width:64%"></div></div>
-          <p class="verdict">Совпало частично · 7 из 11 · деньги · главным его назвали 5 из 11</p>
-        </li>
-        <li>
-          <div class="t"><span class="name">Сократить срок вывода продукта с девяти месяцев до пяти</span><span class="pct num">45%</span></div>
-          <div class="track"><div class="val" data-kind="mine" style="width:45%"></div></div>
-          <p class="verdict">Совпало частично · 5 из 11 · процессы</p>
-        </li>
-        <li>
-          <div class="t"><span class="name">Перевести поддержку на самообслуживание</span><span class="pct num">27%</span></div>
-          <div class="track"><div class="val" data-kind="mine" data-miss="true" style="width:27%"></div></div>
-          <p class="verdict">Не совпало · 3 из 11 · процессы</p>
-        </li>
-        <li>
-          <div class="t"><span class="name">Собрать сильную команду в аналитике</span><span class="pct num">18%</span></div>
-          <div class="track"><div class="val" data-kind="mine" data-miss="true" style="width:18%"></div></div>
-          <p class="verdict">Не совпало · 2 из 11 · люди</p>
-        </li>
-      </ul>
-    </div>
-
-    <!-- Короткие рекомендации — только для печати: на первой странице pdf
-         человеку нужен вывод, а не десять строк подряд. На экране этот блок
-         скрыт, потому что блок 4 стоит ниже целиком. -->
-    <div class="print-only summary-print">
-      <h3>Что делать — коротко</h3>
-      <ol class="steps-num">
-        <li>Прочитать вслух четыре приоритета и попросить каждого написать номер главного.</li>
-        <li>Переформулировать самоокупаемость и срок вывода так, чтобы разница читалась.</li>
-        <li>Решить вслух: порядок в отчётности — приоритет года или текущая работа.</li>
-      </ol>
-    </div>
-
-    <div class="block page-break">
-      <h3>Что назвала команда, а вы этого не говорили</h3>
-      <ul class="plainlist" style="margin-top:16px">
-        <li><span class="pl-name">Навести порядок в отчётности</span><span class="pl-dir">процессы</span><span class="pl-pct num">45%</span></li>
-        <li><span class="pl-name">Снизить нагрузку на дежурствах</span><span class="pl-dir">люди</span><span class="pl-pct num">36%</span></li>
-        <li><span class="pl-name">Ускорить найм</span><span class="pl-dir">люди</span><span class="pl-pct num">27%</span></li>
-      </ul>
-
-      <!-- Гармошка: тем может быть много — одиннадцать человек назовут
-           десяток, — и полный список вытесняет остальной отчёт. -->
-      <details class="fold">
-        <summary><span class="fold-open">Ещё 5 тем</span><span class="fold-close">Свернуть</span></summary>
-        <ul class="plainlist">
-          <li><span class="pl-name">Убрать ручные выгрузки из отчётов</span><span class="pl-dir">процессы</span><span class="pl-pct num">27%</span></li>
-          <li><span class="pl-name">Обновить онбординг новичков</span><span class="pl-dir">люди</span><span class="pl-pct num">18%</span></li>
-          <li><span class="pl-name">Пересобрать тарифную сетку</span><span class="pl-dir">деньги</span><span class="pl-pct num">18%</span></li>
-          <li><span class="pl-name">Единый бэклог вместо трёх</span><span class="pl-dir">процессы</span><span class="pl-pct num">9%</span></li>
-          <li><span class="pl-name">Описать зоны ответственности</span><span class="pl-dir">люди</span><span class="pl-pct num">9%</span></li>
+      <div class="unit">
+        <p class="unit-k">Самооценка</p>
+        <h2 class="unit-h">Команде кажется, что понятно</h2>
+        <ul class="two-num">
+          <li><span class="tn-v num">4,1</span><span class="tn-k">из 5 — так команда оценила ясность</span></li>
+          <li><span class="tn-v num">2</span><span class="tn-k">приоритета из 4 назвала хотя бы треть</span></li>
         </ul>
-      </details>
-    </div>
+        <p class="unit-say">Самая устойчивая находка отчёта: людям кажется, что им понятно. С этим разрывом трудно спорить, и он никого не обвиняет.</p>
+      </div>
 
-  </section>
+      <!-- ================= 2 · ПРИОРИТЕТЫ ================= -->
+      <p class="sec" id="rep-2">Блок 2 из 4 · Приоритеты</p>
 
-  <div class="p2b">
-  <!-- ================= 3 · ЧТО МЫ НАШЛИ =================
-       Было «Почему так»: три графика, отвечающие на три разных вопроса, —
-       ящик, а не вопрос. Теперь три находки, у каждой заголовок-вывод и
-       доказательство под ним. Порядок: сначала расхождение между вами и
-       командой, потом то, как информация дошла, потом то, чего нет вовсе.
-       Вермилион — только у первой находки. Пороги, по которым находка
-       считается находкой, требуют утверждения: см. NOTES.md.
-       ===================================================== -->
-  <section class="part" id="rep-3">
-    <p class="part-n">Блок 3 из 4</p>
-    <h2 class="part-h">Что мы нашли</h2>
+      <div class="unit">
+        <p class="unit-k">Ваши четыре</p>
+        <h2 class="unit-h">Два дошли до трети команды, два — нет</h2>
+        <ul class="bars">
+          <li>
+            <div class="t">
+              <span class="name">Выйти на самоокупаемость по новым каналам <span class="badge">главный</span></span>
+              <span class="pct num">64%</span>
+            </div>
+            <div class="track"><div class="val" style="width:64%"></div></div>
+            <p class="verdict">Совпало частично · 7 из 11 · деньги · главным его назвали 5 из 11</p>
+          </li>
+          <li>
+            <div class="t"><span class="name">Сократить срок вывода продукта с девяти месяцев до пяти</span><span class="pct num">45%</span></div>
+            <div class="track"><div class="val" style="width:45%"></div></div>
+            <p class="verdict">Совпало частично · 5 из 11 · процессы</p>
+          </li>
+          <li>
+            <div class="t"><span class="name">Перевести поддержку на самообслуживание</span><span class="pct num">27%</span></div>
+            <div class="track"><div class="val" data-miss="true" style="width:27%"></div></div>
+            <p class="verdict">Не совпало · 3 из 11 · процессы</p>
+          </li>
+          <li>
+            <div class="t"><span class="name">Собрать сильную команду в аналитике</span><span class="pct num">18%</span></div>
+            <div class="track"><div class="val" data-miss="true" style="width:18%"></div></div>
+            <p class="verdict">Не совпало · 2 из 11 · люди</p>
+          </li>
+        </ul>
+        <p class="unit-say">Ниже трети считаем, что не совпало; выше двух третей — совпало.</p>
+      </div>
 
-    <!-- находка 1 -->
-    <div class="find" data-rank="1">
-      <p class="find-n">Главное расхождение</p>
-      <h3>Срочность до команды не дошла</h3>
-      <p class="find-say">Вы поставили 9 из 10, команда — 4,6. По двум другим вопросам про
-      настрой вы с командой почти совпадаете, так что дело не в общем пессимизме.</p>
+      <div class="unit">
+        <p class="unit-k">Назвала команда</p>
+        <h2 class="unit-h">Восемь тем, которых нет в вашем списке</h2>
+        <ul class="plainlist">
+          <li><span class="pl-name">Навести порядок в отчётности</span><span class="pl-dir">процессы</span><span class="pl-pct num">45%</span></li>
+          <li><span class="pl-name">Снизить нагрузку на дежурствах</span><span class="pl-dir">люди</span><span class="pl-pct num">36%</span></li>
+          <li><span class="pl-name">Ускорить найм</span><span class="pl-dir">люди</span><span class="pl-pct num">27%</span></li>
+        </ul>
+        <details class="fold">
+          <summary><span class="fold-open">Ещё 5 тем</span><span class="fold-close">Свернуть</span></summary>
+          <ul class="plainlist">
+            <li><span class="pl-name">Убрать ручные выгрузки из отчётов</span><span class="pl-dir">процессы</span><span class="pl-pct num">27%</span></li>
+            <li><span class="pl-name">Обновить онбординг новичков</span><span class="pl-dir">люди</span><span class="pl-pct num">18%</span></li>
+            <li><span class="pl-name">Пересобрать тарифную сетку</span><span class="pl-dir">деньги</span><span class="pl-pct num">18%</span></li>
+            <li><span class="pl-name">Единый бэклог вместо трёх</span><span class="pl-dir">процессы</span><span class="pl-pct num">9%</span></li>
+            <li><span class="pl-name">Описать зоны ответственности</span><span class="pl-dir">люди</span><span class="pl-pct num">9%</span></li>
+          </ul>
+        </details>
+        <p class="unit-say">Иногда шум, иногда важное, что вы не проговорили.</p>
+      </div>
 
-      <p class="axis-ends"><span>0</span><span>10</span></p>
-      <ul class="carry">
-        <li>
-          <p class="n">Приоритеты понятны, нравятся и важны</p>
-          <div class="axis">
-            <i class="gapline" style="left:72%;width:18%"></i>
-            <b class="m-team" style="left:72%"></b>
-            <b class="m-you" style="left:90%"></b>
-          </div>
-          <p class="say">Команда 7,2 · вы 9</p>
-          <p class="sr">Команда 7,2 из 10, ваша оценка 9.</p>
-        </li>
-        <li>
-          <p class="n">Верим, что сделаем</p>
-          <div class="axis">
-            <i class="gapline" style="left:75%;width:5%"></i>
-            <b class="m-team" style="left:75%"></b>
-            <b class="m-you" style="left:80%"></b>
-          </div>
-          <p class="say">Команда 7,5 · вы 8</p>
-          <p class="sr">Команда 7,5 из 10, ваша оценка 8.</p>
-        </li>
-        <li data-low="true">
-          <p class="n">Этим нужно заниматься здесь и сейчас</p>
-          <div class="axis">
-            <i class="gapline" style="left:46%;width:44%"></i>
-            <b class="m-team" style="left:46%"></b>
-            <b class="m-you" style="left:90%"></b>
-          </div>
-          <p class="say">Команда 4,6 · вы 9 — разрыв в 4,4 балла</p>
-          <p class="sr">Команда 4,6 из 10, ваша оценка 9.</p>
-        </li>
-      </ul>
-    </div>
+      <!-- ================= 3 · ЧТО МЫ НАШЛИ ================= -->
+      <p class="sec" id="rep-3">Блок 3 из 4 · Что мы нашли</p>
 
-    <!-- находка 2 -->
-    <div class="find" data-rank="2">
-      <p class="find-n">Находка</p>
-      <h3>Половина команды догадалась сама</h3>
-      <p class="find-say">47% формулировок люди вывели из контекста или не помнят источник.
-      Значит приоритеты живут не в словах и не в документах, а в чьей-то догадке.</p>
+      <div class="unit">
+        <p class="unit-k">Главное расхождение</p>
+        <h2 class="unit-h">Срочность до команды не дошла</h2>
+        <p class="axis-ends"><span>0</span><span>10</span></p>
+        <ul class="carry">
+          <li>
+            <p class="n">Приоритеты понятны, нравятся и важны</p>
+            <div class="axis">
+              <i class="gapline" style="left:72%;width:18%"></i>
+              <b class="m-team" style="left:72%"></b><b class="m-you" style="left:90%"></b>
+            </div>
+            <p class="say">Команда 7,2 · вы 9</p>
+            <p class="sr">Команда 7,2 из 10, ваша оценка 9.</p>
+          </li>
+          <li>
+            <p class="n">Верим, что сделаем</p>
+            <div class="axis">
+              <i class="gapline" style="left:75%;width:5%"></i>
+              <b class="m-team" style="left:75%"></b><b class="m-you" style="left:80%"></b>
+            </div>
+            <p class="say">Команда 7,5 · вы 8</p>
+            <p class="sr">Команда 7,5 из 10, ваша оценка 8.</p>
+          </li>
+          <li data-low="true">
+            <p class="n">Этим нужно заниматься здесь и сейчас</p>
+            <div class="axis">
+              <i class="gapline" style="left:46%;width:44%"></i>
+              <b class="m-team" style="left:46%"></b><b class="m-you" style="left:90%"></b>
+            </div>
+            <p class="say">Команда 4,6 · вы 9 — разрыв в 4,4 балла</p>
+            <p class="sr">Команда 4,6 из 10, ваша оценка 9.</p>
+          </li>
+        </ul>
+        <p class="unit-say">По двум другим вопросам вы с командой почти совпадаете, так что дело не в общем пессимизме. Залитая метка — команда, контурная — вы.</p>
+      </div>
 
-      <div class="sources">
+      <div class="unit">
+        <p class="unit-k">Находка</p>
+        <h2 class="unit-h">Половина команды догадалась сама</h2>
         <div class="stack" aria-hidden="true">
           <i data-n="known" style="width:53%"></i><i data-n="guess" style="width:47%"></i>
         </div>
@@ -1419,93 +1405,98 @@
           <span data-n="known" style="width:53%">Сказали или есть в документе — 53%</span>
           <span data-n="guess" style="width:47%">Догадались сами — 47%</span>
         </div>
-        <p class="sr">Догадались сами или не помнят источник — 47 процентов. Руководитель сказал прямо 34, есть в документе 19, вывод по контексту 31, не помнит 16.</p>
-        <ul>
+        <p class="sr">Догадались сами или не помнят источник — 47 процентов.</p>
+        <ul class="srcs">
           <li><span class="p num">34%</span><span>Руководитель сказал прямо</span></li>
           <li><span class="p num">19%</span><span>Есть в документе или okr</span></li>
           <li><span class="p num">31%</span><span>Вывод по контексту, никто не говорил</span></li>
           <li><span class="p num">16%</span><span>Не помню, просто так делаем</span></li>
         </ul>
+        <p class="unit-say">47% формулировок люди вывели из контекста или не помнят источник: приоритеты живут не в словах и не в документах.</p>
       </div>
-    </div>
 
-    <!-- находка 3 -->
-    <div class="find" data-rank="3">
-      <p class="find-n">Находка</p>
-      <h3>Про клиентов не сказал никто</h3>
-      <p class="find-say">Ни в вашем списке, ни у команды. Остальные три направления закрыты,
-      причём людей команда назвала вчетверо больше, чем вы.</p>
-
-      <div class="scroll">
-        <table class="bsc">
-          <thead><tr><th>Направление</th><th>Ваши</th><th>Назвала команда</th></tr></thead>
-          <tbody>
-            <tr><td>Деньги</td><td class="num">1</td><td class="num">1</td></tr>
-            <tr data-empty="true"><td>Клиенты</td><td class="num">0</td><td class="num">0</td></tr>
-            <tr><td>Процессы</td><td class="num">2</td><td class="num">3</td></tr>
-            <tr><td>Люди</td><td class="num">1</td><td class="num">4</td></tr>
-          </tbody>
-        </table>
+      <div class="unit">
+        <p class="unit-k">Находка</p>
+        <h2 class="unit-h">Ваши формулировки мешают друг другу</h2>
+        <ul class="facts2">
+          <li><span class="f2-n num">2 из 4</span><span class="f2-t">формулировок не дают признака готовности — по чему в декабре судить, что сделано</span></li>
+          <li><span class="f2-n">Слиплись</span><span class="f2-t">самоокупаемость и срок вывода команда пересказывает одной фразой про «расти быстрее»</span></li>
+        </ul>
+        <p class="unit-say">Это единственная находка, которую можно закрыть за десять минут — переписав две строки.</p>
       </div>
-    </div>
-  </section>
 
-  <!-- ================= 4 · ЧТО ДЕЛАТЬ ================= -->
-  <section class="part" id="rep-4">
-    <p class="part-n">Блок 4 из 4</p>
-    <h2 class="part-h">Что делать</h2>
+      <div class="unit">
+        <p class="unit-k">Находка</p>
+        <h2 class="unit-h">Про клиентов не сказал никто</h2>
+        <div class="scroll">
+          <table class="bsc">
+            <thead><tr><th>Направление</th><th>Ваши</th><th>Назвала команда</th></tr></thead>
+            <tbody>
+              <tr><td>Деньги</td><td class="num" data-l="Ваши">1</td><td class="num" data-l="Назвала команда">1</td></tr>
+              <tr data-empty="true"><td>Клиенты</td><td class="num" data-l="Ваши">0</td><td class="num" data-l="Назвала команда">0</td></tr>
+              <tr><td>Процессы</td><td class="num" data-l="Ваши">2</td><td class="num" data-l="Назвала команда">3</td></tr>
+              <tr><td>Люди</td><td class="num" data-l="Ваши">1</td><td class="num" data-l="Назвала команда">4</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="unit-say">Ни в вашем списке, ни у команды. Людей команда назвала вчетверо больше, чем вы.</p>
+      </div>
 
-    <div class="block">
-      <h3>Встреча на 15 минут</h3>
-      <ol class="steps-num" style="margin-top:16px">
-        <li>
-          <p class="sn-t">Прочитайте вслух четыре приоритета</p>
-          <p class="sn-d">И попросите каждого написать в чат номер главного. Без обсуждения, только цифру.</p>
-        </li>
-        <li>
-          <p class="sn-t">Переформулируйте два первых</p>
-          <p class="sn-d">Самоокупаемость и срок вывода команда пересказывает одной фразой про «расти быстрее». Разница в результате не читается.</p>
-        </li>
-        <li>
-          <p class="sn-t">Решите вслух про отчётность</p>
-          <p class="sn-d">Порядок в отчётности назвали пять человек из одиннадцати. Приоритет года или текущая работа?</p>
-        </li>
-      </ol>
+      <!-- ================= 4 · ЧТО ДЕЛАТЬ ================= -->
+      <p class="sec" id="rep-4">Блок 4 из 4 · Что делать</p>
 
-      <div class="ask-list">
-        <p class="kicker">Три вопроса — можно читать как есть</p>
-        <ul>
+      <div class="unit">
+        <p class="unit-k">Встреча на 15 минут</p>
+        <h2 class="unit-h">Три действия и три вопроса</h2>
+        <ol class="steps-num">
+          <li>
+            <p class="sn-t">Прочитайте вслух четыре приоритета</p>
+            <p class="sn-d">И попросите каждого написать в чат номер главного. Без обсуждения, только цифру.</p>
+          </li>
+          <li>
+            <p class="sn-t">Переформулируйте два первых</p>
+            <p class="sn-d">Чтобы разница в результате читалась, а не сливалась в «расти быстрее».</p>
+          </li>
+          <li>
+            <p class="sn-t">Решите вслух про отчётность</p>
+            <p class="sn-d">Её назвали пять человек из одиннадцати. Приоритет года или текущая работа?</p>
+          </li>
+        </ol>
+        <ul class="asks">
           <li>По какому признаку в декабре мы поймём, что вывели продукт за пять месяцев?</li>
           <li>У направления «клиенты» в этом году нет ни одного приоритета. Так и задумано?</li>
           <li>Срочность — самая низкая из трёх оценок. Почему этим нужно заниматься сейчас?</li>
         </ul>
+        <p class="unit-say">Вопросы можно читать как есть.</p>
       </div>
-    </div>
 
-    <div class="block upward">
-      <h3>Что показать наверх</h3>
-      <div class="card" style="margin-top:16px">
-        <p>Команде кажется, что приоритеты понятны, — 4,1 из 5. При этом два приоритета из четырёх назвала меньше трети команды.</p>
-        <p>47% формулировок люди вывели сами или не помнят источник.</p>
-        <p>Направление «клиенты» не назвал ни один из 11 участников.</p>
-        <p>Прошу два часа на встречу по приоритетам и то же самое по остальным командам отдела.</p>
+      <div class="unit">
+        <p class="unit-k">Наверх</p>
+        <h2 class="unit-h">Три факта и просьба</h2>
+        <div class="take">
+          <p>Команде кажется, что приоритеты понятны, — 4,1 из 5. При этом два приоритета из четырёх назвала меньше трети команды.</p>
+          <p>47% формулировок люди вывели сами или не помнят источник.</p>
+          <p>Направление «клиенты» не назвал ни один из 11 участников.</p>
+          <p>Прошу два часа на встречу по приоритетам и то же самое по остальным командам отдела.</p>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-2" data-copy="что показать наверх">Скопировать текст</button>
+          <span class="unit-say">Без имён. Отправляете из своей почты.</span>
+        </div>
       </div>
-      <p style="margin-top:14px"><button type="button" class="btn btn-2" data-copy="что показать наверх">Скопировать текст</button></p>
-    </div>
 
-    <div class="block next">
-      <h3>Следующий шаг</h3>
-      <div class="card" style="margin-top:16px">
-        <p style="font-weight:500">Пилот карты стратегии на десяти командах</p>
-        <p class="note" style="margin-top:10px">Внутри команды люди согласны друг с другом сильнее, чем с вами. Карта стратегии покажет то же по десяти командам — видно, где теряется сигнал.</p>
-        <div class="btn-row" style="margin-top:16px">
+      <div class="unit">
+        <p class="unit-k">Следующий шаг</p>
+        <h2 class="unit-h">Пилот карты стратегии на десяти командах</h2>
+        <p class="unit-say">Внутри команды люди согласны друг с другом сильнее, чем с вами. Карта стратегии покажет то же по десяти командам — видно, на каком уровне теряется сигнал.</p>
+        <div class="btn-row">
           <button type="button" class="btn btn-1">Обсудить пилот</button>
           <button type="button" class="btn btn-3">Что входит</button>
         </div>
       </div>
+
     </div>
-  </section>
-  </div><!-- /.p2b -->
+  </div>
 </section>
 
 <!-- ============================ ОТВЕТЫ УШЛИ ============================ -->
