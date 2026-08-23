@@ -98,7 +98,7 @@
      второе сочетание там, где рецепт один */
   h1, h2, h3, h4 { font-weight: 500; margin: 0; line-height: 1.1; }
   /* сжимаем разрядку только на крупных ступенях, 26 и 20 */
-  h1, .synch-h, .sec, .synch-band, .sell-t, .score-big { letter-spacing: -0.01em; }
+  h1, .synch-h, .sec, .synch-band, .score-big { letter-spacing: -0.01em; }
   p { margin: 0; }
   ul, ol { margin: 0; padding: 0; list-style: none; }
   .num { font-variant-numeric: tabular-nums; }
@@ -383,11 +383,11 @@
   .bars .t { display: flex; gap: 16px; align-items: baseline; justify-content: space-between; }
   .bars .name { max-width: 46ch; }
   .bars .pct { flex: none; font-weight: 500; white-space: nowrap; }
-  .bars .track { margin-top: 8px; height: 20px; background: var(--field); border-radius: var(--radius); }
-  .bars .val { height: 100%; border-radius: var(--radius); }
-  /* приглушены; вермилион только там, где не совпало */
-  .bars .val { background: var(--faint); }
-  .bars .val[data-miss="true"] { background: var(--accent); }
+  .bars .track { margin-top: 8px; height: 10px; background: var(--field); border-radius: 5px; }
+  /* ОДНА заливка на все полосы. Раньше две нижние были вермилионом, а две
+     верхние серыми — правило нигде не написано, и прочитать его нельзя.
+     Что дошло и что нет, говорят заголовок вердикта и число справа. */
+  .bars .val { height: 100%; border-radius: 5px; background: var(--ink); }
   .bars .verdict { font-size: var(--fs-util); color: var(--muted); margin-top: 6px; }
 
 
@@ -448,8 +448,21 @@
   .comp-keys li:last-child { border-bottom: 0; }
   .comp-keys .v { margin-left: auto; font-weight: 500; }
 
-  .carry .n { font-weight: 500; max-width: 44ch; }
-  .carry .say { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; max-width: var(--w-read); }
+  /* ---------- «повезут ли»: произведение трёх шкал ----------
+     Второй вопрос отчёта. Балл отвечает «дошли ли приоритеты», это —
+     «повезут ли их». Перемножение, а не среднее: одна провалённая шкала
+     обнуляет остальные, и это ровно то, что должно быть видно.
+     Приведено к сотне, чтобы на экране была ОДНА шкала: 248 из 1000
+     рядом с 47 из 100 читались как две разные катастрофы. */
+  .carry { margin-top: 30px; border-top: 1px solid var(--rule); padding-top: 16px; }
+  .carry-row {
+    display: grid; gap: 6px var(--gap); margin-top: 10px; align-items: start;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+  }
+  .carry-n { font-size: var(--fs-place); font-weight: 500; letter-spacing: -0.02em; line-height: 1; }
+  .carry-of { font-size: var(--fs-util); font-weight: 400; color: var(--muted); }
+  .carry-say { max-width: var(--w-read); }
+  .carry-mul { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; }
 
   /* ======================================================================
      ОТЧЁТ — одна идиома
@@ -513,28 +526,50 @@
   .info:focus-within .info-panel,
   .info-btn[aria-expanded="true"] + .info-panel { display: block; }
   .info-warn { display: block; font-size: var(--fs-util); color: var(--muted); max-width: 52ch; }
+  /* Линейка идёт под всей строкой, а не под каждой ячейкой: колоночный
+     gap рвал её на отрезки, и таблица читалась как сломанная. Отступ
+     между колонками теперь padding внутри ячейки. */
   .info-table {
-    display: grid; grid-template-columns: minmax(0, 1fr) 4ch 4ch 5ch;
-    gap: 0 16px; margin: 14px 0; font-size: var(--fs-util);
+    /* колонки по содержимому: 5ch не вмещали шапку, и «БАЛЛ ВЕС ВКЛАД»
+       слипались в «БАЛЛВЕС» */
+    display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto;
+    gap: 0; margin: 14px 0; font-size: var(--fs-util);
   }
-  .info-table .ith:not(:first-child) { text-align: right; letter-spacing: 0.04em; }
-  .info-table > span { padding: 6px 0; border-bottom: 1px solid var(--rule); color: var(--muted); }
-  .info-table .ith { font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; border-bottom-color: var(--ink); }
-  .info-table .ihow { grid-column: 1 / -1; color: var(--muted); padding-top: 0; }
-  .info-table .num { text-align: right; }
+  .info-table > span { padding: 7px 0 0; color: var(--muted); }
+  .info-table .num { text-align: right; padding-left: 20px; }
+  .info-table .ith {
+    font-weight: 500; color: var(--muted); text-transform: uppercase;
+    letter-spacing: 0.1em; padding-bottom: 7px; border-bottom: 1px solid var(--ink);
+  }
+  .info-table .ith:not(:first-child) { text-align: right; letter-spacing: 0.04em; padding-left: 20px; }
+  /* пояснение закрывает свою строку: линейка стоит ПОСЛЕ него, поэтому
+     видно, к какому элементу балла оно относится */
+  .info-table .ihow {
+    grid-column: 1 / -1; color: var(--muted);
+    padding: 2px 0 8px; border-bottom: 1px solid var(--rule);
+  }
 
 
   /* ======================================================================
      ПРОДАЖА — три точки: stratos, imperfect, консультация
      ====================================================================== */
-  .sell {
-    border-top: 1px solid var(--ink); margin-top: 32px; padding-top: 18px;
+  /* Продажа живёт в ОДНОМ месте — в конце. Раньше её было три: два блока
+     стояли в середине без плашки и читались как часть отчёта. Плашка
+     --accent-tint значит ровно одно: это наше предложение, а не вывод.
+     Каждое предложение отвечает на конкретный вердикт этого отчёта. */
+  .offers {
+    margin-top: 32px; background: var(--accent-tint);
+    border-radius: var(--radius); padding: 20px;
   }
-  .sell-t { font-size: var(--fs-find); font-weight: 500; max-width: 34ch; text-wrap: balance; }
-  .sell-d { font-size: var(--fs-dense); color: var(--muted); margin-top: 8px; max-width: var(--w-read); }
-  .sell p:last-child { margin-top: 14px; }
-  .sell-main { background: var(--accent-tint); border-radius: var(--radius); padding: 20px; border-top: 0; }
-  .sell-main .btn-3 { font-size: var(--fs-dense); }
+  .offer-row {
+    display: grid; gap: var(--gap); margin-top: 14px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .offer { display: flex; flex-direction: column; align-items: flex-start; }
+  .of-t { font-weight: 500; max-width: 22ch; text-wrap: balance; }
+  .of-d { font-size: var(--fs-dense); color: var(--muted); margin-top: 8px; }
+  .of-w { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; }
+  .offer > p:last-child { margin-top: auto; padding-top: 14px; }
 
   /* ======================================================================
      ЗАКЛЮЧЕНИЕ. Отчёт — не дашборд, а девять вердиктов словами.
@@ -648,6 +683,9 @@
   .res:hover .res-full,
   .res:focus-within .res-full,
   .res-sq[aria-expanded="true"] + .res-full { display: block; }
+  /* панель — подробность, а не основной текст: ступень ниже. Раньше полосы
+     внутри неё шли на 16px, то есть почти в размер заголовка вердикта. */
+  .res-full { font-size: var(--fs-dense); }
   .res-note { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; max-width: 60ch; }
 
   /* ---------- что делать ---------- */
@@ -748,6 +786,7 @@
     .vd { grid-template-columns: 1fr; }
     .vd-h, .vd-say, .res { grid-column: 1; grid-row: auto; }
     .res { margin-top: 14px; }
+    .carry-row, .offer-row { grid-template-columns: 1fr; }
     .res-full { left: 0; right: auto; width: min(560px, 88vw); }
     .plainlist li { grid-template-columns: minmax(0, 1fr) 7ch; }
     .facts2 li { grid-template-columns: 1fr; gap: 4px; }
@@ -794,6 +833,7 @@
     :root { --fs-place: 15pt; --fs-find: 11pt; --fs-read: 9.5pt; --fs-dense: 8.6pt; --fs-util: 7.4pt; }
     .unit, .take, .bars li, .plainlist li, .steps-num li, .asks li, .carry li, .bsc tr { break-inside: avoid; }
     h1, h2, .sec, .unit-k { break-after: avoid; }
+    .offer-row { grid-template-columns: repeat(3, 1fr); }
     .res-sq { display: none !important; }
     .res-full {
       display: block !important; position: static; width: auto;
@@ -1361,6 +1401,19 @@
         <p class="sr">Балл 47 из 100. Вклад элементов: 15,6, 13,0, 9,1 и 9,2.</p>
       </div>
     </div>
+
+    <div class="carry">
+      <p class="unit-k">Повезут ли</p>
+      <div class="carry-row">
+        <p class="carry-n num">25 <span class="carry-of">из 100</span></p>
+        <div>
+          <p class="carry-say">Балл выше отвечает, дошли ли приоритеты. Это — повезут ли их.
+          Три шкалы перемножены, а не усреднены: одна провалённая обнуляет две сильные,
+          и среднее это спрятало бы. Провалена срочность — 4,6 при вашей 9.</p>
+          <p class="carry-mul">7,2 × 7,5 × 4,6 = 248 из 1000, то есть 25 из 100</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ================= РАЗОБРАТЬ НА ВСТРЕЧЕ ================= -->
@@ -1413,11 +1466,11 @@
           </li>
           <li>
             <div class="t"><span class="name">Перевести поддержку на самообслуживание</span><span class="pct num">3 из 11</span></div>
-            <div class="track"><div class="val" data-miss="true" style="width:27%"></div></div>
+            <div class="track"><div class="val" style="width:27%"></div></div>
           </li>
           <li>
             <div class="t"><span class="name">Собрать сильную команду в аналитике</span><span class="pct num">2 из 11</span></div>
-            <div class="track"><div class="val" data-miss="true" style="width:18%"></div></div>
+            <div class="track"><div class="val" style="width:18%"></div></div>
           </li>
         </ul>
         </div>
@@ -1494,12 +1547,6 @@
       </div>
     </div>
 
-    <div class="sell">
-      <p class="sell-t">Приоритеты — это ещё не стратегия</p>
-      <p class="sell-d">Четыре из пяти выводов выше — про передачу, а не про сам выбор. В списке нет
-      отказов, нет ресурса и нет горизонта: именно это собирается в stratos.</p>
-      <p><button type="button" class="btn btn-2">Что такое stratos</button></p>
-    </div>
   </div>
 
   <!-- ================= ДЕРЖАТЬ В ВИДУ ================= -->
@@ -1601,18 +1648,12 @@
       </div>
     </div>
 
-    <div class="sell">
-      <p class="sell-t">Так выглядят типичные ошибки стратегии</p>
-      <p class="sell-d">Приоритеты без срочности, повестка снизу, пустое направление — три из пяти
-      самых частых. Разберите остальные на живом кейсе и посмотрите, как решаете вы.</p>
-      <p><button type="button" class="btn btn-2">Оценить стратегическое мышление</button></p>
-    </div>
   </div>
 
   <!-- ================= ЧТО ДЕЛАТЬ ================= -->
   <div class="todo" id="rep-5">
     <p class="unit-k">Что делать</p>
-    <h2 class="td-h">Встреча на 15 минут закрывает три вердикта из пяти</h2>
+    <h2 class="td-h">Три хода на ближайшей планёрке закрывают три вердикта из пяти</h2>
 
     <ol class="steps-num">
       <li>
@@ -1652,13 +1693,30 @@
       </div>
     </div>
 
-    <div class="sell sell-main">
-      <p class="sell-t">Разобрать это заключение вместе</p>
-      <p class="sell-d">Полчаса по вашим пяти вердиктам: что говорить команде, в каком порядке и что
-      делать, если срочность не купят со второго раза. Бесплатно, один раз на отчёт.</p>
-      <div class="btn-row">
-        <button type="button" class="btn btn-1">Запросить консультацию</button>
-        <button type="button" class="btn btn-3">Посмотреть ответы целиком</button>
+    <div class="offers">
+      <p class="unit-k">С нами</p>
+      <div class="offer-row">
+        <div class="offer">
+          <p class="of-t">Разобрать это заключение</p>
+          <p class="of-d">Полчаса по вашим пяти вердиктам: что говорить команде, в каком порядке
+          и что делать, если срочность не купят со второго раза.</p>
+          <p class="of-w">Бесплатно, один раз на отчёт</p>
+          <p><button type="button" class="btn btn-1">Запросить консультацию</button></p>
+        </div>
+        <div class="offer">
+          <p class="of-t">Собрать стратегию — stratos</p>
+          <p class="of-d">Четыре вердикта из пяти — про передачу, а не про сам выбор. В списке нет
+          отказов, нет ресурса и нет горизонта: приоритеты есть, стратегии пока нет.</p>
+          <p class="of-w">Мастерская на команду</p>
+          <p><button type="button" class="btn btn-2">Что такое stratos</button></p>
+        </div>
+        <div class="offer">
+          <p class="of-t">Научиться держать стратегию — imperfect</p>
+          <p class="of-d">Приоритеты без срочности, повестка снизу, пустое направление — три из
+          пяти самых частых ошибок, и все три у вас уже есть. Остальные — на живом кейсе.</p>
+          <p class="of-w">День с фасилитатором</p>
+          <p><button type="button" class="btn btn-2">Оценить мышление</button></p>
+        </div>
       </div>
     </div>
   </div>
@@ -1669,6 +1727,7 @@
     <a href="#rep-3">Держать в виду · 3</a>
     <a href="#rep-4">Всё хорошо · 1</a>
     <a href="#rep-5">Что делать</a>
+    <button type="button" class="btn btn-3">Посмотреть ответы целиком</button>
     <button type="button" class="btn btn-3" id="printBtn">Сохранить в pdf</button>
     <button type="button" class="btn btn-3" data-copy="priorities.fproof.ru/v/8c41d9e7a2">Скопировать ссылку</button>
   </nav>
