@@ -555,6 +555,23 @@
   }
   .score-of { font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
 
+  /* ---------- стенд вариантов (в продукте экрана нет) ---------- */
+  .vbar { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 24px; }
+  .vset { border: 0; padding: 0; margin: 0; }
+  .vset legend { padding: 0; }
+  .vopts { display: flex; gap: 8px; margin-top: 8px; }
+  .vopt {
+    appearance: none; font: inherit; font-size: var(--fs-dense); cursor: pointer;
+    min-height: 38px; padding: 8px 14px; border-radius: var(--radius);
+    background: var(--surface); color: var(--ink); border: 1px solid var(--hint);
+  }
+  .vopt:hover { border-color: var(--ink); }
+  .vopt[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .vopt:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
+  #vout { margin-top: 8px; }
+  .appx { margin-top: 56px; border-top: 2px solid var(--ink); padding-top: 14px; }
+  .appx .plainlist { margin-top: 16px; }
+
   /* ---------- три уровня вердикта ---------- */
   /* Метка группы — РАЗДЕЛИТЕЛЬ, а не заголовок. Она шла тем же кеглем и
      начертанием, что заголовки вердиктов под ней, поэтому читалась как ещё
@@ -1749,6 +1766,37 @@
   </div>
 </section>
 
+
+<!-- ============================ ВАРИАНТЫ ОТЧЁТА ============================ -->
+<!-- Служебный экран. В продукте его нет: это стенд, чтобы посмотреть, как
+     отчёт держится на разной силе команды и разном числе ответов. Отчёт здесь
+     собирается из данных, а не переписан руками, — иначе девять вариантов
+     разъедутся между собой в первый же день. -->
+<section class="screen" id="s-variants" data-title="Варианты отчёта — карта приоритетов" data-name="варианты">
+
+  <div class="head">
+    <span class="logo">futureproof
+      <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="#ff4800"/></svg>
+      <span class="prod">карта приоритетов</span>
+    </span>
+    <span class="where">Стенд · в продукте этого экрана нет</span>
+  </div>
+
+  <div class="vbar">
+    <fieldset class="vset">
+      <legend class="unit-k">Команда</legend>
+      <div class="vopts" id="vStrength"></div>
+    </fieldset>
+    <fieldset class="vset">
+      <legend class="unit-k">Ответили</legend>
+      <div class="vopts" id="vSize"></div>
+    </fieldset>
+  </div>
+
+  <div id="vout"></div>
+
+</section>
+
 </div><!-- /frame -->
 
 <script>
@@ -1888,7 +1936,8 @@
      девять шансов разойтись с цифрой рядом. */
   function numOf(v) { return parseFloat(String(v).replace(',', '.')); }
 
-  document.querySelectorAll('.res-viz').forEach(function (v) {
+  window.impDrawViz = function (root) {
+  (root || document).querySelectorAll('.res-viz').forEach(function (v) {
     var kind = v.getAttribute('data-kind');
     if (kind === 'dots') {
       var a = parseInt(v.getAttribute('data-a'), 10);
@@ -1939,6 +1988,8 @@
       });
     }
   });
+  };
+  window.impDrawViz(document);
 
   /* наведение делает css, нажатие — для касания */
   document.addEventListener('click', function (e) {
@@ -1956,5 +2007,314 @@
   });
 })();
 </script>
+<script>
+/* ======================================================================
+   СТЕНД ВАРИАНТОВ. Отчёт собирается из данных: три силы команды на три
+   размера. Внутри всё считается ДОЛЯМИ, на экран выходят СЧЁТЫ — иначе
+   «5 из 11» и «34 из 74» не сопоставить между собой.
+   ====================================================================== */
+(function () {
+  var out = document.getElementById('vout');
+  if (!out) return;
+
+  var SIZES = [
+    { key: 's', name: 'до 20',  invited: 12, answered: 11 },
+    { key: 'm', name: '21–50',  invited: 44, answered: 38 },
+    { key: 'l', name: '51–100', invited: 92, answered: 74 }
+  ];
+
+  var STRENGTH = [
+    { key: 'weak', name: 'слабая',
+      subs: { match: 22, inside: 34, main: 18, concrete: 40 },
+      mainShare: 0.18, ownShares: [0.27, 0.18, 0.09, 0.09],
+      guessShare: 0.64, scales: [5.1, 5.8, 3.2], noConcrete: 3,
+      emptyDirs: 2, themes0: 9, outsideShare: 0.73 },
+    { key: 'mid', name: 'средняя',
+      subs: { match: 39, inside: 52, main: 45, concrete: 61 },
+      mainShare: 0.45, ownShares: [0.64, 0.27, 0.18, 0.09],
+      guessShare: 0.45, scales: [7.2, 7.5, 4.6], noConcrete: 2,
+      emptyDirs: 1, themes0: 8, outsideShare: 0.45 },
+    { key: 'strong', name: 'сильная',
+      subs: { match: 82, inside: 76, main: 80, concrete: 68 },
+      mainShare: 0.82, ownShares: [0.82, 0.73, 0.64, 0.55],
+      guessShare: 0.09, scales: [8.4, 8.6, 8.1], noConcrete: 0,
+      emptyDirs: 0, themes0: 3, outsideShare: 0.18 }
+  ];
+
+  var YOU = [9, 8, 9];
+  var OWN = [
+    { name: 'Выйти на самоокупаемость по новым каналам', dir: 'деньги' },
+    { name: 'Сократить срок вывода продукта с девяти месяцев до пяти', dir: 'процессы' },
+    { name: 'Перевести поддержку на самообслуживание', dir: 'процессы' },
+    { name: 'Собрать сильную команду в аналитике', dir: 'люди' }
+  ];
+  var THEMES = ['Порядок в отчётности', 'Текучка в поддержке', 'Технический долг в биллинге',
+    'Обучение новых сотрудников', 'Скорость найма', 'Качество данных в отчётах',
+    'Переработки в конце квартала', 'Дубли в процессах согласования', 'Уход ключевых людей',
+    'Ручные выгрузки для смежников', 'Отсутствие единого справочника', 'Медленные согласования',
+    'Разные версии одних отчётов', 'Нет владельца у процесса', 'Слишком много совещаний',
+    'Задачи без сроков', 'Непонятные приоритеты у смежников', 'Простои из-за смежных команд',
+    'Нехватка тестового окружения', 'Долгие ответы от юристов', 'Устаревшая документация',
+    'Разрозненные инструменты', 'Нет замеров результата', 'Двойная отчётность'];
+
+  var n = function (x) { return String(x).replace('.', ','); };
+  var round1 = function (x) { return x.toFixed(1); };
+
+  /* ---------- сборка данных варианта ---------- */
+  function build(st, sz) {
+    var A = sz.answered;
+    var cnt = function (share) { return Math.round(share * A); };
+    var d = {
+      st: st, sz: sz, A: A,
+      score: Math.round(st.subs.match * 0.4 + st.subs.inside * 0.25 +
+                        st.subs.main * 0.2 + st.subs.concrete * 0.15),
+      main: cnt(st.mainShare),
+      own: OWN.map(function (o, i) { return { name: o.name, dir: o.dir, named: cnt(st.ownShares[i]) }; }),
+      guessed: cnt(st.guessShare),
+      /* три шкалы 0–10 сами дают 0–1000, лишний множитель давал «5851 из 500» */
+      product: Math.round(st.scales[0] * st.scales[1] * st.scales[2]),
+      /* число разных тем растёт от числа людей, но медленнее: похожие
+         формулировки сводятся в одну тему */
+      themes: Math.min(THEMES.length, Math.round(st.themes0 * Math.sqrt(A / 11))),
+      outside: cnt(st.outsideShare)
+    };
+    d.reached = d.own.filter(function (o) { return o.named / A >= 1 / 3; }).length;
+    return d;
+  }
+
+  /* ---------- окно результата ---------- */
+  /* Точки читаются, пока их можно посчитать глазом. Выше двадцати это
+     текстура, а не счёт, — там полоса с долей. */
+  function viz(d, part, whole) {
+    if (d.A <= 20 && whole <= 20) {
+      return '<span class="res-viz" data-kind="dots" data-a="' + whole + '" data-b="' + part + '" aria-hidden="true"></span>';
+    }
+    return '<span class="res-viz" data-kind="gauge" data-max="' + whole + '" data-a="' + part + '" aria-hidden="true"></span>';
+  }
+  var sq = function (id, fig, of, vz, cap, panel) {
+    return '<div class="res">' +
+      '<button type="button" class="res-sq" aria-expanded="false"' + (panel ? ' aria-controls="' + id + '"' : '') + '>' +
+      '<span class="res-plus" aria-hidden="true">+</span>' +
+      '<span class="res-fig"><span class="num">' + fig + '</span> <span class="res-of">' + of + '</span></span>' +
+      vz + '<span class="res-cap">' + cap + '</span></button>' +
+      (panel ? '<div class="res-full" id="' + id + '">' + panel + '</div>' : '') + '</div>';
+  };
+  var grade = function (v, bad, mid) { return v < bad ? 'bad' : (v < mid ? 'mid' : 'ok'); };
+
+  /* ---------- девять выводов ---------- */
+  function verdicts(d) {
+    var A = d.A, V = [];
+    var pl = function (rows) {
+      return '<ul class="plainlist">' + rows.map(function (r) {
+        return '<li><span class="pl-name">' + r[0] + '</span>' +
+          (r[1] ? '<span class="pl-dir">' + r[1] + '</span>' : '') +
+          '<span class="pl-pct num">' + r[2] + '</span></li>';
+      }).join('') + '</ul>';
+    };
+
+    V.push({ g: grade(d.main / A, 0.5, 2 / 3), id: 'v1',
+      h: d.main / A < 0.5 ? 'Команда не знает, что для вас главное'
+                          : 'Главный приоритет команда знает',
+      s: 'Главным ваш приоритет назвали ' + d.main + ' из ' + A + '. ' +
+         (d.main / A < 0.5 ? 'Значит на планёрке каждый второй расставит задачи по-своему.'
+                           : 'На планёрке порядок задач спорить не придётся.'),
+      fig: d.main, of: 'из ' + A, vz: viz(d, d.main, A), cap: 'назвали это главным',
+      panel: pl(d.own.map(function (o, i) { return [o.name + (i === 0 ? ' — ваш выбор' : ''), o.dir, o.named + ' из ' + A]; })) });
+
+    var notReached = d.own.length - d.reached;
+    V.push({ g: grade(d.reached / d.own.length, 0.5, 1), id: 'v2',
+      h: notReached === 0 ? 'Все ваши приоритеты дошли до команды'
+        : 'До команды дошли не все приоритеты',
+      s: notReached === 0
+        ? 'Каждый из четырёх назвала минимум треть команды.'
+        : notReached + ' из ' + d.own.length + ' знает меньше трети команды: для неё этих приоритетов в этом году нет.',
+      fig: notReached || d.own.length, of: 'из ' + d.own.length,
+      vz: '<span class="res-viz" data-kind="dots" data-a="' + d.own.length + '" data-b="' + (notReached || d.own.length) + '" aria-hidden="true"></span>',
+      cap: notReached ? 'приоритетов не дошло' : 'приоритетов дошло',
+      panel: pl(d.own.map(function (o) { return [o.name, o.dir, o.named + ' из ' + A]; })) });
+
+    V.push({ g: grade(1 - d.guessed / A, 2 / 3, 0.84), id: 'v3',
+      h: d.guessed / A > 0.33 ? 'Приоритеты живут в догадках, а не в словах'
+                              : 'Приоритеты команда знает от вас, а не из догадок',
+      s: d.guessed + ' из ' + A + ' вывели их из контекста или не помнят, откуда знают.',
+      fig: d.guessed, of: 'из ' + A, vz: viz(d, d.guessed, A), cap: 'догадались сами',
+      panel: pl([['Слышали от вас напрямую', '', (A - d.guessed) + ' из ' + A],
+                 ['Вывели сами или не помнят', '', d.guessed + ' из ' + A]]) });
+
+    var u = d.st.scales[2];
+    V.push({ g: grade(u, 6, 8), id: 'v4',
+      h: u < 6 ? 'Команда не видит, почему этим нужно заниматься сейчас'
+               : 'Срочность команда разделяет',
+      s: 'Срочность — ' + n(u) + ' из 10 при вашей ' + YOU[2] + '.',
+      fig: n(u), of: 'из 10',
+      vz: '<span class="res-viz" data-kind="pair" data-max="10" data-a="' + n(u) +
+          '" data-la="команда" data-b="' + YOU[2] + '" data-lb="вы" aria-hidden="true"></span>',
+      cap: 'срочность',
+      panel: pl(['Приоритеты понятны, нравятся и важны|' + n(d.st.scales[0]),
+                 'Верим, что сделаем|' + n(d.st.scales[1]),
+                 'Этим нужно заниматься здесь и сейчас|' + n(u)]
+        .map(function (r, i) { var p = r.split('|'); return [p[0], 'вы ' + YOU[i], p[1]]; })) });
+
+    var full = 4 - d.st.emptyDirs;
+    V.push({ g: d.st.emptyDirs ? 'bad' : 'ok', id: 'v5',
+      h: d.st.emptyDirs ? 'Есть направление, про которое не сказал никто'
+                        : 'Все четыре направления заняты',
+      s: d.st.emptyDirs
+        ? 'Ни в вашем списке, ни у команды — 0 из ' + A + '. Это либо осознанный отказ, либо дыра.'
+        : 'В каждом направлении есть хотя бы один приоритет.',
+      fig: d.st.emptyDirs || 4, of: 'из 4',
+      vz: '<span class="res-viz" data-kind="dots" data-a="4" data-b="' + (d.st.emptyDirs || 4) + '" aria-hidden="true"></span>',
+      cap: d.st.emptyDirs ? 'направлений пустых' : 'направления заняты', panel: null });
+
+    V.push({ g: grade(d.st.subs.match, 40, 60), id: 'v6',
+      h: d.st.subs.inside > d.st.subs.match
+        ? 'Внутри команды согласия больше, чем с вами'
+        : 'Команда сходится с вами больше, чем друг с другом',
+      s: 'Друг с другом люди совпадают на ' + d.st.subs.inside + ' из 100, с вами — на ' + d.st.subs.match + '.',
+      fig: d.st.subs.match, of: 'из 100',
+      vz: '<span class="res-viz" data-kind="pair" data-max="100" data-a="' + d.st.subs.match +
+          '" data-la="с вами" data-b="' + d.st.subs.inside + '" data-lb="между собой" aria-hidden="true"></span>',
+      cap: 'совпадение приоритетов',
+      panel: pl([['Команда с вашим списком', '', d.st.subs.match + ' из 100'],
+                 ['Люди друг с другом', '', d.st.subs.inside + ' из 100']]) +
+        '<p class="res-note">Пар ответов: ' + (A * (A - 1) / 2) + '. Считаем по общим словам в каждой паре.</p>' });
+
+    V.push({ g: grade(1 - d.st.noConcrete / 4, 0.5, 1), id: 'v7',
+      h: d.st.noConcrete ? 'Не во всех формулировках есть конкретика'
+                         : 'По каждому приоритету видно, что считать результатом',
+      s: d.st.noConcrete
+        ? 'В ' + d.st.noConcrete + ' из 4 не видно, по чему в декабре судить, что сделано.'
+        : 'В каждой формулировке есть признак готовности.',
+      fig: d.st.noConcrete || 4, of: 'из 4',
+      vz: '<span class="res-viz" data-kind="dots" data-a="4" data-b="' + (d.st.noConcrete || 4) + '" aria-hidden="true"></span>',
+      cap: d.st.noConcrete ? 'без конкретики' : 'с конкретикой', panel: null });
+
+    /* ЗДЕСЬ ломался счёт тем: «8 тем» на 11 человек и «23 темы» на 74 —
+       разные вещи, и в панель они не влезают. Считаем ЛЮДЕЙ. */
+    /* Приложение нужно не «когда больше пяти», а когда список перестаёт
+       читаться в окне. Восемь строк в панели ещё читаются, поэтому до
+       восьми показываем всё, дальше — пять самых частых плюс приложение.
+       Иначе у сильной команды с шестью темами появлялось приложение из
+       одной строки. */
+    var inPanel = d.themes <= 8 ? d.themes : 5;
+    var top = THEMES.slice(0, inPanel).map(function (t, i) {
+      return [t, '', Math.max(1, Math.round(d.outside / (i + 1.6))) + ' из ' + A];
+    });
+    var restCount = d.themes - top.length;
+    V.push({ g: grade(1 - d.outside / A, 0.5, 0.75), id: 'v8',
+      h: d.outside / A > 0.25
+        ? 'Часть команды тянет темы, которых нет в вашем списке'
+        : 'Команда занята тем, что есть в вашем списке',
+      s: d.outside + ' из ' + A + ' человек работают над темами вне вашего списка. Всего таких тем: ' + d.themes + '.',
+      fig: d.outside, of: 'из ' + A, vz: viz(d, d.outside, A), cap: 'тянут свои темы',
+      panel: pl(top) + (restCount > 0
+        ? '<p class="res-note">В отчёте пять самых частых. Остальные ' + restCount +
+          ' — в приложении: в окне они не читаются, а прокрутка внутри окна прячет половину списка.</p>'
+        : '') });
+
+    V.push({ g: grade(d.product, 500, 650), id: 'v9',
+      h: d.product < 500 ? 'Приоритеты не станут работой, хотя силы есть'
+                         : 'Команда готова взяться',
+      s: 'Приоритеты нравятся — ' + n(d.st.scales[0]) + ' из 10, вера в себя — ' + n(d.st.scales[1]) +
+         ', срочность — ' + n(d.st.scales[2]) + '. Три шкалы перемножаются: ' + d.product + ' при пороге 500.',
+      fig: d.product, of: 'из 500',
+      vz: '<span class="res-viz" data-kind="gauge" data-max="500" data-a="' + d.product + '" aria-hidden="true"></span>',
+      cap: 'произведение трёх шкал', panel: null });
+
+    return V;
+  }
+
+  /* ---------- отрисовка ---------- */
+  var GRADES = [
+    { g: 'bad', t: 'Разобрать на встрече' },
+    { g: 'mid', t: 'Держать в виду' },
+    { g: 'ok', t: 'Оставить как есть' }
+  ];
+
+  function render(st, sz) {
+    var d = build(st, sz), V = verdicts(d);
+    var bad = V.filter(function (v) { return v.g === 'bad'; }).length;
+    var html = '<div class="verdict-top">' +
+      '<p class="unit-k">Заключение</p>' +
+      '<h1 class="vt-h">' + (bad === 0
+        ? 'Разбирать с командой нечего: приоритеты дошли'
+        : bad + ' ' + (bad === 1 ? 'вывод' : (bad < 5 ? 'вывода' : 'выводов')) +
+          ' из девяти стоит разобрать с командой') + '</h1>' +
+      '<p class="vt-lead">Ответили ' + d.sz.answered + ' из ' + d.sz.invited + ' приглашённых — ' +
+      Math.round(d.sz.answered / d.sz.invited * 100) + '%. Команда писала свои приоритеты, не видя вашего списка.</p>' +
+      '<div class="vt-row"><div class="vt-score">' +
+      '<span class="score-big num">' + d.score + '</span><span class="score-of">из 100</span></div>' +
+      '<div class="vt-tally"><p class="unit-k">Из чего собран</p>' +
+      '<div class="comp" aria-hidden="true">' +
+      [['match', 0.4], ['inside', 0.25], ['main', 0.2], ['concrete', 0.15]].map(function (k) {
+        return '<i style="width:' + (d.st.subs[k[0]] * k[1]) + '%"></i>';
+      }).join('') + '</div><ul class="comp-keys">' +
+      [['Совпадение приоритетов с вашим списком', 'match', 0.4],
+       ['Согласие в приоритетах между участниками команды', 'inside', 0.25],
+       ['Совпадение главного приоритета', 'main', 0.2],
+       ['Конкретика приоритетов', 'concrete', 0.15]].map(function (k) {
+        return '<li><span class="n">' + k[0] + '</span><span class="v num">' +
+          n(round1(d.st.subs[k[1]] * k[2])) + '</span></li>';
+      }).join('') + '</ul></div></div></div>';
+
+    GRADES.forEach(function (G) {
+      var list = V.filter(function (v) { return v.g === G.g; });
+      html += '<div class="grade" data-g="' + G.g + '">' +
+        '<p class="grade-k"><span class="grade-n num">' + list.length + '</span>' +
+        '<span class="grade-t">' + G.t + '</span></p>';
+      if (!list.length) html += '<p class="grade-empty">В этом отчёте таких выводов нет.</p>';
+      list.forEach(function (v) {
+        html += '<div class="vd"><h2 class="vd-h">' + v.h + '</h2>' +
+          '<p class="vd-say">' + v.s + '</p>' +
+          sq(sz.key + st.key + v.id, v.fig, v.of, v.vz, v.cap, v.panel) + '</div>';
+      });
+      html += '</div>';
+    });
+
+    /* приложение появляется только когда список перестаёт влезать в окно */
+    if (d.themes > 8) {
+      html += '<div class="appx"><p class="unit-k">Приложение</p>' +
+        '<h2 class="td-h">Все темы, которые команда тянет сама — ' + d.themes + '</h2>' +
+        '<ul class="plainlist">' + THEMES.slice(0, d.themes).map(function (t, i) {
+          return '<li><span class="pl-name">' + t + '</span><span class="pl-pct num">' +
+            Math.max(1, Math.round(d.outside / (i + 1.6))) + ' из ' + d.A + '</span></li>';
+        }).join('') + '</ul>' +
+        '<p class="res-note">В самом отчёте — пять самых частых. Полный список живёт здесь, ' +
+        'потому что во всплывающем окне ' + d.themes + ' строк не читаются.</p></div>';
+    }
+
+    out.innerHTML = html;
+    if (window.impDrawViz) window.impDrawViz(out);
+  }
+
+  /* ---------- переключатели ---------- */
+  var cur = { st: STRENGTH[1], sz: SIZES[0] };
+  function buttons(host, items, key) {
+    host.innerHTML = items.map(function (it) {
+      return '<button type="button" class="vopt" data-k="' + it.key + '">' + it.name + '</button>';
+    }).join('');
+    host.addEventListener('click', function (e) {
+      var b = e.target.closest('.vopt');
+      if (!b) return;
+      cur[key] = items.filter(function (i) { return i.key === b.getAttribute('data-k'); })[0];
+      mark();
+      render(cur.st, cur.sz);
+    });
+  }
+  function mark() {
+    document.querySelectorAll('#vStrength .vopt').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-k') === cur.st.key ? 'true' : 'false');
+    });
+    document.querySelectorAll('#vSize .vopt').forEach(function (b) {
+      b.setAttribute('aria-pressed', b.getAttribute('data-k') === cur.sz.key ? 'true' : 'false');
+    });
+  }
+  buttons(document.getElementById('vStrength'), STRENGTH, 'st');
+  buttons(document.getElementById('vSize'), SIZES, 'sz');
+  mark();
+  render(cur.st, cur.sz);
+})();
+</script>
+
 </body>
 </html>
