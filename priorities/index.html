@@ -96,7 +96,8 @@
   /* разрядку сжимаем только на крупных ступенях: на 16px она создавала
      второе сочетание там, где рецепт один */
   h1, h2, h3, h4 { font-weight: 500; margin: 0; line-height: 1.1; }
-  h1, h2, .unit-answer, .score-big, .unit-h, .two-num .tn-v { letter-spacing: -0.01em; }
+  /* сжимаем разрядку только на крупных ступенях, 26 и 20 */
+  h1, .synch-h, .sec, .synch-band, .sell-t, .score-big { letter-spacing: -0.01em; }
   p { margin: 0; }
   ul, ol { margin: 0; padding: 0; list-style: none; }
   .num { font-variant-numeric: tabular-nums; }
@@ -159,6 +160,7 @@
      Высоту панели скрипт кладёт в --bar-h: на телефоне она переносится
      в три строки и доходит до 129px. В продукте панели нет, --bar-h = 0. */
   .screen { display: none; padding: 32px 0 96px; scroll-margin-top: calc(var(--bar-h, 0px) + 16px); }
+  .sec, .synch { scroll-margin-top: calc(var(--bar-h, 0px) + 24px); }
   .screen[data-active="true"] { display: block; }
 
   /* ======================================================================
@@ -379,7 +381,7 @@
   .bars li:first-child { border-top: 0; }
   .bars .t { display: flex; gap: 16px; align-items: baseline; justify-content: space-between; }
   .bars .name { max-width: 46ch; }
-  .bars .pct { flex: none; font-weight: 500; }
+  .bars .pct { flex: none; font-weight: 500; white-space: nowrap; }
   .bars .track { margin-top: 8px; height: 20px; background: var(--field); border-radius: var(--radius); }
   .bars .val { height: 100%; border-radius: var(--radius); }
   /* приглушены; вермилион только там, где не совпало */
@@ -393,27 +395,11 @@
      не нужны — их числа стоят списком ниже. вермилион на догадках, потому что
      блок именно про них: подсветка идёт на находку, а не на хорошую новость. */
   /* тёмный сегмент вместо вермилионного: акцент без второго цвета на экране */
-  /* составная полоса «откуда знают»: показывает одно — долю догадок.
-     Тёмный сегмент вместо вермилионного: вермилион в блоке уже занят
-     главным расхождением. */
-  .stack {
-    display: flex; height: 26px; margin-top: 16px;
-    border-radius: var(--radius); overflow: hidden; background: var(--tick);
-  }
-  .stack i { display: block; }
-  .stack i[data-n="known"] { background: var(--faint); }
-  .stack i[data-n="guess"] { background: var(--ink); }
-  .keys { display: flex; font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
-  .keys span { flex: none; padding-right: 8px; }
 
 
   /* повезут ли — три средних, без произведения в другом масштабе */
-  .carry li { border-top: 1px solid var(--rule); padding: 16px 0; }
-  .carry li:first-child { border-top: 0; }
-  .carry .n { font-weight: 500; max-width: 44ch; }
   /* полоса приглушена; вермилион только у шкалы ниже нормы, иначе глаз
      идёт к самой длинной полосе вместо провалившейся */
-  .carry .say { font-size: var(--fs-util); color: var(--muted); margin-top: 8px; max-width: var(--w-read); }
 
 
 
@@ -461,26 +447,6 @@
   .comp-keys li:last-child { border-bottom: 0; }
   .comp-keys .v { margin-left: auto; font-weight: 500; }
 
-  /* 3 · разрыв: залитая метка — команда, контурная — вы */
-  .axis-ends {
-    display: flex; justify-content: space-between;
-    font-size: var(--fs-util); color: var(--muted); margin-top: 14px;
-  }
-  .axis {
-    position: relative; height: 18px; margin-top: 8px;
-    border-top: 1px solid var(--rule);
-  }
-  .axis .gapline {
-    position: absolute; top: -2px; height: 3px;
-    background: var(--faint); display: block;
-  }
-  .carry li[data-low="true"] .gapline { background: var(--accent); }
-  .axis b {
-    position: absolute; top: -6px; width: 11px; height: 11px;
-    border-radius: 2px; transform: translateX(-50%);
-  }
-  .axis .m-team { background: var(--ink); }
-  .axis .m-you { background: var(--surface); border: 2px solid var(--ink); }
   .carry .n { font-weight: 500; max-width: 44ch; }
   .carry .say { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; max-width: var(--w-read); }
 
@@ -518,10 +484,11 @@
   .rep-nav-tools .btn { font-size: var(--fs-dense); }
 
   /* метка-разделитель раздела */
+  /* Раздел крупнее заголовков внутри него: было наоборот — метка 12px
+     против заголовка единицы 20px, то есть иерархия перевёрнута. */
   .sec {
-    border-top: 2px solid var(--ink); margin-top: 48px; padding-top: 12px;
-    font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
-    text-transform: uppercase; color: var(--ink);
+    border-top: 2px solid var(--ink); margin-top: 48px; padding-top: 14px;
+    font-size: var(--fs-find); font-weight: 500; letter-spacing: -0.01em;
   }
   .sec:first-of-type { margin-top: 24px; }
 
@@ -532,8 +499,7 @@
     font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
     text-transform: uppercase; color: var(--muted);
   }
-  .unit-answer { font-size: var(--fs-place); margin-top: 8px; max-width: 26ch; }
-  .unit-h { font-size: var(--fs-find); margin-top: 6px; max-width: 34ch; }
+  .unit-h { font-size: var(--fs-read); margin-top: 6px; max-width: 40ch; }
   .unit-say {
     font-size: var(--fs-dense); color: var(--muted);
     margin-top: 12px; max-width: var(--w-read);
@@ -541,18 +507,7 @@
   .unit .btn-row { margin-top: 16px; }
   .unit .btn-row .unit-say { margin-top: 0; }
 
-  /* балл */
-  .score-line { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; margin-top: 14px; }
-  .score-big {
-    font-size: clamp(52px, 6vw, 88px); line-height: 0.82;
-    font-weight: 500; color: var(--accent); letter-spacing: -0.03em;
-  }
-  .score-of { font-size: var(--fs-util); color: var(--muted); }
 
-  /* два числа рядом — разрыв самооценки */
-  .two-num { display: flex; flex-wrap: wrap; gap: 24px 56px; margin-top: 16px; }
-  .two-num .tn-v { display: block; font-size: var(--fs-place); font-weight: 500; letter-spacing: -0.01em; }
-  .two-num .tn-k { display: block; font-size: var(--fs-util); color: var(--muted); margin-top: 6px; max-width: 26ch; }
 
   /* два коротких факта — доказательство без графика */
   .facts2 { margin-top: 16px; }
@@ -581,14 +536,100 @@
   .take p { font-size: var(--fs-dense); max-width: var(--w-read); margin-bottom: 10px; }
   .take p:last-child { margin-bottom: 0; }
 
-  /* источники знания */
-  .srcs { margin-top: 18px; }
-  .srcs li {
-    display: flex; gap: 14px; align-items: baseline;
-    padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-dense);
+
+  /* ======================================================================
+     ВЕРХ ОТЧЁТА — шире остального, потому что это и есть ответ
+     ====================================================================== */
+  .synch { border-top: 2px solid var(--ink); margin-top: 20px; padding-top: 16px; }
+  .synch-h { font-size: var(--fs-place); margin-top: 8px; max-width: 30ch; }
+  .synch-lead { margin-top: 14px; max-width: 68ch; font-size: var(--fs-read); }
+  .synch-grid {
+    display: grid; gap: var(--gap); margin-top: 28px;
+    grid-template-columns: minmax(0, 4fr) minmax(0, 7fr);
+    align-items: start;
   }
-  .srcs li:last-child { border-bottom: 0; }
-  .srcs .p { width: 4ch; flex: none; font-weight: 500; }
+  .score-line { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+  .score-big {
+    font-size: clamp(56px, 6.5vw, 96px); line-height: 0.82;
+    font-weight: 500; color: var(--accent); letter-spacing: -0.03em;
+  }
+  .score-of { font-size: var(--fs-util); color: var(--muted); }
+  .synch-band { font-size: var(--fs-find); font-weight: 500; margin-top: 10px; }
+  .synch-hint { font-size: var(--fs-util); color: var(--muted); margin-top: 8px; max-width: 30ch; }
+
+  .synch-next {
+    display: flex; flex-wrap: wrap; gap: 12px 32px;
+    margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--rule);
+  }
+  .synch-next a {
+    display: inline-flex; align-items: center; gap: 8px; min-height: 38px;
+    color: var(--accent-text); font-size: var(--fs-dense);
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .synch-next a::after { content: "→"; text-decoration: none; }
+  .synch-next a:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
+
+  /* ---------- окошко «как считается» при наведении ---------- */
+  .info { position: relative; display: inline-block; margin-top: 18px; }
+  .info-btn {
+    appearance: none; background: none; border: 0; padding: 9px 0; cursor: pointer;
+    font: inherit; font-size: var(--fs-dense); color: var(--accent-text);
+    text-decoration: underline; text-underline-offset: 3px; min-height: 38px;
+  }
+  .info-btn:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
+  .info-panel {
+    position: absolute; left: 0; top: 100%; z-index: 20; width: min(560px, 78vw);
+    display: none; background: var(--surface); border: 1px solid var(--ink);
+    border-radius: var(--radius); padding: 18px;
+    box-shadow: 0 8px 24px rgba(24, 24, 24, 0.12);
+  }
+  .info:hover .info-panel,
+  .info:focus-within .info-panel,
+  .info-btn[aria-expanded="true"] + .info-panel { display: block; }
+  .info-warn { display: block; font-size: var(--fs-util); color: var(--muted); max-width: 52ch; }
+  .info-table {
+    display: grid; grid-template-columns: minmax(0, 1fr) 4ch 4ch 5ch;
+    gap: 0 16px; margin: 14px 0; font-size: var(--fs-util);
+  }
+  .info-table .ith:not(:first-child) { text-align: right; letter-spacing: 0.04em; }
+  .info-table > span { padding: 6px 0; border-bottom: 1px solid var(--rule); color: var(--muted); }
+  .info-table .ith { font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; border-bottom-color: var(--ink); }
+  .info-table .ihow { grid-column: 1 / -1; color: var(--muted); padding-top: 0; }
+  .info-table .num { text-align: right; }
+
+  /* ======================================================================
+     ПЯТЬ ЗАМЕРОВ — галочка, крестик и расшифровка
+     ====================================================================== */
+  .checks { margin-top: 16px; }
+  .checks li {
+    display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 14px;
+    padding: 16px 0; border-bottom: 1px solid var(--rule);
+  }
+  .checks li:last-child { border-bottom: 0; }
+  .checks .ck {
+    display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%; font-size: var(--fs-util);
+  }
+  /* Вермилион достаётся ОДНОЙ строке — ценной находке. Остальные крестики
+     чернилами: четыре вермилионных круга перестают быть акцентом. */
+  .checks li[data-ok="true"] .ck { background: var(--field); color: var(--ink); }
+  .checks li[data-ok="false"] .ck { background: var(--ink); color: var(--surface); }
+  .checks li[data-key="true"] .ck { background: var(--accent); color: var(--ink); }
+  .checks .ck-t { display: block; font-weight: 500; }
+  .checks .ck-d { display: block; font-size: var(--fs-dense); color: var(--muted); margin-top: 6px; max-width: var(--w-read); }
+  .checks li[data-key="true"] { background: var(--accent-tint); border-radius: var(--radius); padding: 16px; }
+
+  /* ======================================================================
+     ПРОДАЖА — три точки: stratos, imperfect, консультация
+     ====================================================================== */
+  .sell {
+    border-top: 1px solid var(--ink); margin-top: 32px; padding-top: 18px;
+  }
+  .sell-t { font-size: var(--fs-find); font-weight: 500; max-width: 34ch; }
+  .sell-d { font-size: var(--fs-dense); color: var(--muted); margin-top: 8px; max-width: var(--w-read); }
+  .sell p:last-child { margin-top: 14px; }
+  .sell-main { background: var(--accent-tint); border-radius: var(--radius); padding: 20px; border-top: 0; }
+  .sell-main .btn-3 { font-size: var(--fs-dense); }
 
   /* ---------- 2 · приоритеты ---------- */
   .badge {
@@ -601,12 +642,12 @@
   /* список без шкал: у этих тем важна тема и доля, а не длина полосы */
   .plainlist li {
     display: grid; align-items: baseline; gap: 8px 16px;
-    grid-template-columns: minmax(0, 1fr) auto 4ch;
+    grid-template-columns: minmax(0, 1fr) auto 7ch;
     padding: 11px 0; border-bottom: 1px solid var(--rule);
     font-size: var(--fs-dense);
   }
   .pl-dir { color: var(--muted); font-size: var(--fs-util); }
-  .pl-pct { font-weight: 500; text-align: right; }
+  .pl-pct { font-weight: 500; text-align: right; white-space: nowrap; }
 
   .fold { margin-top: 4px; }
   .fold summary {
@@ -621,11 +662,6 @@
   .fold[open] .fold-close { display: inline; }
 
 
-  /* ---------- 3 · сбалансированные показатели ---------- */
-  .bsc td, .bsc th { padding: 11px 16px 11px 0; }
-  .bsc tr[data-empty="true"] { background: var(--field); }
-  .bsc tr[data-empty="true"] td { font-weight: 500; }
-  .bsc tr[data-empty="true"] td:first-child { padding-left: 10px; }
 
   /* ---------- 4 · что делать ---------- */
   .steps-num { counter-reset: sn; margin-top: 4px; }
@@ -667,8 +703,9 @@
     .rep-nav ol { display: flex; flex-wrap: wrap; gap: 0 18px; }
     .rep-nav a { border-bottom: 0; }
     .rep-nav-tools { flex-direction: row; margin-top: 8px; }
-    .two-num { gap: 18px 32px; }
-    .plainlist li { grid-template-columns: minmax(0, 1fr) 4ch; }
+    .synch-grid { grid-template-columns: 1fr; }
+    .info-panel { width: min(92vw, 420px); }
+    .plainlist li { grid-template-columns: minmax(0, 1fr) 7ch; }
     .facts2 li { grid-template-columns: 1fr; gap: 4px; }
     /* числовая таблица в столбик теряет смысл: два голых числа без подписи.
        На узком экране подпись столбца встаёт перед числом. */
@@ -744,7 +781,7 @@
   </div>
 
   <div class="hero">
-    <h1>Насколько команда понимает стратегию?</h1>
+    <h1>Насколько команда <span class="pen">понимает стратегию</span>?</h1>
     <p class="sub">Вы записываете стратегические приоритеты года. Команда — независимо, своими словами. Отчёт показывает, где вы сходитесь, а где нет.</p>
     <div class="btn-row">
       <a class="btn btn-1" href="#s-survey1" data-go="s-survey1">Заполнить свою анкету</a>
@@ -1200,21 +1237,16 @@
 </section>
 
 <!-- ============================ ОТЧЁТ ============================
-     ОДНА ИДИОМА НА ВЕСЬ ОТЧЁТ.
-     Документ — вертикальная череда одинаковых по устройству единиц:
+     ЛОГИКА, а не форма. Отчёт отвечает на боли лидера по порядку:
 
-         МЕТКА (что это)
-         Заголовок — вывод, а не название данных
-         доказательство (одна из трёх форм графики)
-         подпись под доказательством
+       1. синхрон  — насколько мы вообще совпадаем, и что это значит
+       2. приоритеты — какие именно не дошли и в чём проблема
+       3. что ещё замерили — компактная таблица с галочками
+       4. что делать — встреча, наверх, консультация
 
-     Раздел — только метка-разделитель, без своего заголовка: иначе
-     появляется лишний уровень и заголовки разделов спорят с заголовками
-     единиц. Плашка --field значит ровно одно: это текст, который человек
-     забирает из отчёта. Больше плашек в отчёте нет.
-
-     Порядок чтения — как человек читает такой отчёт один раз:
-     что случилось → насколько плохо → где именно → почему → что делать.
+     Слово «блок» служебное и в интерфейсе не появляется.
+     Верхний раздел шире остальных — он и есть ответ.
+     Проценты заменены на «7 из 11»: человек считает людьми, не долями.
      ============================================================== -->
 <section class="screen" id="s-report" data-title="Отчёт — продуктовая команда" data-name="отчёт">
 
@@ -1226,228 +1258,208 @@
     <span class="where">Продуктовая команда · 11 ответов · собран 12 августа · открыт до 11 сентября</span>
   </div>
 
-  <div class="rep">
-    <!-- правая колонка: оглавление длинного документа. Заодно она даёт
-         содержанию одну ширину, а не растягивает полосы на всю рамку. -->
-    <nav class="rep-nav" aria-label="разделы отчёта">
-      <p class="unit-k">В отчёте</p>
-      <ol>
-        <li><a href="#rep-1">Ответ</a></li>
-        <li><a href="#rep-2">Приоритеты</a></li>
-        <li><a href="#rep-3">Что мы нашли</a></li>
-        <li><a href="#rep-4">Что делать</a></li>
-      </ol>
-      <div class="rep-nav-tools">
-        <button type="button" class="btn btn-2" id="printBtn">Сохранить в pdf</button>
-        <button type="button" class="btn btn-3" data-copy="priorities.fproof.ru/v/8c41d9e7a2">Скопировать ссылку</button>
-      </div>
-    </nav>
+  <p class="demo-bar"><b>Это пример</b> <span>Команда, числа и формулировки выдуманы</span></p>
 
-    <div class="rep-body">
+  <!-- ================= ВЕРХ: СИНХРОН. Шире остального ================= -->
+  <div class="synch" id="rep-1">
+    <p class="unit-k">Синхрон со стратегией</p>
+    <h1 class="synch-h">Больше половины команды знает только один ваш приоритет из четырёх</h1>
+    <p class="synch-lead">Команда оценила ясность приоритетов на 4,1 из 5 — людям кажется, что им
+    понятно. Значит дело не в несогласии: приоритеты просто не проговорены так, чтобы их могли
+    повторить.</p>
 
-      <p class="demo-bar"><b>Это пример</b> <span>Команда, числа и формулировки выдуманы</span></p>
-
-      <!-- ================= 1 · ОТВЕТ ================= -->
-      <p class="sec" id="rep-1">Блок 1 из 4 · Ответ</p>
-
-      <div class="unit">
-        <p class="unit-k">Главное</p>
-        <h1 class="unit-answer">Команда сошлась с вами по <span class="pen">двум приоритетам из четырёх</span></h1>
-        <p class="unit-say">Отчёт про синхронизацию в понимании стратегии, а не про людей. В нём нет имён и нет ни строки о том, кто чего не понял.</p>
-      </div>
-
-      <div class="unit">
-        <p class="unit-k">Общий балл</p>
-        <h2 class="unit-h">Совпадаете частично</h2>
+    <div class="synch-grid">
+      <div class="synch-score">
         <div class="score-line">
           <span class="score-big num">47</span>
-          <span class="score-of">из 100 · нужен, чтобы сравнить себя через полгода</span>
+          <span class="score-of">из 100</span>
         </div>
+        <p class="synch-band">Совпадаете частично</p>
+        <p class="synch-hint">Балл нужен, чтобы сравнить себя через полгода.</p>
+
+        <span class="info">
+          <button type="button" class="info-btn" aria-expanded="false" aria-controls="how-panel">
+            Как считается балл
+          </button>
+          <span class="info-panel" id="how-panel" role="dialog" aria-label="Как считается балл">
+            <span class="info-warn">Оценка производится ИИ, могут быть неточности. Используйте балл
+            лишь для ориентира.</span>
+            <span class="info-table">
+              <span class="ith">Элемент балла</span><span class="ith">Балл</span><span class="ith">Вес</span><span class="ith">Вклад</span>
+              <span>Совпадение приоритетов с вашим списком</span><span class="num">39</span><span class="num">40%</span><span class="num">15,6</span>
+              <span class="ihow">Среднее по вашим приоритетам: какая доля людей в команде назвала то же самое</span>
+              <span>Согласие в приоритетах между участниками команды</span><span class="num">52</span><span class="num">25%</span><span class="num">13,0</span>
+              <span class="ihow">Насколько совпадают наборы тем у двух людей, в среднем по всем парам</span>
+              <span>Совпадение главного приоритета</span><span class="num">45</span><span class="num">20%</span><span class="num">9,1</span>
+              <span class="ihow">Доля совпавших с вашим главным и то, насколько команда сошлась на одном</span>
+              <span>Конкретика приоритетов</span><span class="num">61</span><span class="num">15%</span><span class="num">9,2</span>
+              <span class="ihow">Доля формулировок, в которых есть конкретные действия</span>
+            </span>
+            <span class="info-warn">Балл становится устойчивым от 5 ответов.</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="synch-comp">
+        <p class="unit-k">Из чего собран</p>
         <div class="comp" aria-hidden="true">
           <i style="width:15.6%"></i><i style="width:13.0%"></i><i style="width:9.1%"></i><i style="width:9.2%"></i>
         </div>
         <ul class="comp-keys">
-          <li><span class="n">Совпадение с вашим списком</span><span class="v num">15,6</span></li>
-          <li><span class="n">Согласие внутри команды</span><span class="v num">13,0</span></li>
-          <li><span class="n">Согласие по главному</span><span class="v num">9,1</span></li>
-          <li><span class="n">Виден признак готовности</span><span class="v num">9,2</span></li>
+          <li><span class="n">Совпадение приоритетов с вашим списком</span><span class="v num">15,6</span></li>
+          <li><span class="n">Согласие в приоритетах между участниками команды</span><span class="v num">13,0</span></li>
+          <li><span class="n">Совпадение главного приоритета</span><span class="v num">9,1</span></li>
+          <li><span class="n">Конкретика приоритетов</span><span class="v num">9,2</span></li>
         </ul>
-        <p class="sr">Балл 47 из 100. Вклад частей: 15,6, 13,0, 9,1 и 9,2.</p>
-        <p class="unit-say">Длина сегмента — вклад части в балл. Сумма — 46,9, то есть те же 47.</p>
-        <details class="how">
-          <summary>Как считается балл</summary>
-          <div>
-            <table>
-              <thead><tr><th>Часть</th><th>Балл</th><th>Вес</th><th>Вклад</th></tr></thead>
-              <tbody>
-                <tr><td>Совпадение с вашим списком</td><td class="num">39</td><td class="num">40%</td><td class="num">15,6</td></tr>
-                <tr><td>Согласие внутри команды</td><td class="num">52</td><td class="num">25%</td><td class="num">13,0</td></tr>
-                <tr><td>Согласие по главному</td><td class="num">45</td><td class="num">20%</td><td class="num">9,1</td></tr>
-                <tr><td>Виден признак готовности</td><td class="num">61</td><td class="num">15%</td><td class="num">9,2</td></tr>
-              </tbody>
-            </table>
-            <p class="unit-say">Числа считает код. Модель отвечала на один вопрос: об одном ли эти две фразы. При менее пяти ответах балл читается как направление.</p>
-          </div>
-        </details>
+        <p class="sr">Балл 47 из 100. Вклад элементов: 15,6, 13,0, 9,1 и 9,2.</p>
       </div>
+    </div>
 
-      <div class="unit">
-        <p class="unit-k">Самооценка</p>
-        <h2 class="unit-h">Команде кажется, что понятно</h2>
-        <ul class="two-num">
-          <li><span class="tn-v num">4,1</span><span class="tn-k">из 5 — так команда оценила ясность</span></li>
-          <li><span class="tn-v num">2</span><span class="tn-k">приоритета из 4 назвала хотя бы треть</span></li>
-        </ul>
-        <p class="unit-say">Самая устойчивая находка отчёта: людям кажется, что им понятно. С этим разрывом трудно спорить, и он никого не обвиняет.</p>
-      </div>
+    <div class="synch-next">
+      <a href="#rep-2" data-jump="rep-2">Проверить, какие приоритеты не дошли</a>
+      <a href="#rep-3" data-jump="rep-3">Посмотреть, что ещё видно по ответам</a>
+    </div>
+  </div>
+
+  <div class="rep">
+    <div class="rep-body">
 
       <!-- ================= 2 · ПРИОРИТЕТЫ ================= -->
-      <p class="sec" id="rep-2">Блок 2 из 4 · Приоритеты</p>
+      <h2 class="sec" id="rep-2">Какие приоритеты не дошли</h2>
 
       <div class="unit">
         <p class="unit-k">Ваши четыре</p>
-        <h2 class="unit-h">Два дошли до трети команды, два — нет</h2>
+        <h3 class="unit-h">Два дошли до трети команды, два — нет</h3>
         <ul class="bars">
           <li>
             <div class="t">
               <span class="name">Выйти на самоокупаемость по новым каналам <span class="badge">главный</span></span>
-              <span class="pct num">64%</span>
+              <span class="pct num">7 из 11</span>
             </div>
             <div class="track"><div class="val" style="width:64%"></div></div>
-            <p class="verdict">Совпало частично · 7 из 11 · деньги · главным его назвали 5 из 11</p>
+            <p class="verdict">Совпало частично · деньги · главным его назвали 5 из 11</p>
           </li>
           <li>
-            <div class="t"><span class="name">Сократить срок вывода продукта с девяти месяцев до пяти</span><span class="pct num">45%</span></div>
+            <div class="t"><span class="name">Сократить срок вывода продукта с девяти месяцев до пяти</span><span class="pct num">5 из 11</span></div>
             <div class="track"><div class="val" style="width:45%"></div></div>
-            <p class="verdict">Совпало частично · 5 из 11 · процессы</p>
+            <p class="verdict">Совпало частично · процессы</p>
           </li>
           <li>
-            <div class="t"><span class="name">Перевести поддержку на самообслуживание</span><span class="pct num">27%</span></div>
+            <div class="t"><span class="name">Перевести поддержку на самообслуживание</span><span class="pct num">3 из 11</span></div>
             <div class="track"><div class="val" data-miss="true" style="width:27%"></div></div>
-            <p class="verdict">Не совпало · 3 из 11 · процессы</p>
+            <p class="verdict">Не совпало · процессы</p>
           </li>
           <li>
-            <div class="t"><span class="name">Собрать сильную команду в аналитике</span><span class="pct num">18%</span></div>
+            <div class="t"><span class="name">Собрать сильную команду в аналитике</span><span class="pct num">2 из 11</span></div>
             <div class="track"><div class="val" data-miss="true" style="width:18%"></div></div>
-            <p class="verdict">Не совпало · 2 из 11 · люди</p>
+            <p class="verdict">Не совпало · люди</p>
           </li>
         </ul>
-        <p class="unit-say">Ниже трети считаем, что не совпало; выше двух третей — совпало.</p>
+      </div>
+
+      <div class="unit">
+        <p class="unit-k">В чём именно проблема</p>
+        <h3 class="unit-h">Ваши формулировки мешают друг другу</h3>
+        <ul class="facts2">
+          <li><span class="f2-n num">2 из 4</span><span class="f2-t">формулировок без конкретных действий — по чему в декабре судить, что сделано</span></li>
+          <li><span class="f2-n">Слиплись</span><span class="f2-t">самоокупаемость и срок вывода команда пересказывает одной фразой про «расти быстрее»</span></li>
+        </ul>
+        <p class="unit-say">Это единственное, что можно закрыть за десять минут — переписав две строки.</p>
       </div>
 
       <div class="unit">
         <p class="unit-k">Назвала команда</p>
-        <h2 class="unit-h">Восемь тем, которых нет в вашем списке</h2>
+        <h3 class="unit-h">Восемь тем, которых нет в вашем списке</h3>
         <ul class="plainlist">
-          <li><span class="pl-name">Навести порядок в отчётности</span><span class="pl-dir">процессы</span><span class="pl-pct num">45%</span></li>
-          <li><span class="pl-name">Снизить нагрузку на дежурствах</span><span class="pl-dir">люди</span><span class="pl-pct num">36%</span></li>
-          <li><span class="pl-name">Ускорить найм</span><span class="pl-dir">люди</span><span class="pl-pct num">27%</span></li>
+          <li><span class="pl-name">Навести порядок в отчётности</span><span class="pl-dir">процессы</span><span class="pl-pct num">5 из 11</span></li>
+          <li><span class="pl-name">Снизить нагрузку на дежурствах</span><span class="pl-dir">люди</span><span class="pl-pct num">4 из 11</span></li>
+          <li><span class="pl-name">Ускорить найм</span><span class="pl-dir">люди</span><span class="pl-pct num">3 из 11</span></li>
         </ul>
         <details class="fold">
           <summary><span class="fold-open">Ещё 5 тем</span><span class="fold-close">Свернуть</span></summary>
           <ul class="plainlist">
-            <li><span class="pl-name">Убрать ручные выгрузки из отчётов</span><span class="pl-dir">процессы</span><span class="pl-pct num">27%</span></li>
-            <li><span class="pl-name">Обновить онбординг новичков</span><span class="pl-dir">люди</span><span class="pl-pct num">18%</span></li>
-            <li><span class="pl-name">Пересобрать тарифную сетку</span><span class="pl-dir">деньги</span><span class="pl-pct num">18%</span></li>
-            <li><span class="pl-name">Единый бэклог вместо трёх</span><span class="pl-dir">процессы</span><span class="pl-pct num">9%</span></li>
-            <li><span class="pl-name">Описать зоны ответственности</span><span class="pl-dir">люди</span><span class="pl-pct num">9%</span></li>
+            <li><span class="pl-name">Убрать ручные выгрузки из отчётов</span><span class="pl-dir">процессы</span><span class="pl-pct num">3 из 11</span></li>
+            <li><span class="pl-name">Обновить онбординг новичков</span><span class="pl-dir">люди</span><span class="pl-pct num">2 из 11</span></li>
+            <li><span class="pl-name">Пересобрать тарифную сетку</span><span class="pl-dir">деньги</span><span class="pl-pct num">2 из 11</span></li>
+            <li><span class="pl-name">Единый бэклог вместо трёх</span><span class="pl-dir">процессы</span><span class="pl-pct num">1 из 11</span></li>
+            <li><span class="pl-name">Описать зоны ответственности</span><span class="pl-dir">люди</span><span class="pl-pct num">1 из 11</span></li>
           </ul>
         </details>
         <p class="unit-say">Иногда шум, иногда важное, что вы не проговорили.</p>
       </div>
 
-      <!-- ================= 3 · ЧТО МЫ НАШЛИ ================= -->
-      <p class="sec" id="rep-3">Блок 3 из 4 · Что мы нашли</p>
-
-      <div class="unit">
-        <p class="unit-k">Главное расхождение</p>
-        <h2 class="unit-h">Срочность до команды не дошла</h2>
-        <p class="axis-ends"><span>0</span><span>10</span></p>
-        <ul class="carry">
-          <li>
-            <p class="n">Приоритеты понятны, нравятся и важны</p>
-            <div class="axis">
-              <i class="gapline" style="left:72%;width:18%"></i>
-              <b class="m-team" style="left:72%"></b><b class="m-you" style="left:90%"></b>
-            </div>
-            <p class="say">Команда 7,2 · вы 9</p>
-            <p class="sr">Команда 7,2 из 10, ваша оценка 9.</p>
-          </li>
-          <li>
-            <p class="n">Верим, что сделаем</p>
-            <div class="axis">
-              <i class="gapline" style="left:75%;width:5%"></i>
-              <b class="m-team" style="left:75%"></b><b class="m-you" style="left:80%"></b>
-            </div>
-            <p class="say">Команда 7,5 · вы 8</p>
-            <p class="sr">Команда 7,5 из 10, ваша оценка 8.</p>
-          </li>
-          <li data-low="true">
-            <p class="n">Этим нужно заниматься здесь и сейчас</p>
-            <div class="axis">
-              <i class="gapline" style="left:46%;width:44%"></i>
-              <b class="m-team" style="left:46%"></b><b class="m-you" style="left:90%"></b>
-            </div>
-            <p class="say">Команда 4,6 · вы 9 — разрыв в 4,4 балла</p>
-            <p class="sr">Команда 4,6 из 10, ваша оценка 9.</p>
-          </li>
-        </ul>
-        <p class="unit-say">По двум другим вопросам вы с командой почти совпадаете, так что дело не в общем пессимизме. Залитая метка — команда, контурная — вы.</p>
+      <div class="sell">
+        <p class="sell-t">Приоритеты — это только начало</p>
+        <p class="sell-d">Список приоритетов ещё не стратегия: нет отказов, нет ресурса, нет
+        горизонта. Целиком стратегия собирается в stratos.</p>
+        <p><button type="button" class="btn btn-2">Что такое stratos</button></p>
       </div>
 
-      <div class="unit">
-        <p class="unit-k">Находка</p>
-        <h2 class="unit-h">Половина команды догадалась сама</h2>
-        <div class="stack" aria-hidden="true">
-          <i data-n="known" style="width:53%"></i><i data-n="guess" style="width:47%"></i>
-        </div>
-        <div class="keys" aria-hidden="true">
-          <span data-n="known" style="width:53%">Сказали или есть в документе — 53%</span>
-          <span data-n="guess" style="width:47%">Догадались сами — 47%</span>
-        </div>
-        <p class="sr">Догадались сами или не помнят источник — 47 процентов.</p>
-        <ul class="srcs">
-          <li><span class="p num">34%</span><span>Руководитель сказал прямо</span></li>
-          <li><span class="p num">19%</span><span>Есть в документе или okr</span></li>
-          <li><span class="p num">31%</span><span>Вывод по контексту, никто не говорил</span></li>
-          <li><span class="p num">16%</span><span>Не помню, просто так делаем</span></li>
-        </ul>
-        <p class="unit-say">47% формулировок люди вывели из контекста или не помнят источник: приоритеты живут не в словах и не в документах.</p>
-      </div>
+      <!-- ================= 3 · ЧТО ЕЩЁ ВИДНО ================= -->
+      <h2 class="sec" id="rep-3">Что ещё видно по ответам</h2>
 
       <div class="unit">
-        <p class="unit-k">Находка</p>
-        <h2 class="unit-h">Ваши формулировки мешают друг другу</h2>
-        <ul class="facts2">
-          <li><span class="f2-n num">2 из 4</span><span class="f2-t">формулировок не дают признака готовности — по чему в декабре судить, что сделано</span></li>
-          <li><span class="f2-n">Слиплись</span><span class="f2-t">самоокупаемость и срок вывода команда пересказывает одной фразой про «расти быстрее»</span></li>
+        <p class="unit-k">Пять замеров</p>
+        <h3 class="unit-h">Что в порядке, а что нет</h3>
+        <ul class="checks">
+          <li data-ok="false" data-key="true">
+            <span class="ck" aria-hidden="true">✕</span>
+            <span class="ck-b">
+              <span class="ck-t">Команда заряжена на этот год <span class="badge">ценная находка</span></span>
+              <span class="ck-d">Срочность — 4,6 из 10 при вашей 9. По двум другим вопросам вы почти
+              совпадаете, значит дело не в общем пессимизме: команда не видит, почему сейчас.</span>
+            </span>
+          </li>
+          <li data-ok="false">
+            <span class="ck" aria-hidden="true">✕</span>
+            <span class="ck-b">
+              <span class="ck-t">Есть откуда взять приоритеты</span>
+              <span class="ck-d">5 из 11 человек вывели их из контекста или не помнят источник.
+              Приоритеты живут не в словах и не в документах.</span>
+            </span>
+          </li>
+          <li data-ok="true">
+            <span class="ck" aria-hidden="true">✓</span>
+            <span class="ck-b">
+              <span class="ck-t">Фокус совпал</span>
+              <span class="ck-d">Ваш главный приоритет — самый частый выбор и в команде: 5 из 11.</span>
+            </span>
+          </li>
+          <li data-ok="false">
+            <span class="ck" aria-hidden="true">✕</span>
+            <span class="ck-b">
+              <span class="ck-t">Команда работает по вашему списку</span>
+              <span class="ck-d">Восемь тем сверх вашего списка. Люди работают над тем, чего вы не
+              называли.</span>
+            </span>
+          </li>
+          <li data-ok="false">
+            <span class="ck" aria-hidden="true">✕</span>
+            <span class="ck-b">
+              <span class="ck-t">Все направления закрыты</span>
+              <span class="ck-d">Клиентов не назвал никто — ни вы, ни команда. Людей команда назвала
+              вчетверо больше, чем вы: 4 против 1.</span>
+            </span>
+          </li>
         </ul>
-        <p class="unit-say">Это единственная находка, которую можно закрыть за десять минут — переписав две строки.</p>
+        <p class="unit-say">Каждая строка — утверждение: галочка значит «да», крестик — «нет, стоит
+        разобрать на встрече». Замеры считаются по тем же ответам, что и балл.</p>
       </div>
 
-      <div class="unit">
-        <p class="unit-k">Находка</p>
-        <h2 class="unit-h">Про клиентов не сказал никто</h2>
-        <div class="scroll">
-          <table class="bsc">
-            <thead><tr><th>Направление</th><th>Ваши</th><th>Назвала команда</th></tr></thead>
-            <tbody>
-              <tr><td>Деньги</td><td class="num" data-l="Ваши">1</td><td class="num" data-l="Назвала команда">1</td></tr>
-              <tr data-empty="true"><td>Клиенты</td><td class="num" data-l="Ваши">0</td><td class="num" data-l="Назвала команда">0</td></tr>
-              <tr><td>Процессы</td><td class="num" data-l="Ваши">2</td><td class="num" data-l="Назвала команда">3</td></tr>
-              <tr><td>Люди</td><td class="num" data-l="Ваши">1</td><td class="num" data-l="Назвала команда">4</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="unit-say">Ни в вашем списке, ни у команды. Людей команда назвала вчетверо больше, чем вы.</p>
+      <div class="sell">
+        <p class="sell-t">Это типичные ошибки стратегии</p>
+        <p class="sell-d">Приоритеты без срочности, повестка снизу, пустое направление — три из
+        пяти самых частых. Проверьте своё стратегическое мышление на живом кейсе и разберите
+        остальные.</p>
+        <p><button type="button" class="btn btn-2">Оценить стратегическое мышление</button></p>
       </div>
 
       <!-- ================= 4 · ЧТО ДЕЛАТЬ ================= -->
-      <p class="sec" id="rep-4">Блок 4 из 4 · Что делать</p>
+      <h2 class="sec" id="rep-4">Что с этим делать</h2>
 
       <div class="unit">
         <p class="unit-k">Встреча на 15 минут</p>
-        <h2 class="unit-h">Три действия и три вопроса</h2>
+        <h3 class="unit-h">Три действия и три вопроса</h3>
         <ol class="steps-num">
           <li>
             <p class="sn-t">Прочитайте вслух четыре приоритета</p>
@@ -1459,7 +1471,7 @@
           </li>
           <li>
             <p class="sn-t">Решите вслух про отчётность</p>
-            <p class="sn-d">Её назвали пять человек из одиннадцати. Приоритет года или текущая работа?</p>
+            <p class="sn-d">Её назвали 5 человек из 11. Приоритет года или текущая работа?</p>
           </li>
         </ol>
         <ul class="asks">
@@ -1472,10 +1484,11 @@
 
       <div class="unit">
         <p class="unit-k">Наверх</p>
-        <h2 class="unit-h">Три факта и просьба</h2>
+        <h3 class="unit-h">Три факта и просьба</h3>
         <div class="take">
-          <p>Команде кажется, что приоритеты понятны, — 4,1 из 5. При этом два приоритета из четырёх назвала меньше трети команды.</p>
-          <p>47% формулировок люди вывели сами или не помнят источник.</p>
+          <p>Команда оценила ясность приоритетов на 4,1 из 5, но больше половины команды знает
+          только один приоритет из четырёх.</p>
+          <p>5 человек из 11 вывели приоритеты сами или не помнят источник.</p>
           <p>Направление «клиенты» не назвал ни один из 11 участников.</p>
           <p>Прошу два часа на встречу по приоритетам и то же самое по остальным командам отдела.</p>
         </div>
@@ -1485,17 +1498,32 @@
         </div>
       </div>
 
-      <div class="unit">
-        <p class="unit-k">Следующий шаг</p>
-        <h2 class="unit-h">Пилот карты стратегии на десяти командах</h2>
-        <p class="unit-say">Внутри команды люди согласны друг с другом сильнее, чем с вами. Карта стратегии покажет то же по десяти командам — видно, на каком уровне теряется сигнал.</p>
+      <div class="unit sell-main">
+        <p class="unit-k">Разобрать вместе</p>
+        <h3 class="unit-h">Консультация на 30 минут по этому отчёту</h3>
+        <p class="unit-say">Пройдём по вашим приоритетам и пяти замерам, соберём план разговора с
+        командой. Бесплатно, один раз на отчёт.</p>
         <div class="btn-row">
-          <button type="button" class="btn btn-1">Обсудить пилот</button>
-          <button type="button" class="btn btn-3">Что входит</button>
+          <button type="button" class="btn btn-1">Запросить консультацию</button>
+          <button type="button" class="btn btn-3">Посмотреть ответы целиком</button>
         </div>
       </div>
 
     </div>
+
+    <nav class="rep-nav" aria-label="разделы отчёта">
+      <p class="unit-k">В отчёте</p>
+      <ol>
+        <li><a href="#rep-1">Синхрон</a></li>
+        <li><a href="#rep-2">Приоритеты</a></li>
+        <li><a href="#rep-3">Замеры</a></li>
+        <li><a href="#rep-4">Что делать</a></li>
+      </ol>
+      <div class="rep-nav-tools">
+        <button type="button" class="btn btn-2" id="printBtn">Сохранить в pdf</button>
+        <button type="button" class="btn btn-3" data-copy="priorities.fproof.ru/v/8c41d9e7a2">Скопировать ссылку</button>
+      </div>
+    </nav>
   </div>
 </section>
 
@@ -1634,8 +1662,33 @@
   measureBar();
   window.addEventListener('resize', measureBar);
 
+  /* В адресе может стоять якорь раздела внутри отчёта (#rep-2), а не экран.
+     Тогда показываем отчёт и прокручиваем к разделу. */
   var start = (location.hash || '').replace('#', '');
-  show(start || 's-landing', !start);
+  if (start && !document.getElementById(start)) start = '';
+  var isScreen = start && document.getElementById(start).classList.contains('screen');
+  if (start && !isScreen) {
+    show('s-report', true);
+    var target = document.getElementById(start);
+    if (target) target.scrollIntoView();
+  } else {
+    show(start || 's-landing', !start);
+  }
+
+  /* окошко «как считается»: наведение делает css, нажатие — для касания */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.info-btn');
+    document.querySelectorAll('.info-btn[aria-expanded="true"]').forEach(function (x) {
+      if (x !== b) x.setAttribute('aria-expanded', 'false');
+    });
+    if (b) b.setAttribute('aria-expanded', b.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.info-btn[aria-expanded="true"]').forEach(function (x) {
+      x.setAttribute('aria-expanded', 'false');
+    });
+  });
 })();
 </script>
 </body>
