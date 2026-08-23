@@ -641,6 +641,10 @@
      не нужен, а самая крупная цифра в отчёте остаётся одна — балл */
   .res-fig .num { font-size: var(--fs-place); font-weight: 500; letter-spacing: -0.02em; }
   .res-of { font-size: var(--fs-util); color: var(--muted); }
+  /* Счёт-проверка при проценте — строкой НИЖЕ: справа он читается как
+     знаменатель, а он не знаменатель. «из 10», «из 4», «из 500» остаются
+     рядом с числом: они и есть знаменатель. */
+  .res-sub { display: block; margin-top: 3px; }
   .res-cap {
     margin-top: auto; padding-top: 10px; font-size: var(--fs-util); color: var(--muted);
     line-height: 1.25;
@@ -2101,8 +2105,8 @@
   var pct = function (part, whole) { return Math.round(part / whole * 100) + '%'; };
   function fig(part, whole) {
     return whole <= 20
-      ? { f: part, o: 'из ' + whole }
-      : { f: pct(part, whole), o: '(' + part + ' из ' + whole + ')' };
+      ? { f: part, o: 'из ' + whole, sub: false }
+      : { f: pct(part, whole), o: '(' + part + ' из ' + whole + ')', sub: true };
   }
   function said(part, whole) {
     return whole <= 20
@@ -2143,12 +2147,13 @@
     }
     return '<span class="res-viz" data-kind="gauge" data-max="' + whole + '" data-a="' + part + '" aria-hidden="true"></span>';
   }
-  var sq = function (id, fig, of, vz, cap, panel) {
+  var sq = function (id, fig, of, vz, cap, panel, sub) {
     return '<div class="res">' +
       '<button type="button" class="res-sq" aria-expanded="false"' +
       (panel ? ' aria-controls="' + id + '"' : ' data-flat="true" tabindex="-1"') + '>' +
       (panel ? '<span class="res-plus" aria-hidden="true">+</span>' : '') +
-      '<span class="res-fig"><span class="num">' + fig + '</span> <span class="res-of">' + of + '</span></span>' +
+      '<span class="res-fig"><span class="num">' + fig + '</span> <span class="res-of' +
+      (sub ? ' res-sub' : '') + '">' + of + '</span></span>' +
       vz + '<span class="res-cap">' + cap + '</span></button>' +
       (panel ? '<div class="res-full" id="' + id + '">' + panel + '</div>' : '') + '</div>';
   };
@@ -2171,7 +2176,7 @@
       s: 'Главным ваш приоритет назвали ' + said(d.main, A) + '. ' +
          (d.main / A < 0.5 ? 'Значит на планёрке каждый второй расставит задачи по-своему.'
                            : 'На планёрке порядок задач спорить не придётся.'),
-      fig: fig(d.main, A).f, of: fig(d.main, A).o, vz: viz(d, d.main, A), cap: 'назвали это главным',
+      fig: fig(d.main, A).f, of: fig(d.main, A).o, sub: fig(d.main, A).sub, vz: viz(d, d.main, A), cap: 'назвали это главным',
       panel: pl(d.own.map(function (o, i) {
         return [o.name + (i === 0 ? ' — ваш выбор' : ''), o.dir,
                 A <= 20 ? o.named + ' из ' + A : pct(o.named, A)];
@@ -2201,7 +2206,7 @@
       h: d.guessed / A > 0.33 ? 'Приоритеты живут в догадках, а не в словах'
                               : 'Приоритеты команда знает от вас, а не из догадок',
       s: said(d.guessed, A) + ' вывели их из контекста или не помнят, откуда знают.',
-      fig: fig(d.guessed, A).f, of: fig(d.guessed, A).o, vz: viz(d, d.guessed, A), cap: 'догадались сами',
+      fig: fig(d.guessed, A).f, of: fig(d.guessed, A).o, sub: fig(d.guessed, A).sub, vz: viz(d, d.guessed, A), cap: 'догадались сами',
       panel: pl([['Слышали от вас напрямую', '', A <= 20 ? (A - d.guessed) + ' из ' + A : pct(A - d.guessed, A)],
                  ['Вывели сами или не помнят', '', A <= 20 ? d.guessed + ' из ' + A : pct(d.guessed, A)]]) });
 
@@ -2284,7 +2289,7 @@
         ? 'Часть команды тянет темы, которых нет в вашем списке'
         : 'Команда занята тем, что есть в вашем списке',
       s: said(d.outside, A) + ' работают над темами вне вашего списка. Всего таких тем: ' + d.themes + '.',
-      fig: fig(d.outside, A).f, of: fig(d.outside, A).o, vz: viz(d, d.outside, A), cap: 'тянут свои темы',
+      fig: fig(d.outside, A).f, of: fig(d.outside, A).o, sub: fig(d.outside, A).sub, vz: viz(d, d.outside, A), cap: 'тянут свои темы',
       panel: pl(top) + (restCount > 0
         ? '<p class="res-note">В отчёте пять самых частых. Остальные ' + restCount +
           ' — в приложении отдельной страницей: в окне они не читаются.</p>'
@@ -2369,7 +2374,7 @@
       list.forEach(function (v) {
         html += '<div class="vd"><h2 class="vd-h">' + v.h + '</h2>' +
           '<p class="vd-say">' + v.s + '</p>' +
-          sq(sz.key + st.key + v.id, v.fig, v.of, v.vz, v.cap, v.panel) + '</div>';
+          sq(sz.key + st.key + v.id, v.fig, v.of, v.vz, v.cap, v.panel, v.sub) + '</div>';
       });
       html += '</div>';
     });
