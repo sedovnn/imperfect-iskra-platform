@@ -74,6 +74,7 @@
     --w-body: 760px;   /* одна колонка на всё содержание отчёта */
     --gap: 24px;
     --radius: 8px;      /* ОДИН радиус на всю платформу */
+    --sq: 168px;        /* окно результата у вердикта */
   }
 
   *, *::before, *::after { box-sizing: border-box; }
@@ -573,35 +574,81 @@
   .grade[data-g="ok"]  .grade-n { background: var(--field); color: var(--muted); }
 
   /* ---------- вердикт ---------- */
+  /* Текст ведёт, результат стоит справа отдельным окном и виден всегда.
+     Раньше цифры лежали в закрытом «показать цифры» — то есть большинство
+     читателей их не видело вовсе. Цифра из левого поля переехала в окно:
+     держать одно и то же число в двух местах строки незачем. */
   .vd {
-    display: grid; gap: 4px var(--gap);
-    grid-template-columns: 11ch minmax(0, 1fr);
+    display: grid; gap: 4px var(--gap); align-items: start;
+    grid-template-columns: minmax(0, 1fr) var(--sq);
     border-top: 1px solid var(--rule); margin-top: 20px; padding-top: 18px;
   }
   .grade-k + .vd { border-top: 0; margin-top: 18px; padding-top: 0; }
-  .vd-fig {
-    grid-column: 1; grid-row: 1 / span 3;
-    font-size: var(--fs-find); font-weight: 500; color: var(--muted);
-    line-height: 1.2;
-  }
   /* balance убирает висячее слово: заголовки вердиктов рвались как
      «…меньше трети / команды» и «…не сказал / никто» */
-  .vd-h { grid-column: 2; font-size: var(--fs-find); max-width: 34ch; letter-spacing: -0.01em; text-wrap: balance; }
-  .vd-say { grid-column: 2; margin-top: 8px; max-width: var(--w-read); }
-  .vd .nums { grid-column: 2; margin-top: 12px; }
+  .vd-h { grid-column: 1; font-size: var(--fs-find); max-width: 34ch; letter-spacing: -0.01em; text-wrap: balance; }
+  .vd-say { grid-column: 1; margin-top: 8px; max-width: var(--w-read); }
 
-  /* цифры по запросу */
-  .nums summary {
-    cursor: pointer; min-height: 38px; display: flex; align-items: center;
-    color: var(--accent-text); font-size: var(--fs-dense);
-    text-decoration: underline; text-underline-offset: 3px;
+  /* ---------- окно результата ---------- */
+  .res { grid-column: 2; grid-row: 1 / span 2; position: relative; }
+  .res-sq {
+    appearance: none; position: relative; width: var(--sq); aspect-ratio: 1; cursor: pointer;
+    display: flex; flex-direction: column; align-items: flex-start; text-align: left;
+    background: var(--surface); border: 1px solid var(--hint);
+    border-radius: var(--radius); padding: 14px; font: inherit; color: inherit;
   }
-  .nums summary::-webkit-details-marker { display: none; }
-  .nums summary:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
-  .nums .fold-close { display: none; }
-  .nums[open] .fold-open { display: none; }
-  .nums[open] .fold-close { display: inline; }
-  .nums > *:not(summary) { margin-top: 10px; }
+  .res-sq:hover, .res-sq[aria-expanded="true"] { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .res-sq:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
+  .res-plus {
+    position: absolute; top: 10px; right: 12px;
+    font-size: var(--fs-read); line-height: 1; color: var(--muted);
+  }
+  .res-sq:hover .res-plus, .res-sq[aria-expanded="true"] .res-plus { color: var(--ink); }
+  .res-sq[aria-expanded="true"] .res-plus { transform: rotate(45deg); }
+  .res-fig { display: block; line-height: 1; white-space: nowrap; }
+  /* цифра окна — ступень заголовка блока: восьмой кегль на шкале
+     не нужен, а самая крупная цифра в отчёте остаётся одна — балл */
+  .res-fig .num { font-size: var(--fs-place); font-weight: 500; letter-spacing: -0.02em; }
+  .res-of { font-size: var(--fs-util); color: var(--muted); }
+  .res-cap {
+    margin-top: auto; padding-top: 10px; font-size: var(--fs-util); color: var(--muted);
+    line-height: 1.25; max-width: 17ch;
+  }
+
+  /* точки: одна точка — один человек или один приоритет.
+     Заливка = то, что посчитано в цифре; подпись говорит, что это. */
+  .res-viz { display: block; margin-top: 10px; }
+  .res-viz[data-kind="dots"] { display: grid; gap: 5px; justify-content: start; }
+  .res-d { width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box; }
+  .res-d[data-on="0"] { border: 1px solid var(--hint); }
+  .res-d[data-on="1"] { background: var(--ink); }
+  /* вермилион в «разобрать на встрече» — тот же маркер группы, что и плашка
+     со счётом у её заголовка, а не оценка «плохо» внутри самого вывода */
+  .grade[data-g="bad"] .res-d[data-on="1"] { background: var(--accent); }
+
+  /* две величины: заливка — про что вердикт, контур — с чем сравниваем */
+  .res-pr { display: block; font-size: var(--fs-util); color: var(--muted); }
+  .res-pr + .res-pr { margin-top: 6px; }
+  .res-pr .prl { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .res-pr .prt {
+    display: block; height: 7px; margin-top: 3px; background: var(--tick);
+    border-radius: 4px; overflow: hidden;
+  }
+  .res-pr .prv { display: block; height: 100%; background: var(--ink); border-radius: 4px; }
+  .res-pr[data-ref="1"] .prv { background: none; box-shadow: inset 0 0 0 1px var(--hint); }
+  .grade[data-g="bad"] .res-pr[data-ref="0"] .prv { background: var(--accent); }
+
+  /* раскрытие: наведение, фокус или нажатие на касании */
+  .res-full {
+    position: absolute; right: 0; top: 100%; z-index: 20; width: min(620px, 78vw);
+    display: none; background: var(--surface); border: 1px solid var(--ink);
+    border-radius: var(--radius); padding: 18px;
+    box-shadow: 0 8px 24px rgba(24, 24, 24, 0.12);
+  }
+  .res:hover .res-full,
+  .res:focus-within .res-full,
+  .res-sq[aria-expanded="true"] + .res-full { display: block; }
+  .res-note { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; max-width: 60ch; }
 
   /* ---------- что делать ---------- */
   .todo { margin-top: 56px; border-top: 2px solid var(--ink); padding-top: 14px; }
@@ -697,8 +744,11 @@
     .vt-row { grid-template-columns: 1fr; }
     .info-panel { width: min(92vw, 420px); }
     /* цифра встаёт над вердиктом: в 10ch колонке на телефоне она рвётся */
+    /* окно результата встаёт под текстом: 168px справа съедают строку */
     .vd { grid-template-columns: 1fr; }
-    .vd-fig, .vd-h, .vd-say, .vd .nums { grid-column: 1; grid-row: auto; }
+    .vd-h, .vd-say, .res { grid-column: 1; grid-row: auto; }
+    .res { margin-top: 14px; }
+    .res-full { left: 0; right: auto; width: min(560px, 88vw); }
     .plainlist li { grid-template-columns: minmax(0, 1fr) 7ch; }
     .facts2 li { grid-template-columns: 1fr; gap: 4px; }
     /* числовая таблица в столбик теряет смысл: два голых числа без подписи.
@@ -744,6 +794,13 @@
     :root { --fs-place: 15pt; --fs-find: 11pt; --fs-read: 9.5pt; --fs-dense: 8.6pt; --fs-util: 7.4pt; }
     .unit, .take, .bars li, .plainlist li, .steps-num li, .asks li, .carry li, .bsc tr { break-inside: avoid; }
     h1, h2, .sec, .unit-k { break-after: avoid; }
+    .res-sq { display: none !important; }
+    .res-full {
+      display: block !important; position: static; width: auto;
+      border: 0; padding: 0; box-shadow: none;
+    }
+    .vd { grid-template-columns: 1fr; }
+    .vd-h, .vd-say, .res { grid-column: 1; grid-row: auto; }
     .sec { break-before: page; }
     .sec:first-of-type { break-before: auto; }
   }
@@ -1238,7 +1295,7 @@
      раскрываются по запросу. Лидер читает девять предложений и знает,
      что происходит; за цифрами идёт только тот, кто хочет проверить.
 
-     Каждый замер получает вердикт одного из ТРЁХ уровней:
+     Каждый вывод получает один из ТРЁХ уровней:
        разобрать на встрече · держать в виду · здесь всё хорошо
      Вердикты отсортированы по тяжести, а не по темам: сверху то,
      из-за чего стоит собрать людей.
@@ -1261,7 +1318,7 @@
   <!-- ================= ЗАКЛЮЧЕНИЕ ================= -->
   <div class="verdict-top" id="rep-1">
     <p class="unit-k">Заключение</p>
-    <h1 class="vt-h">Пять замеров из девяти стоит разобрать с командой</h1>
+    <h1 class="vt-h">Пять выводов из девяти стоит разобрать с командой</h1>
     <p class="vt-lead">Команда оценила ясность приоритетов на 4,1 из 5 — людям кажется, что им
     понятно. Дело не в несогласии: приоритеты не проговорены так, чтобы их можно было
     повторить.</p>
@@ -1311,30 +1368,41 @@
     <p class="grade-k">Разобрать на встрече <span class="grade-n num">5</span></p>
 
     <div class="vd">
-      <p class="vd-fig num">5 из 11</p>
       <h2 class="vd-h">Команда не знает, что для вас главное</h2>
       <p class="vd-say">Главным ваш приоритет назвали 5 из 11 — меньше половины. Значит на
       планёрке каждый второй расставит задачи по-своему, и спорить будет не о целях, а о
       порядке.</p>
-      <details class="nums">
-        <summary><span class="fold-open">Показать цифры</span><span class="fold-close">Скрыть</span></summary>
-        <ul class="plainlist">
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res1">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">5</span> <span class="res-of">из 11</span></span>
+          <span class="res-viz" data-kind="dots" data-a="11" data-b="5" aria-hidden="true"></span>
+          <span class="res-cap">назвали это главным</span>
+        </button>
+        <div class="res-full" id="res1">
+<ul class="plainlist">
           <li><span class="pl-name">Самоокупаемость новых каналов — ваш выбор</span><span class="pl-dir">деньги</span><span class="pl-pct num">5 из 11</span></li>
           <li><span class="pl-name">Навести порядок в отчётности</span><span class="pl-dir">процессы</span><span class="pl-pct num">3 из 11</span></li>
           <li><span class="pl-name">Срок вывода продукта</span><span class="pl-dir">процессы</span><span class="pl-pct num">2 из 11</span></li>
           <li><span class="pl-name">Сильная команда в аналитике</span><span class="pl-dir">люди</span><span class="pl-pct num">1 из 11</span></li>
         </ul>
-      </details>
+        </div>
+      </div>
     </div>
 
     <div class="vd">
-      <p class="vd-fig num">1 из 4</p>
       <h2 class="vd-h">Три приоритета из четырёх знает меньше трети команды</h2>
       <p class="vd-say">Дошёл только один — самоокупаемость, её назвали 7 из 11. Поддержку и
       аналитику назвали 3 и 2 человека: для команды этих приоритетов в этом году нет.</p>
-      <details class="nums">
-        <summary><span class="fold-open">Показать цифры</span><span class="fold-close">Скрыть</span></summary>
-        <ul class="bars">
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res2">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">3</span> <span class="res-of">из 4</span></span>
+          <span class="res-viz" data-kind="dots" data-a="4" data-b="3" aria-hidden="true"></span>
+          <span class="res-cap">приоритетов не дошло</span>
+        </button>
+        <div class="res-full" id="res2">
+<ul class="bars">
           <li>
             <div class="t"><span class="name">Выйти на самоокупаемость по новым каналам</span><span class="pct num">7 из 11</span></div>
             <div class="track"><div class="val" style="width:64%"></div></div>
@@ -1352,48 +1420,66 @@
             <div class="track"><div class="val" data-miss="true" style="width:18%"></div></div>
           </li>
         </ul>
-      </details>
+        </div>
+      </div>
     </div>
 
     <div class="vd">
-      <p class="vd-fig num">5 из 11</p>
       <h2 class="vd-h">Приоритеты живут в догадках, а не в словах</h2>
       <p class="vd-say">5 из 11 человек вывели их из контекста или не помнят, откуда знают.
       Значит через полгода у каждого будет своя версия, и поправить её будет нечем.</p>
-      <details class="nums">
-        <summary><span class="fold-open">Показать цифры</span><span class="fold-close">Скрыть</span></summary>
-        <ul class="plainlist">
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res3">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">5</span> <span class="res-of">из 11</span></span>
+          <span class="res-viz" data-kind="dots" data-a="11" data-b="5" aria-hidden="true"></span>
+          <span class="res-cap">догадались сами</span>
+        </button>
+        <div class="res-full" id="res3">
+<ul class="plainlist">
           <li><span class="pl-name">Руководитель сказал прямо</span><span class="pl-pct num">4 из 11</span></li>
           <li><span class="pl-name">Есть в документе или okr</span><span class="pl-pct num">2 из 11</span></li>
           <li><span class="pl-name">Вывод по контексту, никто не говорил</span><span class="pl-pct num">3 из 11</span></li>
           <li><span class="pl-name">Не помню, просто так делаем</span><span class="pl-pct num">2 из 11</span></li>
         </ul>
-      </details>
+        </div>
+      </div>
     </div>
 
     <div class="vd">
-      <p class="vd-fig num">4,6 из 10</p>
       <h2 class="vd-h">Команда не видит, почему этим нужно заниматься сейчас</h2>
       <p class="vd-say">Срочность — 4,6 из 10 при вашей 9. По двум другим вопросам вы почти
       совпадаете, так что дело не в общем пессимизме: команда не купила срок.</p>
-      <details class="nums">
-        <summary><span class="fold-open">Показать цифры</span><span class="fold-close">Скрыть</span></summary>
-        <ul class="plainlist">
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res4">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">4,6</span> <span class="res-of">из 10</span></span>
+          <span class="res-viz" data-kind="pair" data-max="10" data-a="4,6" data-la="команда" data-b="9" data-lb="вы" aria-hidden="true"></span>
+          <span class="res-cap">срочность</span>
+        </button>
+        <div class="res-full" id="res4">
+<ul class="plainlist">
           <li><span class="pl-name">Приоритеты понятны, нравятся и важны</span><span class="pl-dir">вы 9</span><span class="pl-pct num">7,2</span></li>
           <li><span class="pl-name">Верим, что сделаем</span><span class="pl-dir">вы 8</span><span class="pl-pct num">7,5</span></li>
           <li><span class="pl-name">Этим нужно заниматься здесь и сейчас</span><span class="pl-dir">вы 9</span><span class="pl-pct num">4,6</span></li>
         </ul>
-      </details>
+        </div>
+      </div>
     </div>
 
     <div class="vd">
-      <p class="vd-fig num">0 из 11</p>
       <h2 class="vd-h">Про клиентов в этом году не сказал никто</h2>
       <p class="vd-say">Ни в вашем списке, ни у команды — 0 из 11. Три направления из четырёх
       закрыты, четвёртое пустое, и это либо осознанный отказ, либо дыра.</p>
-      <details class="nums">
-        <summary><span class="fold-open">Показать цифры</span><span class="fold-close">Скрыть</span></summary>
-        <div class="scroll">
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res5">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">1</span> <span class="res-of">из 4</span></span>
+          <span class="res-viz" data-kind="dots" data-a="4" data-b="1" aria-hidden="true"></span>
+          <span class="res-cap">направление без приоритетов</span>
+        </button>
+        <div class="res-full" id="res5">
+<div class="scroll">
           <table class="bsc">
             <thead><tr><th>Направление</th><th>Ваши</th><th>Назвала команда</th></tr></thead>
             <tbody>
@@ -1404,12 +1490,13 @@
             </tbody>
           </table>
         </div>
-      </details>
+        </div>
+      </div>
     </div>
 
     <div class="sell">
       <p class="sell-t">Приоритеты — это ещё не стратегия</p>
-      <p class="sell-d">Четыре из пяти замеров выше — про передачу, а не про сам выбор. В списке нет
+      <p class="sell-d">Четыре из пяти выводов выше — про передачу, а не про сам выбор. В списке нет
       отказов, нет ресурса и нет горизонта: именно это собирается в stratos.</p>
       <p><button type="button" class="btn btn-2">Что такое stratos</button></p>
     </div>
@@ -1420,36 +1507,61 @@
     <p class="grade-k">Держать в виду <span class="grade-n num">3</span></p>
 
     <div class="vd">
-      <p class="vd-fig num">52 и 39</p>
       <h2 class="vd-h">Внутри команды согласия больше, чем с вами</h2>
       <p class="vd-say">Друг с другом люди совпадают на 52 из 100, с вами — на 39. Команда
       договорилась, но не с вами: у неё есть своя рабочая версия приоритетов.</p>
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res6">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">39</span> <span class="res-of">из 100</span></span>
+          <span class="res-viz" data-kind="pair" data-max="100" data-a="39" data-la="с вами" data-b="52" data-lb="между собой" aria-hidden="true"></span>
+          <span class="res-cap">совпадение приоритетов</span>
+        </button>
+        <div class="res-full" id="res6">
+<ul class="plainlist">
+          <li><span class="pl-name">Команда с вашим списком</span><span class="pl-pct num">39 из 100</span></li>
+          <li><span class="pl-name">Люди друг с другом</span><span class="pl-pct num">52 из 100</span></li>
+        </ul>
+        <p class="res-note">Считаем по общим словам в парах ответов: 100 — списки об одном и том же, 0 — ни одного пересечения.</p>
+        </div>
+      </div>
     </div>
 
     <div class="vd">
-      <p class="vd-fig num">2 из 4</p>
       <h2 class="vd-h">В двух формулировках из четырёх нет конкретики</h2>
       <p class="vd-say">Не видно, по чему в декабре судить, что сделано. Плюс самоокупаемость и срок
       вывода команда пересказывает одной фразой про «расти быстрее» — разница не читается.</p>
-      <details class="nums">
-        <summary><span class="fold-open">Показать цифры</span><span class="fold-close">Скрыть</span></summary>
-        <ul class="plainlist">
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res7">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">2</span> <span class="res-of">из 4</span></span>
+          <span class="res-viz" data-kind="dots" data-a="4" data-b="2" aria-hidden="true"></span>
+          <span class="res-cap">формулировки без конкретики</span>
+        </button>
+        <div class="res-full" id="res7">
+<ul class="plainlist">
           <li><span class="pl-name">Выйти на самоокупаемость по новым каналам</span><span class="pl-pct">нет критерия</span></li>
           <li><span class="pl-name">Сократить срок вывода продукта с девяти месяцев до пяти</span><span class="pl-pct">есть</span></li>
           <li><span class="pl-name">Перевести поддержку на самообслуживание</span><span class="pl-pct">нет критерия</span></li>
           <li><span class="pl-name">Собрать сильную команду в аналитике</span><span class="pl-pct">есть</span></li>
         </ul>
-      </details>
+        </div>
+      </div>
     </div>
 
     <div class="vd">
-      <p class="vd-fig num">8 тем</p>
       <h2 class="vd-h">Команда тянет восемь своих тем</h2>
       <p class="vd-say">Их нет в вашем списке, но люди над ними работают. Самая частая — порядок в
       отчётности, её назвали 5 из 11, столько же, сколько ваш главный.</p>
-      <details class="nums">
-        <summary><span class="fold-open">Показать цифры</span><span class="fold-close">Скрыть</span></summary>
-        <ul class="plainlist">
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res8">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">8</span> <span class="res-of">тем</span></span>
+          <span class="res-viz" data-kind="dots" data-a="8" data-b="8" aria-hidden="true"></span>
+          <span class="res-cap">своих тем у команды</span>
+        </button>
+        <div class="res-full" id="res8">
+<ul class="plainlist">
           <li><span class="pl-name">Навести порядок в отчётности</span><span class="pl-dir">процессы</span><span class="pl-pct num">5 из 11</span></li>
           <li><span class="pl-name">Снизить нагрузку на дежурствах</span><span class="pl-dir">люди</span><span class="pl-pct num">4 из 11</span></li>
           <li><span class="pl-name">Ускорить найм</span><span class="pl-dir">люди</span><span class="pl-pct num">3 из 11</span></li>
@@ -1459,7 +1571,8 @@
           <li><span class="pl-name">Единый бэклог вместо трёх</span><span class="pl-dir">процессы</span><span class="pl-pct num">1 из 11</span></li>
           <li><span class="pl-name">Описать зоны ответственности</span><span class="pl-dir">люди</span><span class="pl-pct num">1 из 11</span></li>
         </ul>
-      </details>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1468,10 +1581,24 @@
     <p class="grade-k">Здесь всё хорошо <span class="grade-n num">1</span></p>
 
     <div class="vd">
-      <p class="vd-fig num">7,2 и 7,5</p>
       <h2 class="vd-h">Команда верит, что справится</h2>
       <p class="vd-say">Приоритеты нравятся и кажутся важными — 7,2 из 10, вера в себя —
       7,5. Это ресурс: людей не надо убеждать, что задача им по силам.</p>
+      <div class="res">
+        <button type="button" class="res-sq" aria-expanded="false" aria-controls="res9">
+          <span class="res-plus" aria-hidden="true">+</span>
+          <span class="res-fig"><span class="num">7,2</span> <span class="res-of">из 10</span></span>
+          <span class="res-viz" data-kind="pair" data-max="10" data-a="7,2" data-la="нравятся" data-b="7,5" data-lb="верят в себя" aria-hidden="true"></span>
+          <span class="res-cap">команда о себе</span>
+        </button>
+        <div class="res-full" id="res9">
+<ul class="plainlist">
+          <li><span class="pl-name">Приоритеты понятны, нравятся и важны</span><span class="pl-dir">вы 9</span><span class="pl-pct num">7,2</span></li>
+          <li><span class="pl-name">Верим, что сделаем</span><span class="pl-dir">вы 8</span><span class="pl-pct num">7,5</span></li>
+        </ul>
+        <p class="res-note">Средние по команде из 11 ответов, шкала 0–10.</p>
+        </div>
+      </div>
     </div>
 
     <div class="sell">
@@ -1706,6 +1833,63 @@
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape') return;
     document.querySelectorAll('.info-btn[aria-expanded="true"]').forEach(function (x) {
+      x.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  /* ---------- окно результата у вердикта ---------- */
+  /* Точки рисуем скриптом, а не в разметке: девять окон вручную — это
+     девять шансов разойтись с цифрой рядом. */
+  function numOf(v) { return parseFloat(String(v).replace(',', '.')); }
+
+  document.querySelectorAll('.res-viz').forEach(function (v) {
+    var kind = v.getAttribute('data-kind');
+    if (kind === 'dots') {
+      var a = parseInt(v.getAttribute('data-a'), 10);
+      var b = parseInt(v.getAttribute('data-b'), 10);
+      var cols = a <= 4 ? a : (a <= 6 ? 3 : 4);
+      v.style.gridTemplateColumns = 'repeat(' + cols + ', 12px)';
+      for (var i = 0; i < a; i++) {
+        var d = document.createElement('span');
+        d.className = 'res-d';
+        d.setAttribute('data-on', i < b ? '1' : '0');
+        v.appendChild(d);
+      }
+    } else if (kind === 'pair') {
+      var max = numOf(v.getAttribute('data-max'));
+      [['a', 'la', '0'], ['b', 'lb', '1']].forEach(function (k) {
+        var val = v.getAttribute('data-' + k[0]);
+        var row = document.createElement('span');
+        row.className = 'res-pr';
+        row.setAttribute('data-ref', k[2]);
+        var l = document.createElement('span');
+        l.className = 'prl';
+        /* у верхней строки числа нет: оно и есть крупная цифра выше */
+        l.textContent = v.getAttribute('data-' + k[1]) + (k[2] === '1' ? ' ' + val : '');
+        var t = document.createElement('span');
+        t.className = 'prt';
+        var f = document.createElement('span');
+        f.className = 'prv';
+        f.style.width = Math.round(numOf(val) / max * 100) + '%';
+        t.appendChild(f);
+        row.appendChild(l);
+        row.appendChild(t);
+        v.appendChild(row);
+      });
+    }
+  });
+
+  /* наведение делает css, нажатие — для касания */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.res-sq');
+    document.querySelectorAll('.res-sq[aria-expanded="true"]').forEach(function (x) {
+      if (x !== b) x.setAttribute('aria-expanded', 'false');
+    });
+    if (b) b.setAttribute('aria-expanded', b.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.res-sq[aria-expanded="true"]').forEach(function (x) {
       x.setAttribute('aria-expanded', 'false');
     });
   });
