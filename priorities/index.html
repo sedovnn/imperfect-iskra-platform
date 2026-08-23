@@ -726,8 +726,32 @@
      «из чего собран» — колонки ВКЛАД и ВЕС его повторяли. Здесь только то,
      чего в отчёте нет: что каждая часть измеряет и её собственный балл.
      Доли названы один раз фразой, а не колонкой, с которой спорят. */
-  .how-score { margin-top: 26px; border-top: 1px solid var(--rule); }
-  .hs-lead { font-size: var(--fs-dense); color: var(--muted); max-width: var(--w-read); margin-top: 4px; }
+  /* ---------- расшифровка балла: окно при наведении ----------
+     Решение владельца: окно, а не раскрытие на месте. Раскрытие лежит в
+     истории (коммит «Расшифровка балла на месте вместо окна»).
+
+     Содержание — новое: таблицы на четыре колонки больше нет. Имена частей
+     и их вклад уже стоят в списке «из чего собран», колонки ВКЛАД и ВЕС его
+     повторяли. Здесь только то, чего в отчёте нет: что каждая часть
+     измеряет и её собственный балл. Доли названы фразой, а не колонкой,
+     с которой спорят. */
+  .info { position: relative; display: inline-block; margin-top: 18px; }
+  .info-btn {
+    appearance: none; background: none; border: 0; padding: 9px 0; cursor: pointer;
+    font: inherit; font-size: var(--fs-dense); color: var(--accent-text);
+    text-decoration: underline; text-underline-offset: 3px; min-height: 38px;
+  }
+  .info-btn:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
+  .info-panel {
+    position: absolute; left: 0; top: 100%; z-index: 20; width: min(560px, 78vw);
+    display: none; background: var(--surface); border: 1px solid var(--ink);
+    border-radius: var(--radius); padding: 18px;
+    box-shadow: 0 8px 24px rgba(24, 24, 24, 0.12);
+  }
+  .info:hover .info-panel,
+  .info:focus-within .info-panel,
+  .info-btn[aria-expanded="true"] + .info-panel { display: block; }
+  .hs-lead { font-size: var(--fs-dense); color: var(--muted); max-width: var(--w-read); margin-top: 0; }
   .hs-list { margin: 0; }
   .hs-list dt { font-size: var(--fs-dense); font-weight: 500; margin-top: 16px; max-width: 54ch; }
   .hs-list dd { font-size: var(--fs-dense); color: var(--muted); margin: 3px 0 0; max-width: var(--w-read); }
@@ -780,6 +804,7 @@
     .vd-h, .vd-say, .res { grid-column: 1; grid-row: auto; }
     .res { margin-top: 14px; }
     .offer-row { grid-template-columns: 1fr; }
+    .info-panel { width: min(92vw, 420px); }
     .res-full { left: 0; right: auto; width: min(560px, 88vw); }
     .plainlist li { grid-template-columns: minmax(0, 1fr) 7ch; }
     .facts2 li { grid-template-columns: 1fr; gap: 4px; }
@@ -1360,6 +1385,25 @@
       <div class="vt-score">
         <span class="score-big num">47</span>
         <span class="score-of">из 100</span>
+        <span class="info">
+          <button type="button" class="info-btn" aria-expanded="false" aria-controls="how-panel">Как считается балл</button>
+          <span class="info-panel" id="how-panel" role="dialog" aria-label="Как считается балл">
+            <p class="hs-lead">Четыре части, у каждой своя шкала от 0 до 100. В балл они входят
+            неравными долями — 40, 25, 20 и 15 процентов, — поэтому вклад части не равен её баллу.</p>
+            <dl class="hs-list">
+              <dt>Совпадение приоритетов с вашим списком — <span class="num">39 из 100</span></dt>
+              <dd>Какая доля людей назвала то же самое, в среднем по вашим приоритетам.</dd>
+              <dt>Согласие в приоритетах между участниками команды — <span class="num">52 из 100</span></dt>
+              <dd>Насколько совпадают наборы тем у двух людей, в среднем по всем парам.</dd>
+              <dt>Совпадение главного приоритета — <span class="num">45 из 100</span></dt>
+              <dd>Сколько людей совпало с вашим главным и насколько команда сошлась на одном.</dd>
+              <dt>Конкретика приоритетов — <span class="num">61 из 100</span></dt>
+              <dd>Доля формулировок, в которых есть конкретные действия.</dd>
+            </dl>
+            <p class="hs-warn">Оценку делает ИИ, возможны неточности: балл — ориентир, а не приговор.
+            Устойчивым он становится от 5 ответов.</p>
+          </span>
+        </span>
       </div>
 
       <div class="vt-tally">
@@ -1377,23 +1421,6 @@
       </div>
     </div>
 
-    <details class="fold how-score">
-      <summary><span class="fold-open">Как считается балл</span><span class="fold-close">Свернуть</span></summary>
-      <p class="hs-lead">Четыре части, у каждой своя шкала от 0 до 100. В балл они входят
-      неравными долями — 40, 25, 20 и 15 процентов, — поэтому вклад части не равен её баллу.</p>
-      <dl class="hs-list">
-        <dt>Совпадение приоритетов с вашим списком — <span class="num">39 из 100</span></dt>
-        <dd>Какая доля людей назвала то же самое, в среднем по вашим приоритетам.</dd>
-        <dt>Согласие в приоритетах между участниками команды — <span class="num">52 из 100</span></dt>
-        <dd>Насколько совпадают наборы тем у двух людей, в среднем по всем парам.</dd>
-        <dt>Совпадение главного приоритета — <span class="num">45 из 100</span></dt>
-        <dd>Сколько людей совпало с вашим главным и насколько команда сошлась на одном.</dd>
-        <dt>Конкретика приоритетов — <span class="num">61 из 100</span></dt>
-        <dd>Доля формулировок, в которых есть конкретные действия.</dd>
-      </dl>
-      <p class="hs-warn">Оценку делает ИИ, возможны неточности: балл — ориентир, а не приговор.
-      Устойчивым он становится от 5 ответов.</p>
-    </details>
   </div>
 
   <!-- ================= РАЗОБРАТЬ НА ВСТРЕЧЕ ================= -->
@@ -1834,6 +1861,21 @@
     show(start || 's-landing', !start);
   }
 
+
+  /* окошко «как считается»: наведение делает css, нажатие — для касания */
+  document.addEventListener('click', function (e) {
+    var ib = e.target.closest('.info-btn');
+    document.querySelectorAll('.info-btn[aria-expanded="true"]').forEach(function (x) {
+      if (x !== ib) x.setAttribute('aria-expanded', 'false');
+    });
+    if (ib) ib.setAttribute('aria-expanded', ib.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    document.querySelectorAll('.info-btn[aria-expanded="true"]').forEach(function (x) {
+      x.setAttribute('aria-expanded', 'false');
+    });
+  });
 
   /* ---------- окно результата у вердикта ---------- */
   /* Точки рисуем скриптом, а не в разметке: девять окон вручную — это
