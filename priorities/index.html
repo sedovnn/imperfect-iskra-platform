@@ -475,8 +475,13 @@
      Второй вопрос отчёта. Балл отвечает «дошли ли приоритеты», это —
      «повезут ли их». Перемножение, а не среднее: одна провалённая шкала
      обнуляет остальные, и это ровно то, что должно быть видно.
-     Приведено к сотне, чтобы на экране была ОДНА шкала: 248 из 1000
-     рядом с 47 из 100 читались как две разные катастрофы. */
+     Шкала 0–1000, как в методике: приводить к сотне значит объяснять
+     клиенту, зачем мы поделили обратно на десять. Решение владельца.
+     Чтобы 248 не читалось как «катастрофа» рядом с 47 из 100, рядом
+     назван порог — 512. Это 8 × 8 × 8: если ни одна из трёх шкал не ниже
+     восьми, произведение порог проходит, и «узких мест нет» больше не
+     может напечататься вместе с «заряда не хватает». В SCORING.md порог
+     500 и порог узкого места 7 не сходились: 7³ = 343. */
   .carry { margin-top: 30px; border-top: 1px solid var(--rule); padding-top: 16px; }
   .carry-row {
     display: grid; gap: 6px var(--gap); margin-top: 10px; align-items: start;
@@ -528,50 +533,6 @@
 
 
 
-  /* ---------- окошко «как считается» при наведении ---------- */
-  .info { position: relative; display: inline-block; margin-top: 18px; }
-  .info-btn {
-    appearance: none; background: none; border: 0; padding: 9px 0; cursor: pointer;
-    font: inherit; font-size: var(--fs-dense); color: var(--accent-text);
-    text-decoration: underline; text-underline-offset: 3px; min-height: 38px;
-  }
-  .info-btn:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
-  .info-panel {
-    position: absolute; left: 0; top: 100%; z-index: 20; width: min(560px, 78vw);
-    display: none; background: var(--surface); border: 1px solid var(--ink);
-    border-radius: var(--radius); padding: 18px;
-    box-shadow: 0 8px 24px rgba(24, 24, 24, 0.12);
-  }
-  .info:hover .info-panel,
-  .info:focus-within .info-panel,
-  .info-btn[aria-expanded="true"] + .info-panel { display: block; }
-  .info-warn { display: block; font-size: var(--fs-util); color: var(--muted); max-width: 52ch; }
-  /* Линейка идёт под всей строкой, а не под каждой ячейкой: колоночный
-     gap рвал её на отрезки, и таблица читалась как сломанная. Отступ
-     между колонками теперь padding внутри ячейки. */
-  .info-table {
-    /* колонки по содержимому: 5ch не вмещали шапку, и «БАЛЛ ВЕС ВКЛАД»
-       слипались в «БАЛЛВЕС» */
-    display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto;
-    gap: 0; margin: 14px 0; font-size: var(--fs-util);
-  }
-  /* Зазор до цифр задан ЯВНО. Раньше он получался из остатка колонки, то
-     есть зависел от того, какой шрифт подставит система: на одной машине
-     46px, на другой подпись доходила до числа. */
-  .info-table > span { padding: 7px 24px 0 0; color: var(--muted); }
-  .info-table .num { text-align: right; padding: 7px 0 0 20px; }
-  .info-table .ith {
-    font-weight: 500; color: var(--muted); text-transform: uppercase;
-    letter-spacing: 0.1em; padding-bottom: 7px; border-bottom: 1px solid var(--ink);
-    padding-right: 24px;
-  }
-  .info-table .ith:not(:first-child) { text-align: right; letter-spacing: 0.04em; padding: 0 0 7px 20px; }
-  /* пояснение закрывает свою строку: линейка стоит ПОСЛЕ него, поэтому
-     видно, к какому элементу балла оно относится */
-  .info-table .ihow {
-    grid-column: 1 / -1; color: var(--muted);
-    padding: 2px 0 8px 0; border-bottom: 1px solid var(--rule);
-  }
 
 
   /* ======================================================================
@@ -757,6 +718,25 @@
   .pl-dir { color: var(--muted); font-size: var(--fs-util); }
   .pl-pct { font-weight: 500; text-align: right; white-space: nowrap; }
 
+  /* ---------- расшифровка балла ----------
+     Было всплывающее окно при наведении. Оно накрывало ровно тот список
+     «из чего собран», который объясняет, исчезало от движения мыши и
+     держало таблицу на четыре колонки — а таблицу читают построчно и
+     сравнивают колонки, для этого нужна устойчивая поверхность.
+     Теперь раскрытие на месте: толкает содержимое вниз, остаётся
+     открытым, одинаково работает на касании и печатается.
+
+     Таблицы больше нет вовсе. Имена частей и их вклад уже стоят в списке
+     «из чего собран» — колонки ВКЛАД и ВЕС его повторяли. Здесь только то,
+     чего в отчёте нет: что каждая часть измеряет и её собственный балл.
+     Доли названы один раз фразой, а не колонкой, с которой спорят. */
+  .how-score { margin-top: 26px; border-top: 1px solid var(--rule); }
+  .hs-lead { font-size: var(--fs-dense); color: var(--muted); max-width: var(--w-read); margin-top: 4px; }
+  .hs-list { margin: 0; }
+  .hs-list dt { font-size: var(--fs-dense); font-weight: 500; margin-top: 16px; max-width: 54ch; }
+  .hs-list dd { font-size: var(--fs-dense); color: var(--muted); margin: 3px 0 0; max-width: var(--w-read); }
+  .hs-warn { font-size: var(--fs-util); color: var(--muted); margin-top: 20px; max-width: 62ch; }
+
   .fold { margin-top: 4px; }
   .fold summary {
     cursor: pointer; min-height: 38px; display: flex; align-items: center;
@@ -798,7 +778,6 @@
     .rep-nav a { border-bottom: 0; }
     .rep-nav-tools { flex-direction: row; margin-top: 8px; }
     .vt-row { grid-template-columns: 1fr; }
-    .info-panel { width: min(92vw, 420px); }
     /* цифра встаёт над вердиктом: в 10ch колонке на телефоне она рвётся */
     /* окно результата встаёт под текстом: 168px справа съедают строку */
     .vd { grid-template-columns: 1fr; }
@@ -1385,24 +1364,6 @@
       <div class="vt-score">
         <span class="score-big num">47</span>
         <span class="score-of">из 100</span>
-        <span class="info">
-          <button type="button" class="info-btn" aria-expanded="false" aria-controls="how-panel">Как считается балл</button>
-          <span class="info-panel" id="how-panel" role="dialog" aria-label="Как считается балл">
-            <span class="info-warn">Оценка производится ИИ, могут быть неточности. Используйте балл лишь для ориентира.</span>
-            <span class="info-table">
-              <span class="ith">Элемент балла</span><span class="ith">Балл</span><span class="ith">Вес</span><span class="ith">Вклад</span>
-              <span>Совпадение приоритетов с вашим списком</span><span class="num">39</span><span class="num">40%</span><span class="num">15,6</span>
-              <span class="ihow">Среднее по вашим приоритетам: какая доля людей в команде назвала то же самое</span>
-              <span>Согласие в приоритетах между участниками команды</span><span class="num">52</span><span class="num">25%</span><span class="num">13,0</span>
-              <span class="ihow">Насколько совпадают наборы тем у двух людей, в среднем по всем парам</span>
-              <span>Совпадение главного приоритета</span><span class="num">45</span><span class="num">20%</span><span class="num">9,1</span>
-              <span class="ihow">Доля совпавших с вашим главным и то, насколько команда сошлась на одном</span>
-              <span>Конкретика приоритетов</span><span class="num">61</span><span class="num">15%</span><span class="num">9,2</span>
-              <span class="ihow">Доля формулировок, в которых есть конкретные действия</span>
-            </span>
-            <span class="info-warn">Балл становится устойчивым от 5 ответов.</span>
-          </span>
-        </span>
       </div>
 
       <div class="vt-tally">
@@ -1420,15 +1381,34 @@
       </div>
     </div>
 
+    <details class="fold how-score">
+      <summary><span class="fold-open">Как считается балл</span><span class="fold-close">Свернуть</span></summary>
+      <p class="hs-lead">Четыре части, у каждой своя шкала от 0 до 100. В балл они входят
+      неравными долями — 40, 25, 20 и 15 процентов, — поэтому вклад части не равен её баллу.</p>
+      <dl class="hs-list">
+        <dt>Совпадение приоритетов с вашим списком — <span class="num">39 из 100</span></dt>
+        <dd>Какая доля людей назвала то же самое, в среднем по вашим приоритетам.</dd>
+        <dt>Согласие в приоритетах между участниками команды — <span class="num">52 из 100</span></dt>
+        <dd>Насколько совпадают наборы тем у двух людей, в среднем по всем парам.</dd>
+        <dt>Совпадение главного приоритета — <span class="num">45 из 100</span></dt>
+        <dd>Сколько людей совпало с вашим главным и насколько команда сошлась на одном.</dd>
+        <dt>Конкретика приоритетов — <span class="num">61 из 100</span></dt>
+        <dd>Доля формулировок, в которых есть конкретные действия.</dd>
+      </dl>
+      <p class="hs-warn">Оценку делает ИИ, возможны неточности: балл — ориентир, а не приговор.
+      Устойчивым он становится от 5 ответов.</p>
+    </details>
+
     <div class="carry">
       <p class="unit-k">Повезут ли</p>
       <div class="carry-row">
-        <p class="carry-n num">25 <span class="carry-of">из 100</span></p>
+        <p class="carry-n num">248 <span class="carry-of">из 1000</span></p>
         <div>
           <p class="carry-say">Балл выше отвечает, дошли ли приоритеты. Это — повезут ли их.
           Три шкалы перемножены, а не усреднены: одна провалённая обнуляет две сильные,
           и среднее это спрятало бы. Провалена срочность — 4,6 при вашей 9.</p>
-          <p class="carry-mul">7,2 × 7,5 × 4,6 = 248 из 1000, то есть 25 из 100</p>
+          <p class="carry-mul">7,2 × 7,5 × 4,6 = 248. Порог — 512, то есть восемь по каждой
+          из трёх шкал.</p>
         </div>
       </div>
     </div>
@@ -1643,7 +1623,7 @@
 
   <!-- ================= ЗДЕСЬ ВСЁ ХОРОШО ================= -->
   <div class="grade" data-g="ok" id="rep-4">
-    <p class="grade-k"><span class="grade-n num">1</span><span class="grade-t">Здесь всё хорошо</span></p>
+    <p class="grade-k"><span class="grade-n num">1</span><span class="grade-t">Оставить как есть</span></p>
 
     <div class="vd">
       <h2 class="vd-h">Команда верит, что справится</h2>
@@ -1703,7 +1683,7 @@
     </div>
 
     <div class="td-take">
-      <p class="unit-k">Наверх, без имён</p>
+      <p class="unit-k">Что написать своему руководителю</p>
       <div class="take">
         <p>Команда оценила ясность приоритетов на 4,1 из 5, но главным мой приоритет назвали 5 из 11.</p>
         <p>5 человек из 11 вывели приоритеты сами или не помнят источник.</p>
@@ -1711,8 +1691,9 @@
         <p>Прошу два часа на встречу по приоритетам и то же самое по остальным командам отдела.</p>
       </div>
       <div class="btn-row">
-        <button type="button" class="btn btn-2" data-copy="что показать наверх">Скопировать текст</button>
-        <span class="unit-say">Отправляете из своей почты.</span>
+        <button type="button" class="btn btn-2" data-copy="текст руководителю">Скопировать текст</button>
+        <span class="unit-say">Четыре факта из отчёта без имён — по ответу нельзя узнать человека,
+        это условие анонимности. Отправляете из своей почты.</span>
       </div>
     </div>
 
@@ -1722,7 +1703,7 @@
     <a href="#rep-1">Заключение</a>
     <a href="#rep-2">Разобрать · 5</a>
     <a href="#rep-3">Держать в виду · 3</a>
-    <a href="#rep-4">Всё хорошо · 1</a>
+    <a href="#rep-4">Оставить как есть · 1</a>
     <a href="#rep-5">Что делать</a>
     <button type="button" class="btn btn-3">Посмотреть ответы целиком</button>
     <button type="button" class="btn btn-3" id="printBtn">Сохранить в pdf</button>
@@ -1882,20 +1863,6 @@
     show(start || 's-landing', !start);
   }
 
-  /* окошко «как считается»: наведение делает css, нажатие — для касания */
-  document.addEventListener('click', function (e) {
-    var b = e.target.closest('.info-btn');
-    document.querySelectorAll('.info-btn[aria-expanded="true"]').forEach(function (x) {
-      if (x !== b) x.setAttribute('aria-expanded', 'false');
-    });
-    if (b) b.setAttribute('aria-expanded', b.getAttribute('aria-expanded') === 'true' ? 'false' : 'true');
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape') return;
-    document.querySelectorAll('.info-btn[aria-expanded="true"]').forEach(function (x) {
-      x.setAttribute('aria-expanded', 'false');
-    });
-  });
 
   /* ---------- окно результата у вердикта ---------- */
   /* Точки рисуем скриптом, а не в разметке: девять окон вручную — это
