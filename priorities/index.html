@@ -388,6 +388,7 @@
   .bars .val { background: var(--faint); }
   .bars .val[data-miss="true"] { background: var(--accent); }
   .bars .verdict { font-size: var(--fs-util); color: var(--muted); margin-top: 6px; }
+  .bars .verdict b { font-weight: 500; color: var(--ink); }
 
 
 
@@ -1333,11 +1334,15 @@
         <ul class="bars">
           <li>
             <div class="t">
-              <span class="name">Выйти на самоокупаемость по новым каналам <span class="badge">главный</span></span>
+              <span class="name">Выйти на самоокупаемость по новым каналам</span>
               <span class="pct num">7 из 11</span>
             </div>
             <div class="track"><div class="val" style="width:64%"></div></div>
-            <p class="verdict">Совпало частично · деньги · главным его назвали 5 из 11</p>
+            <!-- «главный» стоит первым словом подписи, а не значком отдельной
+                 строкой: значок делал первую строку выше остальных трёх, и слово
+                 «главный» звучало в отчёте трижды — здесь, в хвосте подписи и в
+                 замере «фокус совпал». Осталось одно место. -->
+            <p class="verdict"><b>Главный</b> · совпало частично · деньги</p>
           </li>
           <li>
             <div class="t"><span class="name">Сократить срок вывода продукта с девяти месяцев до пяти</span><span class="pct num">5 из 11</span></div>
