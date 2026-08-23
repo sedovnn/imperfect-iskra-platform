@@ -68,6 +68,7 @@
     --maxw: clamp(1120px, 92vw, 1560px);
     --frame-pad: clamp(20px, 4vw, 56px);
     --w-read: 60ch;
+    --w-body: 760px;   /* одна колонка на всё содержание отчёта */
     --gap: 24px;
     --radius: 8px;      /* ОДИН радиус на всю платформу */
   }
@@ -89,7 +90,10 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, h4 { font-weight: 500; margin: 0; line-height: 1.1; letter-spacing: -0.01em; }
+  /* разрядку сжимаем только на крупных ступенях: на 16px она создавала
+     второе сочетание там, где рецепт один */
+  h1, h2, h3, h4 { font-weight: 500; margin: 0; line-height: 1.1; }
+  h1, h2, .part-h, .snap-big, .gap-big { letter-spacing: -0.01em; }
   p { margin: 0; }
   ul, ol { margin: 0; padding: 0; list-style: none; }
   .num { font-variant-numeric: tabular-nums; }
@@ -342,21 +346,11 @@
   .danger { border-top: 1px solid var(--rule); margin-top: 36px; padding-top: 20px; }
 
 
-  .block { border-top: 1px solid var(--rule); margin-top: 28px; padding-top: 22px; }
+  .block { border-top: 1px solid var(--rule); margin-top: 28px; padding-top: 22px; max-width: var(--w-body); }
   .block > h3 { font-size: var(--fs-read); }
 
 
 
-  /* ширина отрезка пропорциональна диапазону: 0–40 вдвое шире, чем 40–60 */
-  .ladder { margin-top: 18px; max-width: 520px; }
-  .ladder .track { position: relative; display: flex; height: 8px; }
-  .ladder .track i { display: block; flex: none; background: var(--tick); }
-  .ladder .track i:first-child { border-radius: var(--radius) 0 0 var(--radius); }
-  .ladder .track i:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
-  .ladder .track i[data-on="true"] { background: var(--accent); }
-  .ladder .pin { position: absolute; top: -5px; width: 2px; height: 18px; background: var(--ink); }
-  .ladder .marks { display: flex; font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
-  .ladder .marks span { flex: none; }
 
   /* четыре части балла. подсвечено только то, что ниже нормы */
   .parts li { border-top: 1px solid var(--rule); padding: 14px 0; }
@@ -385,15 +379,11 @@
   .bars .pct { flex: none; font-weight: 500; }
   .bars .track { margin-top: 8px; height: 20px; background: var(--field); border-radius: var(--radius); }
   .bars .val { height: 100%; border-radius: var(--radius); }
-  .bars .val[data-kind="mine"] { background: var(--accent); }
+  .bars .val[data-kind="mine"] { background: var(--faint); }
+  .bars .val[data-miss="true"] { background: var(--accent); }
   .bars .val[data-kind="theirs"] { border: 2px solid var(--accent); background: var(--accent-tint); }
   .bars .verdict { font-size: var(--fs-util); color: var(--muted); margin-top: 6px; }
 
-  .legend { display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: var(--fs-util); color: var(--muted); margin-top: 16px; }
-  .legend .k { display: inline-flex; align-items: center; gap: 8px; }
-  .legend .sw { width: 20px; height: 12px; border-radius: 3px; flex: none; }
-  .legend .sw[data-kind="mine"] { background: var(--accent); }
-  .legend .sw[data-kind="theirs"] { border: 2px solid var(--accent); background: var(--accent-tint); }
 
 
   /* полоса показывает ОДНО: сколько людей догадались сами. четыре отрезка
@@ -405,7 +395,7 @@
   .sources .stack i[data-n="guess"] { background: var(--accent); }
   .sources .keys { display: flex; font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
   .sources .keys span { flex: none; }
-  .sources .keys span[data-n="guess"] { color: var(--accent-text); font-weight: 500; }
+  .sources .keys span[data-n="guess"] { color: var(--muted); }
   .sources ul { margin-top: 20px; max-width: 520px; }
   .sources li { display: flex; gap: 14px; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--rule); font-size: var(--fs-dense); }
   .sources li .p { width: 4ch; flex: none; font-weight: 500; }
@@ -414,35 +404,27 @@
   /* повезут ли — три средних, без произведения в другом масштабе */
   .carry li { border-top: 1px solid var(--rule); padding: 16px 0; }
   .carry li:first-child { border-top: 0; }
-  .carry .t { display: flex; gap: 16px; align-items: baseline; justify-content: space-between; }
   .carry .n { font-weight: 500; max-width: 44ch; }
-  .carry .avg { flex: none; font-weight: 500; }
-  .carry .avg[data-low="true"] { color: var(--accent-text); }
-  .carry .track { position: relative; margin-top: 10px; height: 20px; background: var(--field); border-radius: var(--radius); }
   /* полоса приглушена; вермилион только у шкалы ниже нормы, иначе глаз
      идёт к самой длинной полосе вместо провалившейся */
-  .carry .val { height: 100%; background: var(--faint); border-radius: var(--radius); }
-  .carry li[data-low="true"] .val { background: var(--accent); }
-  .carry .you {
-    position: absolute; top: -3px; width: 12px; height: 26px;
-    border: 2px solid var(--ink); background: var(--surface); border-radius: 3px;
-    transform: translateX(-50%);
-  }
   .carry .say { font-size: var(--fs-util); color: var(--muted); margin-top: 8px; max-width: var(--w-read); }
 
 
   .upward .card p { max-width: var(--w-read); margin-bottom: 10px; font-size: var(--fs-dense); }
   .upward .card p:last-child { margin-bottom: 0; }
 
+  /* длинный текст серым читается хуже всего: в карточке он чернилами */
   .next .card { background: var(--accent-tint); }
+  .next .card .note { color: var(--ink); }
+  .next .card .btn-3 { font-size: var(--fs-dense); }
 
   .demo-bar {
     background: var(--field); border-radius: var(--radius);
     padding: 12px 20px; margin-top: 24px;
     display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline;
-    font-size: var(--fs-dense); color: var(--muted);
+    font-size: var(--fs-util); color: var(--muted);
   }
-  .demo-bar b { font-weight: 500; color: var(--ink); }
+  .demo-bar b { font-weight: 500; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
 
   .sr {
     position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
@@ -459,13 +441,16 @@
     display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
     padding: 16px 0; border-bottom: 1px solid var(--rule);
   }
+  /* это инструменты, а не содержание: кегль как у подписей */
+  .rep-tools .btn { font-size: var(--fs-dense); }
+  .rep-tools .note { font-size: var(--fs-util); }
 
   .part { margin-top: 56px; border-top: 2px solid var(--ink); padding-top: 14px; }
   .part-n {
     font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
     text-transform: uppercase; color: var(--muted);
   }
-  .part-h { font-size: var(--fs-place); margin-top: 6px; }
+  .part-h { font-size: var(--fs-place); margin-top: 6px; max-width: var(--w-body); }
 
   /* ---------- 1 · снимок ---------- */
   .snap {
@@ -480,35 +465,70 @@
   }
   .snap-unit { font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
   .snap-band { font-size: var(--fs-read); font-weight: 500; margin-top: 12px; }
-  .snap .ladder { margin-top: 18px; max-width: none; }
 
-  .mini { margin-top: 10px; }
-  .mini li {
-    display: grid; align-items: center; gap: 12px;
-    grid-template-columns: minmax(0, 1fr) 84px 3ch;
-    padding: 9px 0; border-bottom: 1px solid var(--rule);
-    font-size: var(--fs-dense);
-  }
-  .mini li:last-child { border-bottom: 0; }
-  .mini .b { display: block; height: 6px; background: var(--tick); border-radius: 3px; }
-  .mini .b i { display: block; height: 100%; background: var(--faint); border-radius: 3px; }
-  .mini .b i[data-low="true"] { background: var(--accent); }
-  .mini .v { font-weight: 500; text-align: right; }
-  .mini .v[data-low="true"] { color: var(--accent-text); }
 
   .snap-gap { border-left: 1px solid var(--rule); padding-left: var(--gap); }
   .gap-two { display: flex; flex-direction: column; gap: 18px; margin-top: 10px; }
+  /* та же ступень, что заголовок блока: крупная акцентная цифра в отчёте
+     должна быть одна — балл в снимке */
   .gap-big {
-    display: block; font-size: clamp(32px, 3.6vw, 48px); line-height: 0.85;
-    font-weight: 500; color: var(--accent); letter-spacing: -0.02em;
+    display: block; font-size: var(--fs-place); line-height: 1;
+    font-weight: 500; color: var(--ink);
   }
   .gap-u { display: block; font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
+
+  /* ======================================================================
+     ФОРМЫ ГРАФИКИ — ровно три на весь отчёт
+       1 · полоса-доля     — сколько людей назвали то же
+       2 · составная полоса — из чего собрано целое
+       3 · разрыв          — две метки на одной оси
+     Таблица — не график: там счёт, а не доля.
+     ====================================================================== */
+
+  /* 2 · составная полоса: длина сегмента = вклад части в балл */
+  .comp {
+    display: flex; height: 30px; background: var(--tick);
+    border-radius: var(--radius); overflow: hidden; margin-top: 12px;
+  }
+  .comp i { display: block; background: var(--accent); }
+  .comp i + i { border-left: 2px solid var(--surface); }
+  .comp-keys { margin-top: 12px; }
+  .comp-keys li {
+    display: flex; gap: 12px; align-items: baseline;
+    padding: 8px 0; border-bottom: 1px solid var(--rule);
+    font-size: var(--fs-dense);
+  }
+  .comp-keys li:last-child { border-bottom: 0; }
+  .comp-keys .v { margin-left: auto; font-weight: 500; }
+
+  /* 3 · разрыв: залитая метка — команда, контурная — вы */
+  .axis-ends {
+    display: flex; justify-content: space-between;
+    font-size: var(--fs-util); color: var(--muted); margin-top: 14px;
+  }
+  .axis {
+    position: relative; height: 18px; margin-top: 8px;
+    border-top: 1px solid var(--rule);
+  }
+  .axis .gapline {
+    position: absolute; top: -2px; height: 3px;
+    background: var(--faint); display: block;
+  }
+  .carry li[data-low="true"] .gapline { background: var(--accent); }
+  .axis b {
+    position: absolute; top: -6px; width: 11px; height: 11px;
+    border-radius: 2px; transform: translateX(-50%);
+  }
+  .axis .m-team { background: var(--ink); }
+  .axis .m-you { background: var(--surface); border: 2px solid var(--ink); }
+  .carry .n { font-weight: 500; max-width: 44ch; }
+  .carry .say { font-size: var(--fs-util); color: var(--muted); margin-top: 10px; max-width: var(--w-read); }
 
   /* ---------- 2 · приоритеты ---------- */
   .badge {
     display: inline-block; vertical-align: 2px; margin-left: 8px;
-    font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.08em;
-    text-transform: uppercase; color: var(--accent-text);
+    font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
     background: var(--accent-tint); border-radius: 3px; padding: 2px 6px;
   }
 
@@ -537,7 +557,7 @@
   /* ---------- 3 · сбалансированные показатели ---------- */
   .bsc td, .bsc th { padding: 11px 16px 11px 0; }
   .bsc tr[data-empty="true"] { background: var(--accent-tint); }
-  .bsc tr[data-empty="true"] .bsc-say { color: var(--accent-text); font-weight: 500; }
+  .bsc tr[data-empty="true"] .bsc-say { color: var(--ink); font-weight: 500; }
   .bsc tr[data-empty="true"] td:first-child { padding-left: 10px; }
   .bsc-say { color: var(--muted); }
 
@@ -576,10 +596,10 @@
   }
   .snap-teaser .u { font-size: var(--fs-util); color: var(--muted); }
   .snap-teaser .band { font-size: var(--fs-read); font-weight: 500; }
-  .snap-teaser .mini { margin-top: 18px; }
-  .snap-teaser .mini li { grid-template-columns: minmax(0, 1fr) 64px 3ch; padding: 7px 0; }
 
   .print-only { display: none; }
+  /* без этого правила h3 брал браузерный дефолт 1.17em = 18,7px */
+  .summary-print h3 { font-size: var(--fs-read); }
 
   /* ======================================================================
      ТЕЛЕФОН — 4 колонки, брейкпоинт 900px
@@ -714,12 +734,16 @@
           <span><span class="big num">47</span> <span class="u">из 100</span></span>
           <span class="band">Совпадаете частично</span>
         </div>
-        <ul class="mini">
-          <li><span class="n">Совпадение с вашим списком</span><span class="b"><i style="width:39%" data-low="true"></i></span><span class="v num" data-low="true">39</span></li>
-          <li><span class="n">Согласие внутри команды</span><span class="b"><i style="width:52%"></i></span><span class="v num">52</span></li>
-          <li><span class="n">Согласие по главному</span><span class="b"><i style="width:45%" data-low="true"></i></span><span class="v num" data-low="true">45</span></li>
-          <li><span class="n">Виден признак готовности</span><span class="b"><i style="width:61%"></i></span><span class="v num">61</span></li>
+        <div class="comp" aria-hidden="true">
+          <i style="width:15.6%"></i><i style="width:13.0%"></i><i style="width:9.1%"></i><i style="width:9.2%"></i>
+        </div>
+        <ul class="comp-keys">
+          <li><span class="n">Совпадение с вашим списком</span><span class="v num">15,6</span></li>
+          <li><span class="n">Согласие внутри команды</span><span class="v num">13,0</span></li>
+          <li><span class="n">Согласие по главному</span><span class="v num">9,1</span></li>
+          <li><span class="n">Виден признак готовности</span><span class="v num">9,2</span></li>
         </ul>
+        <p class="sr">Балл 47 из 100, вклад частей 15,6 / 13,0 / 9,1 / 9,2.</p>
         <p class="note" style="margin-top:16px">Команде кажется, что понятно, — 4,1 из 5. Хотя бы треть назвала два приоритета из четырёх.</p>
         <p style="margin-top:12px"><a class="btn btn-3" href="#s-report" data-go="s-report">Открыть пример целиком</a></p>
       </div>
@@ -1184,44 +1208,36 @@
         <p class="snap-big num">47</p>
         <p class="snap-unit">из 100</p>
         <p class="snap-band">Совпадаете <span class="pen">частично</span></p>
-        <div class="ladder">
-          <div class="track" aria-hidden="true">
-            <i style="width:40%"></i><i data-on="true" style="width:20%"></i><i style="width:20%"></i><i style="width:20%"></i>
-            <b class="pin" style="left:47%"></b>
-          </div>
-          <div class="marks" aria-hidden="true">
-            <span style="width:40%">0</span>
-            <span style="width:20%">40</span>
-            <span style="width:20%">60</span>
-            <span style="width:20%">80</span>
-          </div>
-        </div>
-        <p class="sr">Балл 47 из 100. Диапазоны: 0–40 расходитесь, 40–60 частично, 60–80 в основном, 80–100 синхронно.</p>
       </div>
 
       <div class="snap-sub">
         <p class="kicker">Из чего собран</p>
-        <ul class="mini">
-          <li><span class="n">Совпадение с вашим списком</span><span class="b"><i style="width:39%" data-low="true"></i></span><span class="v num" data-low="true">39</span></li>
-          <li><span class="n">Согласие внутри команды</span><span class="b"><i style="width:52%"></i></span><span class="v num">52</span></li>
-          <li><span class="n">Согласие по главному</span><span class="b"><i style="width:45%" data-low="true"></i></span><span class="v num" data-low="true">45</span></li>
-          <li><span class="n">Виден признак готовности</span><span class="b"><i style="width:61%"></i></span><span class="v num">61</span></li>
+        <!-- Состав, а не четыре доли: длина сегмента — вклад части в балл,
+             сумма сегментов и есть 47. Незалитый хвост — то, что не набрали. -->
+        <div class="comp" aria-hidden="true">
+          <i style="width:15.6%"></i><i style="width:13.0%"></i><i style="width:9.1%"></i><i style="width:9.2%"></i>
+        </div>
+        <ul class="comp-keys">
+          <li><span class="n">Совпадение с вашим списком</span><span class="v num">15,6</span></li>
+          <li><span class="n">Согласие внутри команды</span><span class="v num">13,0</span></li>
+          <li><span class="n">Согласие по главному</span><span class="v num">9,1</span></li>
+          <li><span class="n">Виден признак готовности</span><span class="v num">9,2</span></li>
         </ul>
+        <p class="sr">Балл 47 из 100. Вклад частей: совпадение с вашим списком 15,6, согласие внутри команды 13,0, согласие по главному 9,1, виден признак готовности 9,2.</p>
         <details class="how">
           <summary>Как считается балл</summary>
           <div>
-            <p class="note">Числа считает код. Модель отвечала на один вопрос: об одном ли эти две фразы.</p>
+            <p class="note">Числа считает код. Модель отвечала на один вопрос: об одном ли эти две фразы. Вклад части — её балл, умноженный на вес.</p>
             <table>
-              <thead><tr><th>Часть</th><th>Вес</th><th>Как считается</th></tr></thead>
+              <thead><tr><th>Часть</th><th>Балл</th><th>Вес</th><th>Вклад</th></tr></thead>
               <tbody>
-                <tr><td>Совпадение с вашим списком</td><td class="num">40%</td><td>Среднее по вашим приоритетам: какая доля людей назвала то же</td></tr>
-                <tr><td>Согласие внутри команды</td><td class="num">25%</td><td>Насколько совпадают наборы тем у двух людей, в среднем по всем парам</td></tr>
-                <tr><td>Согласие по главному</td><td class="num">20%</td><td>Доля совпавших с вашим главным и то, насколько команда сошлась на одном</td></tr>
-                <tr><td>Виден признак готовности</td><td class="num">15%</td><td>Доля формулировок, где видно, по чему судить о готовности</td></tr>
-                <tr><td>Команде кажется, что понятно</td><td>—</td><td>Среднее двух вопросов про ясность. В балл не входит</td></tr>
+                <tr><td>Совпадение с вашим списком</td><td class="num">39</td><td class="num">40%</td><td class="num">15,6</td></tr>
+                <tr><td>Согласие внутри команды</td><td class="num">52</td><td class="num">25%</td><td class="num">13,0</td></tr>
+                <tr><td>Согласие по главному</td><td class="num">45</td><td class="num">20%</td><td class="num">9,1</td></tr>
+                <tr><td>Виден признак готовности</td><td class="num">61</td><td class="num">15%</td><td class="num">9,2</td></tr>
               </tbody>
             </table>
-            <p class="note" style="margin-top:12px">При менее пяти ответах вместо формулировок выводятся общие темы, а балл читается как направление.</p>
+            <p class="note" style="margin-top:12px">Сумма вкладов — 46,9, округляется до 47. При менее пяти ответах вместо формулировок выводятся общие темы, а балл читается как направление.</p>
           </div>
         </details>
       </div>
@@ -1259,12 +1275,12 @@
         </li>
         <li>
           <div class="t"><span class="name">Перевести поддержку на самообслуживание</span><span class="pct num">27%</span></div>
-          <div class="track"><div class="val" data-kind="mine" style="width:27%"></div></div>
+          <div class="track"><div class="val" data-kind="mine" data-miss="true" style="width:27%"></div></div>
           <p class="verdict">Не совпало · 3 из 11 · процессы</p>
         </li>
         <li>
           <div class="t"><span class="name">Собрать сильную команду в аналитике</span><span class="pct num">18%</span></div>
-          <div class="track"><div class="val" data-kind="mine" style="width:18%"></div></div>
+          <div class="track"><div class="val" data-kind="mine" data-miss="true" style="width:18%"></div></div>
           <p class="verdict">Не совпало · 2 из 11 · люди</p>
         </li>
       </ul>
@@ -1347,21 +1363,39 @@
 
     <div class="block carry">
       <h3>Настрой команды на этот год</h3>
-      <ul style="margin-top:16px">
+      <p class="axis-ends"><span>0</span><span>10</span></p>
+      <!-- Разрыв, а не доля: две метки на одной оси. Залитая — команда,
+           контурная — вы. Подсвечен только тот разрыв, который велик. -->
+      <ul>
         <li>
-          <div class="t"><span class="n">Приоритеты понятны, нравятся и важны</span><span class="avg num">7,2</span></div>
-          <div class="track"><div class="val" style="width:72%"></div><div class="you" style="left:90%"></div></div>
-          <p class="say">Ваша оценка — 9</p>
+          <p class="n">Приоритеты понятны, нравятся и важны</p>
+          <div class="axis">
+            <i class="gapline" style="left:72%;width:18%"></i>
+            <b class="m-team" style="left:72%"></b>
+            <b class="m-you" style="left:90%"></b>
+          </div>
+          <p class="say">Команда 7,2 · вы 9</p>
+          <p class="sr">Команда 7,2 из 10, ваша оценка 9.</p>
         </li>
         <li>
-          <div class="t"><span class="n">Верим, что сделаем</span><span class="avg num">7,5</span></div>
-          <div class="track"><div class="val" style="width:75%"></div><div class="you" style="left:80%"></div></div>
-          <p class="say">Ваша оценка — 8</p>
+          <p class="n">Верим, что сделаем</p>
+          <div class="axis">
+            <i class="gapline" style="left:75%;width:5%"></i>
+            <b class="m-team" style="left:75%"></b>
+            <b class="m-you" style="left:80%"></b>
+          </div>
+          <p class="say">Команда 7,5 · вы 8</p>
+          <p class="sr">Команда 7,5 из 10, ваша оценка 8.</p>
         </li>
         <li data-low="true">
-          <div class="t"><span class="n">Этим нужно заниматься здесь и сейчас</span><span class="avg num" data-low="true">4,6</span></div>
-          <div class="track"><div class="val" style="width:46%"></div><div class="you" style="left:90%"></div></div>
-          <p class="say">Ваша оценка — 9. Вам кажется, что горит, а команде нет.</p>
+          <p class="n">Этим нужно заниматься здесь и сейчас</p>
+          <div class="axis">
+            <i class="gapline" style="left:46%;width:44%"></i>
+            <b class="m-team" style="left:46%"></b>
+            <b class="m-you" style="left:90%"></b>
+          </div>
+          <p class="say">Команда 4,6 · вы 9. Вам кажется, что горит, а команде нет.</p>
+          <p class="sr">Команда 4,6 из 10, ваша оценка 9.</p>
         </li>
       </ul>
     </div>
