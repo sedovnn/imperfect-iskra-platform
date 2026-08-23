@@ -58,7 +58,10 @@
 
     /* ---- шкала кегля: пять ступеней, у каждой своя работа («Искра») ---- */
     --fs-hero:  clamp(34px, 4.4vw, 58px); /* h1 лендинга, больше нигде */
-    --fs-place: 26px;   /* h1 экрана и заголовок части отчёта */
+    --fs-place: 26px;   /* h1 экрана и заголовок блока отчёта */
+    --fs-find:  20px;   /* заголовок находки. ШЕСТАЯ ступень, добавлена сознательно:
+                           в отчёте три уровня заголовков — блок, находка, раздел, —
+                           и двумя ступенями их не разложить. Решение владельца. */
     --fs-read:  16px;   /* всё, что читают */
     --fs-dense: 14px;   /* плотное: таблицы, пояснения под заголовком */
     --fs-util:  12px;   /* служебное: метки, подписи, статусы */
@@ -93,7 +96,7 @@
   /* разрядку сжимаем только на крупных ступенях: на 16px она создавала
      второе сочетание там, где рецепт один */
   h1, h2, h3, h4 { font-weight: 500; margin: 0; line-height: 1.1; }
-  h1, h2, .part-h, .snap-big, .gap-big { letter-spacing: -0.01em; }
+  h1, h2, .part-h, .snap-big, .gap-big, .find h3 { letter-spacing: -0.01em; }
   p { margin: 0; }
   ul, ol { margin: 0; padding: 0; list-style: none; }
   .num { font-variant-numeric: tabular-nums; }
@@ -391,8 +394,9 @@
      блок именно про них: подсветка идёт на находку, а не на хорошую новость. */
   .sources .stack { display: flex; height: 26px; border-radius: var(--radius); overflow: hidden; margin-top: 14px; }
   .sources .stack i { display: block; }
+  /* тёмный сегмент вместо вермилионного: акцент без второго цвета на экране */
   .sources .stack i[data-n="known"] { background: var(--faint); }
-  .sources .stack i[data-n="guess"] { background: var(--accent); }
+  .sources .stack i[data-n="guess"] { background: var(--ink); }
   .sources .keys { display: flex; font-size: var(--fs-util); color: var(--muted); margin-top: 8px; }
   .sources .keys span { flex: none; }
   .sources .keys span[data-n="guess"] { color: var(--muted); }
@@ -554,12 +558,35 @@
   .fold[open] .fold-open { display: none; }
   .fold[open] .fold-close { display: inline; }
 
+  /* ======================================================================
+     НАХОДКИ. Заголовок находки — вывод, под ним доказательство.
+     Вермилион достаётся ОДНОЙ находке — первой. Остальные различаются
+     не цветом, а тем, что у них разное доказательство.
+     ====================================================================== */
+  .find {
+    max-width: var(--w-body); margin-top: 28px;
+    border-top: 1px solid var(--rule); padding-top: 22px;
+  }
+  .find[data-rank="1"] {
+    background: var(--accent-tint); border-top: 0; border-radius: var(--radius);
+    padding: 22px; margin-top: 24px;
+  }
+  .find-n {
+    font-size: var(--fs-util); font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .find h3 { font-size: var(--fs-find); margin-top: 6px; max-width: 34ch; }
+  .find-say {
+    font-size: var(--fs-dense); margin-top: 10px; max-width: var(--w-read);
+  }
+  .find .axis-ends, .find .stack, .find .scroll { margin-top: 20px; }
+  .find[data-rank="1"] .axis { border-top-color: var(--faint); }
+
   /* ---------- 3 · сбалансированные показатели ---------- */
   .bsc td, .bsc th { padding: 11px 16px 11px 0; }
-  .bsc tr[data-empty="true"] { background: var(--accent-tint); }
-  .bsc tr[data-empty="true"] .bsc-say { color: var(--ink); font-weight: 500; }
+  .bsc tr[data-empty="true"] { background: var(--field); }
+  .bsc tr[data-empty="true"] td { font-weight: 500; }
   .bsc tr[data-empty="true"] td:first-child { padding-left: 10px; }
-  .bsc-say { color: var(--muted); }
 
   /* ---------- 4 · что делать ---------- */
   .steps-num { counter-reset: sn; margin-top: 4px; }
@@ -608,7 +635,7 @@
      ограничения печать забирала мобильную раскладку и таблицы разворачивались
      в столбик — четыре строки занимали 685px вместо 90. */
   @media screen and (max-width: 900px) {
-    :root { --fs-place: 22px; }
+    :root { --fs-place: 22px; --fs-find: 18px; }
     .grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .c-8, .c-4, .c-6, .c-6b, .c-12 { grid-column: 1 / span 4; }
     .hero { padding: 36px 0 28px; }
@@ -655,7 +682,7 @@
     .print-only { display: block !important; }
 
     body { font-size: 8.8pt; line-height: 1.26; }
-    :root { --fs-place: 12pt; --fs-read: 8.8pt; --fs-dense: 7.9pt; --fs-util: 6.9pt; --gap: 7mm; }
+    :root { --fs-place: 12pt; --fs-find: 10pt; --fs-read: 8.8pt; --fs-dense: 7.9pt; --fs-util: 6.9pt; --gap: 7mm; }
 
     .head { padding: 0 0 5pt; }
     .part { margin-top: 7pt; padding-top: 5pt; break-inside: auto; }
@@ -1323,50 +1350,27 @@
   </section>
 
   <div class="p2b">
-  <!-- ================= 3 · ОЦЕНКА КОМАНДЫ ================= -->
+  <!-- ================= 3 · ЧТО МЫ НАШЛИ =================
+       Было «Почему так»: три графика, отвечающие на три разных вопроса, —
+       ящик, а не вопрос. Теперь три находки, у каждой заголовок-вывод и
+       доказательство под ним. Порядок: сначала расхождение между вами и
+       командой, потом то, как информация дошла, потом то, чего нет вовсе.
+       Вермилион — только у первой находки. Пороги, по которым находка
+       считается находкой, требуют утверждения: см. NOTES.md.
+       ===================================================== -->
   <section class="part" id="rep-3">
     <p class="part-n">Блок 3 из 4</p>
-    <h2 class="part-h">Почему так</h2>
+    <h2 class="part-h">Что мы нашли</h2>
 
-    <div class="block sources">
-      <h3>Откуда люди знают приоритеты</h3>
-      <div class="stack" aria-hidden="true">
-        <i data-n="known" style="width:53%"></i><i data-n="guess" style="width:47%"></i>
-      </div>
-      <div class="keys" aria-hidden="true">
-        <span data-n="known" style="width:53%">Сказали или есть в документе — 53%</span>
-        <span data-n="guess" style="width:47%">Догадались сами — 47%</span>
-      </div>
-      <p class="sr">Догадались сами или не помнят источник — 47 процентов. Руководитель сказал прямо 34, есть в документе 19, вывод по контексту 31, не помнит 16.</p>
-      <ul>
-        <li><span class="p num">34%</span><span>Руководитель сказал прямо</span></li>
-        <li><span class="p num">19%</span><span>Есть в документе или okr</span></li>
-        <li><span class="p num">31%</span><span>Вывод по контексту, никто не говорил</span></li>
-        <li><span class="p num">16%</span><span>Не помню, просто так делаем</span></li>
-      </ul>
-    </div>
+    <!-- находка 1 -->
+    <div class="find" data-rank="1">
+      <p class="find-n">Главное расхождение</p>
+      <h3>Срочность до команды не дошла</h3>
+      <p class="find-say">Вы поставили 9 из 10, команда — 4,6. По двум другим вопросам про
+      настрой вы с командой почти совпадаете, так что дело не в общем пессимизме.</p>
 
-    <div class="block">
-      <h3>Чего хватает, а чего нет</h3>
-      <div class="scroll">
-        <table class="bsc">
-          <thead><tr><th>Направление</th><th>Ваши</th><th>Назвала команда</th><th></th></tr></thead>
-          <tbody>
-            <tr><td>Деньги</td><td class="num">1</td><td class="num">1</td><td class="bsc-say">Хватает</td></tr>
-            <tr data-empty="true"><td>Клиенты</td><td class="num">0</td><td class="num">0</td><td class="bsc-say">Не назвал никто</td></tr>
-            <tr><td>Процессы</td><td class="num">2</td><td class="num">3</td><td class="bsc-say">Хватает</td></tr>
-            <tr data-heavy="true"><td>Люди</td><td class="num">1</td><td class="num">4</td><td class="bsc-say">У команды вчетверо больше, чем у вас</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="block carry">
-      <h3>Настрой команды на этот год</h3>
       <p class="axis-ends"><span>0</span><span>10</span></p>
-      <!-- Разрыв, а не доля: две метки на одной оси. Залитая — команда,
-           контурная — вы. Подсвечен только тот разрыв, который велик. -->
-      <ul>
+      <ul class="carry">
         <li>
           <p class="n">Приоритеты понятны, нравятся и важны</p>
           <div class="axis">
@@ -1394,10 +1398,55 @@
             <b class="m-team" style="left:46%"></b>
             <b class="m-you" style="left:90%"></b>
           </div>
-          <p class="say">Команда 4,6 · вы 9. Вам кажется, что горит, а команде нет.</p>
+          <p class="say">Команда 4,6 · вы 9 — разрыв в 4,4 балла</p>
           <p class="sr">Команда 4,6 из 10, ваша оценка 9.</p>
         </li>
       </ul>
+    </div>
+
+    <!-- находка 2 -->
+    <div class="find" data-rank="2">
+      <p class="find-n">Находка</p>
+      <h3>Половина команды догадалась сама</h3>
+      <p class="find-say">47% формулировок люди вывели из контекста или не помнят источник.
+      Значит приоритеты живут не в словах и не в документах, а в чьей-то догадке.</p>
+
+      <div class="sources">
+        <div class="stack" aria-hidden="true">
+          <i data-n="known" style="width:53%"></i><i data-n="guess" style="width:47%"></i>
+        </div>
+        <div class="keys" aria-hidden="true">
+          <span data-n="known" style="width:53%">Сказали или есть в документе — 53%</span>
+          <span data-n="guess" style="width:47%">Догадались сами — 47%</span>
+        </div>
+        <p class="sr">Догадались сами или не помнят источник — 47 процентов. Руководитель сказал прямо 34, есть в документе 19, вывод по контексту 31, не помнит 16.</p>
+        <ul>
+          <li><span class="p num">34%</span><span>Руководитель сказал прямо</span></li>
+          <li><span class="p num">19%</span><span>Есть в документе или okr</span></li>
+          <li><span class="p num">31%</span><span>Вывод по контексту, никто не говорил</span></li>
+          <li><span class="p num">16%</span><span>Не помню, просто так делаем</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- находка 3 -->
+    <div class="find" data-rank="3">
+      <p class="find-n">Находка</p>
+      <h3>Про клиентов не сказал никто</h3>
+      <p class="find-say">Ни в вашем списке, ни у команды. Остальные три направления закрыты,
+      причём людей команда назвала вчетверо больше, чем вы.</p>
+
+      <div class="scroll">
+        <table class="bsc">
+          <thead><tr><th>Направление</th><th>Ваши</th><th>Назвала команда</th></tr></thead>
+          <tbody>
+            <tr><td>Деньги</td><td class="num">1</td><td class="num">1</td></tr>
+            <tr data-empty="true"><td>Клиенты</td><td class="num">0</td><td class="num">0</td></tr>
+            <tr><td>Процессы</td><td class="num">2</td><td class="num">3</td></tr>
+            <tr><td>Люди</td><td class="num">1</td><td class="num">4</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </section>
 
