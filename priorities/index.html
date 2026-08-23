@@ -649,11 +649,11 @@
   .grade[data-g="bad"] .res-pr[data-ref="0"] .prv { background: var(--accent); }
 
   /* Одна величина против порога — и знаменателя нет.
-     «Из 1000» не делало работы: 1000 достижимо только при 10 / 10 / 10,
-     а порог стоит примерно на половине шкалы. Знаменатель подсказывал
-     сравнивать с максимумом, которого не бывает, и 248 читалось как
-     катастрофа, хотя сравнивать надо с порогом. Порог нарисован
-     засечкой, число названо рядом.
+     Шкала линии — до ПОРОГА, а не до максимума: 248 из 500. Тысяча с
+     экрана ушла совсем. Она достижима только при 10 / 10 / 10, сравнивать
+     надо с порогом, и линия до 1000 заставляла сравнивать с максимумом,
+     которого не бывает. Конец линии и есть порог, поэтому засечка больше
+     не нужна.
 
      Порог — 500, как в методике. Восемь по каждой шкале даёт 512, то есть
      порог пройден: поэтому узким местом считается шкала ниже восьми, а не
@@ -1568,8 +1568,8 @@
       <div class="res">
         <button type="button" class="res-sq" aria-expanded="false" aria-controls="res9">
           <span class="res-plus" aria-hidden="true">+</span>
-          <span class="res-fig"><span class="num">248</span> <span class="res-of">порог 500</span></span>
-          <span class="res-viz" data-kind="gauge" data-max="1000" data-a="248" data-mark="500" aria-hidden="true"></span>
+          <span class="res-fig"><span class="num">248</span> <span class="res-of">из 500</span></span>
+          <span class="res-viz" data-kind="gauge" data-max="500" data-a="248" aria-hidden="true"></span>
           <span class="res-cap">произведение трёх шкал</span>
         </button>
         <div class="res-full" id="res9">
@@ -1908,10 +1908,14 @@
       gv.className = 'gv';
       gv.style.width = (numOf(v.getAttribute('data-a')) / gmax * 100) + '%';
       v.appendChild(gv);
-      var gm = document.createElement('span');
-      gm.className = 'gm';
-      gm.style.left = (numOf(v.getAttribute('data-mark')) / gmax * 100) + '%';
-      v.appendChild(gm);
+      /* заливка не вылезает за порог, если порог перекрыт */
+      gv.style.width = Math.min(100, numOf(v.getAttribute('data-a')) / gmax * 100) + '%';
+      if (v.getAttribute('data-mark')) {
+        var gm = document.createElement('span');
+        gm.className = 'gm';
+        gm.style.left = (numOf(v.getAttribute('data-mark')) / gmax * 100) + '%';
+        v.appendChild(gm);
+      }
     } else if (kind === 'pair') {
       var max = numOf(v.getAttribute('data-max'));
       [['a', 'la', '0'], ['b', 'lb', '1']].forEach(function (k) {
