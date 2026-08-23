@@ -569,8 +569,10 @@
   .vopt[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
   .vopt:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 3px; }
   #vout { margin-top: 8px; }
-  .appx { margin-top: 56px; border-top: 2px solid var(--ink); padding-top: 14px; }
-  .appx .plainlist { margin-top: 16px; }
+  #axout { max-width: 900px; }
+  #axout .plainlist { margin-top: 20px; }
+  #axout .plainlist + p { margin-top: 22px; }
+  .appx-link { margin-top: 32px; }
 
   /* ---------- три уровня вердикта ---------- */
   /* Метка группы — РАЗДЕЛИТЕЛЬ, а не заголовок. Она шла тем же кеглем и
@@ -1797,6 +1799,20 @@
 
 </section>
 
+
+<!-- ============================ ПРИЛОЖЕНИЕ ============================ -->
+<!-- Отдельная страница, а не хвост отчёта: длинный список посреди документа
+     сбивает чтение. Наполняется стендом вариантов. -->
+<section class="screen" id="s-appendix" data-title="Приложение — карта приоритетов" data-name="приложение">
+  <div class="head">
+    <span class="logo">futureproof
+      <svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="#ff4800"/></svg>
+      <span class="prod">карта приоритетов</span>
+    </span>
+    <span class="where">Продуктовая команда · собран 12 августа</span>
+  </div>
+  <div id="axout"></div>
+</section>
 </div><!-- /frame -->
 
 <script>
@@ -2058,6 +2074,15 @@
     'Разрозненные инструменты', 'Нет замеров результата', 'Двойная отчётность'];
 
   var n = function (x) { return String(x).replace('.', ','); };
+  /* согласование числа с существительным: «21 тема», «23 темы», «17 тем» */
+  function plur(k, one, few, many) {
+    var a = Math.abs(k) % 100, b = a % 10;
+    if (a > 10 && a < 20) return many;
+    if (b > 1 && b < 5) return few;
+    if (b === 1) return one;
+    return many;
+  }
+  var WORDS = { 2: 'двух', 3: 'трёх', 4: 'четырёх' };
   var round1 = function (x) { return x.toFixed(1); };
 
   /* ---------- сборка данных варианта ---------- */
@@ -2112,7 +2137,7 @@
       }).join('') + '</ul>';
     };
 
-    V.push({ g: grade(d.main / A, 0.5, 2 / 3), id: 'v1',
+    V.push({ g: grade(d.main / A, 1 / 3, 2 / 3), id: 'v1',
       h: d.main / A < 0.5 ? 'Команда не знает, что для вас главное'
                           : 'Главный приоритет команда знает',
       s: 'Главным ваш приоритет назвали ' + d.main + ' из ' + A + '. ' +
@@ -2123,17 +2148,22 @@
 
     var notReached = d.own.length - d.reached;
     V.push({ g: grade(d.reached / d.own.length, 0.5, 1), id: 'v2',
+      /* «4 из 4 знает меньше трети» — так не говорят: если не дошёл ни один,
+         это отдельная фраза */
       h: notReached === 0 ? 'Все ваши приоритеты дошли до команды'
+        : notReached === d.own.length ? 'Ни один ваш приоритет до команды не дошёл'
         : 'До команды дошли не все приоритеты',
       s: notReached === 0
         ? 'Каждый из четырёх назвала минимум треть команды.'
-        : notReached + ' из ' + d.own.length + ' знает меньше трети команды: для неё этих приоритетов в этом году нет.',
+        : notReached === d.own.length
+          ? 'Каждый из ' + d.own.length + ' знает меньше трети команды: для неё этих приоритетов в этом году нет.'
+          : notReached + ' из ' + d.own.length + ' знает меньше трети команды: для неё этих приоритетов в этом году нет.',
       fig: notReached || d.own.length, of: 'из ' + d.own.length,
       vz: '<span class="res-viz" data-kind="dots" data-a="' + d.own.length + '" data-b="' + (notReached || d.own.length) + '" aria-hidden="true"></span>',
       cap: notReached ? 'приоритетов не дошло' : 'приоритетов дошло',
       panel: pl(d.own.map(function (o) { return [o.name, o.dir, o.named + ' из ' + A]; })) });
 
-    V.push({ g: grade(1 - d.guessed / A, 2 / 3, 0.84), id: 'v3',
+    V.push({ g: grade(1 - d.guessed / A, 0.5, 0.75), id: 'v3',
       h: d.guessed / A > 0.33 ? 'Приоритеты живут в догадках, а не в словах'
                               : 'Приоритеты команда знает от вас, а не из догадок',
       s: d.guessed + ' из ' + A + ' вывели их из контекста или не помнят, откуда знают.',
@@ -2142,7 +2172,7 @@
                  ['Вывели сами или не помнят', '', d.guessed + ' из ' + A]]) });
 
     var u = d.st.scales[2];
-    V.push({ g: grade(u, 6, 8), id: 'v4',
+    V.push({ g: grade(u, 5, 7.5), id: 'v4',
       h: u < 6 ? 'Команда не видит, почему этим нужно заниматься сейчас'
                : 'Срочность команда разделяет',
       s: 'Срочность — ' + n(u) + ' из 10 при вашей ' + YOU[2] + '.',
@@ -2156,7 +2186,7 @@
         .map(function (r, i) { var p = r.split('|'); return [p[0], 'вы ' + YOU[i], p[1]]; })) });
 
     var full = 4 - d.st.emptyDirs;
-    V.push({ g: d.st.emptyDirs ? 'bad' : 'ok', id: 'v5',
+    V.push({ g: d.st.emptyDirs >= 2 ? 'bad' : (d.st.emptyDirs ? 'mid' : 'ok'), id: 'v5',
       h: d.st.emptyDirs ? 'Есть направление, про которое не сказал никто'
                         : 'Все четыре направления заняты',
       s: d.st.emptyDirs
@@ -2166,7 +2196,7 @@
       vz: '<span class="res-viz" data-kind="dots" data-a="4" data-b="' + (d.st.emptyDirs || 4) + '" aria-hidden="true"></span>',
       cap: d.st.emptyDirs ? 'направлений пустых' : 'направления заняты', panel: null });
 
-    V.push({ g: grade(d.st.subs.match, 40, 60), id: 'v6',
+    V.push({ g: grade(d.st.subs.match, 35, 65), id: 'v6',
       h: d.st.subs.inside > d.st.subs.match
         ? 'Внутри команды согласия больше, чем с вами'
         : 'Команда сходится с вами больше, чем друг с другом',
@@ -2179,7 +2209,7 @@
                  ['Люди друг с другом', '', d.st.subs.inside + ' из 100']]) +
         '<p class="res-note">Пар ответов: ' + (A * (A - 1) / 2) + '. Считаем по общим словам в каждой паре.</p>' });
 
-    V.push({ g: grade(1 - d.st.noConcrete / 4, 0.5, 1), id: 'v7',
+    V.push({ g: d.st.noConcrete >= 3 ? 'bad' : (d.st.noConcrete ? 'mid' : 'ok'), id: 'v7',
       h: d.st.noConcrete ? 'Не во всех формулировках есть конкретика'
                          : 'По каждому приоритету видно, что считать результатом',
       s: d.st.noConcrete
@@ -2201,7 +2231,7 @@
       return [t, '', Math.max(1, Math.round(d.outside / (i + 1.6))) + ' из ' + A];
     });
     var restCount = d.themes - top.length;
-    V.push({ g: grade(1 - d.outside / A, 0.5, 0.75), id: 'v8',
+    V.push({ g: grade(1 - d.outside / A, 0.4, 0.7), id: 'v8',
       h: d.outside / A > 0.25
         ? 'Часть команды тянет темы, которых нет в вашем списке'
         : 'Команда занята тем, что есть в вашем списке',
@@ -2209,10 +2239,10 @@
       fig: d.outside, of: 'из ' + A, vz: viz(d, d.outside, A), cap: 'тянут свои темы',
       panel: pl(top) + (restCount > 0
         ? '<p class="res-note">В отчёте пять самых частых. Остальные ' + restCount +
-          ' — в приложении: в окне они не читаются, а прокрутка внутри окна прячет половину списка.</p>'
+          ' — в приложении отдельной страницей: в окне они не читаются.</p>'
         : '') });
 
-    V.push({ g: grade(d.product, 500, 650), id: 'v9',
+    V.push({ g: grade(d.product, 400, 500), id: 'v9',
       h: d.product < 500 ? 'Приоритеты не станут работой, хотя силы есть'
                          : 'Команда готова взяться',
       s: 'Приоритеты нравятся — ' + n(d.st.scales[0]) + ' из 10, вера в себя — ' + n(d.st.scales[1]) +
@@ -2231,8 +2261,22 @@
     { g: 'ok', t: 'Оставить как есть' }
   ];
 
+  /* Повестка встречи не может быть из девяти пунктов. В «разобрать»
+     остаются четыре самых важных по порядку важности вывода, остальные
+     ниже порога уезжают в «держать в виду» — с оговоркой, сколько их. */
+  var CAP = 4;
   function render(st, sz) {
     var d = build(st, sz), V = verdicts(d);
+    var below = V.filter(function (v) { return v.g === 'bad'; }).length;
+    var moved = 0;
+    if (below > CAP) {
+      var seen = 0;
+      V.forEach(function (v) {
+        if (v.g !== 'bad') return;
+        seen++;
+        if (seen > CAP) { v.g = 'mid'; moved++; }
+      });
+    }
     var bad = V.filter(function (v) { return v.g === 'bad'; }).length;
     var html = '<div class="verdict-top">' +
       '<p class="unit-k">Заключение</p>' +
@@ -2263,6 +2307,8 @@
         '<p class="grade-k"><span class="grade-n num">' + list.length + '</span>' +
         '<span class="grade-t">' + G.t + '</span></p>';
       if (!list.length) html += '<p class="grade-empty">В этом отчёте таких выводов нет.</p>';
+      if (G.g === 'bad' && moved) html += '<p class="grade-empty">Ниже порога ещё ' + moved +
+        ' — они в «держать в виду». Начните с этих ' + (WORDS[bad] || bad) + '.</p>';
       list.forEach(function (v) {
         html += '<div class="vd"><h2 class="vd-h">' + v.h + '</h2>' +
           '<p class="vd-say">' + v.s + '</p>' +
@@ -2271,16 +2317,68 @@
       html += '</div>';
     });
 
+    /* Продажа. Для сильной команды текст ДРУГОЙ: «стратегии пока нет» —
+       для неё ложь. Приоритеты дошли, значит следующий слой — ценности,
+       видение и то, кто за что отвечает; рассинхрон живёт уже там, и
+       замер приоритетов его не видит. */
+    var weakSell = [
+      ['Разобрать это заключение',
+       'Полчаса по вашим вердиктам: что говорить команде, в каком порядке и что делать, если срочность не купят со второго раза.',
+       'Бесплатно, один раз на отчёт', 'btn-1', 'Запросить консультацию'],
+      ['Собрать стратегию — stratos',
+       'В списке нет отказов, нет ресурса и нет горизонта: приоритеты есть, стратегии пока нет.',
+       'Мастерская на команду', 'btn-2', 'Что такое stratos'],
+      ['Научиться держать стратегию — imperfect',
+       'Приоритеты без срочности, повестка снизу, пустое направление — самые частые ошибки, и они у вас уже есть.',
+       'День с фасилитатором', 'btn-2', 'Оценить мышление']
+    ];
+    var strongSell = [
+      ['Разобрать это заключение',
+       'Полчаса о том, где синхрон ломается следующим. Приоритеты — верхний слой: под ним ценности, видение и то, кто за что отвечает.',
+       'Бесплатно, один раз на отчёт', 'btn-1', 'Запросить консультацию'],
+      ['Проверить остальную стратегию — stratos',
+       'Приоритеты дошли — это только начало. Рассинхрон в ценностях и видении этот замер не видит, а он бьёт по тем же задачам года.',
+       'Мастерская на команду', 'btn-2', 'Что такое stratos'],
+      ['Убедиться, что команда отвечает за стратегию — imperfect',
+       'Знать приоритеты и отвечать за них — разные вещи. Проверим, кто держит каждый слой стратегии, а не только список задач.',
+       'День с фасилитатором', 'btn-2', 'Оценить мышление']
+    ];
+    var sell = bad ? weakSell : strongSell;
+    html += '<div class="todo"><p class="unit-k">Что делать</p><h2 class="td-h">' +
+      (bad ? bad + ' ' + (bad === 1 ? 'вердикт' : 'вердикта') +
+             ' из девяти — не про людей, а про то, что стратегия ещё не собрана'
+           : 'Приоритеты дошли. Стратегия — это не только приоритеты') +
+      '</h2><div class="offers"><p class="unit-k">С нами</p><div class="offer-row">' +
+      sell.map(function (o) {
+        return '<div class="offer"><p class="of-t">' + o[0] + '</p>' +
+          '<p class="of-d">' + o[1] + '</p><p class="of-w">' + o[2] + '</p>' +
+          '<p><button type="button" class="btn ' + o[3] + '">' + o[4] + '</button></p></div>';
+      }).join('') + '</div></div></div>';
+
     /* приложение появляется только когда список перестаёт влезать в окно */
+    /* Приложение — ОТДЕЛЬНАЯ страница, а не хвост отчёта: длинный список
+       посреди документа сбивает чтение, а из отчёта нужна одна ссылка. */
+    var ax = document.getElementById('axout');
     if (d.themes > 8) {
-      html += '<div class="appx"><p class="unit-k">Приложение</p>' +
-        '<h2 class="td-h">Все темы, которые команда тянет сама — ' + d.themes + '</h2>' +
+      html += '<p class="appx-link"><button type="button" class="btn btn-3" data-go="s-appendix">' +
+        'Все ' + d.themes + ' ' + plur(d.themes, 'тема', 'темы', 'тем') + ' — в приложении</button></p>';
+      ax.innerHTML = '<p class="unit-k">Приложение к отчёту</p>' +
+        '<h1 class="vt-h">Темы, которые команда тянет сама: ' + d.themes + '</h1>' +
+        '<p class="vt-lead">В отчёте пять самых частых. Полный список здесь: во всплывающем окне ' +
+        d.themes + ' ' + plur(d.themes, 'строка', 'строки', 'строк') +
+        ' не читаются, а прокрутка внутри окна прячет половину.</p>' +
         '<ul class="plainlist">' + THEMES.slice(0, d.themes).map(function (t, i) {
           return '<li><span class="pl-name">' + t + '</span><span class="pl-pct num">' +
             Math.max(1, Math.round(d.outside / (i + 1.6))) + ' из ' + d.A + '</span></li>';
         }).join('') + '</ul>' +
-        '<p class="res-note">В самом отчёте — пять самых частых. Полный список живёт здесь, ' +
-        'потому что во всплывающем окне ' + d.themes + ' строк не читаются.</p></div>';
+        '<p><button type="button" class="btn btn-2" data-go="s-variants">Вернуться в отчёт</button></p>';
+    } else {
+      ax.innerHTML = '<p class="unit-k">Приложение к отчёту</p>' +
+        '<h1 class="vt-h">Приложение не понадобилось</h1>' +
+        '<p class="grade-empty">В этом варианте все ' + d.themes + ' ' +
+        plur(d.themes, 'тема', 'темы', 'тем') +
+        ' читаются в самом отчёте, в окне вердикта.</p>' +
+        '<p><button type="button" class="btn btn-2" data-go="s-variants">Вернуться в отчёт</button></p>';
     }
 
     out.innerHTML = html;
