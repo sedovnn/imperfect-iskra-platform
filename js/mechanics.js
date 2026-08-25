@@ -203,7 +203,7 @@
   // примечание читалось бы как отдельная величина.
   function normCount(n, norm) {
     return '<span class="mx-count mx-tally">' + n +
-      ' <span class="mx-norm">(рекомендуем до ' + norm +
+      '<span class="mx-norm">(рекомендуем до ' + norm +
       (n > norm ? ' — глубина важнее полноты' : '') + ')</span></span>';
   }
 
