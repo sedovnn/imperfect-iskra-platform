@@ -606,7 +606,9 @@
       };
       if (m.picked != null) { drawMain(); return; }
       var draw = function () {
-        var h = head(COPY.variants.section, '<span class="mx-count">рекомендаций: ' + m.rays.length + '</span>');
+        // Счётчик — просто число сразу за заголовком, через точку. Слово перед ним
+        // повторяло заголовок («Ваши рекомендации · рекомендаций: 1»), правка 23.08.
+        var h = head(COPY.variants.section, '<span class="mx-count mx-num">' + m.rays.length + '</span>');
         m.rays.forEach(function (r, i) {
           h += numbered(i + 1, '<div class="mx-card">' +
             field(ctx, { id: 'mxG' + i, f: 'gist', i: i, label: '', ph: COPY.variants.gist.label, val: r.gist }) +
@@ -1116,7 +1118,7 @@
     },
     render: function (host, m, ctx) {
       var draw = function () {
-        var h = head(COPY.futures.section, '<span class="mx-count">вариантов: ' + m.cards.length + '</span>');
+        var h = head(COPY.futures.section, '<span class="mx-count mx-num">' + m.cards.length + '</span>');
         m.cards.forEach(function (t, i) {
           // Кнопка выбора появляется ТОЛЬКО у заполненной карточки: на пустой она
           // предлагала бы отметить ничто. «Наиболее вероятным», не «как вероятный»
