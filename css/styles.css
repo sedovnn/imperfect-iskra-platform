@@ -4020,7 +4020,14 @@ details.talk-folded[open] + .talk-kept { display: none; }
   color: var(--muted); vertical-align: middle;
 }
 .chat-face.is-casual { border-color: var(--band-line); background-color: var(--band); }
-.chat-msg .chat-name { display: inline-flex; align-items: center; }
+/* inline-flex нужен ИМЕНИ СОБЕСЕДНИКА: рядом с ним стоит кружок с лицом, и они должны
+   стоять на одной линии. У своей реплики кружка нет, а inline-flex ломал выравнивание:
+   text-align: right у такого блока двигает содержимое ВНУТРИ него, а сам он остаётся у
+   левого края — поэтому «Вы» над зафиксированным ответом уезжало влево, хотя над
+   открытым полем стояло справа (там своя разметка, chat-name-mine, блочная).
+   ⚠ Владелец указывал на это четыре раза; причина была одна и эта. */
+.chat-msg:not(.me) .chat-name { display: inline-flex; align-items: center; }
+.chat-msg.me .chat-name { display: block; }
 
 /* Галочка у прочитанного приложения: голубая, потому что это отметка участника,
    а не платформы. Ставится, когда приложение открыто и его низ побывал на экране.
