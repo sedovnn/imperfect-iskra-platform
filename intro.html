@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=213" />
+<link rel="stylesheet" href="css/styles.css?v=215" />
 <style>
   /* ЭКРАН 1 ИЗ ТРЁХ: настройка на мышление → введение в роль (role.html) →
      материалы (assessment.html). Приглушённый FP-лист: экран настраивает, а не
@@ -56,6 +56,16 @@
            на экране роли (S.system.rules) и рядом с каждой кнопкой. Здесь осталось
            только то, что касается самого ответа, — пустым его не оставить. -->
       <div class="prin"><span class="n">3</span><span class="t"><b>Пустой ответ не принимается.</b> Если сказать нечего или хочется спросить встречное — так и напишите, это будет засчитано.</span></div>
+      <!-- ⚠ «ЧЕГО ПЛАТФОРМА НЕ УМЕЕТ» ПЕРЕЕХАЛО СЮДА С ЭКРАНА РОЛИ (решение владельца
+           25.08). Это не про роль: участник, привыкший к чату с моделью, ждёт
+           собеседника — уточнит вопрос, подскажет, даст переписать, — и узнать об
+           этом посреди разговора значит потерять ответ. По смыслу это про то, КАК
+           ОТВЕЧАТЬ, поэтому стоит здесь, сразу за принципами ответа.
+           Требование решения 06.08 — показать блок ДО первого вопроса — сохранено:
+           первая страница ещё раньше, чем экран роли. Текст один и тот же,
+           S.system.howItWorks, и подставляется скриптом ниже: дублировать его в
+           разметке значило бы развести две копии одного текста. -->
+      <div id="introHow"><!-- S.system.howItWorks --></div>
     </div>
 <div class="pgroup">
       <p class="kicker">ИИ и источники</p>
@@ -82,11 +92,9 @@
            Здесь остался только итог: зачем участник это делает и кто увидит результат. -->
       <div class="intro-note"><b>Что в итоге.</b> Профиль по пяти навыкам и сравнение с ИИ на том же кейсе, с рекомендациями по развитию. Разбор придёт отдельно — на самом ассессменте оценок нет. Оценка не смотрит на имя: судья получает только текст ответов, без имени и без номера.</div>
     </div>
-<div class="pgroup intro-name">
-      <p class="kicker">Прежде чем начать</p>
-      <p><b>Как к вам обращаться?</b> Так к вам будут обращаться в разговорах герои ассессмента. На оценку это не влияет. Можно псевдоним.</p>
-      <input type="text" id="introName" maxlength="60" autocomplete="off" placeholder="Имя или как вам удобно" />
-    </div>
+<!-- ⚠ ИМЯ УШЛО НА ВТОРУЮ СТРАНИЦУ (решение владельца 25.08). Оно стояло здесь, и
+         между ним и стартом лежала целая страница — обещание «сейчас начнём»
+         повисало. Теперь имя и «Приступить» стоят рядом, одним жестом. -->
     </div>
 
     </div><!-- /intro-cols -->
@@ -98,7 +106,7 @@
     <div class="intro-cta">
       <!-- Записки «дальше — кто вы в этой истории…» здесь нет (решение владельца
            07.08): она пересказывала следующий экран, а он и так следующий. -->
-      <a class="btn btn-primary" id="startBtn" href="role.html">К введению в роль →</a>
+      <a class="btn btn-primary" id="startBtn" href="role.html">Как устроен ассессмент →</a>
     </div>
 
     <footer class="intro-foot">© futureproof · ассессмент «Искра»</footer>
@@ -106,6 +114,12 @@
   </div>
 </div>
 <script src="js/main.js?v=7"></script>
+<!-- ⚠ scenes.js ЗДЕСЬ РАДИ ОДНОГО АБЗАЦА — и это не расточительство. Блок «чего
+     платформа не умеет» живёт в S.system.howItWorks, и он же уходит модели в system:
+     копия в разметке развела бы два текста, которые обязаны совпадать. А по весу
+     загрузка не добавляется, а СДВИГАЕТСЯ на экран раньше: путь идёт intro → role →
+     ассессмент, и следующие два экрана берут этот файл из кэша по тому же ?v=. -->
+<script src="js/scenes.js?v=119"></script>
 <script>
   // Экран открывают из входа (дальше — роль) и ссылкой «Как проходить» с экрана
   // установки. Во втором случае возврат обязан вести туда, откуда пришли, иначе
@@ -117,7 +131,18 @@
     // ассессмент, и пускать сюда телефон значило бы обещать проход, которого нет.
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('introBody')) return;
 
-    var ALLOWED = { 'assessment.html': 'к ассессменту', 'role.html': 'к введению в роль' };
+    // Блок «чего платформа не умеет» — из единственного источника (S.system).
+    var sys = (window.imp.scenes && window.imp.scenes.system) || {};
+    var howEl = document.getElementById('introHow');
+    if (howEl) {
+      var esc2 = function (t) { return String(t == null ? '' : t)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+      howEl.innerHTML = (sys.howItWorks || [])
+        .map(function (t) { return '<p class="intro-note">' + esc2(t).replace(/\n/g, '<br />') + '</p>'; })
+        .join('');
+    }
+
+    var ALLOWED = { 'assessment.html': 'к ассессменту', 'role.html': 'к устройству ассессмента' };
     var btn = document.getElementById('startBtn');
     var from = '';
     try { from = new URLSearchParams(location.search).get('from') || ''; } catch (e) {}
@@ -127,39 +152,15 @@
     }
     // Имя: префилл из сессии и сохранение при уходе. Пишем и в localStorage, и в
     // sessionStorage — сессию читают оба (см. js/main.js loadSession).
-    var nameEl = document.getElementById('introName');
-    function readSession() {
-      try {
-        return JSON.parse(sessionStorage.getItem('imp_current_session')
-          || localStorage.getItem('imp_current_session') || 'null');
-      } catch (e) { return null; }
-    }
-    var sess = readSession();
-    if (nameEl && sess && sess.name) nameEl.value = sess.name;
-    function persistName() {
-      if (!nameEl) return;
-      var nm = (nameEl.value || '').trim();
-      var s = readSession();
-      if (!s || !s.bib || !nm) return;
-      s.name = nm;
-      try {
-        sessionStorage.setItem('imp_current_session', JSON.stringify(s));
-        // ⚠ В ДЕМО — ТОЛЬКО В sessionStorage. Демо-сессия служебная (номер 900) и
-        // живёт в одной вкладке; запись её в localStorage затёрла бы сессию
-        // настоящего участника в этом браузере. Ровно от этого витрина и держит
-        // демо в sessionStorage — а имя, введённое на этом экране, обходило защиту.
-        if (!sessionStorage.getItem('imp_demo')) {
-          localStorage.setItem('imp_current_session', JSON.stringify(s));
-        }
-      } catch (e) {}
-    }
-    if (nameEl) nameEl.addEventListener('change', persistName);
+    // ⚠ ИМЯ ОТСЮДА УШЛО (решение владельца 25.08) — вместе со всей его логикой:
+    // префилл, сохранение при уходе и защита демо переехали в role.html слово в слово.
+    // Держать здесь чтение сессии «на будущее» значило бы оставить мёртвый код,
+    // который при следующей правке кто-то примет за работающий.
 
-    // Отметку «настройку показали» ставим ЗДЕСЬ, а не на экране роли: вход
-    // проверяет именно её, и участник, закрывший вкладку на экране роли, при
-    // следующем входе попадёт на роль, а не на второй проход настройки.
+    // Отметку «настройку показали» ставим ЗДЕСЬ, а не на второй странице: вход
+    // проверяет именно её, и участник, закрывший вкладку на второй странице, при
+    // следующем входе попадёт на неё, а не на второй проход настройки.
     btn.addEventListener('click', function () {
-      persistName();
       try {
         // В ДЕМО отметку не ставим: демо должно каждый раз показывать путь целиком,
         // иначе второй запуск с витрины начинается с материалов.

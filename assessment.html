@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=213" />
+<link rel="stylesheet" href="css/styles.css?v=215" />
 </head>
 <body class="p-assess">
 
@@ -117,6 +117,29 @@
       </div>
     </header>
 
+    <!-- ⚠ БЕЛЫЙ ЛИСТ «ВВЕДЕНИЕ В РОЛЬ» (решение владельца 25.08). Роль была вторым
+         экраном до старта, рядом со схемой платформы, — и проигрывала картинке: серый
+         текст, который читают по диагонали. Теперь она первое, что участник видит УЖЕ
+         внутри ассессмента: над листом стоит шапка дня, и роль объясняется там, где
+         действует, а не на странице перед входом.
+         ⚠ ЛИСТ — ЭЛЕМЕНТ ПОТОКА, А НЕ position:absolute. Оболочка — колонка из шапки и
+         тела; лист встаёт на место тела (flex:1) и потому сам, без замеров, занимает
+         ровно площадь ниже шапки и выше полосы демо. Абсолютное перекрытие требовало бы
+         знать высоту шапки — а она разная в демо и вне его.
+         Возврата к листу нет намеренно (решение владельца): перечитать роль можно во
+         вкладке «Введение в роль» справа. Лист — вход, вкладка — справочник. -->
+    <div class="role-sheet" id="roleSheet" style="display:none;">
+      <div class="role-sheet-in">
+        <h2 class="role-sheet-t">Введение в роль</h2>
+        <div class="role-sheet-body" id="roleSheetBody"></div>
+        <!-- Кнопка справа под текстом — как ряд действия в разговоре: главное действие
+             всегда у правого края. -->
+        <div class="role-sheet-foot">
+          <button type="button" class="btn btn-primary" id="roleSheetGo">К пакету материалов →</button>
+        </div>
+      </div>
+    </div>
+
     <div class="day-grid" id="dayGrid">
 
       <!-- Возврат свёрнутого столбика этапов — рельс на его месте, прямой ребёнок грида.
@@ -208,6 +231,15 @@
           <button type="button" class="support-tab" data-tab="marks">Мои заметки<span class="tab-count" id="marksCount"></span></button>
           <button type="button" class="support-tab" data-tab="ref">Справка</button>
           <button type="button" class="support-tab" data-tab="answers">Мои ответы</button>
+          <!-- ⚠ ПЯТАЯ ВКЛАДКА (решение владельца 25.08). Введение в роль перестало быть
+               страницей до старта и стало белым листом поверх ассессмента — а листу нужен
+               адрес, куда вернуться: «кто я в этом дне» участник спрашивает не один раз.
+               Возврата к самому листу владелец не захотел, и это правильнее: лист — вход,
+               вкладка — справочник. Последней в ряду: к ней возвращаются реже всех
+               остальных, а «О компании» обязана оставаться первой.
+               Порядок здесь и перечисление в S.system.screen обязаны совпадать — там про
+               это стоит отдельное предупреждение. -->
+          <button type="button" class="support-tab" data-tab="role">Введение в роль</button>
         </nav>
 
         <div class="support-body is-on" id="supCase">
@@ -272,6 +304,12 @@
           <div id="supAnswersBody"></div>
         </div>
 
+        <!-- Наполняется из S.system.lead тем же roleHtml(), что рисует белый лист на
+             входе: один текст, одна реализация, расхождению взяться негде. -->
+        <div class="support-body" id="supRole">
+          <div id="supRoleBody"></div>
+        </div>
+
         <!-- Виден только в режиме чтения пакета: день начинается с папки на столе,
              дальше та же папка остаётся в середине под рукой. -->
         
@@ -296,7 +334,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=6"></script>
-<script src="js/scenes.js?v=118"></script>
+<script src="js/scenes.js?v=119"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -312,6 +350,6 @@
      насмерть: TypeError на чтении subFacts, а дальше — пустая колонка без поля ответа
      и без кнопки. Ловится проверкой eval/lint_wiring.js. -->
 <script src="js/mech-fields.js?v=35"></script>
-<script src="js/engine.js?v=89"></script>
+<script src="js/engine.js?v=90"></script>
 </body>
 </html>

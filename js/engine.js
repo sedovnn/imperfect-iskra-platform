@@ -718,9 +718,9 @@
 
   function setTab(name) {
     supportTab = name;
-    // Порядок как в разметке (кейс · справка · пометки · мои ответы) — на работу он
-    // не влияет, но список, читающийся иначе, чем экран, потом обманывает.
-    ['case', 'ref', 'marks', 'answers'].forEach(function (k) {
+    // Порядок как в разметке (о компании · заметки · справка · мои ответы · роль) — на
+    // работу он не влияет, но список, читающийся иначе, чем экран, потом обманывает.
+    ['case', 'marks', 'ref', 'answers', 'role'].forEach(function (k) {
       var b = document.querySelector('.support-tab[data-tab="' + k + '"]');
       var body = el('sup' + k.charAt(0).toUpperCase() + k.slice(1));
       if (b) b.classList.toggle('is-on', k === name);
@@ -728,6 +728,11 @@
     });
     if (name === 'answers') renderAnswersTab();
     if (name === 'marks') renderMarks();
+    // Роль не меняется за день, поэтому рисуем один раз и оставляем.
+    if (name === 'role') {
+      var rb = el('supRoleBody');
+      if (rb && !rb.firstChild) rb.innerHTML = roleHtml();
+    }
   }
 
   // ---------- пометки ----------
@@ -1153,13 +1158,15 @@
   // который харнесс отдаёт модели в system, поэтому переезд с экрана установки на
   // страницу чтения ничего не меняет для паритета носителей. Описание пакета
   // (lead акта чтения) идёт последней строкой: оно про то, что лежит ниже.
-  function roleHtml() {
+  // withKicker=false — для белого листа: над ним стоит свой большой заголовок, и
+  // «Ваша роль» под ним было бы вторым заголовком об одном и том же.
+  function roleHtml(withKicker) {
     var sys = S.system || {};
     var caseAct = null;
     (S.scenes || []).forEach(function (sc) {
       (sc.acts || []).forEach(function (a) { if (!caseAct && a.kind === 'case') caseAct = a; });
     });
-    var out = '<div class="read-role"><p class="kicker">Ваша роль</p>' +
+    var out = '<div class="read-role">' + (withKicker === false ? '' : '<p class="kicker">Ваша роль</p>') +
       (sys.lead || []).map(function (p) { return '<p>' + br(subst(p)) + '</p>'; }).join('');
     if (caseAct && caseAct.lead) out += '<p class="read-role-lead">' + br(caseAct.lead) + '</p>';
     return out + '</div>';
@@ -2672,12 +2679,38 @@
     try { return new URLSearchParams(location.search).get('start') === '1'; } catch (e) { return false; }
   }
 
+  // ⚠ БЕЛЫЙ ЛИСТ РОЛИ — ОДИН РАЗ НА ПРОГОН. Признак живёт в состоянии, значит
+  // переживает перезагрузку: участник, обновивший страницу на материалах, не получает
+  // введение заново. В демо состояние служебное и лежит в sessionStorage, поэтому
+  // витрина каждый раз показывает путь целиком — так и задумано.
+  // Текст берёт та же roleHtml(), что наполняет вкладку «Введение в роль»: одна
+  // реализация, расхождению взяться негде.
+  function showRoleSheet() {
+    var sheet = el('roleSheet'), shell = document.querySelector('.station-shell');
+    if (!sheet || !shell) return;
+    var body = el('roleSheetBody');
+    if (body) body.innerHTML = roleHtml(false);
+    if (window.imp && window.imp.typoDom) window.imp.typoDom(sheet);
+    sheet.style.display = '';
+    shell.classList.add('is-role');
+    var go = el('roleSheetGo');
+    if (go) go.onclick = function () {
+      sheet.style.display = 'none';
+      shell.classList.remove('is-role');
+      state.roleSeen = nowIso();
+      saveState();
+    };
+  }
+
   function showRoot() {
     var g = el('setupGate');
     if (g) g.style.display = 'none';
     el('assessRoot').style.display = '';
     render();
     if (state.finished) showFinish();
+    // После render(): лист прячет тело дня, а render его как раз собирает — иначе
+    // участник увидел бы вспышку разговора под листом.
+    else if (!state.roleSeen) showRoleSheet();
   }
 
   // ---------- старт ----------
