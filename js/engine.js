@@ -2236,7 +2236,7 @@
       intro.dataset.filled = '1';
       if (window.imp && window.imp.typoDom) window.imp.typoDom(intro);
     }
-    el('hdrDayName').textContent = '«Искра» · материалы';
+    el('hdrDayName').textContent = 'Пакет материалов. Кейс «Искра»';
     // act.note у акта чтения снят 04.08 (строка уехала в установку), но поле
     // оставлено: подвал один на все акты этого вида, и если у следующего пакета
     // примечание к действию появится, ему есть куда встать. Пустой span скрыт
@@ -2244,7 +2244,7 @@
     el('caseReadNote').textContent = act.note || '';
     var cta = el('caseReadCta');
     cta.textContent = act.cta || 'Дальше →';
-    cta.onclick = function () { el('hdrDayName').textContent = '«Искра» · ассессмент'; advance(); };
+    cta.onclick = function () { el('hdrDayName').textContent = 'Ассессмент стратегического мышления. Кейс «Искра»'; advance(); };
   }
 
   // Межсценовый экран: перекрывает рабочую область, оставляя кейс и оглавление на
