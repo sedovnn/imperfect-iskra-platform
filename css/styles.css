@@ -1435,23 +1435,45 @@ body.imp-drawer-open .dock-rail { display: none; }
 .role-sheet {
   flex: 1; min-height: 0; overflow-y: auto; background: var(--paper);
   display: flex; align-items: center; justify-content: center;
-  padding: 32px var(--frame-pad);
+  padding: 40px var(--frame-pad);
 }
-.role-sheet-in { width: 100%; max-width: 68ch; }
+/* ⚠ МЕРА ШИРЕ ЧТЕНИЯ КЕЙСА, И ЭТО НАМЕРЕННО. --w-read (60ch) рассчитан на колонку
+   рядом с другими колонками; здесь на экране нет ничего, кроме этого текста, и узкая
+   мера превращала два абзаца в рваную ленту (правка владельца 25.08: «текст плывёт,
+   надо дать больше воздуха»). 80ch — уже принятая в этой системе ширина, не выдумка.
+   Воздух добавлен не кеглем, а интерлиньяжем и отступом между абзацами: кегль чтения
+   в продукте один (--fs-read), и роль не повод разводить второй. */
+.role-sheet-in { width: 100%; max-width: 80ch; }
 .role-sheet-t {
-  margin: 0 0 22px; text-align: center;
-  font-family: var(--ff-display); font-weight: 900; font-size: var(--fs-hero);
-  line-height: 1.05; letter-spacing: -0.02em; color: var(--ink);
-  /* max-width у h2 не задан, но мера строки заголовка здесь не нужна: он в одну
-     строку и стоит по центру — ограничение сдвинуло бы его влево. */
-  max-width: none;
+  /* ⚠ КАПС И ВЫКЛЮЧКА ВЛЕВО — как у заголовков двух экранов до старта (.intro-hero h1).
+     Было: строчными и по центру. Капс я просто забыл, а центр оказался хуже по делу:
+     короткий заголовок над выключенным влево текстом не даёт общей кромки, и блок
+     читается как съехавший (замечание владельца 25.08). Одна левая кромка у заголовка
+     и текста — и «в центре экрана» остаётся верно про сам блок: его центрирует лист. */
+  margin: 0 0 26px; text-align: left;
+  font-family: var(--ff-display); font-weight: 800; font-size: var(--fs-hero);
+  text-transform: uppercase; letter-spacing: -0.015em; line-height: 1.02;
+  color: var(--ink); max-width: none;
 }
 /* ⚠ display ВОЗВРАЩАЕМ ЯВНО. Блок .read-role скрыт по умолчанию и показывается
    только внутри .day-grid.is-reading — он заводился как врезка над пакетом. У листа и
    у вкладки своего .is-reading нет, поэтому текст роли приезжал пустым (поймано на
    первом же прогоне). Мера строки снимается там же: её задаёт лист и вкладка. */
 .role-sheet-body .read-role, #supRole .read-role { display: block; max-width: none; }
-.role-sheet-body p { font-size: var(--fs-read); line-height: 1.6; color: var(--ink); }
+/* ⚠ СЕЛЕКТОР С .read-role ВНУТРИ — НЕ ЛИШНЕЕ ЗВЕНО. Правило .read-role p стоит в этом
+   файле НИЖЕ и при равной специфичности перебивало интерлиньяж и отступы (замер: ждали
+   28px, получали 25,92px — то есть 1,62 из .read-role). Здесь нужен вес больше, а не
+   !important: важность спрятала бы конфликт вместо того, чтобы его назвать. */
+.role-sheet-body .read-role p {
+  font-size: var(--fs-read); line-height: 1.75; color: var(--ink); margin: 0 0 1.15em;
+  /* Рваный правый край выравнивает браузер: без этого строки кончались на очень разной
+     длине, и абзац читался «плывущим». Где не поддерживается — просто обычный перенос. */
+  text-wrap: pretty;
+}
+.role-sheet-body .read-role p:last-child { margin-bottom: 0; }
+/* Приписка про пакет («что лежит ниже») остаётся служебной и в листе: она не часть
+   рассказа о роли, а подпись к переходу, который стоит сразу под ней. */
+.role-sheet-body .read-role .read-role-lead { color: var(--muted); }
 /* Ряд действия — как в разговоре: кнопка у правого края под текстом. */
 .role-sheet-foot { display: flex; justify-content: flex-end; margin-top: 26px; }
 /* ⚠ ТЕЛО ДНЯ — .day-grid, А НЕ .station-body. Второе есть у экранов станции, а в
