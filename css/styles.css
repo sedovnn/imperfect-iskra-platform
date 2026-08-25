@@ -3284,8 +3284,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    до 12», «по желанию — можно не отвечать») кегль остаётся служебным. */
 /* Кегль берём тем же токеном, что и заголовок внутри верстака: inherit тянул размер
    от строки-обёртки (16px), а заголовок там 14px, и счётчик выходил крупнее. */
-.mx-host .mx-count.mx-num, .mx-ansbox .mx-count.mx-num { font-size: var(--fs-dense); }
-.mx-title + .mx-count.mx-num::before { content: "·"; margin: 0 7px 0 8px; }
+/* ⚠ КЛАСС mx-tally, А НЕ mx-num: последний уже занят числовым ПОЛЕМ ВВОДА — рамка,
+   ширина 6em, отступы. Я налетел на него 23.08, и у счётчика появилась обводка. */
+.mx-host .mx-count.mx-tally, .mx-ansbox .mx-count.mx-tally { font-size: var(--fs-dense); }
+.mx-title + .mx-count.mx-tally::before { content: "·"; margin: 0 7px 0 8px; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    ОТВЕТ В ВЕРСТАКЕ = ОТВЕТ В ДИАЛОГЕ (решение владельца 19.08)
