@@ -1584,6 +1584,23 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
      первый раздел со своей верхней линейкой — получались две линии с пустотой
      между ними. Линия у разделителя одна, и она сверху. */
 }
+/* ⚠ РАЗДЕЛИТЕЛЬ ДЕРЖИТ И ДЕЙСТВИЯ (правка владельца 25.08). «развернуть всё» и
+   «свернуть всё» стояли отдельной строкой выше, вместе со вторым заголовком
+   «Материалы «Искры»» и двумя линейками вокруг. Заголовок пакета остался один, а
+   действия встали в его же строку справа. Класс ставит engine.js при переносе — не
+   :has(), чтобы правило читалось и работало без оговорок о поддержке.
+   baseline, а не center: заголовок капсом и подчёркнутые ссылки должны сидеть на
+   одной линии шрифта, иначе ссылки «висят» выше букв. */
+.appx-divider.has-acts {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+}
+.appx-divider-acts { display: flex; align-items: baseline; gap: 14px; }
+/* Ссылки не наследуют от разделителя ни кегль дисплейного шрифта, ни капс, ни
+   разрядку: это действия, а не часть заголовка. */
+.appx-divider-acts .case-bar-act {
+  font-family: var(--ff-body); font-weight: 400; font-size: var(--fs-util);
+  text-transform: none; letter-spacing: normal;
+}
 
 /* appendices read as distinct attached documents you open on purpose —
    collapsed by default, so a stray scroll can't silently "read" one for you */

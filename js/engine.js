@@ -1285,17 +1285,34 @@
       });
     }
 
-    // Управление всеми сразу — готовая полоса из разметки, СНАРУЖИ прокрутки
-    // (см. комментарий там же). Здесь только включаем её и вешаем обработчик.
+    // ⚠ УПРАВЛЕНИЕ ПЕРЕЕЗЖАЕТ В СТРОКУ РАЗДЕЛИТЕЛЯ ПАКЕТА (правка владельца 25.08).
+    // Кнопки лежат в разметке ассессмента (один дом, видно при чтении файла), а живут
+    // в строке «Искра» · пакет материалов» — там же, где заголовок пакета. Своей
+    // строки у них больше нет: она несла второй заголовок об одном и том же и две
+    // линии вокруг. Перенос делаем ЗДЕСЬ, а не в case-v8.html: кейс правится только
+    // новой версией файла. Разделителей в документе два (пакет и приложения) — берём
+    // первый: это шапка пакета, приложения открываются иначе.
+    // Если разделителя нет (другая версия кейса, чужая разметка), полоса показывается
+    // по-прежнему отдельной строкой — управление не должно пропасть совсем.
     var bar = el('caseBar');
     if (bar) {
-      bar.style.display = '';
-      bar.addEventListener('click', function (e) {
+      var div = host.querySelector('.appx-divider');
+      if (div) {
+        var acts = document.createElement('span');
+        acts.className = 'appx-divider-acts';
+        while (bar.firstChild) acts.appendChild(bar.firstChild);
+        div.appendChild(acts);
+        div.classList.add('has-acts');
+      } else {
+        bar.style.display = '';
+      }
+      var onAll = function (e) {
         var v = e.target.getAttribute && e.target.getAttribute('data-caseall');
         if (v === null || v === undefined) return;
         var open = v === '1';
         host.querySelectorAll('details.case-block').forEach(function (d) { d.open = open; });
-      });
+      };
+      (div || bar).addEventListener('click', onAll);
     }
 
   }

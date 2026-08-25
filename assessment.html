@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=212" />
+<link rel="stylesheet" href="css/styles.css?v=213" />
 </head>
 <body class="p-assess">
 
@@ -218,12 +218,16 @@
           <div class="case-back" id="caseBack" style="display:none;">
             <button type="button" class="btn btn-primary case-back-act" id="caseBackAct">← Вернуться к чтению</button>
           </div>
-          <!-- Управление свёртками пакета. СНАРУЖИ прокручиваемой области: внутри она
-               была sticky и оставляла зазор в верхнем отступе прокрутки, через который
-               пролезала строка текста (снимок 06.08). Управление — не содержимое, его
-               место рядом с панелью, а не в потоке документа. -->
+          <!-- ⚠ ПОЛОСА КАК ОТДЕЛЬНАЯ СТРОКА УБРАНА (правка владельца 25.08). Здесь была
+               строка «Материалы «Искры»» со своей нижней линейкой, а сразу под ней шёл
+               разделитель пакета «Искра» · пакет материалов» со своей — два заголовка об
+               одном и том же и две линии вокруг полосы, которая ничего не сообщала.
+               Заголовок остался один (он в самом кейсе), а два действия переезжают в его
+               строку — это делает engine.js при сборке аккордеона: кейс правится только
+               новой версией файла, поэтому в case-v8.html разметку не вносим.
+               Контейнер остаётся домом кнопок в разметке (одно место, видно при чтении
+               файла) и наружу больше не показывается. -->
           <div class="case-bar" id="caseBar" style="display:none;">
-            <span class="case-bar-k">Материалы «Искры»</span>
             <button type="button" class="case-bar-act" data-caseall="1">развернуть всё</button>
             <button type="button" class="case-bar-act" data-caseall="0">свернуть всё</button>
           </div>
@@ -308,6 +312,6 @@
      насмерть: TypeError на чтении subFacts, а дальше — пустая колонка без поля ответа
      и без кнопки. Ловится проверкой eval/lint_wiring.js. -->
 <script src="js/mech-fields.js?v=35"></script>
-<script src="js/engine.js?v=88"></script>
+<script src="js/engine.js?v=89"></script>
 </body>
 </html>
