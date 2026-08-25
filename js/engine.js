@@ -2347,6 +2347,13 @@
         var mspec = st.act.mech && window.imp.mechanics && window.imp.mechanics[st.act.mech];
         var mstate = st.act.mech && state.mech && state.mech[st.act.mech];
         var hideK = !!(mspec && mspec.hideKept && mstate && mspec.hideKept(mstate));
+        // ⚠ У ПРОЙДЕННОГО ШАГА ОСТАВЛЕННЫЕ РЕПЛИКИ ТОЖЕ ПРЯЧЕМ (правка владельца 23.08).
+        // Пузыри с keep стоят над свёрткой затем, чтобы участник видел вопрос, пока на
+        // него отвечает. Шаг пройден — вопрос отвечен, и держать его на экране незачем:
+        // на разборе заявок вверху висел монолог про основную рекомендацию, хотя её уже
+        // спросили и получили ответ, а ниже шёл следующий вопрос. Два вопроса на экране,
+        // живой только один. Свёртка остаётся: монолог никуда не пропал, он под «показать».
+        if (past) hideK = true;
         now.appendChild(foldedSpeech(st.act, pending, hideK));
         pending = [];
       } else {

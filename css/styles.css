@@ -3286,8 +3286,20 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    от строки-обёртки (16px), а заголовок там 14px, и счётчик выходил крупнее. */
 /* ⚠ КЛАСС mx-tally, А НЕ mx-num: последний уже занят числовым ПОЛЕМ ВВОДА — рамка,
    ширина 6em, отступы. Я налетел на него 23.08, и у счётчика появилась обводка. */
-.mx-host .mx-count.mx-tally, .mx-ansbox .mx-count.mx-tally { font-size: var(--fs-dense); }
-.mx-title + .mx-count.mx-tally::before { content: "·"; margin: 0 7px 0 8px; }
+/* Тем же шрифтом — значит и кегль, и вес, и цвет: иначе число читается как чужое.
+   Вес берём из того же токена метки, что у заголовка.
+   ⚠ ЦИФРЫ ПРОПОРЦИОНАЛЬНЫЕ, А НЕ ТАБЛИЧНЫЕ. У .mx-count стоят tabular-nums — они
+   нужны там, где числа стоят в столбик и не должны прыгать. Здесь счётчик последний
+   в строке, за ним ничего не сдвигается, а табличная цифра шире пропорциональной:
+   у «1» появлялись боковые пробелы, и она читалась как набранная другим шрифтом. */
+.mx-host .mx-count.mx-tally, .mx-ansbox .mx-count.mx-tally {
+  font-size: var(--fs-dense); font-weight: var(--label-weight);
+  font-variant-numeric: normal;
+}
+/* ⚠ ЛЕВОГО ПОЛЯ У ТОЧКИ НЕТ — ЕГО УЖЕ ДАЁТ FLEX. Замер 23.08: gap у .mx-head 10px
+   плюс margin-left 8px давали 18px до точки и 8px после. Слева отступ рисует gap,
+   справа — margin, поэтому справа ровно столько же, сколько в gap. */
+.mx-title + .mx-count.mx-tally::before { content: "·"; margin: 0 10px 0 0; }
 
 /* ══════════════════════════════════════════════════════════════════════════
    ОТВЕТ В ВЕРСТАКЕ = ОТВЕТ В ДИАЛОГЕ (решение владельца 19.08)
@@ -3906,7 +3918,7 @@ details.talk-folded[open] + .talk-kept { display: none; }
 #supCaseText h2, #supCaseText h3, .case-sum-t, .who-row b, .recap-q { color: var(--muted); }
 #supCaseText b, #supCaseText strong, .mark-quote { color: var(--ink); }
 /* --- работа: полный контраст --- */
-.talk .win-label, .casewide .win-label, .talk .mx-label, .talk .mx-title, .talk .bl-card-title, .talk .bl-zone-h, .talk .sc-head, .talk .chat-name { color: var(--ink); }
+.talk .win-label, .casewide .win-label, .talk .mx-label, .talk .mx-title, .talk .mx-count.mx-tally, .talk .bl-card-title, .talk .bl-zone-h, .talk .sc-head, .talk .chat-name { color: var(--ink); }
 .talk .win-input, .talk .mx-input, .talk textarea { color: var(--ink); }
 
 /* ══════════════════════════════════════════════════════════════════════════
