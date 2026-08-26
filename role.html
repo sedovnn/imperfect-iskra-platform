@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=221" />
+<link rel="stylesheet" href="css/styles.css?v=222" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -46,6 +46,9 @@
     <div class="intro-hero">
       <p class="kicker">Перед стартом</p>
       <h1 id="roleTitle">Как <span style="color:var(--accent);">устроен</span> ассессмент</h1>
+      <!-- Лид страницы — из S.system.titleLead. Он отвечает на «что это вообще такое»
+           и потому стоит рамкой над списком, а не первым его пунктом. -->
+      <p class="section-lead lead" id="roleTitleLead"></p>
     </div>
 
     <div class="intro-cols">
@@ -91,10 +94,19 @@
           </div>
         </div>
       </figure>
-      <!-- ⚠ ИМЯ — В ПРАВОМ СТОЛБЦЕ, ПОД СХЕМОЙ (правка владельца 25.08). Оно стояло
-           отдельным ряд­ом ниже, через всю ширину, и от кнопки «Приступить» его отделял
-           весь второй столбец. Здесь поле оказывается прямо над кнопкой: ввёл имя —
-           нажал, ничего между. -->
+    </div>
+    </div>
+
+    <!-- ⚠ ИМЯ — СВОЙ РЯД, НО СОДЕРЖИМОЕ В ПРАВОМ СТОЛБЦЕ (правка владельца 26.08).
+         25.08 я вложил его ВНУТРЬ блока «экран ассессмента» — и получил ровно то, чего
+         владелец не просил: имя слилось со схемой экрана, а линейка над ним пропала.
+         Линейку рисует .intro-row во всю ширину блока (решение 07.08: бордюр у каждой
+         колонки дал бы две линии с разрывом посередине), значит ряд обязан быть свой.
+         А чтобы поле всё-таки стояло над кнопкой «Приступить», единственный блок ряда
+         сдвинут во вторую колонку: линия во всю ширину, содержимое справа.
+         На узком экране колонок нет вовсе, и сдвиг не применяется — блок просто идёт
+         следующим, как и всё остальное. -->
+    <div class="intro-row intro-row-name">
       <div class="pgroup intro-name">
         <p class="kicker">Прежде чем начать</p>
         <p><b>Как к вам обращаться?</b> Так к вам будут обращаться в разговорах герои ассессмента. На оценку это не влияет. Можно псевдоним.</p>
@@ -103,7 +115,6 @@
              показать его до того, как участник что-то сделал. -->
         <p class="intro-name-warn" id="nameWarn" hidden></p>
       </div>
-    </div>
     </div>
 
     <!-- ⚠ «ЧЕГО ПЛАТФОРМА НЕ УМЕЕТ» ПЕРЕЕХАЛО НА ПЕРВУЮ СТРАНИЦУ (решение владельца
@@ -134,7 +145,7 @@
 </div>
 
 <script src="js/main.js?v=7"></script>
-<script src="js/scenes.js?v=122"></script>
+<script src="js/scenes.js?v=123"></script>
 <script>
   (function () {
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('roleBody')) return;
@@ -149,6 +160,8 @@
     // Роль отсюда ушла на белый лист внутри ассессмента (см. разметку выше), поэтому
     // ни roleLead, ни подстановка {name} здесь больше не нужны: имя вводят на этой
     // странице, а обращаются по нему на следующем экране.
+    document.getElementById('roleTitleLead').innerHTML =
+      (sys.titleLead || []).map(function (t) { return br(t); }).join('<br /><br />');
     document.getElementById('rulesKicker').textContent = sys.title || 'Как устроен ассессмент';
     // Пункты нумерованы так же, как принципы на настройке (.prin), и нумерация
     // СКВОЗНАЯ через оба блока: «как устроен ассессмент» и «как устроен экран» —

@@ -3800,6 +3800,13 @@ details.talk-folded[open] + .talk-kept { display: none; }
 }
 @media (min-width: 1100px) {
   .intro-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* ⚠ РЯД С ОДНИМ БЛОКОМ — ВО ВТОРУЮ КОЛОНКУ (правка владельца 26.08). Поле имени
+     обязано стоять над кнопкой «Приступить», то есть справа, — а линейка над ним
+     обязана идти во всю ширину блока (решение 07.08). Одно без другого не выходит:
+     вложить блок в правую колонку соседнего ряда значит потерять линейку, а оставить
+     своим рядом без сдвига — увести поле налево, через весь второй столбец от кнопки.
+     Отдельный ряд плюс сдвиг решают оба требования сразу. */
+  .intro-row-name > * { grid-column: 2; }
 }
 .intro-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
 .intro-hero { padding: 40px 0 6px; }
