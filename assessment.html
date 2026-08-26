@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=220" />
+<link rel="stylesheet" href="css/styles.css?v=221" />
 </head>
 <body class="p-assess">
 
@@ -130,11 +130,20 @@
          вкладке «Введение в роль» справа. Лист — вход, вкладка — справочник. -->
     <div class="role-sheet" id="roleSheet" style="display:none;">
       <div class="role-sheet-in">
-        <h2 class="role-sheet-t">Введение в роль</h2>
+        <!-- ⚠ ВЕРМИЛИОН ЛИТЕРАЛОМ, А НЕ var(--accent) (правка владельца 25.08).
+             На body.p-assess вся семья акцента подменена голубой (--accent: #2f6bb0),
+             и токен дал бы здесь синий. Тем же способом взят вермилион у полосы демо и
+             у стрелки лого. Владелец знает, что выделение цветом на этой странице живёт
+             по другим правилам: этот экран и есть переход от прежних к новым. -->
+        <h2 class="role-sheet-t">Введение в <span style="color:#ff4800;">роль</span></h2>
         <div class="role-sheet-body" id="roleSheetBody"></div>
         <!-- Кнопка справа под текстом — как ряд действия в разговоре: главное действие
              всегда у правого края. -->
         <div class="role-sheet-foot">
+          <!-- Оговорка о вымышленности приехала со второй страницы: её место здесь, где
+               рассказ о роли кончается и начинается сам кейс. Наполняется из
+               S.system.note — тот же текст, один источник. -->
+          <p class="role-sheet-note" id="roleSheetNote"></p>
           <button type="button" class="btn btn-primary" id="roleSheetGo">К пакету материалов →</button>
         </div>
       </div>
@@ -350,6 +359,6 @@
      насмерть: TypeError на чтении subFacts, а дальше — пустая колонка без поля ответа
      и без кнопки. Ловится проверкой eval/lint_wiring.js. -->
 <script src="js/mech-fields.js?v=35"></script>
-<script src="js/engine.js?v=90"></script>
+<script src="js/engine.js?v=91"></script>
 </body>
 </html>

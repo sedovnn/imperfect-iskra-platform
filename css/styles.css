@@ -464,6 +464,14 @@ h2 {
   background: var(--paper);
 }
 .intro-name input:focus { outline: none; border-color: var(--jb-ink); }
+/* ⚠ ПУСТОЕ ПОЛЕ ПОСЛЕ ПОПЫТКИ УЙТИ (правка владельца 25.08). Красным помечаем только
+   после нажатия на «Приступить», а не сразу: подсвечивать поле, к которому человек
+   ещё не подходил, значит ругать его до первой ошибки. Снимается на первом же вводе. */
+.intro-name input.is-empty { border-color: var(--accent); }
+.intro-name-warn {
+  margin: 8px 0 0; font-size: var(--fs-util); color: var(--accent-ink);
+}
+.intro-name-warn[hidden] { display: none; }
 
 /* ---------- steps / format ---------- */
 
@@ -1482,8 +1490,18 @@ body.imp-drawer-open .dock-rail { display: none; }
 /* Приписка про пакет («что лежит ниже») остаётся служебной и в листе: она не часть
    рассказа о роли, а подпись к переходу, который стоит сразу под ней. */
 .role-sheet-body .read-role .read-role-lead { color: var(--muted); }
-/* Ряд действия — как в разговоре: кнопка у правого края под текстом. */
-.role-sheet-foot { display: flex; justify-content: flex-end; margin-top: 26px; }
+/* ⚠ РЯД ПОДВАЛА: ЗАПИСКА СЛЕВА, КНОПКА СПРАВА (правка владельца 25.08). Оговорка про
+   вымышленность материалов переехала сюда со второй страницы: её место — там, где
+   кончается рассказ о роли и начинается сам кейс, а не среди объяснений устройства.
+   Геометрия та же, что у ряда действия в разговоре и на экранах до старта: главное
+   действие у правого края, служебная строка слева.
+   Линейку над рядом рисует .read-role (border-bottom) — своей здесь не заводим. */
+.role-sheet-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  margin-top: 22px;
+}
+.role-sheet-note { margin: 0; font-size: var(--fs-util); color: var(--muted-soft); max-width: 52ch; }
+.role-sheet-foot .btn { flex: none; }
 /* ⚠ ТЕЛО ДНЯ — .day-grid, А НЕ .station-body. Второе есть у экранов станции, а в
    ассессменте под шапкой лежит именно сетка дня (поймано замером: у оболочки дети
    HEADER, лист и DIV.day-grid). Ошибка селектора оставляла день видимым под листом. */
@@ -3809,8 +3827,13 @@ details.talk-folded[open] + .talk-kept { display: none; }
 }
 .intro-hero .lead b { color: var(--ink); }
 .pgroup { margin-top: 34px; }
-.prin { display: flex; gap: 14px; padding: 13px 0; border-top: 1px solid var(--hairline); }
-.prin:first-of-type { border-top: none; }
+/* ⚠ ЛИНЕЙКИ МЕЖДУ ПУНКТАМИ УБРАНЫ (правка владельца 25.08). Они стояли здесь с самого
+   начала, но заметны стали, когда шестой пункт поехал из отдельного контейнера: внутри
+   него он :first-of-type, линейки не получил — и разнобой стал видно. Владелец решил в
+   пользу «линеек быть не должно»: номер в кружке и так делит пункты, а линейка на
+   каждом превращала список в таблицу. Отступа 13px сверху и снизу хватает.
+   Касается и второй страницы — .prin там же, это один компонент. */
+.prin { display: flex; gap: 14px; padding: 13px 0; }
 .prin .n {
   /* номер принципа — служебный кегль, не свой */
   flex: none; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--ink);
@@ -3845,6 +3868,14 @@ details.talk-folded[open] + .talk-kept { display: none; }
   padding: 11px 12px; font: inherit; font-size: var(--fs-read); color: var(--ink); background: var(--paper);
 }
 .intro-name input:focus { outline: none; border-color: var(--jb-ink); }
+/* ⚠ ПУСТОЕ ПОЛЕ ПОСЛЕ ПОПЫТКИ УЙТИ (правка владельца 25.08). Красным помечаем только
+   после нажатия на «Приступить», а не сразу: подсвечивать поле, к которому человек
+   ещё не подходил, значит ругать его до первой ошибки. Снимается на первом же вводе. */
+.intro-name input.is-empty { border-color: var(--accent); }
+.intro-name-warn {
+  margin: 8px 0 0; font-size: var(--fs-util); color: var(--accent-ink);
+}
+.intro-name-warn[hidden] { display: none; }
 /* Поле имени прижато к правому краю своего столбца — там же, где стоит кнопка
    «К введению в роль» (.intro-cta прижимает её вправо). Так поле и кнопка стоят на
    одной вертикали; по центру кнопки поле выровнять нельзя — оно шире её и вылезло

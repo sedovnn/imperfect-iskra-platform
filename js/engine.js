@@ -2690,6 +2690,8 @@
     if (!sheet || !shell) return;
     var body = el('roleSheetBody');
     if (body) body.innerHTML = roleHtml(false);
+    var note = el('roleSheetNote');
+    if (note) note.innerHTML = br(subst((S.system && S.system.note) || ''));
     if (window.imp && window.imp.typoDom) window.imp.typoDom(sheet);
     sheet.style.display = '';
     shell.classList.add('is-role');
