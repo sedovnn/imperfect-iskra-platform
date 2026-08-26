@@ -99,13 +99,11 @@
     <header class="station-header">
       <div class="station-header-left">
         <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
-        <span class="station-sep">/</span>
-        <!-- ⚠ ПОЛНОЕ ИМЯ, А НЕ «Искра» · ассессмент (правка владельца 25.08). Шапка
-             называла кейс и жанр через точку, и из неё не читалось, что именно
-             оценивают. Сначала предмет оценки, потом кейс — так же, как это
-             называется в письме участнику и в отчёте. Вторая строка того же
-             заголовка (фаза материалов) переписана параллельно в engine.js. -->
-        <h1 class="station-name" id="hdrDayName">Ассессмент стратегического мышления. Кейс «Искра»</h1>
+        <!-- ⚠ ЗАГОЛОВОК ПОСЛЕ ЛОГО УБРАН ВМЕСТЕ СО СЛЕШЕМ (решение владельца 26.08),
+             и на всех трёх страницах, где он был: здесь, в кабинете и в харнессе.
+             Он назывался по-разному, но работал одинаково — второй заголовок рядом с
+             тем, что и так написано на самой странице. Что это за экран, участник
+             читает в теле, а не в хроме. Слеш снят тоже: разделять больше нечего. -->
       </div>
       <!-- Счётчика «N / 6» в шапке нет (СПЕК §4.4: прогресс дня живёт только на межэтапном
            экране). Номер участника — шесть знаков, padStart(6) в engine.js. -->
@@ -343,7 +341,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=6"></script>
-<script src="js/scenes.js?v=121"></script>
+<script src="js/scenes.js?v=122"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -359,6 +357,6 @@
      насмерть: TypeError на чтении subFacts, а дальше — пустая колонка без поля ответа
      и без кнопки. Ловится проверкой eval/lint_wiring.js. -->
 <script src="js/mech-fields.js?v=35"></script>
-<script src="js/engine.js?v=91"></script>
+<script src="js/engine.js?v=92"></script>
 </body>
 </html>

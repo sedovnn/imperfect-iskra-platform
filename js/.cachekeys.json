@@ -57,9 +57,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "142f0a1e6405",
+  "sha": "f5323b01e58d",
   "keys": {
-   "assessment.html": 91
+   "assessment.html": 92
   }
  },
  "js/main.js": {
@@ -102,13 +102,13 @@
   }
  },
  "js/scenes.js": {
-  "sha": "f98dfe305ecf",
+  "sha": "821e6525de61",
   "keys": {
-   "assessment.html": 121,
-   "cabinet.html": 121,
-   "harness.html": 121,
-   "intro.html": 121,
-   "role.html": 121
+   "assessment.html": 122,
+   "cabinet.html": 122,
+   "harness.html": 122,
+   "intro.html": 122,
+   "role.html": 122
   }
  },
  "js/typo.js": {
