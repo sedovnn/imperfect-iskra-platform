@@ -54,12 +54,12 @@
     <div class="intro-cols">
     <!-- Ряд подзаголовков: линия над ним идёт через оба столбца. -->
     <div class="intro-row">
+<!-- ⚠ БЛОКИ ПОМЕНЯНЫ МЕСТАМИ (правка владельца 26.08): схема экрана слева, «что ещё
+         важно знать» справа. Вместе с местами меняется и НУМЕРАЦИЯ: она идёт по порядку
+         чтения, значит теперь 1–3 у экрана и 4–6 у остального. Номера считает скрипт от
+         длины списков, поэтому достаточно поменять смещение в одном месте. -->
 <div class="pgroup">
-      <p class="kicker" id="rulesKicker">Как устроен ассессмент</p>
-      <div id="roleRules"><!-- S.system.rules --></div>
-    </div>
-<div class="pgroup">
-      <p class="kicker" id="screenKicker">Как устроен экран ассессмента</p>
+      <p class="kicker" id="screenKicker">Экран ассессмента — три блока</p>
       <div id="roleScreen"><!-- S.system.screen --></div>
       <!-- СХЕМА ЭКРАНА, а не снимок (решение владельца 07.08: «посадим экран ассессмента,
            обезличенный и не раскрывающий ответов и вопросов»). Схема ничего не раскрывает
@@ -94,6 +94,10 @@
           </div>
         </div>
       </figure>
+    </div>
+<div class="pgroup">
+      <p class="kicker" id="rulesKicker">Что ещё важно знать</p>
+      <div id="roleRules"><!-- S.system.rules --></div>
     </div>
     </div>
 
@@ -145,7 +149,7 @@
 </div>
 
 <script src="js/main.js?v=7"></script>
-<script src="js/scenes.js?v=125"></script>
+<script src="js/scenes.js?v=126"></script>
 <script>
   (function () {
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('roleBody')) return;
@@ -162,7 +166,9 @@
     // странице, а обращаются по нему на следующем экране.
     document.getElementById('roleTitleLead').innerHTML =
       (sys.titleLead || []).map(function (t) { return br(t); }).join('<br /><br />');
-    document.getElementById('rulesKicker').textContent = sys.title || 'Как устроен ассессмент';
+    // ⚠ НЕ sys.title (правка владельца 26.08): он равен заголовку страницы, и подпись
+    // блока повторяла его слово в слово. Своя подпись — sys.rulesTitle.
+    document.getElementById('rulesKicker').textContent = sys.rulesTitle || 'Что ещё важно знать';
     // Пункты нумерованы так же, как принципы на настройке (.prin), и нумерация
     // СКВОЗНАЯ через оба блока: «как устроен ассессмент» и «как устроен экран» —
     // один список из семи пунктов, разделённый заголовком (решение владельца 07.08).
@@ -177,10 +183,13 @@
              '<span class="t">' + body + '</span></div>';
     };
     var rules = sys.rules || [], screen = sys.screen || [];
-    document.getElementById('roleRules').innerHTML = rules.map(prin).join('');
-    document.getElementById('screenKicker').textContent = sys.screenTitle || 'Как устроен экран ассессмента';
-    document.getElementById('roleScreen').innerHTML =
-      screen.map(function (r, i) { return prin(r, rules.length + i); }).join('');
+    // ⚠ СМЕЩЕНИЕ ПЕРЕЕХАЛО НА rules (26.08). Экран стоит первым по порядку чтения,
+    // значит 1–3 его, а «что ещё важно знать» продолжает с 4. Числами номера нигде не
+    // написаны — считаются от длины списков, поэтому смена порядка стоит одну строку.
+    document.getElementById('screenKicker').textContent = sys.screenTitle || 'Экран ассессмента — три блока';
+    document.getElementById('roleScreen').innerHTML = screen.map(prin).join('');
+    document.getElementById('roleRules').innerHTML =
+      rules.map(function (r, i) { return prin(r, screen.length + i); }).join('');
     // Оговорка о вымышленности здесь больше не печатается — она на белом листе роли.
 
     // ⚠ ИМЯ ЖИВЁТ ТЕПЕРЬ ЗДЕСЬ (решение владельца 25.08). Логика перенесена со
