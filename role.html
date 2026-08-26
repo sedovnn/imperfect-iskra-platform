@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=222" />
+<link rel="stylesheet" href="css/styles.css?v=224" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -145,7 +145,7 @@
 </div>
 
 <script src="js/main.js?v=7"></script>
-<script src="js/scenes.js?v=124"></script>
+<script src="js/scenes.js?v=125"></script>
 <script>
   (function () {
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('roleBody')) return;
@@ -166,9 +166,15 @@
     // Пункты нумерованы так же, как принципы на настройке (.prin), и нумерация
     // СКВОЗНАЯ через оба блока: «как устроен ассессмент» и «как устроен экран» —
     // один список из семи пунктов, разделённый заголовком (решение владельца 07.08).
+    // Пункт приходит парой head/tail: head — жирным, как на первой странице, где
+    // выделение стоит в разметке руками. Строку тоже принимаем: у записей прежних
+    // версий пункты плоские, и терять их из-за формы данных незачем.
     var prin = function (r, i) {
+      var body = (r && typeof r === 'object')
+        ? '<b>' + br(r.head || '') + '</b>' + (r.head && r.tail ? ' ' : '') + br(r.tail || '')
+        : br(r);
       return '<div class="prin"><span class="n">' + (i + 1) + '</span>' +
-             '<span class="t">' + br(r) + '</span></div>';
+             '<span class="t">' + body + '</span></div>';
     };
     var rules = sys.rules || [], screen = sys.screen || [];
     document.getElementById('roleRules').innerHTML = rules.map(prin).join('');
