@@ -1602,6 +1602,29 @@
     return window.imp.winParts.toText(act, o);
   }
   function partsSplit(act, text) { return window.imp.winParts.split(act, text); }
+  // ⚠ КАРТОЧКА ОТКАЗАННОЙ ЗАЯВКИ (решение владельца 26.08). Разговор у выхода
+  // спрашивает «почему именно наш проект» — а разбор двадцати заявок был часом раньше.
+  // Без карточки шаг мерил бы память: что это был за проект и в чём его суть.
+  // Данные берём из самой заявки (refusedPick) и рисуем ТОЙ ЖЕ разметкой, что в разборе
+  // (.bl-card): участник видит ровно то, что уже видел, и узнаёт вид. Новых сведений
+  // здесь нет — это напоминание, а не подсказка.
+  // Если заявка не нашлась (сцена играется только при отказе, но подстраховка дешевле
+  // пустого блока), не рисуем ничего.
+  function refusedCardHtml() {
+    var r = refusedPick();
+    if (!r) return '';
+    return '<div class="win-card-ref">' +
+      '<p class="kicker">Заявка, которую вы решили не брать</p>' +
+      '<div class="bl-card">' +
+        '<div class="bl-card-title"><span class="bl-n">' + blNum(r.id) + '</span>' +
+          esc(r.title || '') + '</div>' +
+        (r.who ? '<div class="bl-card-who">' + esc(r.who) + '</div>' : '') +
+        (r.argument ? '<p class="bl-card-arg">' + esc(r.argument) + '</p>' : '') +
+        '<div class="bl-card-foot"><span class="bl-card-cost">' +
+          (Number(r.people) || 0) + ' чел. · ' + num(r.money) + ' млрд</span></div>' +
+      '</div></div>';
+  }
+
   function partsHtml(act, vals) {
     return (act.parts || []).map(function (p, i) {
       return '<div class="mx-ansbox">' +
@@ -1653,6 +1676,10 @@
     // Ответ зафиксирован, но шаг ещё текущий: пузырь на месте, ход — за участником.
     if (answered) { d.innerHTML = mine() + footHtml; wireNext(); return d; }
     d.innerHTML =
+      // ⚠ КАРТОЧКА ПЕРЕД ПОЛЯМИ, ЕСЛИ ШАГ ЕЁ ПРОСИТ (решение владельца 26.08). Пока
+      // просит один шаг — разговор у выхода, act.card === 'refused'. Не «показать всегда»:
+      // на остальных шагах напоминать нечего, и лишний блок отжимал бы поле ответа вниз.
+      (act.card === 'refused' ? refusedCardHtml() : '') +
       // ⚠ Подписи поля («Путь, точки слома и из чего собираем») на экране больше НЕТ
       // (решение владельца 07.08): вопрос уже задан репликой, и подпись повторяла его
       // своими словами. act.label остаётся в данных — им подписана запись во вкладке

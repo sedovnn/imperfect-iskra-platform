@@ -3306,6 +3306,12 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 /* Карточка заявки — голубая, как поля ввода (решение владельца 07.08): всё, с чем
    участник работает руками, читается одним цветом. Свой вариант отличается рамкой
    (--jb-ink), а не заливкой. */
+/* ⚠ НАПОМИНАНИЕ ПЕРЕД ПОЛЯМИ ОТВЕТА (решение владельца 26.08). Карточка отказанной
+   заявки на шаге «разговор у выхода»: тот же вид, что в разборе заявок, но стоит она не
+   в сетке, а одна над вопросами, поэтому нужна своя мера и воздух под ней. */
+.win-card-ref { margin: 0 0 20px; max-width: 68ch; }
+.win-card-ref .kicker { margin: 0 0 8px; }
+
 .bl-card {
   border: 1px solid var(--band-line); border-radius: var(--radius);
   padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; background: var(--band);
