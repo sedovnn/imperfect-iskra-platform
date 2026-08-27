@@ -4288,7 +4288,11 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .xc p { margin: 0 0 10px; font-size: var(--fs-read); line-height: 1.5; max-width: var(--w-read); }
 .xc p:last-child { margin-bottom: 0; }
 .xc-lead { font-weight: 700; }
-.xc-does { color: var(--muted); }
+/* Признаки серые, ПОКА они второй голос при «сути». Там, где «сути» в
+   методологии нет (ГА-1 и ГА-2 на средних уровнях), признаки — единственный
+   текст карточки, и серой становилась вся карточка целиком. */
+.xc-does { color: var(--ink); }
+.xc-gist + .xc-does, .xc-gist ~ .xc-more .xc-does { color: var(--muted); }
 .xc-compact { margin-bottom: 0; padding: 14px 16px; border: 0; }
 .xc-compact p { font-size: var(--fs-dense); line-height: 1.45; margin-bottom: 6px; }
 .xc-more > summary {
