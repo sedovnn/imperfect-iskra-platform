@@ -153,15 +153,15 @@
  "js/expert-corpus.js": {
   "sha": "(шифротекст, меняется при каждой сборке)",
   "keys": {
-   "expert.html": 2,
-   "expert-report.html": 2
+   "expert.html": 3,
+   "expert-report.html": 3
   }
  },
  "css/expert.css": {
-  "sha": "fd1f2c46cb7c",
+  "sha": "b4b0dbe65f78",
   "keys": {
-   "expert.html": 3,
-   "expert-report.html": 3
+   "expert.html": 4,
+   "expert-report.html": 4
   }
  }
 }
