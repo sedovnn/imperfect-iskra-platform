@@ -106,12 +106,18 @@
    пустая рамка видна на каждой карточке, прокрутка — на каждой пятой. */
 .xc-slot .xc {
   /* Высота считается от ОКНА, а не от доли экрана: вокруг карточки лежит
-     примерно 600px обязательного — шапка, ход работы, пять навыков, две
-     способности, ряд второстепенных ответов и навигация. calc(100vh - 620px)
-     отдаёт карточке ровно остаток, поэтому на экране от 900px всё помещается
-     без прокрутки вовсе. Пол 240px — граница читаемости (пять строк), потолок
-     420px — чтобы на большом мониторе рамка не растянулась пустотой. */
-  height: clamp(240px, calc(100vh - 620px), 420px); overflow-y: auto;
+     примерно 460px обязательного — шапка, ход работы, пять навыков, две
+     способности, ряд второстепенных ответов и навигация.
+     ⚠ РАЗМЕН ПЕРЕСМОТРЕН. Сначала здесь стояло 620px: карточка получала
+     остаток, и на экране от 900px всё помещалось без прокрутки, включая
+     кнопку «дальше». Но после того как признаки стали списком (а не склеенным
+     абзацем), карточки выросли, и 23 из 50 переставали помещаться целиком —
+     почти половина описаний доходила бы до эксперта обрезанной. Обрезанное
+     описание портит замер сильнее, чем прокрутка до кнопки, тем более что
+     положение прокрутки между карточками теперь сохраняется: эксперт
+     подкручивает один раз. Пол 300px, потолок 560px — чтобы на большом
+     мониторе рамка не растянулась пустотой. */
+  height: clamp(300px, calc(100vh - 460px), 560px); overflow-y: auto;
   margin-bottom: 0;
 }
 .xc-slot { margin-bottom: 24px; }
@@ -357,4 +363,32 @@
   font-size: var(--fs-dense);
   font-weight: 600;
   color: var(--accent-ink);
+}
+
+/* Признаки списком. Плотно: это перечень наблюдаемых маркеров, а не проза,
+   и между пунктами нужен зазор, а не абзацный отступ. */
+.xc-list { margin: 0; padding-left: 20px; }
+.xc-list li {
+  font-size: var(--fs-read); line-height: 1.5; color: var(--muted);
+  margin-bottom: 6px; max-width: var(--w-read);
+}
+.xc-list li:last-child { margin-bottom: 0; }
+.xc-list li b { color: var(--ink); }
+.xc-compact .xc-list li { font-size: var(--fs-read); }
+
+/* Обрезанная карточка обязана выглядеть обрезанной. Шесть описаний из
+   пятидесяти в отведённую высоту не влезают; без сигнала эксперт судил бы по
+   половине текста, не зная об этом, — и мы прочитали бы его ответ как суждение
+   о полном описании. Градиент и подпись гаснут, когда докрутили до конца. */
+.xc-slot { position: relative; }
+.xc-slot.is-more::after {
+  content: ''; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 64px;
+  background: linear-gradient(to bottom, transparent, var(--paper) 70%);
+  border-radius: 0 0 var(--radius) var(--radius); pointer-events: none;
+}
+.xc-slot.is-more::before {
+  content: 'ниже есть ещё ↓'; position: absolute; right: 16px; bottom: 10px; z-index: 1;
+  font-size: var(--fs-util); font-weight: 600; color: var(--accent-ink);
+  background: var(--accent-tint); border: 1px solid var(--accent-line);
+  border-radius: var(--radius); padding: 3px 8px; pointer-events: none;
 }

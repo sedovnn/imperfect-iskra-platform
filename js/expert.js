@@ -194,12 +194,35 @@
     // уровнях) блока «Суть» в методологии нет вовсе, и правило «признаки всегда
     // прячем» оставляло бы на экране одну строку заголовка: эксперт сравнивал
     // бы абзац с ярлыком. Прячем второе, когда есть первое, — и ничего иначе.
-    if (card.does) {
+    var does = card.does || [];
+    if (does.length) {
+      var body = doesHtml(does);
       h += (compact && card.gist)
-        ? '<details class="xc-more"><summary>признаки</summary><p class="xc-does">' + esc(card.does) + '</p></details>'
-        : '<p class="xc-does">' + esc(card.does) + '</p>';
+        ? '<details class="xc-more"><summary>признаки</summary>' + body + '</details>'
+        : body;
     }
     return h + '</article>';
+  }
+
+  // Признаки — списком, как в методологии, а не абзацем. В §10 это отдельные
+  // строки вида «Ярлык. Пояснение»; склеенные в прозу, ярлыки читаются
+  // обрывками, и всё описание — набором огрызков. Ярлык выделяется жирным:
+  // по нему признак опознаётся с одного взгляда, и эксперт сравнивает уровни
+  // по ярлыкам, а не перечитывает четыре абзаца целиком.
+  function doesHtml(items) {
+    if (items.length === 1) return '<p class="xc-does">' + esc(items[0]) + '</p>';
+    var h = '<ul class="xc-list">';
+    items.forEach(function (t) {
+      var dot = t.indexOf('. ');
+      // Ярлык — короткое первое предложение, за которым идёт пояснение.
+      // Длинное первое предложение это уже сам признак, выделять нечего.
+      if (dot > 0 && dot <= 45) {
+        h += '<li><b>' + esc(t.slice(0, dot + 1)) + '</b> ' + esc(t.slice(dot + 2)) + '</li>';
+      } else {
+        h += '<li>' + esc(t) + '</li>';
+      }
+    });
+    return h + '</ul>';
   }
 
   // Справочник по способностям — открыт всегда. Принцип тот же, что на
@@ -236,6 +259,23 @@
     render();
   }
 
+  // Шесть из пятидесяти описаний в отведённую высоту не помещаются. Молча
+  // обрезать их нельзя: эксперт судил бы по половине текста и не знал бы об
+  // этом. Поэтому у обрезанной карточки низ уходит в градиент и стоит подпись —
+  // сигнал, что там есть ещё. Подпись гаснет, когда докрутили до конца.
+  function markScrollable() {
+    var slot = host.querySelector('.xc-slot');
+    if (!slot) return;
+    var card = slot.querySelector('.xc');
+    if (!card) return;
+    var sync = function () {
+      var more = card.scrollHeight - card.clientHeight - card.scrollTop > 4;
+      slot.classList.toggle('is-more', more);
+    };
+    card.onscroll = sync;
+    sync();
+  }
+
   var lastAt = '';
   function render() {
     var fn = screens[S.at.screen] || screens.intro;
@@ -248,6 +288,7 @@
     // Со сбросом наверх было наоборот: на невысоком окне «дальше» уходила под
     // сгиб, эксперт подкручивал, нажимал — и следующая карточка снова
     // отбрасывала его наверх, к прокрутке заново. Пятьдесят раз.
+    markScrollable();
     if (S.at.screen !== lastAt) { window.scrollTo(0, 0); lastAt = S.at.screen; }
     if (window.imp && window.imp.typoDom) { try { window.imp.typoDom(host); } catch (e) {} }
   }

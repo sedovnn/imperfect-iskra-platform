@@ -310,11 +310,20 @@ CODES.forEach(function (code) {
     // два абзаца, в сводке — один текст.
     var lead = scrub(lv.tail ? lv.tail.replace(/^«|»$/g, '') : '');
     var gist = scrub(lv.sut.join(' '));
-    var does = scrub(lv.does.join(' '));
-    if (does) does = does.charAt(0).toUpperCase() + does.slice(1);
     if (gist) gist = gist.charAt(0).toUpperCase() + gist.slice(1);
 
-    var total = (lead + gist + does).length;
+    // ⚠ СПИСОК ОСТАЁТСЯ СПИСКОМ. Здесь стояло lv.does.join(' ') — четыре
+    // отдельные строки «Ярлык. Пояснение» склеивались в один абзац, и ярлыки
+    // превращались в обрывки посреди прозы: «Планирование от цели. Цель
+    // зафиксирована первой… Крупноблочная декомпозиция. Путь разложен…».
+    // Читалось как набор несвязанных огрызков — владелец так и сказал, открыв
+    // карточки. Текст при этом был дословный; сломана была структура, а
+    // структура здесь и есть половина смысла.
+    var does = lv.does.map(function (line) { return scrub(line); })
+      .filter(function (t) { return t && t.length > 2; })
+      .map(function (t) { return t.charAt(0).toUpperCase() + t.slice(1); });
+
+    var total = (lead + gist + does.join(' ')).length;
     if (total < 40) {
       throw new Error(code + ' L' + lv.level + ': после вычистки осталось ' + total +
         ' знаков — карточка пустая, разбор сломался');
@@ -339,7 +348,7 @@ if (cards.length !== 50) throw new Error('Карточек ' + cards.length + ',
 
 var leaks = [];
 cards.forEach(function (c) {
-  var t = [c.lead, c.gist, c.does].join(' ');
+  var t = [c.lead, c.gist].concat(c.does || []).join(' ');
   if (/L[1-5]/.test(t)) leaks.push(c.id + ': остался номер уровня');
   if (/(?:МК|ПП|АК|ПР|ГА)-[12]/.test(t)) leaks.push(c.id + ': остался код способности');
   SURNAMES.forEach(function (n) {
@@ -493,7 +502,8 @@ if (noGist.length) {
 // Считаем по ВИДИМОЙ части карточки — ярлык плюс «суть», как её показывает
 // экран раскладки.
 function visibleLen(c) {
-  return (c.lead ? c.lead.length + 1 : 0) + (c.gist ? c.gist.length : (c.does ? c.does.length : 0));
+  var body = c.gist || (c.does || []).join(' ');
+  return (c.lead ? c.lead.length + 1 : 0) + body.length;
 }
 var perfect = [];
 CODES.forEach(function (code) {

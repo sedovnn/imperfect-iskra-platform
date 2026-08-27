@@ -125,15 +125,15 @@
   }
  },
  "js/expert.js": {
-  "sha": "f772fd96e56b",
+  "sha": "9c26c7d57415",
   "keys": {
-   "expert.html": 2
+   "expert.html": 3
   }
  },
  "js/expert-report.js": {
-  "sha": "219df8404a01",
+  "sha": "be3c703317b8",
   "keys": {
-   "expert-report.html": 1
+   "expert-report.html": 2
   }
  },
  "js/expert-api.js": {
@@ -153,15 +153,15 @@
  "js/expert-corpus.js": {
   "sha": "(шифротекст, меняется при каждой сборке)",
   "keys": {
-   "expert.html": 1,
-   "expert-report.html": 1
+   "expert.html": 2,
+   "expert-report.html": 2
   }
  },
  "css/expert.css": {
-  "sha": "ea45e163d8ed",
+  "sha": "368a88fc9e73",
   "keys": {
-   "expert.html": 1,
-   "expert-report.html": 1
+   "expert.html": 2,
+   "expert-report.html": 2
   }
  }
 }
