@@ -170,8 +170,8 @@
 <script src="js/main.js?v=7"></script>
 <script src="js/api.js?v=5"></script>
 <script src="js/dialog.js?v=1"></script>
-<script src="js/backlog.js?v=6"></script>
-<script src="js/scenes.js?v=139"></script>
+<script src="js/backlog.js?v=7"></script>
+<script src="js/scenes.js?v=141"></script>
 <script src="js/mechanics.js?v=70"></script>
 <script src="js/mech-fields.js?v=35"></script>
 <script src="js/case-text.js?v=1"></script>
@@ -387,6 +387,11 @@
       .replace('{money}', tt ? num(tt.money) : '');
     if (out.indexOf('{over}') >= 0) out = out.split('{over}').join(SF.over(tt, LIM, SF.plural, num));
     if (out.indexOf('{futureRef}') >= 0) out = out.split('{futureRef}').join(SF.futureRef(run.mech.futures));
+    // Заявка, на которой настаивает правление (26.08) — выбор общий с экраном.
+    if (out.indexOf('{forcedTitle}') >= 0 || out.indexOf('{forcedCost}') >= 0) {
+      var fp = window.imp.forcedParts(refusedIds(), tt, LIM, num, SF.plural);
+      out = out.split('{forcedTitle}').join(fp.title).split('{forcedCost}').join(fp.cost);
+    }
     return out;
   }
 

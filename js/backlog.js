@@ -101,6 +101,50 @@
     return pick;
   };
 
+  // ⚠ ЗАЯВКА, НА КОТОРОЙ НАСТАИВАЕТ ПРАВЛЕНИЕ (26.08). Верхняя ступень ПР-1 требует
+  // назвать, какой ресурс высвобождается отказом и на какой приоритет он переходит. В
+  // этой легенде отказ сам по себе ничего не освобождает: 500 штатных единиц и 22 млрд —
+  // это пул, который распределяют, а заявки просят из него. Спрашивать «куда пойдут люди
+  // с отклонённой заявки» бессмысленно — их там никогда и не было. Поэтому ступень
+  // вынимается с другой стороны: правление настаивает на одной отклонённой, и участник
+  // обязан назвать, что выйдет из состава, чтобы она влезла.
+  //
+  // Выбираем САМУЮ ДОРОГУЮ из отклонённых, которая НЕ влезает в остаток рамки: тогда
+  // обмен вынужден, и ответ «да она и так влезет» невозможен. Дорогая и малолюдная
+  // работает лучше крупной по людям — чтобы найти 10 млрд, нельзя просто снять что-то
+  // многолюдное и дешёвое, и принцип отсечения проверяется в двух измерениях сразу.
+  // По деньгам ещё и потому, что по ЛЮДЯМ выбирается хозяин отказа для разговора у
+  // выхода (refusedOwner ниже): совпади они — неожиданность той сцены сдулась бы.
+  window.imp.forcedPick = function (ids, sums, lim) {
+    if (!ids || !ids.length || !sums || !lim) return null;
+    var freePeople = lim.people - sums.people, freeMoney = lim.money - sums.money;
+    var refused = [];
+    window.imp.backlog.forEach(function (it) {
+      ids.forEach(function (x) { if (String(x) === String(it.id)) refused.push(it); });
+    });
+    if (!refused.length) return null;
+    var byMoney = refused.slice().sort(function (a, b) {
+      return (b.money - a.money) || (b.people - a.people);
+    });
+    // Не влезает по деньгам ИЛИ по людям — обмен нужен в любом случае.
+    var tight = byMoney.filter(function (it) {
+      return it.money > freeMoney || it.people > freePeople;
+    });
+    return tight[0] || byMoney[0];
+  };
+
+  // Подстановки для реплики про настойчивость правления. Формат тот же, что у
+  // refusedParts: кавычки в названии уже заменены, склонение приходит снаружи.
+  window.imp.forcedParts = function (ids, sums, lim, num, plural) {
+    var it = window.imp.forcedPick(ids, sums, lim);
+    if (!it) return { title: '', cost: '' };
+    var t = String(it.title).replace(/«/g, '\u201e').replace(/»/g, '\u201c');
+    var money = it.money ? (num ? num(it.money) : String(it.money)) + ' млрд' : '';
+    var people = it.people ? String(it.people) + ' ' +
+      (plural ? plural(it.people, 'человек', 'человека', 'человек') : 'человек') : '';
+    return { title: t, cost: [money, people].filter(Boolean).join(' и ') };
+  };
+
   // Готовая к подстановке форма: подписи говорящего, имя без должности и название
   // заявки. Живёт здесь, а не у каждого потребителя, по той же причине, что и само
   // правило: подстановок три (движок, харнесс страницы, харнесс CLI), и если каждый

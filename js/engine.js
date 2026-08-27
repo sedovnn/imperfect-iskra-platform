@@ -445,6 +445,13 @@
     if (t.indexOf('{over}') >= 0) {
       t = t.split('{over}').join(window.imp.subFacts.over(listSums() || totals(), LIM, plural, num));
     }
+    // ⚠ {forcedTitle} и {forcedCost} — заявка, на которой настаивает правление (26.08).
+    // Выбор живёт в js/backlog.js рядом с refusedOwner: он тоже читает бэклог и отказы,
+    // и разводить их по файлам значит завести две разные правды про одни и те же данные.
+    if (t.indexOf('{forcedTitle}') >= 0 || t.indexOf('{forcedCost}') >= 0) {
+      var fp = window.imp.forcedParts(refusedIds(), listSums() || totals(), LIM, num, plural);
+      t = t.split('{forcedTitle}').join(fp.title).split('{forcedCost}').join(fp.cost);
+    }
     return t;
   }
 
