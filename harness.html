@@ -32,7 +32,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
-<link rel="stylesheet" href="css/styles.css?v=226" />
+<link rel="stylesheet" href="css/styles.css?v=227" />
 <style>
   .hs-wrap { max-width: var(--maxw); width: 100%; margin: 0 auto; padding: 20px var(--frame-pad, 56px) 70px; }
   .hs-top { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px; margin: 0 0 18px; }
@@ -170,10 +170,10 @@
 <script src="js/main.js?v=7"></script>
 <script src="js/api.js?v=5"></script>
 <script src="js/dialog.js?v=1"></script>
-<script src="js/backlog.js?v=7"></script>
-<script src="js/scenes.js?v=151"></script>
-<script src="js/mechanics.js?v=71"></script>
-<script src="js/mech-fields.js?v=35"></script>
+<script src="js/backlog.js?v=8"></script>
+<script src="js/scenes.js?v=153"></script>
+<script src="js/mechanics.js?v=72"></script>
+<script src="js/mech-fields.js?v=36"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -263,10 +263,18 @@
     var lm = run && run.mech && run.mech.list;
     if (!lm) return false;
     if (when === 'overspend') return !!M.list.sums(lm, ctx()).over;
+    // Обмен условный с правки 5.1: нет отказов — шаг не играется. Модель получает тот же
+    // день, что человек, иначе сравнивать нечего.
+    if (when === 'refused') return refusedIds().length > 0;
+    // Отложена ли выбранная заявка (правка 13.2) — от этого зависит редакция пузыря.
+    if (when === 'refusedLater') {
+      return window.imp.refusedOwnerIsLater(refusedSets(), listSumsOf(), LIM);
+    }
     if (when === 'severova') {
       // Правило одно на всех — js/backlog.js. С 14.08 встреча у каждого, кто хоть
-      // что-то отложил или отклонил, а не только у отказавших заявке №6.
-      return !!refusedPick();
+      // что-то отложил или отклонил, а не только у отказавших заявке №6. С правки 13.1
+      // из кандидатов исключена заявка, на которой настояло правление.
+      return window.imp.refusedTalkIds(refusedSets(), listSumsOf(), LIM).length > 0;
     }
     return true;
   }
@@ -340,6 +348,8 @@
     if (a.unless) return !applies(a.unless);
     return a.when ? applies(a.when) : true;
   }
+  // Условие у отдельного пузыря — та же проверка, что у акта (правка 13.2).
+  var bubbleOk = function (b) { return actApplies(b); };
   function skipped(s) { return !actApplies(s); }
   function current() {
     for (var i = 0; i < STEPS.length; i++) if (!done(STEPS[i]) && !skipped(STEPS[i])) return i;
@@ -365,7 +375,24 @@
     });
     return ids;
   }
-  function refusedPick() { return window.imp.refusedOwner(refusedIds()); }
+  // Раскладка целиком: правилу выбора собеседника нужны все три стопки (правка 13.1).
+  function refusedSets() {
+    var lm = run && run.mech && run.mech.list;
+    var out = { taken: [], later: [], never: [] };
+    if (!lm || !lm.decided) return out;
+    Object.keys(lm.decided).forEach(function (k) {
+      var d = lm.decided[k], id = String(k).replace(/^a/, '');
+      if (d === 'take') out.taken.push(id);
+      else if (d === 'later') out.later.push(id);
+      else if (d === 'never') out.never.push(id);
+    });
+    return out;
+  }
+  function listSumsOf() {
+    var lm = run && run.mech && run.mech.list;
+    return lm ? M.list.sums(lm, ctx()) : null;
+  }
+  function refusedPick() { return window.imp.refusedOwner(refusedSets(), listSumsOf(), LIM); }
 
   // ⚠ ПОДСТАНОВКИ — ВСЕ, КАКИЕ ЕСТЬ В СЦЕНАХ (правка 21.08). Здесь стояли {name},
   // {who}, {title}, {whoName}, {people} и {money} — и не было {over} и {futureRef},
@@ -377,7 +404,7 @@
   // подстановкой это вопрос, и считать его двумя кодами значит спросить разное.
   function sub(t) {
     var lm = run.mech.list, tt = lm ? M.list.sums(lm, ctx()) : null;
-    var pk = window.imp.refusedParts(refusedIds());
+    var pk = window.imp.refusedParts(refusedSets(), tt, LIM);
     var SF = window.imp.subFacts;
     var out = String(t == null ? '' : t).split('{name}').join(run.tag)
       .split('{whoName}').join(pk.whoName)
@@ -389,7 +416,8 @@
     if (out.indexOf('{futureRef}') >= 0) out = out.split('{futureRef}').join(SF.futureRef(run.mech.futures));
     // Заявка, на которой настаивает правление (26.08) — выбор общий с экраном.
     if (out.indexOf('{forcedTitle}') >= 0 || out.indexOf('{forcedCost}') >= 0) {
-      var fp = window.imp.forcedParts(refusedIds(), tt, LIM, num, SF.plural);
+      // Харнесс модели — не демо никогда: заглушка витрины здесь включаться не должна.
+      var fp = window.imp.forcedParts(refusedIds(), tt, LIM, num, SF.plural, false);
       out = out.split('{forcedTitle}').join(fp.title).split('{forcedCost}').join(fp.cost);
     }
     return out;
@@ -417,8 +445,8 @@
       if (!actApplies(a)) return;
       var mine = !fromStep || r.sceneIx > fromStep.ix || r.actIx > fromStep.actIx;
       // У самого прошлого шага берём только `after` — его bubbles модель уже слышала.
-      if (mine) S.speechLines(a, 'bubbles').forEach(function (l) { out.push(sub(l)); });
-      S.speechLines(a, 'after').forEach(function (l) { out.push(sub(l)); });
+      if (mine) S.speechLines(a, 'bubbles', bubbleOk).forEach(function (l) { out.push(sub(l)); });
+      S.speechLines(a, 'after', bubbleOk).forEach(function (l) { out.push(sub(l)); });
     });
     return out;
   }
@@ -461,12 +489,16 @@
     // строкой-указателем, probe внутри (после действия), ask под ней.
     var act = null;
     S.route().forEach(function (r) { if (r.sceneIx === step.ix && r.actIx === step.actIx) act = r.act; });
-    var say2 = function (field) { return act ? S.speechLines(act, field).map(sub) : []; };
+    // Пузыри с условием (правка 13.2) отдаются модели по той же ветке, что видит человек.
+    var say2 = function (field) { return act ? S.speechLines(act, field, bubbleOk).map(sub) : []; };
 
     var body;
     if (step.mech) {
       var f = F[step.mech];
-      var form = f.form, probe = say2('probe'), ask = say2('ask'), head = say2('before').concat(say2('lead'));
+      // Блок правления в листе печати — только в первом такте, как у человека (правка 6.3).
+      var boardHere = (step.mech === 'seal' && run.sealStage !== 'phrase') ? S.boardLines(act) : [];
+      var form = f.form, probe = say2('probe'), ask = say2('ask'),
+          head = say2('before').concat(boardHere).concat(say2('lead'));
       var beat = null;
       // ⚠ ВОЗВРАТ К РАЗБОРУ: ФОРМА ПРИЕЗЖАЕТ ЗАПОЛНЕННОЙ, как поля на экране у человека.
       // Он видит свои решения и своё обоснование и правит то, что хочет; инструкция при

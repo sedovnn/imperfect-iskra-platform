@@ -307,8 +307,23 @@
     });
     return ids;
   }
-  function refusedPick() { return window.imp.refusedOwner(refusedIds()); }
-  function refusedParts() { return window.imp.refusedParts(refusedIds()); }
+  // ⚠ РАСКЛАДКА ЦЕЛИКОМ (правка 13.1). Правилу выбора собеседника нужны все три стопки:
+  // «не делаем» идут вперёд, а потолок по людям берётся с самой дорогой из ВЗЯТЫХ.
+  // Плоского списка отказов для этого недостаточно.
+  function refusedSets() {
+    var lm = state.mech && state.mech.list;
+    var out = { taken: [], later: [], never: [] };
+    if (!lm || !lm.decided) return out;
+    Object.keys(lm.decided).forEach(function (k) {
+      var d = lm.decided[k], id = String(k).replace(/^a/, '');
+      if (d === 'take') out.taken.push(id);
+      else if (d === 'later') out.later.push(id);
+      else if (d === 'never') out.never.push(id);
+    });
+    return out;
+  }
+  function refusedPick() { return window.imp.refusedOwner(refusedSets(), listSums() || totals(), LIM); }
+  function refusedParts() { return window.imp.refusedParts(refusedSets(), listSums() || totals(), LIM); }
   function listSums() {
     var lm = state.mech && state.mech.list;
     var spec = window.imp.mechanics && window.imp.mechanics.list;
@@ -334,11 +349,28 @@
       // бы ровно там, где участник вышел за рамку своим вариантом.
       return t ? t.over : totals().over;
     }
+    // ⚠ УСЛОВИЕ ОБМЕНА (правка 5.1). Реплика опирается на поступок участника: правление
+    // настаивает на ОТКЛОНЁННОЙ им заявке. Если он не отклонил ничего, отказывать было не
+    // от чего, и шаг не играется — иначе Агеев произносит фразу с дырами. Гейтом это
+    // чинить нельзя: требование «отметьте хотя бы один отказ» сообщило бы участнику, что
+    // от него ждут отказов, а наличие явных отказов и есть граница ПР-2 2→3.
+    // Своё имя по смыслу, а не заимствованное у встречи на выходе: с правки 13.1 условия
+    // разошлись — здесь любой отказ, там любой, КРОМЕ заявки правления.
+    if (act.when === 'refused') return refusedIds().length > 0;
+    // Отложена ли ТА заявка, с хозяином которой участник встретился (правка 13.2).
+    // Отдельного условия «отклонена» нет намеренно: два независимых условия про одно и то
+    // же разъедутся, а отрицание одного счёта — нет (то же основание, что у unless выше).
+    if (act.when === 'refusedLater') {
+      return window.imp.refusedOwnerIsLater(refusedSets(), listSums() || totals(), LIM);
+    }
     if (act.when === 'severova') {
       // Встреча есть у каждого, кто хоть что-то отложил или отклонил (решение
       // владельца 14.08). Прежде условием был отказ ровно заявке №6, и окно было
       // условным — из-за чего его пришлось держать вне балла.
-      return !!refusedPick();
+      // ⚠ УСЛОВИЕ ПРОЩЕ ВЫБОРА (правка 13.1): достаточно одной отклонённой, кроме
+      // заявки правления. Считать полный выбор здесь нельзя — маршрут сказал бы
+      // «шаг играется» там, где выбирать некого.
+      return window.imp.refusedTalkIds(refusedSets(), listSums() || totals(), LIM).length > 0;
     }
     return true;
   }
@@ -449,7 +481,7 @@
     // Выбор живёт в js/backlog.js рядом с refusedOwner: он тоже читает бэклог и отказы,
     // и разводить их по файлам значит завести две разные правды про одни и те же данные.
     if (t.indexOf('{forcedTitle}') >= 0 || t.indexOf('{forcedCost}') >= 0) {
-      var fp = window.imp.forcedParts(refusedIds(), listSums() || totals(), LIM, num, plural);
+      var fp = window.imp.forcedParts(refusedIds(), listSums() || totals(), LIM, num, plural, isDemo);
       t = t.split('{forcedTitle}').join(fp.title).split('{forcedCost}').join(fp.cost);
     }
     return t;
@@ -471,7 +503,13 @@
   // пустое место. Единственное такое условие (needs:'refusals') снято 11.08 вместе
   // с вопросом про два отказа, и сейчас условий нет ни у одного пузыря. Функция
   // оставлена: место для них есть, а проверка стоит в одной точке.
-  function bubbleShown(b) { return true; }
+  // ⚠ УСЛОВИЕ У ОТДЕЛЬНОГО ПУЗЫРЯ (правка 13.2). Понадобилось, когда в разговоре у выхода
+  // одно слово стало зависеть от того, ОТЛОЖИЛ участник заявку или ОТКЛОНИЛ. Ветвление
+  // актом стоило бы разрезания монолога на четыре акта с повторной подписью говорящего, а
+  // ветвление в разметке запрещено правилом «ни одной реплики литералом». Условие пузыря —
+  // та же машинерия applies(), что у актов: обе редакции текста остаются в js/scenes.js.
+  // Пузырь без when/unless показывается всегда, как и раньше.
+  function bubbleShown(b) { return applies(b); }
 
   // ── РЕПЛИКИ ПОЯВЛЯЮТСЯ ПО ОДНОЙ (решение владельца 07.08) ──
   // Разметка та же, добавляется только метка data-reveal; показывает их revealRun
@@ -1625,7 +1663,9 @@
     var r = refusedPick();
     if (!r) return '';
     return '<div class="win-card-ref">' +
-      '<p class="kicker">Заявка, которую вы решили не брать</p>' +
+      // Подпись по ветке (правка 13.2): отложенную нельзя называть «решили не брать».
+      '<p class="kicker">' + (window.imp.refusedOwnerIsLater(refusedSets(), listSums() || totals(), LIM)
+        ? 'Заявка, которую вы отложили' : 'Заявка, которую вы решили не брать') + '</p>' +
       '<div class="bl-card">' +
         '<div class="bl-card-title"><span class="bl-n">' + blNum(r.id) + '</span>' +
           esc(r.title || '') + '</div>' +
@@ -1822,6 +1862,7 @@
       speech: function (sp) {
         if (!sp) return '';
         var slot = act && sp === act.probe ? 'probe'
+                 : act && sp === act.probeOne ? 'probeOne'
                  : act && sp === act.probeReturn ? 'probeReturn'
                  : act && sp === act.before ? 'before'
                  : act && sp === act.ask ? 'ask' : 'sp';
@@ -1843,7 +1884,21 @@
         return { cls: ' is-staged', attr: ' data-reveal="1" data-rk="' + esc(rk) + '"' };
       },
       probe: (act && act.probe) || null,
+      // Вторая редакция вопроса второго такта — для того, кто написал одно будущее
+      // (правка 8.5). Выбор между ними делает механика: у неё под рукой состояние.
+      probeOne: (act && act.probeOne) || null,
+      // «Одна карточка будущего или несколько» — расчёт один на всех (правка 8.5), живёт
+      // в js/mech-fields.js рядом с подстановкой {futureRef}. Механика зовёт его через
+      // ctx, а не напрямую: страницы, где механики рисуются без харнесса, mech-fields не
+      // грузят, и прямая ссылка сделала бы её обязательной для них (eval/lint_wiring.js).
+      futureMany: function (m) {
+        return !!(window.imp.subFacts && window.imp.subFacts.futureMany(m));
+      },
       probeReturn: (act && act.probeReturn) || null,
+      // Блок правления в листе печати (act.board в scenes.js, правка 6.3). Текст живёт в
+      // сценах — один источник текста маршрута, — а рисует его механика: только она знает,
+      // где у листа верх и что блок стоит лишь в первом такте.
+      board: (act && act.board) || null,
       // Реплики вокруг верстака: before — над рабочей областью, ask — под ней.
       before: (act && act.before) || null,
       // Строка-указатель над верстаком (act.lead в scenes.js).

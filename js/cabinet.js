@@ -104,14 +104,49 @@
   // отложена или отклонена. Считаем по фактам верстака, которые отдаёт бэкенд, и
   // по window.imp.refusedOwner — тому же правилу, по которому ветвится день.
   // Возвращает null, когда судить не о чем: верстак ещё не заполнен.
+  // Факты верстака из полной раскладки, которую кабинет получает вместе с ответами.
+  // Одна функция на оба места, где они собирались, — иначе при следующей правке условий
+  // разъедутся две копии.
+  function listFactsOf(f) {
+    if (!f) return null;
+    var ids = function (a) { return (a || []).map(function (it) { return it.id; }); };
+    return { fitsFrame: f.fitsFrame,
+             deferred: ids(f.later).concat(ids(f.never)),
+             taken: ids(f.taken), later: ids(f.later), never: ids(f.never),
+             sums: { people: f.people, money: f.money },
+             limits: f.limits };
+  }
+
+  // Раскладка портфеля в том виде, в каком её ждёт js/backlog.js. Поля taken/later/never
+  // приходят с бэкенда с правки 13.1; у payload'ов до неё есть только плоский `deferred`,
+  // и тогда читаем его — правило само разберёт такую форму как «не сейчас».
+  function setsOf(lf) {
+    if (lf && (lf.taken || lf.later || lf.never)) {
+      return { taken: lf.taken || [], later: lf.later || [], never: lf.never || [] };
+    }
+    return (lf && lf.deferred) || [];
+  }
+  function sumsOf(lf) { return (lf && lf.sums) || null; }
+  function limsOf(lf) { return (lf && lf.limits) || window.imp.backlogLimits || null; }
+  function refusedAllOf(lf) {
+    var s = setsOf(lf);
+    return Array.isArray(s) ? s : (s.later || []).concat(s.never || []);
+  }
+
   function conditionalAsked(key, lf) {
     if (!lf) return null;
     if (key === 'overspend') return lf.fitsFrame === false;
+    // ⚠ ОБМЕН СТАЛ УСЛОВНЫМ (правка 5.1). Без этой строки шаг попадал бы в «остальное»,
+    // то есть считался безусловным, и непрозвучавший вопрос показывался фасилитатору как
+    // «не дошёл» — а пустой ответ рисовался бы словом «промолчали» (см. 6.7). Правило то
+    // же, что в движке: есть хотя бы один отказ.
+    if (key === 'forced') return refusedAllOf(lf).length > 0;
     if (key === 'severova') {
       // Правило одно на всех — js/backlog.js. С 14.08 встреча срабатывает на ЛЮБОЙ
-      // отказ, а не только на заявку №6, поэтому здесь спрашиваем не про один id,
-      // а про наличие выбранного хозяина.
-      return !!window.imp.refusedOwner(lf.deferred || []);
+      // отказ, а не только на заявку №6. С правки 13.1 из кандидатов исключена заявка,
+      // на которой настояло правление, — поэтому условие спрашивается тем же вызовом,
+      // что в движке, а не через выбор собеседника.
+      return window.imp.refusedTalkIds(setsOf(lf), sumsOf(lf), limsOf(lf)).length > 0;
     }
     return true;
   }
@@ -754,9 +789,7 @@
     (d.windows || []).forEach(function (w) {
       if (!w.legacy && String(w.text || '').trim()) at[w.key] = w.at || '';
     });
-    var f = d.facts;
-    var lf = f ? { fitsFrame: f.fitsFrame,
-                   deferred: (f.later || []).concat(f.never || []).map(function (it) { return it.id; }) } : null;
+    var lf = listFactsOf(d.facts);
     var st = stepState(s, at, lf);
     var flags = el[s.key] || [];
     var w = byKey[s.key];
@@ -798,9 +831,7 @@
     (d.windows || []).forEach(function (w) {
       if (!w.legacy && String(w.text || '').trim()) at[w.key] = w.at || '';
     });
-    var f = d.facts;
-    var lf = f ? { fitsFrame: f.fitsFrame,
-                   deferred: (f.later || []).concat(f.never || []).map(function (it) { return it.id; }) } : null;
+    var lf = listFactsOf(d.facts);
 
     var html = STEPS.map(function (s) { return answerCard(d, s); }).join('');
 

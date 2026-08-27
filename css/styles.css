@@ -3627,6 +3627,14 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mx-doc > .bl-col-head:first-of-type { margin-top: 18px !important; }
 .mx-doc .off-list:last-child { margin-bottom: 0; }
 
+/* ── ДВЕ СТРАТЕГИИ ПРАВЛЕНИЯ В ЛИСТЕ (правка 6.3) ──
+   Часть документа, а не реплики: блок стоит над разбором и отделён линией, как
+   верхний колонтитул. Текст приходит из js/scenes.js. */
+.mx-board { margin: 0 0 18px; padding: 0 0 16px; border-bottom: 1px solid var(--hairline); }
+.mx-board > .bl-col-head { margin-top: 0; }
+.mx-board-row { margin: 8px 0 0; font-size: var(--fs-util); color: var(--muted); line-height: 1.5; }
+.mx-board-row b { color: var(--ink); }
+
 /* Номер ответа — у верхнего левого угла поля, а не строкой над ним. */
 .mx-numrow { display: flex; gap: 8px; align-items: flex-start; }
 .mx-numrow > .bl-n { flex: none; padding-top: 8px; font-variant-numeric: tabular-nums; }

@@ -84,21 +84,87 @@
   // кабинет (cabinet.js), харнесс страницы (harness.html), харнесс CLI
   // (eval/run_v44f.js) и проверка паритета. Число разъезжалось бы по копиям.
   //
-  // На вход — список id, по которым участник сказал «не сейчас» или «не делаем».
-  // На выход — сама заявка (у неё есть `who` и `title` для реплики) либо null,
-  // если отказов нет: тогда встречи не происходит. Случай крайний — взять все
-  // двадцать значит 2660 человек при рамке 500, и лестница ПР-1 такой ответ уже
-  // держит на втором уровне («взято всё — выбора не сделано»).
-  window.imp.refusedOwner = function (ids) {
-    if (!ids || !ids.length) return null;
-    var pick = null;
-    window.imp.backlog.forEach(function (it) {
-      var refused = false;
-      ids.forEach(function (x) { if (String(x) === String(it.id)) refused = true; });
-      if (!refused) return;
-      if (!pick || it.people > pick.people) pick = it;
+  // ⚠ ПРАВИЛО ПЕРЕПИСАНО (правка 13.1). Было: самая дорогая ПО ЛЮДЯМ из всех отказов,
+  // «не сейчас» и «не делаем» вперемешку. Если брать самую дорогую, ответ «она стоила
+  // слишком много» полон и правдив, а про принцип отсечения не говорит ничего — вопрос
+  // схлопывается. И приоритет должен быть у настоящего отказа: отсрочку можно объяснить
+  // очередью, а принцип отсечения живёт в «не делаем».
+  //
+  // Ось прежняя — люди. Правило целиком:
+  //   1. Кандидаты — «не делаем». Пусто → «не сейчас».
+  //   2. Исключить заявку, на которой настояло правление, — совсем, без возврата.
+  //   3. Взять самую дорогую по людям ИЗ ТЕХ, ЧТО НЕ ДОРОЖЕ САМОЙ ДОРОГОЙ ИЗ ВЗЯТЫХ.
+  //      Тогда «дорого» как объяснение недоступно: заявка того же масштаба лежит у
+  //      участника в «берём». «Берём» пустым не бывает — разбор без единой взятой
+  //      заявки дальше не пускает, значит шагу 3 всегда есть с чем сравнивать.
+  //   4. Ни одна не подошла (все кандидаты крупнее любой взятой) → вторая по людям
+  //      среди кандидатов. Кандидат один → он.
+  // При равенстве по людям — меньший id (правило детерминировано, см. СПЕК §4.5а).
+  //
+  // ПРО ИСКЛЮЧЕНИЕ ЗАЯВКИ ПРАВЛЕНИЯ. Две сцены дня берут заявку из отклонённых: обмен у
+  // Агеева (по деньгам) и этот разговор (по людям). Оси разведены нарочно, но совпадения
+  // это не запрещает: у участника, отклонившего только «лицензионную внешнюю модель»,
+  // она первая и по деньгам, и по людям, и обе сцены выпадают на неё. Возврата исключения
+  // нет — решение владельца, чтобы не городить двойное отсечение. Значит шаг не сыграет,
+  // когда единственная отклонённая и есть заявка правления: разговор был бы про неё же.
+  //
+  // ОГОВОРКА, ПРИНЯТАЯ СОЗНАТЕЛЬНО: правило запирает тривиальный ответ по людям, но не по
+  // деньгам — можно взять заявку на 420 человек и 1 млрд, отказать заявке на 340 человек
+  // и 5 млрд, и «дорого» снова станет полным ответом. Условие по обеим осям сразу
+  // владелец решил не вводить.
+  //
+  // На вход — раскладка портфеля: {taken, later, never} списками id, плюс сумма взятого и
+  // рамка (они нужны, чтобы вычислить заявку правления и исключить её). На выход — сама
+  // заявка (у неё есть `who` и `title` для реплики) либо null, и тогда встречи нет.
+  function itemsByIds(ids) {
+    var out = [];
+    (ids || []).forEach(function (x) {
+      var it = window.imp.backlogById(x);
+      if (it) out.push(it);
     });
-    return pick;
+    return out;
+  }
+  // Прежняя форма вызова — плоский список отказов — читается как «не сейчас»: так
+  // невидимого разъезда не будет, потому что кандидатов из «не делаем» в ней просто нет,
+  // и это заметно сразу, а не в тихом смещении выбора.
+  function setsOf(sets) {
+    if (!sets) return { taken: [], later: [], never: [] };
+    if (Array.isArray(sets)) return { taken: [], later: sets.slice(), never: [] };
+    return { taken: sets.taken || [], later: sets.later || [], never: sets.never || [] };
+  }
+
+  // ⚠ УСЛОВИЕ ШАГА И ВЫБОР СОБЕСЕДНИКА — РАЗНЫЕ ВЕЩИ (правка 13.1), но об исключении
+  // знают оба: иначе маршрут скажет «шаг играется», а выбирать будет некого. Условие
+  // проще выбора и звучит так: есть хотя бы одна отклонённая заявка, кроме той, на
+  // которой настояло правление. Читают это и движок, и кабинет фасилитатора.
+  window.imp.refusedTalkIds = function (sets, sums, lim) {
+    var s = setsOf(sets);
+    var all = s.later.concat(s.never);
+    if (!all.length) return [];
+    var forced = window.imp.forcedPick(all, sums, lim);
+    var skip = forced ? String(forced.id) : '';
+    return all.filter(function (x) { return String(x) !== skip; });
+  };
+
+  window.imp.refusedOwner = function (sets, sums, lim) {
+    var s = setsOf(sets);
+    var talk = window.imp.refusedTalkIds(sets, sums, lim);
+    if (!talk.length) return null;
+    var isNever = {};
+    s.never.forEach(function (x) { isNever[String(x)] = true; });
+    // Шаг 1: «не делаем» вперёд; если после исключения там пусто — «не сейчас».
+    var pool = itemsByIds(talk.filter(function (x) { return isNever[String(x)]; }));
+    if (!pool.length) pool = itemsByIds(talk);
+    var byPeople = pool.slice().sort(function (a, b) {
+      return (b.people - a.people) || (a.id - b.id);
+    });
+    // Шаг 3: потолок — самая дорогая по людям из взятых.
+    var cap = 0;
+    itemsByIds(s.taken).forEach(function (it) { if (it.people > cap) cap = it.people; });
+    var fit = byPeople.filter(function (it) { return it.people <= cap; });
+    if (fit.length) return fit[0];
+    // Шаг 4: все кандидаты крупнее любой взятой.
+    return byPeople.length > 1 ? byPeople[1] : byPeople[0];
   };
 
   // ⚠ ЗАЯВКА, НА КОТОРОЙ НАСТАИВАЕТ ПРАВЛЕНИЕ (26.08). Верхняя ступень ПР-1 требует
@@ -115,34 +181,57 @@
   // многолюдное и дешёвое, и принцип отсечения проверяется в двух измерениях сразу.
   // По деньгам ещё и потому, что по ЛЮДЯМ выбирается хозяин отказа для разговора у
   // выхода (refusedOwner ниже): совпади они — неожиданность той сцены сдулась бы.
-  window.imp.forcedPick = function (ids, sums, lim) {
-    if (!ids || !ids.length || !sums || !lim) return null;
-    var freePeople = lim.people - sums.people, freeMoney = lim.money - sums.money;
+  //
+  // ⚠ ПОРЯДОК СТАРШИНСТВА (правки 5.1 и 5.2). Он важен именно в этом виде:
+  //   1. Есть хотя бы одна отклонённая — работает обычное правило ниже. Это верно и на
+  //      витрине: отклонил что-то — Агеев спросит про ЕГО заявку, а не про заглушку.
+  //   2. Отказов нет, живой прогон — null, и шаг не играется (правка 5.1). Реплика
+  //      опирается на поступок участника, а поступка не было: отказывать было не от чего.
+  //      Прежде подстановка возвращала пустые строки, и Агеев произносил «настояло на
+  //      заявке «». Это .» — у человека случай почти невозможен (рамка названа вслух), но
+  //      у прогона модели живой: пять прогонов набрали от 1255 до 2040 человек при лимите
+  //      500, и вопрос с дырами уехал бы в сравнение с человеком.
+  //   3. Отказов нет, демо — подставляется пример: самая дорогая заявка портфеля. Это не
+  //      отдельный режим витрины, а последнее средство: гаснет, как только участник
+  //      отклонил хоть что-то. Пометки «это пример» на витрине нет — подпись «здесь была
+  //      бы ваша заявка» ломает ровно то, что витрина показывает.
+  // Признак демо приходит снаружи параметром: сам backlog.js про режимы не знает и знать
+  // не должен, а харнесс модели — не демо никогда.
+  window.imp.forcedPick = function (ids, sums, lim, demo) {
+    var byMoney = function (arr) {
+      return arr.slice().sort(function (a, b) { return (b.money - a.money) || (b.people - a.people); });
+    };
     var refused = [];
     window.imp.backlog.forEach(function (it) {
-      ids.forEach(function (x) { if (String(x) === String(it.id)) refused.push(it); });
+      (ids || []).forEach(function (x) { if (String(x) === String(it.id)) refused.push(it); });
     });
-    if (!refused.length) return null;
-    var byMoney = refused.slice().sort(function (a, b) {
-      return (b.money - a.money) || (b.people - a.people);
-    });
+    if (!refused.length || !sums || !lim) {
+      if (!demo) return null;
+      return byMoney(window.imp.backlog)[0] || null;
+    }
+    var freePeople = lim.people - sums.people, freeMoney = lim.money - sums.money;
+    var sorted = byMoney(refused);
     // Не влезает по деньгам ИЛИ по людям — обмен нужен в любом случае.
-    var tight = byMoney.filter(function (it) {
+    var tight = sorted.filter(function (it) {
       return it.money > freeMoney || it.people > freePeople;
     });
-    return tight[0] || byMoney[0];
+    return tight[0] || sorted[0];
   };
 
   // Подстановки для реплики про настойчивость правления. Формат тот же, что у
   // refusedParts: кавычки в названии уже заменены, склонение приходит снаружи.
-  window.imp.forcedParts = function (ids, sums, lim, num, plural) {
-    var it = window.imp.forcedPick(ids, sums, lim);
+  window.imp.forcedParts = function (ids, sums, lim, num, plural, demo) {
+    var it = window.imp.forcedPick(ids, sums, lim, demo);
     if (!it) return { title: '', cost: '' };
     var t = String(it.title).replace(/«/g, '\u201e').replace(/»/g, '\u201c');
     var money = it.money ? (num ? num(it.money) : String(it.money)) + ' млрд' : '';
     var people = it.people ? String(it.people) + ' ' +
       (plural ? plural(it.people, 'человек', 'человека', 'человек') : 'человек') : '';
-    return { title: t, cost: [money, people].filter(Boolean).join(' и ') };
+    // ⚠ СНАЧАЛА ЛЮДИ, ПОТОМ ДЕНЬГИ (правка 5.3). Было наоборот, а на карточке заявки и во
+    // всех стопках разбора цена стоит «110 чел. · 10 млрд»: человек только что двадцать
+    // раз прочитал один порядок и получал в реплике обратный. Тот же формат собирает
+    // refusedParts рядом — держать их в одном порядке.
+    return { title: t, cost: [people, money].filter(Boolean).join(' и ') };
   };
 
   // Готовая к подстановке форма: подписи говорящего, имя без должности и название
@@ -155,8 +244,23 @@
   // «Выделить «Миру» в отдельный P&L» — две пары одного рисунка подряд, глаз
   // спотыкается. По русской норме внутренние становятся лапками „…", этим и
   // занимается замена. Типограф (js/typo.js) это не чинит: он про пробелы.
-  window.imp.refusedParts = function (ids) {
-    var it = window.imp.refusedOwner(ids);
+  // ⚠ ОТЛОЖЕНА ИЛИ ОТКЛОНЕНА ВЫБРАННАЯ ЗАЯВКА (правка 13.2). От этого зависят слова
+  // разговора у выхода: «в работу предлагаете не брать» — правда для «не делаем» и
+  // неправда для «не сейчас», участник отложил, а не отказал. Для замера это важно именно
+  // здесь: граница ПР-1 2→3 — это различие между псевдо-отказом («всё отложено на потом»)
+  // и настоящим отказом, ради него и заведена третья кнопка. Схлопнув обе стопки в одно
+  // слово, мы предлагали объяснить отказ, которого участник не делал.
+  window.imp.refusedOwnerIsLater = function (sets, sums, lim) {
+    var it = window.imp.refusedOwner(sets, sums, lim);
+    if (!it) return false;
+    var s = setsOf(sets);
+    var later = false;
+    s.later.forEach(function (x) { if (String(x) === String(it.id)) later = true; });
+    return later;
+  };
+
+  window.imp.refusedParts = function (sets, sums, lim) {
+    var it = window.imp.refusedOwner(sets, sums, lim);
     if (!it) return { who: '', whoName: '', title: '' };
     var t = String(it.title).replace(/«/g, '\u201e').replace(/»/g, '\u201c');
     return { who: it.who, whoName: String(it.who).split(',')[0].trim(), title: t };
