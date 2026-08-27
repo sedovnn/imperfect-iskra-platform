@@ -887,7 +887,34 @@
       });
     }
 
+    var restart = $('xRestart');
+    if (restart) {
+      restart.style.display = '';
+      restart.onclick = function () {
+        var done = S ? Object.keys(S.attr || {}).length : 0;
+        if (!window.confirm(
+          'Начать разбор заново, с новым номером?\n\n' +
+          'Ответы на этом компьютере будут стёрты' + (done ? ' (сейчас их ' + done + ')' : '') + '. ' +
+          'Строка с прежним номером останется на сервере — её удаляем мы, не вы.')) return;
+        try {
+          if (S) localStorage.removeItem(KEY(S.id));
+          localStorage.removeItem('imp_expert_last');
+          localStorage.removeItem('imp_expert_queue');
+        } catch (e) {}
+        // Через адрес, а не begin(): перезагрузка гарантирует, что от прежнего
+        // разбора не осталось ничего — ни колод, ни таймеров, ни состояния.
+        location.search = '?new=1';
+      };
+    }
+
     var params = new URLSearchParams(location.search);
+    // ?new=1 — принудительно новый номер. Нужен и как выход из чужого разбора,
+    // и как способ проверить экран с нуля, не чистя данные сайта руками.
+    if (params.get('new')) {
+      history.replaceState(null, '', location.pathname);
+      begin(newId());
+      return;
+    }
     var asked = (params.get('e') || '').trim();
     var last = '';
     try { last = localStorage.getItem('imp_expert_last') || ''; } catch (e) {}

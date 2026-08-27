@@ -27,6 +27,12 @@
       </div>
       <div class="station-header-right">
         <span class="cab-status" id="xSync"></span>
+        <!-- «Начать заново» появляется только после входа. Оно нужно и эксперту
+             (передумал, начал не тот человек), и нам при проверке: состояние
+             разбора живёт в localStorage браузера, и ни перезагрузка, ни
+             удаление строки в таблице его не стирают — без этой кнопки выйти из
+             начатого разбора было нечем. -->
+        <button type="button" class="btn btn-ghost btn-sm" id="xRestart" style="display:none;">Начать заново</button>
       </div>
     </header>
 
@@ -48,6 +54,6 @@
 <script src="js/expert-lock.js?v=1"></script>
 <script src="js/typo.js?v=2"></script>
 <script src="js/expert-corpus.js?v=2"></script>
-<script src="js/expert.js?v=3"></script>
+<script src="js/expert.js?v=4"></script>
 </body>
 </html>
