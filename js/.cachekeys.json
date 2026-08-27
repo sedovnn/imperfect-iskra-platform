@@ -102,13 +102,13 @@
   }
  },
  "js/scenes.js": {
-  "sha": "f6c504c07256",
+  "sha": "9d3ce2ef92e1",
   "keys": {
-   "assessment.html": 146,
-   "cabinet.html": 146,
-   "harness.html": 146,
-   "intro.html": 146,
-   "role.html": 146
+   "assessment.html": 147,
+   "cabinet.html": 147,
+   "harness.html": 147,
+   "intro.html": 147,
+   "role.html": 147
   }
  },
  "js/typo.js": {
