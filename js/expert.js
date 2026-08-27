@@ -225,11 +225,19 @@
     render();
   }
 
+  var lastAt = '';
   function render() {
     var fn = screens[S.at.screen] || screens.intro;
     host.innerHTML = fn();
     if (fn.after) fn.after();
-    window.scrollTo(0, 0);
+    // Прокрутка наверх — только при смене ЭКРАНА, но не при переходе к следующей
+    // карточке внутри блока. Геометрия у всех пятидесяти карточек теперь
+    // одинаковая до пикселя, поэтому сохранённое положение прокрутки означает,
+    // что текст и кнопки стоят на одном и том же месте ЭКРАНА все пятьдесят раз.
+    // Со сбросом наверх было наоборот: на невысоком окне «дальше» уходила под
+    // сгиб, эксперт подкручивал, нажимал — и следующая карточка снова
+    // отбрасывала его наверх, к прокрутке заново. Пятьдесят раз.
+    if (S.at.screen !== lastAt) { window.scrollTo(0, 0); lastAt = S.at.screen; }
     if (window.imp && window.imp.typoDom) { try { window.imp.typoDom(host); } catch (e) {} }
   }
 
@@ -352,49 +360,46 @@
     var a = S.attr[id] || {};
     var done = Object.keys(S.attr).length;
 
+    // ⚠ ВСЁ НИЖЕ КАРТОЧКИ СТОИТ НА МЕСТЕ. Раньше экран менял ряд из пяти
+    // навыков на ряд из двух способностей, и всё, что ниже, подскакивало на
+    // 170px ровно под курсором; появление «подходит ещё и» двигало ещё на 64;
+    // а высота карточки гуляла от 148 до 508px, так что «дальше» между
+    // карточками ездило на 360px. Три причины, одно следствие: попасть по
+    // кнопке можно было только прицелившись заново.
+    //
+    // Поэтому: (1) ряд навыков виден ВСЕГДА, выбранный подсвечен — ряд не
+    // подменяется, а дополняется; (2) под способности и под «ещё подходит»
+    // место занято всегда, даже когда там пусто; (3) карточка живёт в области
+    // с полом и потолком, и самые длинные прокручиваются внутри себя, а не
+    // растягивают экран.
     var h = '<div class="xwide">' +
       progressHtml(done, deck.length, (i + 1) + ' из ' + deck.length) +
-      refHtml() +
-      cardHtml(card) +
-      '<div class="xpick" id="xPick">';
-
-    if (!a.skill) {
-      h += '<p class="xpick-q">К какому навыку это относится?</p><div class="xpick-row">';
-      C.skills.forEach(function (s) {
-        h += '<button type="button" class="xopt" data-skill="' + esc(s.code) + '">' +
-          '<b>' + esc(s.name) + '</b><span>' + esc(s.def) + '</span></button>';
-      });
-      h += '</div>';
-    } else {
-      var sk = SKILL_BY_CODE[a.skill];
-      h += '<p class="xpick-q">' + esc(sk.name) + ' — какая из двух способностей?' +
-        ' <button type="button" class="xlink" id="xBackSkill">другой навык</button></p><div class="xpick-row">';
-      sk.abilities.forEach(function (ab) {
-        h += '<button type="button" class="xopt' + (a.ability === ab.code ? ' is-on' : '') +
-          '" data-ability="' + esc(ab.code) + '">' +
-          '<b>' + esc(ab.name) + '</b><span>' + esc(ab.def) + '</span></button>';
-      });
-      h += '</div>';
-    }
+      '<div class="xc-slot">' + cardHtml(card) + '</div>' +
+      '<div class="xpick" id="xPick">' +
+      '<p class="xpick-q">Навык</p><div class="xpick-row xpick-skills" id="xSkills">';
+    C.skills.forEach(function (s) {
+      h += '<button type="button" class="xchip' + (a.skill === s.code ? ' is-on' : '') +
+        '" data-skill="' + esc(s.code) + '">' + esc(s.name) + '</button>';
+    });
+    h += '</div>' +
+      '<p class="xpick-q">Способность</p><div class="xpick-row xpick-abils" id="xAbils">' +
+      abilsHtml(a) + '</div>';
 
     // Кнопкой, а не ссылкой: «не могу выбрать» — такой же полноценный ответ,
     // как выбор способности, и самый ценный из трёх. Подчёркнутой ссылкой
     // мелким кеглем он читается как отказ от задания и подталкивает угадывать.
-    h += '<button type="button" class="btn btn-ghost btn-sm xunsure' + (a.unsure ? ' is-on' : '') +
-      '" id="xUnsure">' + (a.unsure ? '✓ не могу выбрать ни одну' : 'не могу выбрать ни одну') + '</button>';
-
-    if (a.ability) {
-      h += '<div class="xsecond"><label for="xSecond">Подходит ещё и…</label>' +
-        '<select id="xSecond"><option value="">— нет, только одна</option>';
-      ABILITIES.forEach(function (ab) {
-        if (ab.code === a.ability) return;
-        h += '<option value="' + esc(ab.code) + '"' + (a.second === ab.code ? ' selected' : '') + '>' +
-          esc(SKILL_BY_CODE[ab.code.slice(0, 2)].name) + ' · ' + esc(ab.name) + '</option>';
-      });
-      h += '</select></div>';
-    }
-
-    h += '<details class="xnote-box"' + (a.note ? ' open' : '') + '><summary>Заметка о формулировке</summary>' +
+    // Три второстепенных ответа стоят одной строкой, а не тремя блоками: по
+    // отдельности они съедали 130px высоты и утаскивали «дальше» под сгиб
+    // экрана. Слот второго выбора при этом никуда не исчезает — до выбора
+    // способности он просто выключен: появляющийся элемент двигал бы кнопку
+    // ровно в тот момент, когда к ней тянется рука.
+    h += '<div class="xextras">' +
+      '<button type="button" class="btn btn-ghost btn-sm xunsure' + (a.unsure ? ' is-on' : '') +
+      '" id="xUnsure">' + (a.unsure ? '✓ не могу выбрать ни одну' : 'не могу выбрать ни одну') + '</button>' +
+      '<span class="xsecond"><label for="xSecond">подходит ещё и</label>' +
+      '<select id="xSecond"' + (a.ability ? '' : ' disabled') + '>' + secondHtml(a) + '</select></span>' +
+      '</div>' +
+      '<details class="xnote-box"' + (a.note ? ' open' : '') + '><summary>Заметка о формулировке</summary>' +
       '<textarea id="xNote" rows="3" placeholder="Что мешает прочитать это описание?">' + esc(a.note || '') + '</textarea></details>';
 
     h += '</div><div class="xnav">' +
@@ -402,41 +407,96 @@
       '<button type="button" class="btn btn-primary" id="xNext"' +
       ((a.ability || a.unsure) ? '' : ' disabled') + '>' +
       (i === deck.length - 1 ? 'Завершить блок →' : 'дальше →') + '</button>' +
-      '</div></div>';
+      '</div>' + refHtml() + '</div>';
     return h;
   };
+
+  // Две способности выбранного навыка — или заглушка той же высоты, пока навык
+  // не выбран. Заглушка здесь не украшение: без неё блок схлопывается в ноль.
+  function abilsHtml(a) {
+    if (!a.skill) {
+      return '<p class="xabils-empty">Сначала выберите навык — здесь появятся две его способности.</p>';
+    }
+    var out = '';
+    SKILL_BY_CODE[a.skill].abilities.forEach(function (ab) {
+      out += '<button type="button" class="xopt' + (a.ability === ab.code ? ' is-on' : '') +
+        '" data-ability="' + esc(ab.code) + '">' +
+        '<b>' + esc(ab.name) + '</b><span>' + esc(ab.def) + '</span></button>';
+    });
+    return out;
+  }
+
+  function secondHtml(a) {
+    var out = '<option value="">— нет, только одна</option>';
+    ABILITIES.forEach(function (ab) {
+      if (ab.code === a.ability) return;
+      out += '<option value="' + esc(ab.code) + '"' + (a.second === ab.code ? ' selected' : '') + '>' +
+        esc(SKILL_BY_CODE[ab.code.slice(0, 2)].name) + ' · ' + esc(ab.name) + '</option>';
+    });
+    return out;
+  }
+
   screens.attr.after = function () {
     var i = Math.max(0, Math.min(S.at.i, deck.length - 1));
     var id = deck[i];
-    var a = S.attr[id] || {};
     var shownAt = Date.now();
 
+    function cur() { return S.attr[id] || (S.attr[id] = { ms: 0 }); }
+
     function put(patch) {
-      var cur = S.attr[id] || { ms: 0 };
+      var c = cur();
       // Время на карточку копится, а не перезаписывается: эксперт может
       // вернуться, и «сколько он на это смотрел» — сумма заходов.
-      cur.ms = (cur.ms || 0) + (Date.now() - shownAt);
-      cur.at = new Date().toISOString();
-      Object.keys(patch).forEach(function (k) { cur[k] = patch[k]; });
-      S.attr[id] = cur;
+      c.ms = (c.ms || 0) + (Date.now() - shownAt);
+      shownAt = Date.now();
+      c.at = new Date().toISOString();
+      Object.keys(patch).forEach(function (k) { c[k] = patch[k]; });
       save();
-      render();
+      paint();
+    }
+
+    // Перерисовывается ТОЛЬКО то, что изменилось. Полный render() здесь и был
+    // источником рывка: он пересобирал разметку целиком, сбрасывал прокрутку
+    // наверх и на мгновение показывал экран без ряда кнопок.
+    function paint() {
+      var a = cur();
+      Array.prototype.forEach.call($('xSkills').children, function (b) {
+        b.classList.toggle('is-on', a.skill === b.dataset.skill);
+      });
+      $('xAbils').innerHTML = abilsHtml(a);
+      bindAbils();
+      var sel = $('xSecond');
+      sel.disabled = !a.ability;
+      sel.innerHTML = secondHtml(a);
+      var u = $('xUnsure');
+      u.classList.toggle('is-on', !!a.unsure);
+      u.textContent = a.unsure ? '✓ не могу выбрать ни одну' : 'не могу выбрать ни одну';
+      $('xNext').disabled = !(a.ability || a.unsure);
+    }
+
+    function bindAbils() {
+      Array.prototype.forEach.call(document.querySelectorAll('[data-ability]'), function (b) {
+        b.onclick = function () { put({ ability: b.dataset.ability, unsure: false }); };
+      });
     }
 
     Array.prototype.forEach.call(document.querySelectorAll('[data-skill]'), function (b) {
-      b.onclick = function () { put({ skill: b.dataset.skill, ability: '', unsure: false }); };
+      b.onclick = function () {
+        var a = cur();
+        // Повторный щелчок по выбранному навыку снимает выбор: иначе передумать
+        // можно было только выбрав другой навык, а «я ошибся навыком, дайте
+        // подумать заново» — законное состояние.
+        if (a.skill === b.dataset.skill) put({ skill: '', ability: '', second: '' });
+        else put({ skill: b.dataset.skill, ability: '', second: '', unsure: false });
+      };
     });
-    Array.prototype.forEach.call(document.querySelectorAll('[data-ability]'), function (b) {
-      b.onclick = function () { put({ ability: b.dataset.ability, unsure: false }); };
-    });
-    if ($('xBackSkill')) $('xBackSkill').onclick = function () { put({ skill: '', ability: '', second: '' }); };
+    bindAbils();
     $('xUnsure').onclick = function () {
+      var a = cur();
       put(a.unsure ? { unsure: false } : { unsure: true, skill: '', ability: '', second: '' });
     };
-    if ($('xSecond')) $('xSecond').onchange = function () { put({ second: $('xSecond').value }); };
-    if ($('xNote')) $('xNote').oninput = function () {
-      var cur = S.attr[id] || {}; cur.note = $('xNote').value; S.attr[id] = cur; save();
-    };
+    $('xSecond').onchange = function () { put({ second: $('xSecond').value }); };
+    $('xNote').oninput = function () { cur().note = $('xNote').value; save(); };
 
     $('xPrev').onclick = function () { if (i > 0) go('attr', i - 1); };
     $('xNext').onclick = function () {
