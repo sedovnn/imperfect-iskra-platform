@@ -30,16 +30,22 @@
 // достижение, достижение — превышение над длиной.
 
 (function () {
-  var C = window.IMP_EXPERT_CORPUS;
   var $ = function (id) { return document.getElementById(id); };
 
-  var ABILITIES = [];
-  C.skills.forEach(function (s) { s.abilities.forEach(function (a) { ABILITIES.push(a); }); });
-  var CODES = ABILITIES.map(function (a) { return a.code; });
-  var ABILITY_BY_CODE = {};
-  ABILITIES.forEach(function (a) { ABILITY_BY_CODE[a.code] = a; });
-  var CARD_BY_ID = {};
-  C.cards.forEach(function (c) { CARD_BY_ID[c.id] = c; });
+  // Корпус приходит расшифрованным из js/expert-lock.js: сводка знает те же
+  // пятьдесят описаний, что и эксперт, и запирается тем же паролем.
+  var C = null, ABILITIES = null, CODES = null, ABILITY_BY_CODE = null, CARD_BY_ID = null;
+
+  function indexCorpus(corpus) {
+    C = corpus;
+    ABILITIES = [];
+    C.skills.forEach(function (s) { s.abilities.forEach(function (a) { ABILITIES.push(a); }); });
+    CODES = ABILITIES.map(function (a) { return a.code; });
+    ABILITY_BY_CODE = {};
+    ABILITIES.forEach(function (a) { ABILITY_BY_CODE[a.code] = a; });
+    CARD_BY_ID = {};
+    C.cards.forEach(function (c) { CARD_BY_ID[c.id] = c; });
+  }
 
   var PSA_MIN = 0.75;
   var experts = [];
@@ -464,7 +470,11 @@
     });
   }
 
-  document.addEventListener('DOMContentLoaded', function () {
+  function boot(corpus) {
+    indexCorpus(corpus);
+    document.getElementById('rGate').style.display = 'none';
+    document.getElementById('rBody').style.display = '';
+
     $('rFiles').addEventListener('change', function () { readFiles(this.files); });
 
     var drop = $('rDrop');
@@ -494,10 +504,10 @@
     // театром — файл всё равно отдаётся статикой целиком.
     $('rPull').addEventListener('click', function () {
       var pw = ($('rPass').value || '').trim();
-      if (!pw || !window.imp || !window.imp.callApi) return;
+      if (!pw || !window.imp || !window.imp.listExperts) return;
       var btn = $('rPull');
       btn.disabled = true; btn.textContent = 'Читаю…';
-      window.imp.callApi('loadExperts', { password: pw, corpus: C.version }).then(function (res) {
+      window.imp.listExperts(pw, C.version).then(function (res) {
         btn.disabled = false; btn.textContent = 'Забрать с сервера';
         if (!res || !res.ok || !res.experts) {
           $('rErr').textContent = res && res.error ? res.error : 'Сервер не ответил или пароль не принят.';
@@ -510,5 +520,14 @@
     });
 
     render();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    window.imp.expertLock($('rGate'), {
+      title: 'Сводка валидации',
+      lead: 'Тот же пароль, что у экспертов: им зашифрованы описания, а без них ' +
+        'сводка не знает, какой ответ верный.',
+      onOpen: boot
+    });
   });
 })();

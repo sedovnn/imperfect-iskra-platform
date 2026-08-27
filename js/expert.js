@@ -32,29 +32,23 @@
 // когда он вернулся на другом устройстве.
 
 (function () {
-  var C = window.IMP_EXPERT_CORPUS;
   var $ = function (id) { return document.getElementById(id); };
 
-  if (!C || !C.cards || C.cards.length !== 50) {
-    document.addEventListener('DOMContentLoaded', function () {
-      var b = document.body;
-      b.innerHTML = '<div class="gate"><div class="gate-card">' +
-        '<h2>Корпус не загружен</h2>' +
-        '<p class="section-lead">Нет <code>js/expert-corpus.js</code> или в нём не 50 карточек. ' +
-        'Собрать: <code>node tools/build-expert-corpus.js &lt;методология.md&gt;</code>.</p>' +
-        '</div></div>';
-    });
-    return;
-  }
+  // Корпус приходит РАСШИФРОВАННЫМ из js/expert-lock.js, а не лежит в глобальной
+  // переменной с загрузки страницы: до пароля его нет ни в каком виде.
+  var C = null, ABILITIES = null, ABILITY_BY_CODE = null, SKILL_BY_CODE = null, CARD_BY_ID = null;
 
-  var ABILITIES = [];
-  C.skills.forEach(function (s) { s.abilities.forEach(function (a) { ABILITIES.push(a); }); });
-  var ABILITY_BY_CODE = {};
-  ABILITIES.forEach(function (a) { ABILITY_BY_CODE[a.code] = a; });
-  var SKILL_BY_CODE = {};
-  C.skills.forEach(function (s) { SKILL_BY_CODE[s.code] = s; });
-  var CARD_BY_ID = {};
-  C.cards.forEach(function (c) { CARD_BY_ID[c.id] = c; });
+  function indexCorpus(corpus) {
+    C = corpus;
+    ABILITIES = [];
+    C.skills.forEach(function (s) { s.abilities.forEach(function (a) { ABILITIES.push(a); }); });
+    ABILITY_BY_CODE = {};
+    ABILITIES.forEach(function (a) { ABILITY_BY_CODE[a.code] = a; });
+    SKILL_BY_CODE = {};
+    C.skills.forEach(function (s) { SKILL_BY_CODE[s.code] = s; });
+    CARD_BY_ID = {};
+    C.cards.forEach(function (c) { CARD_BY_ID[c.id] = c; });
+  }
 
   // ------------------------------------------------------------ состояние
 
@@ -62,12 +56,29 @@
   var S = null;
   var KEY = function (id) { return 'imp_expert_' + id; };
 
+  // Трёхзначный номер: его диктуют голосом и переписывают в блокнот, поэтому он
+  // короткий. Занятые в этом браузере пропускаем — на одном компьютере два
+  // эксперта иногда проходят подряд.
+  //
+  // ⚠ ЧЕСТНО ПРО ВЕРОЯТНОСТЬ. Номеров всего 900. На двенадцати экспертах
+  // вероятность, что двое получат один и тот же, — около 7%: браузеры друг о
+  // друге не знают. Совпадение означает, что второй пишет поверх первого.
+  // Поэтому сводка сверяет имя: два разных имени под одним номером она называет
+  // явно, а не усредняет молча. Если 7% много — числа четырёхзначные снижают
+  // это до 0.7%, правка на один символ ниже.
   function newId() {
-    // Не Math.random(): нужен id, который переживёт перезагрузку и который
-    // можно продиктовать голосом, если эксперт пересел за другой компьютер.
-    var t = Date.now().toString(36);
-    var r = Math.floor(Math.random() * 1679616).toString(36);
-    return (t + '-' + ('00000' + r).slice(-4)).toUpperCase();
+    var taken = {};
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf('imp_expert_') === 0) taken[k.slice('imp_expert_'.length)] = true;
+      }
+    } catch (e) {}
+    for (var n = 0; n < 200; n++) {
+      var v = String(100 + Math.floor(Math.random() * 900));
+      if (!taken[v]) return v;
+    }
+    return String(100 + Math.floor(Math.random() * 900));
   }
 
   function blank(id) {
@@ -100,17 +111,16 @@
   function save(now) {
     if (!S) return;
     try { localStorage.setItem(KEY(S.id), JSON.stringify(S)); } catch (e) {}
+    try { localStorage.setItem('imp_expert_last', S.id); } catch (e) {}
     if (saveTimer) clearTimeout(saveTimer);
     if (now) { push(); return; }
     saveTimer = setTimeout(push, 1500);
   }
 
   function push() {
-    if (!window.imp || !window.imp.callApi) return;
-    // key вместо bib: очередь повторной отправки в js/api.js держит на
-    // action+идентификатор одну последнюю запись. Без своего идентификатора
-    // все сохранения эксперта схлопнулись бы в одно.
-    window.imp.callApi('saveExpert', { key: S.id, expert: S });
+    // Свой клиент к своему бэкенду (js/expert-api.js). Скрипт ассессмента эта
+    // страница не трогает: там другие данные, другой объём и другой срок жизни.
+    if (window.imp && window.imp.saveExpert) window.imp.saveExpert(S.id, S);
   }
 
   // ------------------------------------------------- воспроизводимый порядок
@@ -252,8 +262,12 @@
       'Задача: определить, к какой способности относится каждое и как они выстраиваются от низшего ' +
       'к высшему. Правильные ответы у нас есть; смысл в том, чтобы понять, читается ли это ' +
       'так же кем-то, кроме авторов.</p>' +
-      '<p class="section-lead">Займёт около часа. Прерваться можно в любой момент — на этом ' +
-      'устройстве всё сохраняется, вернётесь по той же ссылке.</p>' +
+      '<p class="section-lead">Займёт около часа. Прерваться можно в любой момент.</p>' +
+      // Номер показывается ДО работы, а не только на финише: закрыть вкладку
+      // можно на любой карточке, и узнать номер к тому моменту будет негде.
+      '<p class="xbadge">Ваш номер <b>' + esc(S.id) + '</b></p>' +
+      '<p class="xnote">Запишите его. По нему вы вернётесь к своему разбору — с этого ' +
+      'компьютера просто откройте ту же ссылку, с другого понадобится номер.</p>' +
       '<div class="xgrid2">' +
       '<div class="field"><label for="xFirst">Имя</label><input id="xFirst" autocomplete="given-name" /></div>' +
       '<div class="field"><label for="xLast">Фамилия</label><input id="xLast" autocomplete="family-name" /></div>' +
@@ -772,8 +786,10 @@
   // --- финиш ----------------------------------------------------------------
 
   screens.done = function () {
-    var st = (window.imp && window.imp.syncStatus) ? window.imp.syncStatus() : { failed: 0 };
-    var unsent = st.failed > 0 || !(window.imp && window.imp.isApiConfigured && window.imp.isApiConfigured());
+    var configured = window.imp && window.imp.expertApiConfigured && window.imp.expertApiConfigured();
+    var queued = 0;
+    try { queued = (JSON.parse(localStorage.getItem('imp_expert_queue') || '[]') || []).length; } catch (e) {}
+    var unsent = !configured || queued > 0;
     return '<div class="xnarrow"><p class="kicker">Готово</p>' +
       '<h1>Спасибо</h1>' +
       '<p class="section-lead">Ваши ответы записаны. Мы намеренно не показываем, где ваш разбор ' +
@@ -781,7 +797,7 @@
       'подготовленным, и замер сломается.</p>' +
       '<p class="section-lead">Что дальше: когда ответы соберутся со всех, мы сведём их вместе — ' +
       'нас интересуют описания, которые расходятся у большинства. Их мы перепишем.</p>' +
-      '<p class="xnote">Ваш номер: <b>' + esc(S.id) + '</b></p>' +
+      '<p class="xbadge">Ваш номер <b>' + esc(S.id) + '</b></p>' +
       (unsent
         ? '<p class="xwarn">Отправка на сервер не подтверждена — ответы сохранены только в этом ' +
           'браузере. Скачайте файл и пришлите его нам, чтобы работа не пропала.</p>' +
@@ -803,32 +819,98 @@
 
   // ------------------------------------------------------------------ запуск
 
-  document.addEventListener('DOMContentLoaded', function () {
-    host = $('xHost');
-
-    // id живёт в адресе, а не только в localStorage: эксперт, пересевший за
-    // другой компьютер, продолжает по той же ссылке, а не начинает заново.
-    var params = new URLSearchParams(location.search);
-    var id = params.get('e') || localStorage.getItem('imp_expert_last') || '';
-    if (!id) id = newId();
-
+  function begin(id) {
     S = load(id) || blank(id);
-    localStorage.setItem('imp_expert_last', id);
-    if (!params.get('e')) {
-      history.replaceState(null, '', location.pathname + '?e=' + encodeURIComponent(id));
-    }
-
+    try { localStorage.setItem('imp_expert_last', id); } catch (e) {}
+    // Номер живёт в адресе: закладка на эту ссылку возвращает эксперта в свой
+    // разбор, а не в чужой и не в новый.
+    history.replaceState(null, '', location.pathname + '?e=' + encodeURIComponent(id));
     buildDecks();
     save();
+    render();
+  }
+
+  function boot(corpus) {
+    indexCorpus(corpus);
+    host = $('xHost');
 
     var status = $('xSync');
-    if (status && window.imp && window.imp.onSyncStatus) {
-      window.imp.onSyncStatus(function (s) {
-        status.textContent = s.failed ? 'не отправлено: ' + s.failed
-          : (s.pending ? 'сохраняю…' : (s.lastOkAt ? 'сохранено' : ''));
+    if (status && window.imp && window.imp.onExpertSync) {
+      window.imp.onExpertSync(function (s) {
+        status.textContent = !s.configured ? ''
+          : (s.failed ? 'не отправлено: ' + s.failed
+            : (s.pending ? 'сохраняю…' : (s.lastOkAt ? 'сохранено' : '')));
       });
     }
 
-    render();
+    var params = new URLSearchParams(location.search);
+    var asked = (params.get('e') || '').trim();
+    var last = '';
+    try { last = localStorage.getItem('imp_expert_last') || ''; } catch (e) {}
+    var id = asked || last;
+
+    if (!id) { begin(newId()); return; }
+    if (load(id)) { begin(id); return; }
+
+    // Номер есть, а записи в этом браузере нет — эксперт пересел за другой
+    // компьютер. Спрашиваем бэкенд; если его нет или номер там неизвестен,
+    // молча начинать заново нельзя: человек считает, что продолжает.
+    host.innerHTML = '<div class="xnarrow"><p class="section-lead">Ищу разбор №' + esc(id) + '…</p></div>';
+    var lookup = (window.imp && window.imp.loadExpert)
+      ? window.imp.loadExpert(id) : Promise.resolve(null);
+    lookup.then(function (found) {
+      if (found && found.corpus === C.version) {
+        try { localStorage.setItem(KEY(id), JSON.stringify(found)); } catch (e) {}
+        var name = ((found.who && found.who.first) || '') + ' ' + ((found.who && found.who.last) || '');
+        // ⚠ ЧЬЁ ЭТО. Номеров всего 900, и двое экспертов могут получить один и
+        // тот же — браузеры друг о друге не знают. Молча открыть чужой разбор
+        // значит дать одному писать поверх другого, и заметят это только в
+        // сводке, где под одним номером окажутся два разных человека. Поэтому
+        // имя показывается до продолжения.
+        if (name.trim()) {
+          host.innerHTML = '<div class="xnarrow"><p class="kicker">Разбор №' + esc(id) + '</p>' +
+            '<h2>Продолжаем разбор: ' + esc(name.trim()) + '</h2>' +
+            '<p class="section-lead">Отвечено карточек: ' + Object.keys(found.attr || {}).length + ' из 50.</p>' +
+            '<div class="xextras"><button class="btn btn-primary" id="xMine">Это я, продолжить →</button>' +
+            '<button class="btn btn-ghost btn-sm" id="xNotMine">Это не я</button></div></div>';
+          $('xMine').onclick = function () { begin(id); };
+          $('xNotMine').onclick = function () {
+            try { localStorage.removeItem(KEY(id)); } catch (e) {}
+            begin(newId());
+          };
+          return;
+        }
+        begin(id);
+        return;
+      }
+      var fresh = newId();
+      host.innerHTML = '<div class="xnarrow">' +
+        '<p class="kicker">Номер не найден</p><h2>Разбора №' + esc(id) + ' здесь нет</h2>' +
+        '<p class="section-lead">' + (found ? 'Он относится к другой версии описаний и продолжен быть не может.'
+          : 'Либо номер записан с ошибкой, либо разбор начинали на другом компьютере, а ответы ' +
+            'сохранились только там. Проверьте номер — или начните заново, получив новый.') + '</p>' +
+        '<div class="xgrid2">' +
+        '<div class="field"><label for="xTry">Ввести номер ещё раз</label>' +
+        '<input id="xTry" inputmode="numeric" maxlength="4" value="' + esc(id) + '" /></div></div>' +
+        '<div class="xextras"><button class="btn btn-primary" id="xTryGo">Продолжить →</button>' +
+        '<button class="btn btn-ghost btn-sm" id="xFresh">Начать заново, номер ' + esc(fresh) + '</button></div>' +
+        '</div>';
+      $('xTryGo').onclick = function () {
+        var v = ($('xTry').value || '').trim();
+        if (!v) return;
+        location.search = '?e=' + encodeURIComponent(v);
+      };
+      $('xFresh').onclick = function () { begin(fresh); };
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    window.imp.expertLock($('xHost'), {
+      title: 'Разбор описаний уровней',
+      lead: 'Пароль вам прислали вместе со ссылкой. Он же открывает описания: ' +
+        'без него они на сервере не хранятся в читаемом виде.',
+      hint: 'Если пароль не подходит, напишите нам — возможно, описания пересобрали, и пароль сменился.',
+      onOpen: boot
+    });
   });
 })();

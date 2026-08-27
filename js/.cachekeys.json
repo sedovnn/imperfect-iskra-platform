@@ -6,9 +6,7 @@
    "cabinet.html": 6,
    "harness.html": 6,
    "index.html": 6,
-   "vitrina.html": 6,
-   "expert.html": 6,
-   "expert-report.html": 6
+   "vitrina.html": 6
   }
  },
  "js/backlog.js": {
@@ -127,19 +125,33 @@
   }
  },
  "js/expert.js": {
-  "sha": "45cb12dac03e",
+  "sha": "b7dae2f6cb58",
   "keys": {
-   "expert.html": 2
+   "expert.html": 3
   }
  },
  "js/expert-report.js": {
-  "sha": "2d33982a5cd4",
+  "sha": "308c7f448a8b",
   "keys": {
-   "expert-report.html": 1
+   "expert-report.html": 2
   }
  },
  "js/expert-corpus.js": {
-  "sha": "(генерируется)",
+  "sha": "(шифротекст, меняется при каждой сборке)",
+  "keys": {
+   "expert.html": 2,
+   "expert-report.html": 2
+  }
+ },
+ "js/expert-api.js": {
+  "sha": "de71bed14fe3",
+  "keys": {
+   "expert.html": 1,
+   "expert-report.html": 1
+  }
+ },
+ "js/expert-lock.js": {
+  "sha": "1aad89d590b3",
   "keys": {
    "expert.html": 1,
    "expert-report.html": 1

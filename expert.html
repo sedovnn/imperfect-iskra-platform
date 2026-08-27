@@ -13,7 +13,7 @@
 <!-- ШРИФТ ГРУЗИТСЯ НЕБЛОКИРУЮЩЕ — см. пояснение в cabinet.html. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=228" />
+<link rel="stylesheet" href="css/styles.css?v=229" />
 </head>
 <body class="p-expert">
 
@@ -32,7 +32,10 @@
     <!-- Весь экран рисуется из js/expert.js: пятьдесят карточек, десять
          раскладок и карта модели — это один поток с общим состоянием, и
          разложенный по разметке он разошёлся бы с состоянием при первой же
-         правке. Здесь только оболочка. -->
+         правке. Здесь только оболочка.
+         Первым в неё рисует js/expert-lock.js — окно пароля. Пока пароль не
+         введён, описаний на странице нет ни в каком виде: они лежат в
+         js/expert-corpus.js зашифрованными, и пароль от них ключ, а не пропуск. -->
     <main id="xHost" class="xhost">
       <div class="xnarrow"><p class="section-lead">Загружаю…</p></div>
     </main>
@@ -40,9 +43,10 @@
   </div>
 </div>
 
-<script src="js/api.js?v=6"></script>
+<script src="js/expert-api.js?v=1"></script>
+<script src="js/expert-lock.js?v=1"></script>
 <script src="js/typo.js?v=2"></script>
-<script src="js/expert-corpus.js?v=1"></script>
-<script src="js/expert.js?v=2"></script>
+<script src="js/expert-corpus.js?v=2"></script>
+<script src="js/expert.js?v=3"></script>
 </body>
 </html>

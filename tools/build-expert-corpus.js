@@ -39,8 +39,11 @@ var path = require('path');
 // ---------------------------------------------------------------- аргументы
 
 var srcPath = process.argv[2];
-if (!srcPath) {
-  console.error('Использование: node tools/build-expert-corpus.js <путь к 01_methodology_vNN.md>');
+var PASSWORD = process.argv[3] || process.env.EXPERT_PASS || '';
+if (!srcPath || !PASSWORD) {
+  console.error('Использование: node tools/build-expert-corpus.js <путь к методологии.md> <пароль>');
+  console.error('  Пароль — тот, что выдаётся экспертам. Им же корпус ШИФРУЕТСЯ:');
+  console.error('  на сервере не лежит читаемая рубрика, а в исходнике страницы нет пароля.');
   process.exit(2);
 }
 if (!fs.existsSync(srcPath)) {
@@ -373,18 +376,68 @@ var corpus = {
   excluded: { metaskills: metaskills, toolsNote: toolsNote }
 };
 
+// ---------------------------------------------------------------- шифрование
+//
+// Корпус кладётся на сервер ЗАШИФРОВАННЫМ. Причина не в паранойе: это рубрика,
+// по которой ставится уровень, и участник ассессмента, прочитавший её до кейса,
+// ломает замер. Пароль на клиенте, сверяемый строкой в коде, от этого не
+// защищает никак — исходник страницы открывается в два клика, а сам файл
+// корпуса просто скачивается по прямому адресу.
+//
+// Здесь пароль работает КЛЮЧОМ, а не пропуском: в коде его нет вообще, на
+// сервере лежит шифротекст, и без пароля он не значит ничего. Побочно это
+// снимает и запрет на коммит: зашифрованный корпус можно класть в публичный
+// репозиторий и публиковать обычным способом.
+//
+// PBKDF2-SHA256, 250 000 итераций → AES-256-GCM. GCM выбран ради проверки
+// целостности: неверный пароль даёт ошибку расшифровки, а не мусор, который
+// страница попыталась бы показать эксперту.
+var crypto = require('crypto');
+
+var salt = crypto.randomBytes(16);
+var iv = crypto.randomBytes(12);
+var ITER = 250000;
+var key = crypto.pbkdf2Sync(Buffer.from(PASSWORD, 'utf8'), salt, ITER, 32, 'sha256');
+var cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+var plain = Buffer.from(JSON.stringify(corpus), 'utf8');
+var ct = Buffer.concat([cipher.update(plain), cipher.final(), cipher.getAuthTag()]);
+
+var sealed = {
+  v: 1,
+  version: corpus.version,        // открыто: страница сверяет версию до входа
+  builtFrom: srcName,
+  iter: ITER,
+  salt: salt.toString('base64'),
+  iv: iv.toString('base64'),
+  ct: ct.toString('base64')
+};
+
 var outPath = path.join(__dirname, '..', 'js', 'expert-corpus.js');
-var head = '/* СГЕНЕРИРОВАНО tools/build-expert-corpus.js из ' + srcName + '. Руками не править:\n' +
-  '   правка здесь разойдётся с методологией молча. Менять — в методологии,\n' +
-  '   затем пересобрать. Файл в .gitignore: это рубрика скоринга, и на публичном\n' +
-  '   сайте её выкладывать нельзя — участник, прочитавший её до кейса, ломает замер. */\n';
-fs.writeFileSync(outPath, head + 'window.IMP_EXPERT_CORPUS = ' + JSON.stringify(corpus, null, 2) + ';\n', 'utf8');
+var head = '/* СГЕНЕРИРОВАНО tools/build-expert-corpus.js из ' + srcName + '.\n' +
+  '   Внутри — 50 описаний уровней, ЗАШИФРОВАННЫЕ паролем эксперта (AES-256-GCM,\n' +
+  '   ключ из пароля через PBKDF2). Без пароля файл не значит ничего, поэтому его\n' +
+  '   можно и коммитить, и публиковать. Руками не править: правка разойдётся с\n' +
+  '   методологией молча. Менять — в методологии, затем пересобрать. */\n';
+fs.writeFileSync(outPath, head + 'window.IMP_EXPERT_SEALED = ' + JSON.stringify(sealed, null, 2) + ';\n', 'utf8');
+
+// Проверяем расшифровку прямо здесь: молча записать нечитаемый файл — худший
+// исход, потому что обнаружится он на эксперте, а не на сборке.
+(function () {
+  var k2 = crypto.pbkdf2Sync(Buffer.from(PASSWORD, 'utf8'), salt, ITER, 32, 'sha256');
+  var d = crypto.createDecipheriv('aes-256-gcm', k2, iv);
+  d.setAuthTag(ct.slice(ct.length - 16));
+  var out = Buffer.concat([d.update(ct.slice(0, ct.length - 16)), d.final()]);
+  var back = JSON.parse(out.toString('utf8'));
+  if (back.cards.length !== 50) throw new Error('обратная расшифровка дала ' + back.cards.length + ' карточек');
+})();
 
 // ------------------------------------------------------------------ отчёт
 
 var lens = cards.map(function (c) { return c.len; }).sort(function (a, b) { return a - b; });
 console.log('✓ Корпус собран: ' + outPath);
 console.log('  версия           ' + CORPUS_VERSION + '  (из ' + srcName + ')');
+console.log('  пароль           ' + PASSWORD + '  — им зашифровано, его же выдавать экспертам');
+console.log('                   сменить пароль = пересобрать; старая ссылка перестанет открываться');
 console.log('  карточек         ' + cards.length + '  (10 способностей × 5 уровней)');
 console.log('  длина карточки   мин ' + lens[0] + ', медиана ' + lens[25] + ', макс ' + lens[49] + ' знаков');
 console.log('  вычищено         ' + scrubLog.levels + ' ссылок на номер уровня, ' +

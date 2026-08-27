@@ -4547,3 +4547,17 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .xr-dim { color: var(--muted-soft); }
 .xwide-report h2 { margin-top: 40px; }
 .xwide-report h3 { margin-top: 24px; }
+
+/* Окно пароля и номер эксперта. */
+.xgate { padding-top: 8px; }
+.xgate .field { max-width: 280px; }
+/* Номер — не служебная подпись, а то, что человек должен ПЕРЕПИСАТЬ себе.
+   Мелким серым он терялся между абзацами, и на финише выяснялось, что никто
+   его не записал. */
+.xbadge {
+  display: inline-block; margin: 4px 0 6px;
+  background: var(--accent-tint); border: 1px solid var(--accent-line);
+  border-radius: var(--radius); padding: 10px 16px;
+  font-size: var(--fs-read); color: var(--accent-ink);
+}
+.xbadge b { font-size: var(--fs-place); font-weight: 800; letter-spacing: 0.02em; }
