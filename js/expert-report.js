@@ -525,8 +525,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     window.imp.expertLock($('rGate'), {
       title: 'Сводка валидации',
-      lead: 'Тот же пароль, что у экспертов: им зашифрованы описания, а без них ' +
-        'сводка не знает, какой ответ верный.',
+      lead: 'Тот же пароль, что у экспертов.',
       onOpen: boot
     });
   });
