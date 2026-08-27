@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Сводка валидации — i(m)perfect · «Искра»</title>
+<meta name="description" content="Сводка экспертной валидации методологии: согласие, матрица путаницы, лестница уровней." />
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/styles.css?v=227" />
+</head>
+<body class="p-expert">
+
+<div class="frame station-frame">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      </div>
+      <div class="station-header-right">
+        <span class="cab-status" id="rCount"></span>
+      </div>
+    </header>
+
+    <main class="xhost">
+      <div class="xwide-report">
+        <p class="kicker">Валидация методологии</p>
+        <h1>Сводка</h1>
+
+        <!-- Два пути загрузки, и оба нужны. Файлы работают уже сегодня: пока
+             бэкенд не принимает saveExpert, эксперт скачивает свой ответ на
+             финише и присылает его. Кнопка сервера — тот же пароль, что у
+             кабинета: он уходит на бэкенд, и ответы приходят только если принят.
+             Проверять пароль на клиенте здесь было бы театром — статика
+             отдаётся целиком любому, кто знает адрес. -->
+        <div class="xr-load" id="rDrop">
+          <label class="btn btn-primary" for="rFiles">Загрузить файлы ответов</label>
+          <input type="file" id="rFiles" accept="application/json,.json" multiple hidden />
+          <span class="xr-or">или перетащите их сюда</span>
+          <button type="button" class="btn btn-ghost btn-sm" id="rLocal">Ответы из этого браузера</button>
+          <span class="xr-sep"></span>
+          <input type="password" id="rPass" class="xr-pass" placeholder="пароль кабинета" autocomplete="current-password" />
+          <button type="button" class="btn btn-ghost btn-sm" id="rPull">Забрать с сервера</button>
+        </div>
+        <p class="field-err" id="rErr" style="display:none;"></p>
+      </div>
+
+      <div id="rHost"></div>
+    </main>
+
+  </div>
+</div>
+
+<script src="js/api.js?v=6"></script>
+<script src="js/typo.js?v=2"></script>
+<script src="js/expert-corpus.js?v=1"></script>
+<script src="js/expert-report.js?v=1"></script>
+</body>
+</html>

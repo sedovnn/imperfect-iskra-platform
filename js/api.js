@@ -58,13 +58,25 @@
   // В очередь попадают только сохранения (save*): повторить их безопасно —
   // бэкенд пишет строку по bib (upsert), дубликата не возникнет. Чтения (load*)
   // не копим: они и так повторятся при следующей загрузке страницы.
+  // Чей это снимок. У участника идентификатор — номер (bib), у эксперта в
+  // expert.html — свой key: страница одна, а сохранений у неё пятьдесят с
+  // лишним. Раньше здесь стояло payload.bib напрямую, и для полезной нагрузки
+  // без bib сравнение undefined === undefined схлопывало в очереди ВСЕ
+  // сохранения этого действия в одно: при обрыве связи до сервера доезжал бы
+  // только последний снимок. Идентификатор поэтому спрашивается функцией, а
+  // не читается полем.
+  function idOf(payload) {
+    if (!payload) return '';
+    return payload.bib || payload.key || '';
+  }
+
   function enqueue(action, payload) {
     if (!/^save/.test(action)) return;
     var q = readQueue();
-    // на один action+bib держим только последнее состояние — очередь не растёт
-    // при каждом нажатии клавиши, а хранит актуальный снимок
-    var bib = payload && payload.bib;
-    q = q.filter(function (it) { return !(it.action === action && it.payload && it.payload.bib === bib); });
+    // на один action+идентификатор держим только последнее состояние — очередь
+    // не растёт при каждом нажатии клавиши, а хранит актуальный снимок
+    var id = idOf(payload);
+    q = q.filter(function (it) { return !(it.action === action && it.payload && idOf(it.payload) === id); });
     q.push({ action: action, payload: payload, at: Date.now() });
     writeQueue(q);
   }
@@ -184,7 +196,7 @@
       });
     }
 
-    var key = action + '|' + (payload && payload.bib);
+    var key = action + '|' + idOf(payload);
     var run = function () { return sendSave(action, payload); };
     // и на успехе, и на ошибке предыдущего — следующий всё равно отправляем
     var chained = (saveChains[key] || Promise.resolve()).then(run, run);

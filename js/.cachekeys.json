@@ -1,12 +1,14 @@
 {
  "js/api.js": {
-  "sha": "1fe04ab44e12",
+  "sha": "5c2caa6fdd20",
   "keys": {
-   "assessment.html": 5,
-   "cabinet.html": 5,
-   "harness.html": 5,
-   "index.html": 5,
-   "vitrina.html": 5
+   "assessment.html": 6,
+   "cabinet.html": 6,
+   "harness.html": 6,
+   "index.html": 6,
+   "vitrina.html": 6,
+   "expert.html": 6,
+   "expert-report.html": 6
   }
  },
  "js/backlog.js": {
@@ -119,7 +121,28 @@
    "index.html": 2,
    "intro.html": 2,
    "role.html": 2,
-   "vitrina.html": 2
+   "vitrina.html": 2,
+   "expert.html": 2,
+   "expert-report.html": 2
+  }
+ },
+ "js/expert.js": {
+  "sha": "7c6e73160cea",
+  "keys": {
+   "expert.html": 1
+  }
+ },
+ "js/expert-report.js": {
+  "sha": "2d33982a5cd4",
+  "keys": {
+   "expert-report.html": 1
+  }
+ },
+ "js/expert-corpus.js": {
+  "sha": "(генерируется)",
+  "keys": {
+   "expert.html": 1,
+   "expert-report.html": 1
   }
  }
 }

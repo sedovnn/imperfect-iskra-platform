@@ -4225,3 +4225,223 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .case-block.is-read > .case-sum .case-sum-t::before {
   content: '✓'; color: var(--jb-ink); font-weight: 700; margin-right: 8px;
 }
+
+/* =========================================================================
+   ЭКСПЕРТНАЯ ВАЛИДАЦИЯ МЕТОДОЛОГИИ (expert.html, expert-report.html)
+   -------------------------------------------------------------------------
+   Регистр продуктовый: это инструмент, за которым человек сидит час подряд.
+   Плотность разрешена, аффордансы стандартные. Ни одного литерального цвета
+   и ни одного числа в кегле — всё через токены :root, как требует DESIGN.md.
+
+   Одно правило держит всю раскладку: шапка и тело — ОДНА колонка. У
+   .station-header стоит max-width: var(--maxw); тело обязано взять то же
+   ограничение, иначе на широком мониторе шапка стоит колонкой по центру, а
+   карточки растекаются во всю ширь (так уже случилось с кабинетом 10.08).
+   ========================================================================= */
+
+.xhost { max-width: var(--maxw); margin: 0 auto; padding: 24px 0 96px; }
+.xnarrow { max-width: var(--w-read); }
+.xwide {
+  /* Колонка задания — по ширине чтения плюс поля, а НЕ во всю рамку. При
+     var(--w-form) карточка занимала 880px, а текст внутри упирался в
+     var(--w-read) = 60ch ≈ 550px: справа оставалась треть пустой рамки, и
+     карточка выглядела обрезанной, а не набранной. */
+  max-width: calc(var(--w-read) + 140px);
+}
+.xhost h1 { font-size: var(--fs-hero); line-height: 1.05; margin: 0 0 16px; }
+.xhost h2 { font-size: var(--fs-place); line-height: 1.15; margin: 0 0 12px; }
+.xhost h3 { font-size: var(--fs-op-h); margin: 0 0 6px; }
+.xhost .section-lead { max-width: var(--w-read); }
+.xnote { font-size: var(--fs-util); color: var(--muted-soft); max-width: var(--w-read); margin-top: 16px; }
+.xshort { max-width: 120px; }
+.xgrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+@media (max-width: 640px) { .xgrid2 { grid-template-columns: 1fr; } }
+.xlist { max-width: var(--w-read); font-size: var(--fs-read); line-height: 1.5; padding-left: 20px; }
+.xlist li { margin-bottom: 8px; }
+.xlink {
+  background: none; border: 0; padding: 0; font: inherit; font-size: var(--fs-util);
+  color: var(--accent-ink); text-decoration: underline; cursor: pointer;
+}
+
+/* Предупреждение — фоном и словом, без цветной полосы слева: полоса сбоку
+   ничего не сообщает сверх фона (DESIGN.md, правило 4). Мелкий текст на
+   --accent-tint набирается --accent-ink: сам --accent даёт там 3.1:1. */
+.xwarn {
+  background: var(--accent-tint); border: 1px solid var(--accent-line);
+  border-radius: var(--radius); padding: 10px 14px; margin: 0 0 20px;
+  font-size: var(--fs-dense); color: var(--accent-ink); max-width: var(--w-read);
+}
+
+/* ---- ход работы ---- */
+.xprog { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.xprog-bar { flex: 1; height: 3px; background: var(--soft); border-radius: 2px; overflow: hidden; }
+.xprog-bar i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+.xprog-num {
+  font-size: var(--fs-util); font-weight: 600; color: var(--muted); white-space: nowrap;
+}
+
+/* ---- карточка описания ---- */
+.xc {
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 20px 24px; margin-bottom: 24px; background: var(--paper);
+}
+.xc p { margin: 0 0 10px; font-size: var(--fs-read); line-height: 1.5; max-width: var(--w-read); }
+.xc p:last-child { margin-bottom: 0; }
+.xc-lead { font-weight: 700; }
+.xc-does { color: var(--muted); }
+.xc-compact { margin-bottom: 0; padding: 14px 16px; border: 0; }
+.xc-compact p { font-size: var(--fs-dense); line-height: 1.45; margin-bottom: 6px; }
+.xc-more > summary {
+  cursor: pointer; font-size: var(--fs-util); color: var(--muted-soft); list-style: none;
+}
+.xc-more > summary::-webkit-details-marker { display: none; }
+.xc-more > summary::before { content: '+ '; }
+.xc-more[open] > summary::before { content: '– '; }
+.xc-more .xc-does { margin-top: 6px; }
+
+/* ---- справочник: опора рядом, а не за кнопкой ---- */
+.xref { border: 1px solid var(--hairline); border-radius: var(--radius); margin-bottom: 20px; }
+.xref > summary {
+  cursor: pointer; padding: 10px 16px; font-size: var(--fs-util);
+  font-weight: 600; color: var(--muted); list-style: none;
+}
+.xref > summary::-webkit-details-marker { display: none; }
+.xref > summary::before { content: '▸ '; }
+.xref[open] > summary::before { content: '▾ '; }
+.xref-body { padding: 4px 16px 16px; column-gap: 32px; }
+@media (min-width: 900px) { .xref-body { columns: 2; } }
+.xref-skill { break-inside: avoid; margin-bottom: 14px; }
+.xref-skill h4 { font-size: var(--fs-dense); margin: 0 0 2px; }
+.xref-def { font-size: var(--fs-util); color: var(--muted); margin: 0 0 6px; line-height: 1.45; }
+.xref-skill ul { margin: 0; padding-left: 18px; }
+.xref-skill li { font-size: var(--fs-util); color: var(--muted); line-height: 1.45; margin-bottom: 4px; }
+.xref-skill li b { color: var(--ink); }
+
+/* ---- выбор ---- */
+.xpick-q { font-size: var(--fs-dense); font-weight: 600; margin: 0 0 10px; }
+.xpick-row { display: grid; gap: 8px; margin-bottom: 14px; }
+@media (min-width: 760px) { .xpick-row { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
+.xopt {
+  display: block; text-align: left; cursor: pointer; font: inherit;
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--paper); padding: 12px 14px;
+}
+.xopt:hover { border-color: var(--accent-line); background: var(--accent-tint); }
+.xopt b { display: block; font-size: var(--fs-dense); margin-bottom: 3px; }
+.xopt span { display: block; font-size: var(--fs-util); color: var(--muted); line-height: 1.4; }
+.xopt.is-on { border-color: var(--accent); background: var(--accent-tint); }
+.xopt.is-on b { color: var(--accent-ink); }
+.xopt-sm { display: inline-block; padding: 7px 12px; font-size: var(--fs-util); font-weight: 600; }
+.xscale { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.xunsure { margin-bottom: 12px; }
+.xunsure.is-on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); }
+.xsecond { margin-bottom: 12px; }
+.xsecond label { display: block; font-size: var(--fs-util); color: var(--muted); margin-bottom: 4px; }
+.xsecond select { font: inherit; font-size: var(--fs-dense); padding: 7px 10px; max-width: 100%; }
+
+.xnote-box { margin-bottom: 16px; }
+.xnote-box > summary {
+  cursor: pointer; font-size: var(--fs-util); color: var(--muted); list-style: none;
+}
+.xnote-box > summary::-webkit-details-marker { display: none; }
+.xnote-box > summary::before { content: '+ '; }
+.xnote-box[open] > summary::before { content: '– '; }
+.xnote-box textarea, .xhost textarea {
+  width: 100%; max-width: var(--w-read); font: inherit; font-size: var(--fs-dense);
+  padding: 8px 10px; border: 1px solid var(--hairline); border-radius: var(--radius);
+  margin-top: 6px; resize: vertical;
+}
+
+/* Ряд навигации: обе кнопки на месте всегда. Где действие невозможно — кнопка
+   выключена, а не убрана, иначе ряд теряет общую границу и прыгает от экрана
+   к экрану (то же правило, что у ряда действий в кабинете). */
+.xnav {
+  display: flex; justify-content: space-between; gap: 12px;
+  border-top: 1px solid var(--hairline); padding-top: 16px; margin-top: 8px;
+}
+
+/* ---- порядок уровней ---- */
+.xability { margin-bottom: 18px; }
+.xability-def { font-size: var(--fs-dense); color: var(--muted); max-width: var(--w-read); margin: 0; }
+.xorder { list-style: none; margin: 0 0 20px; padding: 0; }
+.xorder-item {
+  /* start, не center: карточки разной высоты, и по центру номер с стрелками
+     уплывали к середине абзаца — ряд читался как несвязанные элементы. */
+  display: grid; grid-template-columns: 30px 1fr 34px; align-items: start; gap: 10px;
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 8px; margin-bottom: 8px; background: var(--paper);
+}
+.xorder-rank {
+  font-size: var(--fs-op-h); font-weight: 800; color: var(--muted-soft);
+  text-align: center; padding-top: 12px;
+}
+.xorder-body .xc { padding: 6px 0; }
+.xorder-ctl { display: grid; gap: 4px; padding-top: 12px; }
+.xarrow {
+  font: inherit; cursor: pointer; border: 1px solid var(--hairline);
+  border-radius: var(--radius); background: var(--paper); padding: 2px 0; line-height: 1.2;
+}
+.xarrow:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.xarrow:disabled { opacity: .3; cursor: default; }
+
+/* ---- В-0 и карта ---- */
+.xfree-row { display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 8px; }
+.xfree-n { font-size: var(--fs-util); color: var(--muted-soft); font-weight: 600; }
+.xmap-skill { border-top: 1px solid var(--hairline); padding-top: 20px; margin-top: 24px; }
+.xmap-ab { margin: 0 0 14px; padding-left: 18px; }
+.xmap-ab li { font-size: var(--fs-util); color: var(--muted); line-height: 1.45; margin-bottom: 4px; }
+.xmap-ab li b { color: var(--ink); }
+.xmap-line { font-size: var(--fs-dense); line-height: 1.5; max-width: var(--w-read); margin: 14px 0 8px; }
+.xpair-note[hidden] { display: none; }
+.xchecks { display: grid; gap: 6px; margin-bottom: 12px; }
+@media (min-width: 760px) { .xchecks { grid-template-columns: 1fr 1fr; } }
+.xcheck { font-size: var(--fs-dense); cursor: pointer; }
+
+/* =====================  СВОДКА (expert-report.html)  ===================== */
+.xr-kpi { display: grid; gap: 12px; margin-bottom: 28px; }
+@media (min-width: 760px) { .xr-kpi { grid-template-columns: repeat(4, 1fr); } }
+.xr-tile {
+  border: 1px solid var(--hairline); border-radius: var(--radius); padding: 14px 16px;
+}
+.xr-tile b { display: block; font-size: var(--fs-op-xl); line-height: 1.05; }
+.xr-tile span { display: block; font-size: var(--fs-util); color: var(--muted); margin-top: 4px; }
+.xr-table { width: 100%; border-collapse: collapse; font-size: var(--fs-op-sm); margin-bottom: 28px; }
+.xr-table th, .xr-table td {
+  border-bottom: 1px solid var(--hairline); padding: 6px 8px; text-align: left; vertical-align: top;
+}
+.xr-table th { font-size: var(--fs-util); color: var(--muted); font-weight: 600; }
+.xr-table td.num, .xr-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.xr-bad { background: var(--accent-tint); color: var(--accent-ink); font-weight: 600; }
+.xr-scroll { overflow-x: auto; margin-bottom: 28px; }
+.xr-matrix { border-collapse: collapse; font-size: var(--fs-util); font-variant-numeric: tabular-nums; }
+.xr-matrix th, .xr-matrix td {
+  border: 1px solid var(--hairline); padding: 4px 7px; text-align: center; white-space: nowrap;
+}
+.xr-matrix th { font-weight: 600; color: var(--muted); }
+.xr-matrix td.hit { font-weight: 700; }
+.xr-matrix td.zero { color: var(--hairline); }
+.xr-quote {
+  font-size: var(--fs-op-sm); color: var(--muted); border-left: 0;
+  background: var(--soft); border-radius: var(--radius); padding: 8px 12px; margin: 0 0 6px;
+}
+
+/* Сводка шире экрана эксперта: матрица 10×10 и таблица на пятьдесят строк в
+   колонку чтения не помещаются, а горизонтальная прокрутка внутри страницы —
+   худшее из двух. Рамка та же (--maxw), меняется только внутренний потолок. */
+.xwide-report { max-width: var(--maxw); }
+.xr-load {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  border: 1px dashed var(--hairline); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 8px;
+}
+.xr-load.is-over { border-color: var(--accent); background: var(--accent-tint); }
+.xr-or { font-size: var(--fs-util); color: var(--muted-soft); }
+.xr-sep { flex: 1; }
+.xr-pass {
+  font: inherit; font-size: var(--fs-op-sm); padding: 6px 10px; max-width: 170px;
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+}
+.xr-list { font-size: var(--fs-op-sm); line-height: 1.5; padding-left: 20px; margin-bottom: 24px; }
+.xr-dim { color: var(--muted-soft); }
+.xwide-report h2 { margin-top: 40px; }
+.xwide-report h3 { margin-top: 24px; }
