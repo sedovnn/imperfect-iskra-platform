@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Разбор описаний — i(m)perfect · «Искра»</title>
+<meta name="description" content="Экспертная валидация методологии: разбор описаний уровней по способностям." />
+<!-- noindex обязателен: на странице лежит рубрика скоринга. Участник,
+     нашедший её до кейса, ломает замер — а поисковик находит быстрее всех. -->
+<meta name="robots" content="noindex, nofollow" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- ШРИФТ ГРУЗИТСЯ НЕБЛОКИРУЮЩЕ — см. пояснение в cabinet.html. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/styles.css?v=203" />
+<link rel="stylesheet" href="css/expert.css?v=1" />
+</head>
+<body class="p-expert">
+
+<div class="frame station-frame">
+  <div class="station-shell">
+
+    <header class="station-header">
+      <div class="station-header-left">
+        <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      </div>
+      <div class="station-header-right">
+        <span class="cab-status" id="xSync"></span>
+      </div>
+    </header>
+
+    <!-- Весь экран рисуется из js/expert.js: пятьдесят карточек, десять
+         раскладок и карта модели — это один поток с общим состоянием, и
+         разложенный по разметке он разошёлся бы с состоянием при первой же
+         правке. Здесь только оболочка.
+         Первым в неё рисует js/expert-lock.js — окно пароля. Пока пароль не
+         введён, описаний на странице нет ни в каком виде: они лежат в
+         js/expert-corpus.js зашифрованными, и пароль от них ключ, а не пропуск. -->
+    <main id="xHost" class="xhost">
+      <div class="xnarrow"><p class="section-lead">Загружаю…</p></div>
+    </main>
+
+  </div>
+</div>
+
+<script src="js/expert-api.js?v=1"></script>
+<script src="js/expert-lock.js?v=1"></script>
+<script src="js/typo.js?v=2"></script>
+<script src="js/expert-corpus.js?v=1"></script>
+<script src="js/expert.js?v=1"></script>
+</body>
+</html>

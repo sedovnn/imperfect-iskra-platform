@@ -1,0 +1,360 @@
+/* i(m)perfect — ЭКСПЕРТНАЯ ВАЛИДАЦИЯ МЕТОДОЛОГИИ.
+   Только expert.html и expert-report.html. Отдельным файлом, а не блоком в
+   css/styles.css, по одной причине: валидация методологии и ассессмент идут
+   двумя независимыми потоками правок, и общий файл сталкивал бы их на каждом
+   слиянии. Здесь ни одного правила, которое трогает экраны участника.
+
+   Токены (--accent, --ink, --fs-read, --maxw, --radius…) приходят из
+   styles.css: он подключается ПЕРВЫМ, этот файл — вторым. Собственных цветов
+   и кеглей числом здесь нет и быть не должно, как и везде в системе. */
+
+/* =========================================================================
+   ЭКСПЕРТНАЯ ВАЛИДАЦИЯ МЕТОДОЛОГИИ (expert.html, expert-report.html)
+   -------------------------------------------------------------------------
+   Регистр продуктовый: это инструмент, за которым человек сидит час подряд.
+   Плотность разрешена, аффордансы стандартные. Ни одного литерального цвета
+   и ни одного числа в кегле — всё через токены :root, как требует DESIGN.md.
+
+   Одно правило держит всю раскладку: шапка и тело — ОДНА колонка. У
+   .station-header стоит max-width: var(--maxw); тело обязано взять то же
+   ограничение, иначе на широком мониторе шапка стоит колонкой по центру, а
+   карточки растекаются во всю ширь (так уже случилось с кабинетом 10.08).
+   ========================================================================= */
+
+.xhost { max-width: var(--maxw); margin: 0 auto; padding: 24px 0 96px; }
+.xnarrow { max-width: var(--w-read); }
+.xwide {
+  /* Колонка задания — по ширине чтения плюс поля, а НЕ во всю рамку. При
+     var(--w-form) карточка занимала 880px, а текст внутри упирался в
+     var(--w-read) = 60ch ≈ 550px: справа оставалась треть пустой рамки, и
+     карточка выглядела обрезанной, а не набранной. */
+  /* ⚠ ШИРЕ КОЛОНКИ ЧТЕНИЯ, И ЭТО НЕ ПРОТИВОРЕЧИЕ. Обязательного содержимого на
+     карточку — текст уровня, пять навыков, два определения — набиралось больше
+     высоты ноутбучного экрана, и «дальше» уходила под сгиб на всех пятидесяти.
+     Высоту забрали шириной: на 1020px определения способностей сворачиваются с
+     семи строк до пяти, а пять навыков встают в один ряд вместо двух. Сам ТЕКСТ
+     карточки при этом остаётся в колонке чтения (правило ниже) — расширяется
+     ряд инструментов, а не проза. */
+  max-width: min(1020px, 100%);
+}
+/* Карточка — чтение, и её ширина не следует за шириной ряда кнопок: 1020px это
+   больше ста знаков в строке, вдвое дальше порога комфортного чтения. */
+.xwide .xc-slot { max-width: calc(var(--w-read) + 48px); }
+.xhost h1 { font-size: var(--fs-hero); line-height: 1.05; margin: 0 0 16px; }
+/* max-width переопределён намеренно. Общее h2 держит 20ch — это правило для
+   витринных заголовков, где короткая строка и есть приём. Здесь h2 работает
+   подписью инструмента: «Оперирование разными временными горизонтами» при 20ch
+   ломалось на три строки и занимало высоту абзаца в экране, где и так тесно. */
+.xhost h2 { font-size: var(--fs-place); line-height: 1.15; margin: 0 0 12px; max-width: var(--w-read); }
+.xhost h3 { font-size: var(--fs-op-h); margin: 0 0 6px; }
+.xhost .section-lead { max-width: var(--w-read); }
+.xnote { font-size: var(--fs-dense); color: var(--muted-soft); max-width: var(--w-read); margin-top: 16px; }
+.xshort { max-width: 120px; }
+/* Поля тянутся на всю колонку. Без этого голый <input> в .field брал ширину по
+   умолчанию (около 180px) и стоял огрызком посреди пятисот пикселей формы —
+   так выглядели три поля «чего в карте не хватает», куда как раз просят
+   написать фразу, а не слово. */
+.xhost .field input { width: 100%; }
+.xgrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+@media (max-width: 640px) { .xgrid2 { grid-template-columns: 1fr; } }
+.xlist { max-width: var(--w-read); font-size: var(--fs-read); line-height: 1.5; padding-left: 20px; }
+.xlist li { margin-bottom: 8px; }
+.xlink {
+  background: none; border: 0; padding: 0; font: inherit; font-size: var(--fs-util);
+  color: var(--accent-ink); text-decoration: underline; cursor: pointer;
+}
+
+/* Предупреждение — фоном и словом, без цветной полосы слева: полоса сбоку
+   ничего не сообщает сверх фона (DESIGN.md, правило 4). Мелкий текст на
+   --accent-tint набирается --accent-ink: сам --accent даёт там 3.1:1. */
+.xwarn {
+  background: var(--accent-tint); border: 1px solid var(--accent-line);
+  border-radius: var(--radius); padding: 10px 14px; margin: 0 0 20px;
+  font-size: var(--fs-read); line-height: 1.5; color: var(--accent-ink); max-width: var(--w-read);
+}
+
+/* ---- ход работы ---- */
+.xprog { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.xprog-bar { flex: 1; height: 3px; background: var(--soft); border-radius: 2px; overflow: hidden; }
+.xprog-bar i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+.xprog-num {
+  font-size: var(--fs-util); font-weight: 600; color: var(--muted); white-space: nowrap;
+}
+
+/* ---- карточка описания ---- */
+.xc {
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 20px 24px; margin-bottom: 24px; background: var(--paper);
+}
+/* ПОЛ И ПОТОЛОК У КАРТОЧКИ. Тексты уровней в методологии разной длины — от 86
+   до 1112 знаков, — и без ограничения высота карточки гуляла на 360px, утаскивая
+   за собой весь ряд выбора и кнопку «дальше»: между двумя карточками они
+   переезжали на треть экрана. Пол не даёт короткой карточке подтянуть их вверх,
+   потолок не даёт длинной утолкать вниз; самые длинные прокручиваются внутри
+   себя. Это лечение симптома — настоящее лечение в §10, где описания надо
+   выровнять по объёму, но экран не должен ждать правки методологии. */
+/* Высота ФИКСИРОВАННАЯ, а не «от и до». С полом и потолком «дальше» всё равно
+   переезжала между карточками на 146px — рука уже на кнопке, а кнопка ушла, и
+   так пятьдесят раз подряд. Закреплённая высота убирает это в ноль: короткая
+   карточка не подтягивает низ, длинная прокручивается внутри себя. clamp — ради
+   ноутбука: 46vh на экране в 700px это 322px, слишком тесно, а на 27 дюймах
+   растянулось бы до полутора тысяч.
+   Само число выбрано по замеру, а не на глаз: естественная высота карточки при
+   этой ширине колонки — медиана 278px, три четверти укладываются в 316. На 340
+   прокручиваются девять карточек из пятидесяти, на 414 — пять, но медианная
+   карточка платит за это ста тридцатью пикселями пустоты в рамке. Взято меньшее:
+   пустая рамка видна на каждой карточке, прокрутка — на каждой пятой. */
+.xc-slot .xc {
+  /* Высота считается от ОКНА, а не от доли экрана: вокруг карточки лежит
+     примерно 600px обязательного — шапка, ход работы, пять навыков, две
+     способности, ряд второстепенных ответов и навигация. calc(100vh - 620px)
+     отдаёт карточке ровно остаток, поэтому на экране от 900px всё помещается
+     без прокрутки вовсе. Пол 240px — граница читаемости (пять строк), потолок
+     420px — чтобы на большом мониторе рамка не растянулась пустотой. */
+  height: clamp(240px, calc(100vh - 620px), 420px); overflow-y: auto;
+  margin-bottom: 0;
+}
+.xc-slot { margin-bottom: 24px; }
+.xc p { margin: 0 0 10px; font-size: var(--fs-read); line-height: 1.5; max-width: var(--w-read); }
+.xc p:last-child { margin-bottom: 0; }
+.xc-lead { font-weight: 700; }
+/* Признаки серые, ПОКА они второй голос при «сути». Там, где «сути» в
+   методологии нет (ГА-1 и ГА-2 на средних уровнях), признаки — единственный
+   текст карточки, и серой становилась вся карточка целиком. */
+.xc-does { color: var(--ink); }
+.xc-gist + .xc-does, .xc-gist ~ .xc-more .xc-does { color: var(--muted); }
+.xc-compact { margin-bottom: 0; padding: 14px 16px; border: 0; }
+.xc-compact p { font-size: var(--fs-read); line-height: 1.5; margin-bottom: 8px; }
+.xc-more > summary {
+  cursor: pointer; font-size: var(--fs-dense); color: var(--muted-soft); list-style: none;
+}
+.xc-more > summary::-webkit-details-marker { display: none; }
+.xc-more > summary::before { content: '+ '; }
+.xc-more[open] > summary::before { content: '– '; }
+.xc-more .xc-does { margin-top: 6px; }
+
+/* ---- справочник: опора рядом, а не за кнопкой ---- */
+.xref { border: 1px solid var(--hairline); border-radius: var(--radius); margin-bottom: 20px; }
+.xref > summary {
+  cursor: pointer; padding: 12px 16px; font-size: var(--fs-dense);
+  font-weight: 600; color: var(--muted); list-style: none;
+}
+.xref > summary::-webkit-details-marker { display: none; }
+.xref > summary::before { content: '▸ '; }
+.xref[open] > summary::before { content: '▾ '; }
+.xref-body { padding: 4px 16px 16px; column-gap: 32px; }
+@media (min-width: 900px) { .xref-body { columns: 2; } }
+.xref-skill { break-inside: avoid; margin-bottom: 14px; }
+.xref-skill h4 { font-size: var(--fs-read); margin: 0 0 3px; }
+.xref-def { font-size: var(--fs-dense); color: var(--muted); margin: 0 0 6px; line-height: 1.5; }
+.xref-skill ul { margin: 0; padding-left: 18px; }
+.xref-skill li { font-size: var(--fs-dense); color: var(--muted); line-height: 1.5; margin-bottom: 6px; }
+.xref-skill li b { color: var(--ink); }
+
+/* ---- выбор ---- */
+.xpick-q { font-size: var(--fs-dense); font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+.xpick-row { display: grid; gap: 8px; margin-bottom: 14px; }
+@media (min-width: 760px) { .xpick-row { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
+.xopt {
+  display: block; text-align: left; cursor: pointer; font: inherit;
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--paper); padding: 12px 14px;
+}
+.xopt:hover { border-color: var(--accent-line); background: var(--accent-tint); }
+.xopt b { display: block; font-size: var(--fs-read); margin-bottom: 4px; }
+.xopt span { display: block; font-size: var(--fs-dense); color: var(--muted); line-height: 1.45; }
+.xopt.is-on { border-color: var(--accent); background: var(--accent-tint); }
+.xopt.is-on b { color: var(--accent-ink); }
+.xopt-sm { display: inline-block; padding: 7px 12px; font-size: var(--fs-dense); font-weight: 600; }
+
+/* Навыки — чипы без определений, и они на экране ВСЕГДА: выбранный
+   подсвечивается, ряд не подменяется рядом способностей. Определения навыков
+   ушли в справочник — в ряду из пяти они занимали два экрана и всё равно
+   читались по диагонали, а различать по ним нужно не навыки, а способности
+   внутри навыка: там определения и остались. */
+.xpick-skills { display: flex; flex-wrap: wrap; gap: 6px; }
+.xchip {
+  font: inherit; font-size: var(--fs-dense); font-weight: 600; cursor: pointer;
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  background: var(--paper); padding: 8px 14px; color: var(--ink);
+}
+.xchip:hover { border-color: var(--accent-line); background: var(--accent-tint); }
+.xchip.is-on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); }
+
+/* Место под две способности занято всегда — и когда навык ещё не выбран, и
+   когда определения у пары короче обычного. Без этого ряд схлопывался, и
+   кнопка «дальше» подъезжала под курсор ровно в момент выбора. */
+/* Резерв по самой высокой паре, а не «сколько получится»: у МК определение
+   первой способности самое длинное в методологии и на этой ширине требует
+   170px, остальным хватает 109–129. Слот держится по максимуму, иначе выбор
+   навыка двигал бы всё нижнее — ровно у четырёх навыков из пяти. Сорок
+   пикселей воздуха у остальных читаются как структура: они одинаковы на всех
+   пятидесяти карточках.
+   ⚠ Число привязано к ШИРИНЕ колонки: на прежних 750px тому же определению
+   нужно было 249px. Меняешь ширину — перемеряй резерв, иначе вернётся рывок. */
+.xpick-abils { min-height: 170px; align-content: stretch; }
+/* Кнопки РАСТЯГИВАЮТСЯ на весь зарезервированный слот, а не жмутся к его верху.
+   Резерв нужен, чтобы ничего не прыгало при выборе навыка, но у четырёх навыков
+   из пяти определения короче самого длинного — и незанятый резерв читался
+   семидесятью пикселями пустоты между способностями и следующей строкой, то
+   есть как забытый отступ. Растянутая кнопка тот же резерв делает невидимым. */
+.xpick-abils .xopt { display: flex; flex-direction: column; }
+/* Заглушка занимает ВЕСЬ зарезервированный слот, а не одну строку в его верху.
+   Полоска текста над двумя сотнями пикселей пустоты читается как поломка
+   вёрстки; рамка во всю высоту читается как «здесь будет ответ». */
+.xabils-empty {
+  grid-column: 1 / -1; margin: 0; align-self: stretch;
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-size: var(--fs-dense); color: var(--muted-soft);
+  border: 1px dashed var(--hairline); border-radius: var(--radius); padding: 14px 16px;
+}
+.xscale { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.xunsure { margin: 0; }
+.xunsure.is-on { border-color: var(--accent); background: var(--accent-tint); color: var(--accent-ink); }
+.xextras { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-bottom: 12px; }
+.xsecond { display: inline-flex; align-items: center; gap: 8px; }
+.xsecond label { font-size: var(--fs-dense); color: var(--muted); white-space: nowrap; }
+.xsecond select { font: inherit; font-size: var(--fs-dense); padding: 7px 10px; max-width: 300px; }
+.xsecond select:disabled { color: var(--muted-soft); }
+
+.xnote-box { margin-bottom: 16px; }
+.xnote-box > summary {
+  cursor: pointer; font-size: var(--fs-dense); color: var(--muted); list-style: none;
+}
+.xnote-box > summary::-webkit-details-marker { display: none; }
+.xnote-box > summary::before { content: '+ '; }
+.xnote-box[open] > summary::before { content: '– '; }
+.xnote-box textarea, .xhost textarea {
+  width: 100%; max-width: var(--w-read); font: inherit; font-size: var(--fs-dense);
+  padding: 8px 10px; border: 1px solid var(--hairline); border-radius: var(--radius);
+  margin-top: 6px; resize: vertical;
+}
+
+/* Ряд навигации: обе кнопки на месте всегда. Где действие невозможно — кнопка
+   выключена, а не убрана, иначе ряд теряет общую границу и прыгает от экрана
+   к экрану (то же правило, что у ряда действий в кабинете). */
+/* ⚠ ПРИЛИПАНИЕ ОТМЕНЕНО, И ВОТ ПОЧЕМУ. Ряд с position:sticky;bottom:0 стоит на
+   дне окна ПОВЕРХ того, что там оказалось, — а там оказывалась строка «не могу
+   выбрать ни одну», то есть один из трёх возможных ответов. Спрятать ответ,
+   чтобы не пришлось прокручивать до кнопки, — плохой размен. Высоту вместо
+   этого забрали у карточки: clamp(280px, 38vh, 380px) ужимает её на низких
+   экранах, и на 900px ряд помещается сам, без всяких трюков. */
+.xnav {
+  display: flex; justify-content: space-between; gap: 12px;
+  border-top: 1px solid var(--hairline); padding-top: 16px; margin-top: 8px;
+}
+
+/* ---- порядок уровней ---- */
+.xability { margin-bottom: 18px; }
+.xability-def { font-size: var(--fs-read); color: var(--muted); max-width: var(--w-read); line-height: 1.5; margin: 0; }
+.xorder { list-style: none; margin: 0 0 20px; padding: 0; }
+.xorder-item {
+  /* start, не center: карточки разной высоты, и по центру номер с стрелками
+     уплывали к середине абзаца — ряд читался как несвязанные элементы. */
+  display: grid; grid-template-columns: 30px 1fr 34px; align-items: start; gap: 10px;
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+  padding: 8px; margin-bottom: 8px; background: var(--paper);
+}
+.xorder-rank {
+  font-size: var(--fs-op-h); font-weight: 800; color: var(--muted-soft);
+  text-align: center; padding-top: 12px;
+}
+.xorder-body .xc { padding: 6px 0; }
+.xorder-ctl { display: grid; gap: 4px; padding-top: 12px; }
+.xarrow {
+  font: inherit; cursor: pointer; border: 1px solid var(--hairline);
+  border-radius: var(--radius); background: var(--paper); padding: 2px 0; line-height: 1.2;
+}
+.xarrow:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.xarrow:disabled { opacity: .3; cursor: default; }
+
+/* ---- В-0 и карта ---- */
+.xfree-row { display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 8px; }
+.xfree-n { font-size: var(--fs-dense); color: var(--muted-soft); font-weight: 600; }
+.xmap-skill { border-top: 1px solid var(--hairline); padding-top: 20px; margin-top: 24px; }
+.xmap-ab { margin: 0 0 14px; padding-left: 18px; }
+.xmap-ab li { font-size: var(--fs-dense); color: var(--muted); line-height: 1.5; margin-bottom: 6px; }
+.xmap-ab li b { color: var(--ink); }
+.xmap-line { font-size: var(--fs-read); line-height: 1.5; max-width: var(--w-read); margin: 14px 0 8px; }
+.xpair-note[hidden] { display: none; }
+.xchecks { display: grid; gap: 6px; margin-bottom: 12px; }
+@media (min-width: 760px) { .xchecks { grid-template-columns: 1fr 1fr; } }
+.xcheck { font-size: var(--fs-read); cursor: pointer; }
+
+/* =====================  СВОДКА (expert-report.html)  ===================== */
+.xr-kpi { display: grid; gap: 12px; margin-bottom: 28px; }
+@media (min-width: 760px) { .xr-kpi { grid-template-columns: repeat(4, 1fr); } }
+.xr-tile {
+  border: 1px solid var(--hairline); border-radius: var(--radius); padding: 14px 16px;
+}
+.xr-tile b { display: block; font-size: var(--fs-op-xl); line-height: 1.05; }
+.xr-tile span { display: block; font-size: var(--fs-util); color: var(--muted); margin-top: 4px; }
+.xr-table { width: 100%; border-collapse: collapse; font-size: var(--fs-op-sm); margin-bottom: 28px; }
+.xr-table th, .xr-table td {
+  border-bottom: 1px solid var(--hairline); padding: 6px 8px; text-align: left; vertical-align: top;
+}
+.xr-table th { font-size: var(--fs-util); color: var(--muted); font-weight: 600; }
+.xr-table td.num, .xr-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.xr-bad { background: var(--accent-tint); color: var(--accent-ink); font-weight: 600; }
+.xr-scroll { overflow-x: auto; margin-bottom: 28px; }
+.xr-matrix { border-collapse: collapse; font-size: var(--fs-util); font-variant-numeric: tabular-nums; }
+.xr-matrix th, .xr-matrix td {
+  border: 1px solid var(--hairline); padding: 4px 7px; text-align: center; white-space: nowrap;
+}
+.xr-matrix th { font-weight: 600; color: var(--muted); }
+.xr-matrix td.hit { font-weight: 700; }
+.xr-matrix td.zero { color: var(--hairline); }
+.xr-quote {
+  font-size: var(--fs-op-sm); color: var(--muted); border-left: 0;
+  background: var(--soft); border-radius: var(--radius); padding: 8px 12px; margin: 0 0 6px;
+}
+
+/* Сводка шире экрана эксперта: матрица 10×10 и таблица на пятьдесят строк в
+   колонку чтения не помещаются, а горизонтальная прокрутка внутри страницы —
+   худшее из двух. Рамка та же (--maxw), меняется только внутренний потолок. */
+.xwide-report { max-width: var(--maxw); }
+.xr-load {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  border: 1px dashed var(--hairline); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 8px;
+}
+.xr-load.is-over { border-color: var(--accent); background: var(--accent-tint); }
+.xr-or { font-size: var(--fs-util); color: var(--muted-soft); }
+.xr-sep { flex: 1; }
+.xr-pass {
+  font: inherit; font-size: var(--fs-op-sm); padding: 6px 10px; max-width: 170px;
+  border: 1px solid var(--hairline); border-radius: var(--radius);
+}
+.xr-list { font-size: var(--fs-op-sm); line-height: 1.5; padding-left: 20px; margin-bottom: 24px; }
+.xr-dim { color: var(--muted-soft); }
+.xwide-report h2 { margin-top: 40px; }
+.xwide-report h3 { margin-top: 24px; }
+
+/* Окно пароля и номер эксперта. */
+.xgate { padding-top: 8px; }
+.xgate .field { max-width: 280px; }
+/* Номер — не служебная подпись, а то, что человек должен ПЕРЕПИСАТЬ себе.
+   Мелким серым он терялся между абзацами, и на финише выяснялось, что никто
+   его не записал. */
+.xbadge {
+  display: inline-block; margin: 4px 0 6px;
+  background: var(--accent-tint); border: 1px solid var(--accent-line);
+  border-radius: var(--radius); padding: 10px 16px;
+  font-size: var(--fs-read); color: var(--accent-ink);
+}
+.xbadge b { font-size: var(--fs-place); font-weight: 800; letter-spacing: 0.02em; }
+
+/* ⚠ .field-err в css/styles.css НЕ ОПРЕДЕЛЁН — ни здесь, ни на main. Класс
+   используется и кабинетом, и этими экранами, но правила у него нет, и
+   сообщение об ошибке до сих пор рисовалось обычным абзацем: «Пароль не
+   подошёл» читалось как подпись к полю, а не как отказ.
+   Правлю только у себя: styles.css — общий файл двух потоков, и чинить в нём
+   чужую дырку значило бы столкнуть потоки на ровном месте. В кабинете это
+   по-прежнему открытый вопрос. */
+.xhost .field-err,
+.xgate .field-err {
+  margin: 6px 0 0;
+  font-size: var(--fs-dense);
+  font-weight: 600;
+  color: var(--accent-ink);
+}

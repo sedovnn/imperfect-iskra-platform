@@ -119,7 +119,49 @@
    "index.html": 2,
    "intro.html": 2,
    "role.html": 2,
-   "vitrina.html": 2
+   "vitrina.html": 2,
+   "expert.html": 2,
+   "expert-report.html": 2
+  }
+ },
+ "js/expert.js": {
+  "sha": "a34bcd0f5481",
+  "keys": {
+   "expert.html": 1
+  }
+ },
+ "js/expert-report.js": {
+  "sha": "219df8404a01",
+  "keys": {
+   "expert-report.html": 1
+  }
+ },
+ "js/expert-api.js": {
+  "sha": "f967a65caf21",
+  "keys": {
+   "expert.html": 1,
+   "expert-report.html": 1
+  }
+ },
+ "js/expert-lock.js": {
+  "sha": "1aad89d590b3",
+  "keys": {
+   "expert.html": 1,
+   "expert-report.html": 1
+  }
+ },
+ "js/expert-corpus.js": {
+  "sha": "(шифротекст, меняется при каждой сборке)",
+  "keys": {
+   "expert.html": 1,
+   "expert-report.html": 1
+  }
+ },
+ "css/expert.css": {
+  "sha": "ea45e163d8ed",
+  "keys": {
+   "expert.html": 1,
+   "expert-report.html": 1
   }
  }
 }
