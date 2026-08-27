@@ -49,12 +49,13 @@
 .xhost h3 { font-size: var(--fs-op-h); margin: 0 0 6px; }
 .xhost .section-lead { max-width: var(--w-read); }
 .xnote { font-size: var(--fs-dense); color: var(--muted-soft); max-width: var(--w-read); margin-top: 16px; }
-.xshort { max-width: 120px; }
-/* Поля тянутся на всю колонку. Без этого голый <input> в .field брал ширину по
-   умолчанию (около 180px) и стоял огрызком посреди пятисот пикселей формы —
-   так выглядели три поля «чего в карте не хватает», куда как раз просят
-   написать фразу, а не слово. */
-.xhost .field input { width: 100%; }
+/* ⚠ Своего правила для полей здесь НЕТ и быть не должно. Ширину, кегль, рамку
+   и скругление задаёт платформа: .field input[type="text"] в css/styles.css —
+   тот же вид, что на экранах участника. Единственное условие — у поля должен
+   стоять type: селектор написан по атрибуту, и без него поле проваливается в
+   браузерный дефолт (мелкое, тонкая рамка, чужой шрифт). Именно так и
+   выглядели все поля этого экрана до правки. */
+.xref { margin-top: 20px; }
 .xgrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
 @media (max-width: 640px) { .xgrid2 { grid-template-columns: 1fr; } }
 .xlist { max-width: var(--w-read); font-size: var(--fs-read); line-height: 1.5; padding-left: 20px; }

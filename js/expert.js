@@ -85,7 +85,7 @@
   function blank(id) {
     return {
       v: STATE_V, id: id, corpus: C.version, builtFrom: C.builtFrom,
-      who: { first: '', last: '', org: '', role: '', years: '' },
+      who: { first: '', last: '' },
       startedAt: new Date().toISOString(),
       free: [], attr: {}, order: {}, touched: {},
       map: { rel: {}, pair: {}, extra: [], meta: {}, tools: {}, missing: [] },
@@ -310,16 +310,18 @@
       '<p class="xbadge">Ваш номер <b>' + esc(S.id) + '</b></p>' +
       '<p class="xnote">Запишите его. По нему вы вернётесь к своему разбору — с этого ' +
       'компьютера просто откройте ту же ссылку, с другого понадобится номер.</p>' +
+      // Только имя и фамилия. Компанию, роль и стаж спрашивать незачем: мы сами
+      // зовём этих людей и всё это про них знаем, а лишние поля на входе — три
+      // повода передумать.
+      // ⚠ type="text" обязателен. Правило платформы записано как
+      // .field input[type="text"] — без атрибута поле в него не попадает и
+      // рисуется браузерным дефолтом: мелким и не в стиле остальных экранов.
       '<div class="xgrid2">' +
-      '<div class="field"><label for="xFirst">Имя</label><input id="xFirst" autocomplete="given-name" /></div>' +
-      '<div class="field"><label for="xLast">Фамилия</label><input id="xLast" autocomplete="family-name" /></div>' +
+      '<div class="field"><label for="xFirst">Имя</label>' +
+      '<input type="text" id="xFirst" autocomplete="given-name" /></div>' +
+      '<div class="field"><label for="xLast">Фамилия</label>' +
+      '<input type="text" id="xLast" autocomplete="family-name" /></div>' +
       '</div>' +
-      '<div class="xgrid2">' +
-      '<div class="field"><label for="xOrg">Компания или практика</label><input id="xOrg" autocomplete="organization" /></div>' +
-      '<div class="field"><label for="xRole">Чем занимаетесь</label><input id="xRole" placeholder="консультант, T&amp;D, психометрика…" /></div>' +
-      '</div>' +
-      '<div class="field"><label for="xYears">Сколько лет работаете со стратегией или с оценкой руководителей</label>' +
-      '<input id="xYears" inputmode="numeric" class="xshort" /></div>' +
       '<p class="field-err" id="xIntroErr" style="display:none;">Заполните имя и фамилию.</p>' +
       '<button class="btn btn-primary" id="xIntroGo">Начать →</button>' +
       '<p class="xnote">Имя и фамилия нужны, чтобы не смешать ответы разных экспертов и чтобы ' +
@@ -327,16 +329,12 @@
       '</div>';
   };
   screens.intro.after = function () {
-    ['first', 'last', 'org', 'role', 'years'].forEach(function (k) {
+    ['first', 'last'].forEach(function (k) {
       var el = $('x' + k.charAt(0).toUpperCase() + k.slice(1));
       if (el) el.value = S.who[k] || '';
     });
     $('xIntroGo').onclick = function () {
-      S.who = {
-        first: $('xFirst').value.trim(), last: $('xLast').value.trim(),
-        org: $('xOrg').value.trim(), role: $('xRole').value.trim(),
-        years: $('xYears').value.trim()
-      };
+      S.who = { first: $('xFirst').value.trim(), last: $('xLast').value.trim() };
       if (!S.who.first || !S.who.last) { $('xIntroErr').style.display = ''; return; }
       save(true);
       go('free');
@@ -358,7 +356,7 @@
       'он для того и нужен, чтобы остаться независимым от неё.</p>';
     for (var i = 0; i < FREE_MAX; i++) {
       h += '<div class="field xfree-row"><span class="xfree-n">' + (i + 1) + '</span>' +
-        '<input class="xfree" data-i="' + i + '" value="' + esc(S.free[i] || '') + '" ' +
+        '<input type="text" class="xfree" data-i="' + i + '" value="' + esc(S.free[i] || '') + '" ' +
         (i < FREE_MIN ? '' : 'placeholder="необязательно" ') + '/></div>';
     }
     return h +
@@ -459,12 +457,17 @@
       '<details class="xnote-box"' + (a.note ? ' open' : '') + '><summary>Заметка о формулировке</summary>' +
       '<textarea id="xNote" rows="3" placeholder="Что мешает прочитать это описание?">' + esc(a.note || '') + '</textarea></details>';
 
+    // Справочник — ПЕРЕД навигацией. Стоя после неё, он прилипал к нижней
+    // границе ряда кнопок и читался как его продолжение; и последним элементом
+    // экрана должен быть выход с него, а не опора.
+    h += refHtml();
+
     h += '</div><div class="xnav">' +
       '<button type="button" class="btn btn-ghost" id="xPrev"' + (i === 0 ? ' disabled' : '') + '>← назад</button>' +
       '<button type="button" class="btn btn-primary" id="xNext"' +
       ((a.ability || a.unsure) ? '' : ' disabled') + '>' +
       (i === deck.length - 1 ? 'Завершить блок →' : 'дальше →') + '</button>' +
-      '</div>' + refHtml() + '</div>';
+      '</div></div>';
     return h;
   };
 
@@ -962,7 +965,7 @@
             'сохранились только там. Проверьте номер — или начните заново, получив новый.') + '</p>' +
         '<div class="xgrid2">' +
         '<div class="field"><label for="xTry">Ввести номер ещё раз</label>' +
-        '<input id="xTry" inputmode="numeric" maxlength="5" value="' + esc(id) + '" /></div></div>' +
+        '<input type="text" id="xTry" inputmode="numeric" maxlength="5" value="' + esc(id) + '" /></div></div>' +
         '<div class="xextras"><button class="btn btn-primary" id="xTryGo">Продолжить →</button>' +
         '<button class="btn btn-ghost btn-sm" id="xFresh">Начать заново, номер ' + esc(fresh) + '</button></div>' +
         '</div>';
