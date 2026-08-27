@@ -1869,6 +1869,21 @@
       jumpToMech: function (mechName) {
         for (var j = 0; j < route.length; j++) {
           if (route[j] && route[j].act && route[j].act.mech === mechName) {
+            // ⚠ ШАГ, С КОТОРОГО ПРЫГАЕМ ВПЕРЁД, ПОМЕЧАЕМ ЗАФИКСИРОВАННЫМ (26.08,
+            // поймано владельцем: во вкладке «Мои ответы» пропадал разбор заявок).
+            // Пара jumpBackTo/jumpToMech несимметрична была так: возврат к списку СНИМАЕТ
+            // mechAt (строка ниже) — правильно, шаг снова правится, — а обратный прыжок
+            // вперёд его не возвращал. registryBlock при onCta === false выходит ДО строки
+            // state.mechAt[act.mech] = nowIso(), потому что навигацию берёт на себя спец.
+            // Итог: участник, нажавший «Вернуться и изменить» на печати, правил список,
+            // жал «Продолжить» — и разбор заявок навсегда оставался «не зафиксированным».
+            // Ответ при этом на месте (он в state.mech.list) и судье уходит: тот читает
+            // listJson, а не отметку времени. Терялась именно вкладка участника.
+            var from = route[state.cursor] && route[state.cursor].act;
+            if (from && from.mech && j > state.cursor) {
+              if (!state.mechAt) state.mechAt = {};
+              if (!state.mechAt[from.mech]) state.mechAt[from.mech] = nowIso();
+            }
             state.cursor = j;
             if (state.entered) state.entered[route[j].act.id] = nowIso();
             saveState(); render();
