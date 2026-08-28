@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=228" />
+<link rel="stylesheet" href="css/styles.css?v=229" />
 </head>
 <body class="p-assess">
 
@@ -335,7 +335,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=8"></script>
-<script src="js/scenes.js?v=156"></script>
+<script src="js/scenes.js?v=158"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -343,7 +343,7 @@
 <!-- mechanics.js ДО engine.js: движок спрашивает window.imp.mechanics[act.mech] в
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
-<script src="js/mechanics.js?v=73"></script>
+<script src="js/mechanics.js?v=76"></script>
 <!-- ⚠ mech-fields.js ДО engine.js И ОБЯЗАТЕЛЬНО ЗДЕСЬ. Файл заводился для харнесса
      («описать рабочие области словами экрана»), но 21.08 в него переехал общий расчёт
      машинных подстановок — window.imp.subFacts, то есть {over} и {futureRef}. Тег на
@@ -351,6 +351,6 @@
      насмерть: TypeError на чтении subFacts, а дальше — пустая колонка без поля ответа
      и без кнопки. Ловится проверкой eval/lint_wiring.js. -->
 <script src="js/mech-fields.js?v=37"></script>
-<script src="js/engine.js?v=99"></script>
+<script src="js/engine.js?v=100"></script>
 </body>
 </html>
