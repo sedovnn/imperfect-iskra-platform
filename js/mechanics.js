@@ -344,14 +344,20 @@
     return '<div class="mx-item"><span class="mx-item-n">' + n + '</span>' + inner + '</div>';
   }
 
-  function answerBox(ctx, label, o) {
+  // staged=false — форма появляется целиком, без очереди (правка владельца 28.08).
+  // Очередь имеет смысл только там, где перед полем есть ЖИВАЯ реплика: поле встаёт
+  // следом за словами собеседника. С тех пор как весь диалог сворачивается в шапку,
+  // у окон без probe перед формой ничего не звучит — поля всплывали по одному вслед за
+  // пустотой. Там, где собеседник говорит на этом же такте (второй такт рекомендаций,
+  // печать), очередь остаётся.
+  function answerBox(ctx, label, o, staged) {
     var f = {};
     for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) f[k] = o[k];
     f.label = '';
     // Поле встаёт после реплик собеседника, а не вместе с ними: очередь ведёт движок
     // (stageAttr → revealRun), ключ — имя поля, чтобы память показанных узлов
     // сработала при перерисовке верстака.
-    var st = ctx.stageAttr ? ctx.stageAttr('ans:' + (o.f || o.id || label)) : { cls: '', attr: '' };
+    var st = (staged !== false && ctx.stageAttr) ? ctx.stageAttr('ans:' + (o.f || o.id || label)) : { cls: '', attr: '' };
     return '<div class="mx-ansbox' + st.cls + '"' + st.attr + '>' + head(label, '') +
            '<div class="mx-card">' + field(ctx, f) + '</div></div>';
   }
@@ -1033,7 +1039,7 @@
         var sm2 = ctx.mech('seal') || {};
         if (!(sm2.returned && sm2.confirmed == null)) {
           h += answerBox(ctx, COPY.list.crit.label,
-            { id: 'mxCrit', f: 'crit', rows: 5, ph: COPY.list.crit.ph, val: m.criteria });
+            { id: 'mxCrit', f: 'crit', rows: 5, ph: COPY.list.crit.ph, val: m.criteria }, false);
         }
         host.innerHTML = h;
 
@@ -1470,8 +1476,8 @@
           // поднимает уровень. Срок работает только как проверка достоверности дистанции».
           // Поле оставлено — у верхнего уровня есть вариант «отдача за пределами участия
           // автора», и срок помогает его прочитать, — но стоит после содержания.
-          answerBox(ctx, COPY.goal.became.label, { id: 'mxGb', f: 'became', rows: 5, val: m.became }) +
-          answerBox(ctx, COPY.goal.gave.label, { id: 'mxGg', f: 'gave', rows: 4, val: m.gave }) +
+          answerBox(ctx, COPY.goal.became.label, { id: 'mxGb', f: 'became', rows: 5, val: m.became }, false) +
+          answerBox(ctx, COPY.goal.gave.label, { id: 'mxGg', f: 'gave', rows: 4, val: m.gave }, false) +
           // ⚠ ПОМЕТКА «ПО ЖЕЛАНИЮ» СНЯТА (правка 9.4). По финальной редакции v11 горизонт —
           // ГЛАВНАЯ ОСЬ МК-1, а не гейт достоверности: L2 годовой, L3 привязка к 2+ годам,
           // L4 5+ лет с конкретными будущими изменениями, L5 поколенческий 20+ либо будущее,
@@ -1569,7 +1575,7 @@
       // чем пользоваться, пока пишешь письмо (правка владельца 07.08).
       host.innerHTML = (ctx.lead ? '<p class="case-intro-marks">' + ctx.esc(ctx.lead) + '</p>' : '') +
         LETTER.map(function (f) {
-        return answerBox(ctx, f[1], { id: 'mxL_' + f[0], f: f[0], rows: 4, val: m[f[0]] });
+        return answerBox(ctx, f[1], { id: 'mxL_' + f[0], f: f[0], rows: 4, val: m[f[0]] }, false);
       }).join('');
       LETTER.forEach(function (f) {
         var el = host.querySelector('#mxL_' + f[0]);
