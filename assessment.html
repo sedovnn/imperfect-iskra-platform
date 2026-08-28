@@ -14,7 +14,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=227" />
+<link rel="stylesheet" href="css/styles.css?v=228" />
 </head>
 <body class="p-assess">
 
@@ -125,7 +125,7 @@
          ровно площадь ниже шапки и выше полосы демо. Абсолютное перекрытие требовало бы
          знать высоту шапки — а она разная в демо и вне его.
          Возврата к листу нет намеренно (решение владельца): перечитать роль можно во
-         вкладке «Введение в роль» справа. Лист — вход, вкладка — справочник. -->
+         первом блоке «Справки» справа. Лист — вход, справка — справочник. -->
     <div class="role-sheet" id="roleSheet" style="display:none;">
       <div class="role-sheet-in">
         <!-- ⚠ ВЕРМИЛИОН ЛИТЕРАЛОМ, А НЕ var(--accent) (правка владельца 25.08).
@@ -241,15 +241,12 @@
           <button type="button" class="support-tab" data-tab="marks">Мои заметки<span class="tab-count" id="marksCount"></span></button>
           <button type="button" class="support-tab" data-tab="ref">Справка</button>
           <button type="button" class="support-tab" data-tab="answers">Мои ответы</button>
-          <!-- ⚠ ПЯТАЯ ВКЛАДКА (решение владельца 25.08). Введение в роль перестало быть
-               страницей до старта и стало белым листом поверх ассессмента — а листу нужен
-               адрес, куда вернуться: «кто я в этом дне» участник спрашивает не один раз.
-               Возврата к самому листу владелец не захотел, и это правильнее: лист — вход,
-               вкладка — справочник. Последней в ряду: к ней возвращаются реже всех
-               остальных, а «О компании» обязана оставаться первой.
-               Порядок здесь и перечисление в S.system.screen обязаны совпадать — там про
-               это стоит отдельное предупреждение. -->
-          <button type="button" class="support-tab" data-tab="role">Введение в роль</button>
+          <!-- ⚠ ВКЛАДКИ «ВВЕДЕНИЕ В РОЛЬ» БОЛЬШЕ НЕТ (решение владельца 28.08). Она стояла
+               пятой с 25.08; теперь роль — первый блок «Справки». Адрес, куда вернуться,
+               остался («кто я в этом дне» спрашивают не один раз), но это справочная
+               запись, а не отдельный раздел, и рядом с терминами ей место.
+               Порядок вкладок здесь и перечисление в S.system.screen обязаны совпадать —
+               там про это стоит отдельное предупреждение. -->
         </nav>
 
         <div class="support-body is-on" id="supCase">
@@ -306,7 +303,6 @@
              по уже названным в кейсе людям и продуктам. Опора, не подсказка: памяти
              на имена и термины не измеряет ни одна из десяти способностей. -->
         <div class="support-body" id="supRef">
-          <p class="support-note">Только факты из материалов. Ни одна способность не измеряет память на имена и термины.</p>
           <div id="supRefBody"></div>
         </div>
 
@@ -314,11 +310,6 @@
           <div id="supAnswersBody"></div>
         </div>
 
-        <!-- Наполняется из S.system.lead тем же roleHtml(), что рисует белый лист на
-             входе: один текст, одна реализация, расхождению взяться негде. -->
-        <div class="support-body" id="supRole">
-          <div id="supRoleBody"></div>
-        </div>
 
         <!-- Виден только в режиме чтения пакета: день начинается с папки на столе,
              дальше та же папка остаётся в середине под рукой. -->
@@ -344,7 +335,7 @@
 <script src="js/api.js?v=5"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=8"></script>
-<script src="js/scenes.js?v=154"></script>
+<script src="js/scenes.js?v=156"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -352,14 +343,14 @@
 <!-- mechanics.js ДО engine.js: движок спрашивает window.imp.mechanics[act.mech] в
      момент отрисовки акта. Реестр ничего не делает сам — только регистрируется,
      поэтому порядок между ним и backlog.js не важен, а перед движком — важен. -->
-<script src="js/mechanics.js?v=72"></script>
+<script src="js/mechanics.js?v=73"></script>
 <!-- ⚠ mech-fields.js ДО engine.js И ОБЯЗАТЕЛЬНО ЗДЕСЬ. Файл заводился для харнесса
      («описать рабочие области словами экрана»), но 21.08 в него переехал общий расчёт
      машинных подстановок — window.imp.subFacts, то есть {over} и {futureRef}. Тег на
      этой странице не появился, и обе реплики с подстановкой валили отрисовку шага
      насмерть: TypeError на чтении subFacts, а дальше — пустая колонка без поля ответа
      и без кнопки. Ловится проверкой eval/lint_wiring.js. -->
-<script src="js/mech-fields.js?v=36"></script>
-<script src="js/engine.js?v=98"></script>
+<script src="js/mech-fields.js?v=37"></script>
+<script src="js/engine.js?v=99"></script>
 </body>
 </html>

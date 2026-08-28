@@ -763,9 +763,10 @@
 
   function setTab(name) {
     supportTab = name;
-    // Порядок как в разметке (о компании · заметки · справка · мои ответы · роль) — на
-    // работу он не влияет, но список, читающийся иначе, чем экран, потом обманывает.
-    ['case', 'marks', 'ref', 'answers', 'role'].forEach(function (k) {
+    // Порядок как в разметке (о компании · заметки · справка · мои ответы) — на работу он
+    // не влияет, но список, читающийся иначе, чем экран, потом обманывает.
+    // ⚠ ВКЛАДКИ «Введение в роль» БОЛЬШЕ НЕТ (28.08): роль стоит первым блоком справки.
+    ['case', 'marks', 'ref', 'answers'].forEach(function (k) {
       var b = document.querySelector('.support-tab[data-tab="' + k + '"]');
       var body = el('sup' + k.charAt(0).toUpperCase() + k.slice(1));
       if (b) b.classList.toggle('is-on', k === name);
@@ -773,11 +774,6 @@
     });
     if (name === 'answers') renderAnswersTab();
     if (name === 'marks') renderMarks();
-    // Роль не меняется за день, поэтому рисуем один раз и оставляем.
-    if (name === 'role') {
-      var rb = el('supRoleBody');
-      if (rb && !rb.firstChild) rb.innerHTML = roleHtml();
-    }
   }
 
   // ---------- пометки ----------
@@ -846,7 +842,14 @@
   // Ищем фрагмент по тексту, а не по сохранённой позиции: позиция и есть то, что
   // ломается при новой версии кейса.
   function showMarkInCase(quote) {
-    setTab('case');
+    // ⚠ КОГДА КЕЙС ПЕРЕЕХАЛ В СЕРЕДИНУ — ВКЛАДКУ НЕ ПЕРЕКЛЮЧАЕМ (правка 28.08). На экране
+    // чтения шире 1360 узел кейса физически вынут из панели в центр (caseWideMove), а
+    // setTab('case') снимал is-on с пометок и включал его на узле, которого в панели больше
+    // нет: панель гасла целиком, и участник видел, что его заметки пропали. Кейс при этом
+    // уже перед ним — переключать нечего, надо только доскроллить и подсветить.
+    // Условие именно is-casewide, а не is-reading: ниже порога переезда не происходит,
+    // кейс остаётся вкладкой панели, и туда переключиться как раз нужно.
+    if (!el('dayGrid').classList.contains('is-casewide')) setTab('case');
     var host = el('supCaseText');
     var norm = function (s) { return String(s).replace(/\s+/g, ' '); };
     var needle = norm(quote).slice(0, 80);
@@ -1134,6 +1137,13 @@
   // «слева ТОЛЬКО этапы ассессмента»). Навигация: по пакету — свёрнутые разделы в самом
   // кейсе, по пометкам и ответам — списки в своей вкладке.
 
+  // ⚠ ВВЕДЕНИЕ В РОЛЬ — ПЕРВЫЙ БЛОК СПРАВКИ (решение владельца 28.08). Оно было пятой
+  // вкладкой; вкладка снята. Причина та же, по которой роль вообще держат под рукой:
+  // «кто я в этом дне» спрашивают не один раз, — но это справочная запись, а не отдельный
+  // раздел, и стоять ей первой: справка открывается сверху, а роль — то, с чего день
+  // начинается. Текст по-прежнему из S.system.lead через ту же roleHtml(), что рисует
+  // белый лист на входе: одна реализация, расхождению взяться негде.
+  // Свой заголовок «Ваша роль» здесь выключен — его роль исполняет заголовок блока.
   function refHtml() {
     var R = S.reference || { terms: [], people: [], things: [] };
     var rows = function (list) {
@@ -1141,7 +1151,9 @@
         return '<div class="who-row"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '</span></div>';
       }).join('');
     };
-    return '<p class="who-h" id="ref-terms">Термины</p>' + rows(R.terms) +
+    return '<p class="who-h" id="ref-role">Введение в роль</p>' +
+      '<div class="who-role">' + roleHtml(false) + '</div>' +
+      '<p class="who-h" id="ref-terms">Термины</p>' + rows(R.terms) +
       '<p class="who-h" id="ref-people">Люди</p>' + rows(R.people) +
       '<p class="who-h" id="ref-things">Компании и продукты</p>' + rows(R.things);
   }
@@ -1468,6 +1480,45 @@
   // Вкладка «Мои ответы»: только зафиксированное. Незаполненное окно здесь не
   // показывается — иначе панель печатала бы карту вопросов дня вперёд, то есть
   // выдавала бы ось замера до того, как вопрос задан.
+  // ⚠ ОТВЕТ ШАГА — ЛИСТ В РАМКЕ, И СВЁРНУТЫЙ (правка владельца 28.08). Вкладка была
+  // лентой без границ: к пятому шагу её надо было прокручивать, чтобы найти нужный ответ,
+  // а сами ответы сливались друг с другом. Теперь каждый шаг — документ того же вида, что
+  // разбор заявок на печати: рамка, поля, свёртка. Свёрнуто по умолчанию, потому что ищут
+  // не «всё сразу», а один ответ; на переходе к следующей встрече последний раскрывается
+  // сам — см. interludeMode.
+  // Ключ в data-recap — имя шага (mech или save): по нему открывается нужный лист.
+  function recapDoc(key, title, body) {
+    return '<details class="recap-doc" data-recap="' + esc(key) + '">' +
+      '<summary class="recap-sum"><span class="recap-q">' + esc(title) + '</span></summary>' +
+      '<div class="recap-a">' + body + '</div></details>';
+  }
+
+  // ⚠ РАСКРЫТЫЙ ЛИСТ — СОСТОЯНИЕ, А НЕ ОДНОРАЗОВОЕ ДЕЙСТВИЕ. render() перерисовывает
+  // вкладку «Мои ответы» в самом КОНЦЕ (`if (supportTab === 'answers') renderAnswersTab()`),
+  // то есть уже после того, как переход её открыл: раскрытый лист закрывался бы сам через
+  // мгновение. Поэтому запоминаем ключ и применяем его при каждой отрисовке вкладки.
+  var recapOpen = '';
+
+  function applyRecapOpen() {
+    var host = el('supAnswersBody');
+    if (!host || !recapOpen) return;
+    var d = host.querySelector('[data-recap="' + recapOpen + '"]');
+    if (d) d.open = true;
+  }
+
+  // Раскрыть один лист и свернуть остальные.
+  function openRecap(key) {
+    if (!key) return;
+    recapOpen = key;
+    var host = el('supAnswersBody');
+    if (!host) return;
+    var d = host.querySelector('[data-recap="' + key + '"]');
+    if (!d) return;
+    host.querySelectorAll('details.recap-doc').forEach(function (x) { if (x !== d) x.open = false; });
+    d.open = true;
+    d.scrollIntoView({ block: 'nearest' });
+  }
+
   function answersHtml() {
     var out = '';
     S.windows().forEach(function (w) {
@@ -1477,17 +1528,13 @@
       // именно в них с 05.08 живёт основной текст участника.
       if (w.mech) {
         if (!(state.mechAt && state.mechAt[w.mech])) return;
-        out += '<div class="recap-item">' +
-          '<div class="recap-q">' + esc(w.scene.name) + ' · ' + esc(mechTitle(w.mech)) + '</div>' +
-          '<div class="recap-a">' + mechAnswerHtml(w.mech) + '</div></div>';
+        out += recapDoc(w.mech, w.scene.name + ' · ' + mechTitle(w.mech), mechAnswerHtml(w.mech));
         return;
       }
       if (!state.answersAt[w.save]) return;
       var val = state.answers[w.save];
-      out += '<div class="recap-item">' +
-        '<div class="recap-q">' + esc(w.scene.name) + ' · ' + esc(w.label) + '</div>' +
-        '<div class="recap-a">' + (String(val || '').trim() ? br(val) : '<i>промолчали</i>') + '</div>' +
-        '</div>';
+      out += recapDoc(w.save, w.scene.name + ' · ' + w.label,
+        String(val || '').trim() ? br(val) : '<i>промолчали</i>');
     });
     if (state.picksAt) {
       var t = totals(), p = picksForJudge(), byId = {};
@@ -1500,14 +1547,11 @@
             '</li>';
         }).join('');
       };
-      out += '<div class="recap-item">' +
-        '<div class="recap-q">Кабинет Агеева · разбор портфеля</div>' +
-        '<div class="recap-a">' +
-          '<p style="margin:0 0 8px;">' + t.people + ' человек из ' + LIM.people + ' · ' + num(t.money) + ' млрд из ' + LIM.money +
-          (t.over ? ' — вне бюджета' : ' — в бюджете') + '</p>' +
-          '<p style="margin:10px 0 4px;"><b>Берём (' + p.taken.length + ')</b></p><ul class="recap-list">' + line(p.taken) + '</ul>' +
-          '<p style="margin:10px 0 4px;"><b>Не сейчас (' + p.dropped.length + ')</b></p><ul class="recap-list">' + line(p.dropped) + '</ul>' +
-        '</div></div>';
+      out += recapDoc('picks', 'Кабинет Агеева · разбор портфеля',
+        '<p style="margin:0 0 8px;">' + t.people + ' человек из ' + LIM.people + ' · ' + num(t.money) + ' млрд из ' + LIM.money +
+        (t.over ? ' — вне бюджета' : ' — в бюджете') + '</p>' +
+        '<p style="margin:10px 0 4px;"><b>Берём (' + p.taken.length + ')</b></p><ul class="recap-list">' + line(p.taken) + '</ul>' +
+        '<p style="margin:10px 0 4px;"><b>Не сейчас (' + p.dropped.length + ')</b></p><ul class="recap-list">' + line(p.dropped) + '</ul>');
     }
     return out || '<p class="support-note">Пока ничего не зафиксировано.</p>';
   }
@@ -1516,6 +1560,18 @@
     var host = el('supAnswersBody');
     host.innerHTML = answersHtml();
     if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
+    applyRecapOpen();
+    // Свернул сам — значит больше не держим лист раскрытым: иначе следующая
+    // перерисовка открывала бы его обратно, и участник спорил бы с экраном.
+    // toggle не всплывает, поэтому слушаем на перехвате.
+    if (!host.dataset.recapWired) {
+      host.dataset.recapWired = '1';
+      host.addEventListener('toggle', function (e) {
+        var d = e.target;
+        if (d && d.classList && d.classList.contains('recap-doc') && !d.open &&
+            d.getAttribute('data-recap') === recapOpen) recapOpen = '';
+      }, true);
+    }
   }
 
   // ---------- блоки разговора ----------
@@ -2396,10 +2452,10 @@
     // Штамп берём по последнему СОСТОЯВШЕМУСЯ шагу, а не по свободным окнам: семь
     // шагов из двенадцати — механики, и по одним answersAt на переходе из первого
     // этапа штамп был пустым (первый шаг — механика тезисов).
-    var lastAt = '';
+    var lastAt = '', lastKey = '';
     S.windows().forEach(function (w) {
       var at = w.mech ? (state.mechAt && state.mechAt[w.mech]) : state.answersAt[w.save];
-      if (at) lastAt = at;
+      if (at) { lastAt = at; lastKey = w.mech || w.save; }
     });
     // Заголовок — данные: после первого этапа тезисы УХОДЯТ Агееву в мессенджер, и
     // «ответ отправлен» там правда; на остальных переходах ничего никуда не уходит,
@@ -2417,6 +2473,13 @@
     if (nx) nx.textContent = 'Следующий этап ' + S.stageNo(step.sceneIx) + ' из ' + S.stageCount() + ':';
     el('interludeWhere').textContent = step.scene.name;
     el('interludeWhen').textContent = step.scene.where;
+
+    // ⚠ НА ПЕРЕХОДЕ ПАНЕЛЬ ОТКРЫВАЕТСЯ НА ТОМ, ЧТО ТОЛЬКО ЧТО СКАЗАНО (правка владельца
+    // 28.08). Между встречами участник смотрит назад — что он уже ответил, — и до правки
+    // ему приходилось самому идти во вкладку и искать нужный лист. Раскрывается ровно один
+    // лист, последний зафиксированный; остальные остаются свёрнутыми.
+    // Только когда есть что открывать: на переходе перед первым шагом вкладка пуста.
+    if (lastKey) { setTab('answers'); openRecap(lastKey); }
 
     var cta = el('interludeCta');
     cta.textContent = I.cta || 'Дальше →';
@@ -2809,7 +2872,7 @@
   // переживает перезагрузку: участник, обновивший страницу на материалах, не получает
   // введение заново. В демо состояние служебное и лежит в sessionStorage, поэтому
   // витрина каждый раз показывает путь целиком — так и задумано.
-  // Текст берёт та же roleHtml(), что наполняет вкладку «Введение в роль»: одна
+  // Текст берёт та же roleHtml(), что наполняет первый блок справки: одна
   // реализация, расхождению взяться негде.
   function showRoleSheet() {
     var sheet = el('roleSheet'), shell = document.querySelector('.station-shell');

@@ -57,9 +57,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "4493b1122f5a",
+  "sha": "65362e19a63d",
   "keys": {
-   "assessment.html": 98
+   "assessment.html": 99
   }
  },
  "js/expert-api.js": {
@@ -108,18 +108,18 @@
   }
  },
  "js/mech-fields.js": {
-  "sha": "6faca8946dbf",
+  "sha": "8f14ace5edc9",
   "keys": {
-   "assessment.html": 36,
-   "harness.html": 36
+   "assessment.html": 37,
+   "harness.html": 37
   }
  },
  "js/mechanics.js": {
-  "sha": "3487df203fdf",
+  "sha": "df00548434fb",
   "keys": {
-   "assessment.html": 72,
-   "cabinet.html": 72,
-   "harness.html": 72
+   "assessment.html": 73,
+   "cabinet.html": 73,
+   "harness.html": 73
   }
  },
  "js/report-texts.js": {
@@ -135,13 +135,13 @@
   }
  },
  "js/scenes.js": {
-  "sha": "171faeaf3c05",
+  "sha": "7741d9aa500e",
   "keys": {
-   "assessment.html": 154,
-   "cabinet.html": 154,
-   "harness.html": 154,
-   "intro.html": 154,
-   "role.html": 154
+   "assessment.html": 156,
+   "cabinet.html": 156,
+   "harness.html": 156,
+   "intro.html": 156,
+   "role.html": 156
   }
  },
  "js/typo.js": {

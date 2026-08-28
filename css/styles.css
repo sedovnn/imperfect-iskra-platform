@@ -2257,6 +2257,36 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
   border-left: 1px solid var(--hairline);
   padding-left: 14px;
 }
+
+/* ── ОТВЕТ ШАГА — ЛИСТ В РАМКЕ, СВЁРНУТЫЙ (правка владельца 28.08) ──
+   Тот же вид, что у разбора заявок на печати: белое поле, рамка, скруглённые углы.
+   Свёрнуто по умолчанию — во вкладку приходят за одним ответом, а не за всеми сразу;
+   на переходе к следующей встрече последний лист раскрывается сам. */
+.recap-doc {
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  margin: 0 0 12px;
+  box-shadow: 0 1px 2px rgba(24, 24, 24, .04);
+}
+.recap-sum {
+  display: flex; align-items: center; gap: 10px;
+  padding: 14px 18px; cursor: pointer; list-style: none;
+}
+.recap-sum::-webkit-details-marker { display: none; }
+.recap-sum .recap-q { margin: 0; }
+/* Треугольник свёртки — свой, справа: у нативного маркера нет управления местом. */
+.recap-sum::after {
+  content: ''; margin-left: auto; flex: none;
+  width: 7px; height: 7px;
+  border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted);
+  transform: rotate(45deg); transition: transform .15s ease;
+}
+.recap-doc[open] > .recap-sum::after { transform: rotate(-135deg); }
+.recap-doc[open] > .recap-sum { border-bottom: 1px solid var(--hairline); }
+.recap-doc > .recap-a {
+  border-left: 0; padding: 14px 18px 18px; max-width: none;
+}
 .recap-list { margin: 0; padding-left: 18px; font-size: var(--fs-dense); line-height: 1.55; }
 .recap-list li { margin-bottom: 4px; }
 /* Номер участника в шапке дня. Свой класс, а не общий .bib: тот рисует тёмную
@@ -2988,9 +3018,18 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .support > .case-read-foot .win-note, .casewide > .case-read-foot .win-note { max-width: 340px; }
 /* Пустое примечание не должно держать место и зазор рядом с кнопкой. */
 .win-note:empty { display: none; }
-.who-h { margin: 18px 0 8px;
-}
-.who-h:first-child { margin-top: 0; }
+/* ⚠ ЗАГОЛОВОК БЛОКА ОТДЕЛЁН ЧЕРТОЙ, И ЧЕРТА ЖИРНЕЕ СТРОЧНЫХ (правка владельца 28.08).
+   Заголовки склеивались со списком: строки терминов разделены волосяной линией, а у
+   заголовка своей линии не было вовсе — глаз не находил, где кончается один блок и
+   начинается другой. Линия цветом текста и в два пиксела: она обязана читаться СИЛЬНЕЕ
+   тех, что делят термины между собой, иначе добавит ещё одну равную границу и спутает
+   ещё больше. Зазор сверху вырос: граница блока — это пауза, а не просто линия. */
+.who-h { margin: 30px 0 10px; padding-top: 12px; border-top: 2px solid var(--ink); }
+.who-h:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+/* Введение в роль — не список, а абзацы: под заголовком блока им нужен свой отступ,
+   а последний абзац не должен прижимать следующую черту. */
+.who-role { padding: 2px 0 6px; }
+.who-role .read-role > p:last-child { margin-bottom: 0; }
 /* ⚠ Мера строки одна на всю платформу — 80 знаков на всех бегущих строках: кейс,
    справка, пометки, свои ответы. Исключения: таблицы приложений (читают по столбцам)
    и колонка терминов в справке (ярлык, не текст). */
