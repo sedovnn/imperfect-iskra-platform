@@ -763,8 +763,10 @@
         // а не разговору. Сверка не потеряна — лист «Рекомендации» открывается там.
         // Принятая цена: чтобы ответить «почему она, а не одна из перечисленных», участник
         // теперь открывает вкладку, а не читает список тут же.
-        var h = ctx.speech(ctx.probe);
-        // Порядок полей — порядок пузырей probe: рекомендация → почему она, а не
+        // Заход виден, вопросы — свёрнуты: те же три стоят подписями над полями ниже
+        // (правка владельца 28.08). Прозвучать они обязаны, дважды показываться — нет.
+        var h = ctx.speech(ctx.probe) + ctx.speechFold(ctx.probeAsk);
+        // Порядок полей — порядок вопросов: рекомендация → почему она, а не
         // перечисленные → как вы к ней пришли (правка 3.8).
         h += answerBox(ctx, COPY.variants.main.label,
                { id: 'mxMT', f: 'mainText', ph: COPY.variants.main.ph, rows: 3, val: m.mainText }) +
@@ -1593,35 +1595,51 @@
       (has ? ' ' + body : '') + '</p>';
   }
 
+  // ⚠ РАСКЛАДКА ЛИСТА — ПО ОБРАЗЦУ ВЛАДЕЛЬЦА (28.08): подпись жирным своей строкой, ответ
+  // под ней обычным; списки — номер жирным, текст обычным. Порядок: сначала отмеченное
+  // тревожным, потом остальные наблюдения, потом связи, потом вывод для компании.
+  // ⚠ НОМЕРА ОСТАЛЬНЫХ НАБЛЮДЕНИЙ — КАК НА ЭКРАНЕ, СО СКВОЗНЫМ СЧЁТОМ. Пересчитать их
+  // подряд после того, как тревожное вынуто наверх, нельзя: участник ссылается на
+  // наблюдения номерами в связях («1 влияет на 2»), и перенумерация сделала бы эти ссылки
+  // ложными. Поэтому у отмеченного номер просто пропущен в списке остальных.
+  function lead(label, body) {
+    return '<p style="margin:12px 0 0;"><b>' + label + '</b></p>' +
+           '<p style="margin:2px 0 0;">' + body + '</p>';
+  }
+  function numLine(n, body) {
+    return '<p style="margin:4px 0 0;"><b>' + n + '.</b> ' + body + '</p>';
+  }
+
   M.theses.answerHtml = function (m, ctx) {
     var filled = m.cards.filter(function (c) { return String(c.text).trim(); });
-    var h = '<ol style="margin:0;padding-left:20px;">' + filled.map(function (c) {
-      return '<li>' + ctx.br(c.text) + (String(c.anchor).trim() ? ' <i>(' + ctx.br(c.anchor) + ')</i>' : '') + '</li>';
-    }).join('') + '</ol>';
-    var f = m.cards.filter(function (c) { return c.id === m.first; })[0];
-    // ⚠ «ПОЧЕМУ» ПЕЧАТАЕТСЯ, ТОЛЬКО ЕСЛИ ОТВЕЧЕНО (правка 28.08). Подпись стояла в значении
-    // безусловно, и у того, кто отметил карточку, но поле «Почему именно это?» не заполнил,
-    // в листе висело «Почему:» без ответа. Само поле не обязательное: метка тревожного
-    // необязательна с правки 2.3, и объяснение к ней тем более.
-    // Слова — как на экране: там спрашивают «Почему именно это?», а не «Почему».
+    var nOf = {};
+    filled.forEach(function (c, i) { nOf[c.id] = i + 1; });
+    var f = filled.filter(function (c) { return c.id === m.first; })[0];
+    var h = '';
     if (f) {
-      h += p(COPY.theses.worst, ctx.br(f.text));
-      if (String(m.why || '').trim()) h += p(COPY.theses.why.label, ctx.br(m.why));
+      h += lead(COPY.theses.worst + ':', ctx.br(f.text));
+      // Объяснение печатается, только если оно есть: и метка, и поле необязательны.
+      if (String(m.why || '').trim()) h += lead(COPY.theses.why.label, ctx.br(m.why));
     }
-    // Два поля про связи (с 14.08). Показываем их, если заполнены.
-    var tt = tiesOf(m).filter(function (x) { return String(x.why).trim() || String(x.conc).trim(); });
-    if (tt.length) {
-      // Заголовок блока здесь не печатаем: у каждой строки ниже своя подпись, и
-      // «Есть ли между наблюдениями связь и какая?» над ней была бы вопросом без ответа.
-      tt.forEach(function (x, i) {
-        if (tt.length > 1) h += p('Связь ' + (i + 1), '');
-        if (String(x.why).trim()) h += p(COPY.theses.lwhy.label, ctx.br(x.why));
-        // Вывод внутри связки — только у записей до правки 2.2; у нынешних он один
-        // на шаг и печатается ниже.
-        if (String(x.conc).trim()) h += p(COPY.theses.lconc.label, ctx.br(x.conc));
+    var rest = filled.filter(function (c) { return !f || c.id !== f.id; });
+    if (rest.length) {
+      h += '<p style="margin:12px 0 0;"><b>' + (f ? 'Остальные наблюдения:' : 'Наблюдения:') + '</b></p>';
+      rest.forEach(function (c) {
+        h += numLine(nOf[c.id], ctx.br(c.text) +
+          (String(c.anchor).trim() ? ' <i>(' + ctx.br(c.anchor) + ')</i>' : ''));
       });
     }
-    if (String(m.conc || '').trim()) h += p(COPY.theses.lconc.label, ctx.br(m.conc));
+    var tt = tiesOf(m).filter(function (x) { return String(x.why).trim() || String(x.conc).trim(); });
+    if (tt.length) {
+      h += '<p style="margin:12px 0 0;"><b>Связи между наблюдениями:</b></p>';
+      tt.forEach(function (x, i) {
+        if (String(x.why).trim()) h += numLine(i + 1, ctx.br(x.why));
+        // Вывод внутри связки — только у записей до правки 2.2; у нынешних он один на шаг
+        // и печатается ниже.
+        if (String(x.conc).trim()) h += lead(COPY.theses.lconc.label, ctx.br(x.conc));
+      });
+    }
+    if (String(m.conc || '').trim()) h += lead(COPY.theses.lconc.label, ctx.br(m.conc));
     // Прежние связки-объекты — только у записей до 14.08.
     if ((m.links || []).length) {
       h += p('Связки (' + m.links.length + ')', '');

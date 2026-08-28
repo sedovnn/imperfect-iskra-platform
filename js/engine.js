@@ -1527,7 +1527,17 @@
       // бы почти пустой — семь шагов из двенадцати не показывали бы ничего, а
       // именно в них с 05.08 живёт основной текст участника.
       if (w.mech) {
-        if (!(state.mechAt && state.mechAt[w.mech])) return;
+        // ⚠ ДОКУМЕНТ ПОЯВЛЯЕТСЯ И ПОСЛЕ ПЕРВОГО ТАКТА (починка 28.08). Гейт стоял только
+        // на mechAt — отметке, что закрыт ВЕСЬ шаг. У верстаков с двумя тактами первый
+        // такт сдан и править его уже нельзя, а во вкладке его не было: на втором такте
+        // рекомендаций участник не видел собственного веера, хотя вопрос второго такта —
+        // «почему она, а не одна из перечисленных» — требует на него смотреть. Раньше это
+        // прикрывал список прямо в диалоге; список убран, и дыра открылась.
+        // Признаки «первый такт сдан» берём те же, по которым сами верстаки рисуют второй:
+        // picked у рекомендаций, asked у будущего, confirmed у печати.
+        var mst = state.mech && state.mech[w.mech];
+        var sealedFirst = !!(mst && (mst.picked != null || mst.asked || mst.confirmed != null));
+        if (!(state.mechAt && state.mechAt[w.mech]) && !sealedFirst) return;
         out += recapDoc(w.mech, w.scene.name + ' · ' + mechTitle(w.mech), mechAnswerHtml(w.mech));
         return;
       }
@@ -1940,6 +1950,24 @@
         return { cls: ' is-staged', attr: ' data-reveal="1" data-rk="' + esc(rk) + '"' };
       },
       probe: (act && act.probe) || null,
+      // Реплики второго такта, которые на экране ответа стоят СВЁРНУТЫМИ (act.probeAsk).
+      // Нужны там, где форма несёт те же вопросы подписями полей: вопрос обязан прозвучать,
+      // но повторять его пузырём рядом с полем — показывать одно и то же дважды.
+      probeAsk: (act && act.probeAsk) || null,
+      // Свёрнутый блок реплик — той же разметкой, что свёртка монолога у шага (foldedSpeech):
+      // участник узнаёт вид и знает, что под ним.
+      speechFold: function (sp) {
+        if (!sp || !sp.bubbles || !sp.bubbles.length) return '';
+        var n = sp.bubbles.length;
+        return '<details class="s2-block talk-folded"><summary class="talk-folded-sum">' +
+          '<span class="talk-folded-t">' + esc(sp.fold || 'Реплики') + '</span>' +
+          '<span class="talk-folded-n">' + n + ' ' +
+            plural(n, 'реплика', 'реплики', 'реплик') + ' · показать</span>' +
+          '</summary><div class="talk-folded-body">' +
+          speechHtml({ who: sp.who, note: sp.note, bubbles: sp.bubbles }, false,
+                     ((act && act.id) || 'mx') + '/probeAsk') +
+          '</div></details>';
+      },
       // Вторая редакция вопроса второго такта — для того, кто написал одно будущее
       // (правка 8.5). Выбор между ними делает механика: у неё под рукой состояние.
       probeOne: (act && act.probeOne) || null,
