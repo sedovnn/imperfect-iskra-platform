@@ -465,7 +465,8 @@
               [C.letter.works.label]: 'ваш ответ' },
       toState: function (o) {
         return { what: String(o[C.letter.what.label] || o['Что мы делаем'] || o['что мы делаем'] || o.what || ''),
-                 why: String(o[C.letter.why.label] || o['Почему именно это'] || o['почему именно это'] || o.why || ''),
+                 // «Почему именно это?» — написание до правки 28.08.
+                 why: String(o[C.letter.why.label] || o['Почему именно это?'] || o['Почему именно это'] || o['почему именно это'] || o.why || ''),
                  how: String(o[C.letter.how.label] || o['Как мы туда идём'] || o['как мы туда идём'] || o.how || ''),
                  works: String(o[C.letter.works.label] || o['Почему эта стратегия сработает'] || o['почему эта стратегия сработает'] || o.works || '') };
       }
