@@ -153,8 +153,8 @@
  "js/expert-corpus.js": {
   "sha": "(шифротекст, меняется при каждой сборке)",
   "keys": {
-   "expert.html": 3,
-   "expert-report.html": 3
+   "expert.html": 4,
+   "expert-report.html": 4
   }
  },
  "css/expert.css": {
