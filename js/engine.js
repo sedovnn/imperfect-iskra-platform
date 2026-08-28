@@ -546,7 +546,14 @@
 
   // Идёт по помеченным узлам в порядке разметки и снимает метку с каждого через
   // REVEAL_MS. По окончании зовёт done — там открывается рабочая область.
-  function revealRun(host, done) {
+  // ⚠ ТРЕТИЙ АРГУМЕНТ clear — ТОЛЬКО ДЛЯ СВЕЖЕГО ШАГА (правка 28.08). Такт «сначала
+  // освобождаем экран» (ниже) до 28.08 не срабатывал ВООБЩЕ: он мерит getBoundingClientRect
+  // первого непоказанного пузыря, а тот стоял display: none и отдавал нули — условие никогда
+  // не выполнялось. С этой правки непоказанная реплика держит высоту, такт ожил сам, и его
+  // пришлось развести по вызовам: на свежем шаге он и задуман (увести прочитанное вверх), а в
+  // подборщике забытых пузырей (revealSweep, щелчок внутри верстака) он бы дёргал колонку
+  // ровно в тот момент, когда участник работает руками.
+  function revealRun(host, done, clear) {
     if (revealTimer) { clearTimeout(revealTimer); revealTimer = null; }
     var q = [].slice.call(host.querySelectorAll('[data-reveal="1"]'));
     // ⚠ СНАЧАЛА ОСВОБОЖДАЕМ ЭКРАН, ПОТОМ ГОВОРИМ (правка владельца 09.08). Прежде
@@ -556,7 +563,7 @@
     // колонку — отсюда «рывками». Если содержимого выше мало, браузер упрёт
     // прокрутку в начало сам, и ничего не сдвинется.
     var sc0 = el('talkScroll');
-    if (sc0 && q.length) {
+    if (clear && sc0 && q.length) {
       var first = q[0];
       var ft = first.getBoundingClientRect().top - sc0.getBoundingClientRect().top;
       var want = Math.round(sc0.clientHeight * 0.3);
@@ -1697,7 +1704,9 @@
     t = t ? t.charAt(0).toUpperCase() + t.slice(1) : (scene ? esc(scene.name) : '');
     return '<div class="demo-top"><span class="demo-tag">демо</span>' +
       '<span class="demo-step">' + esc(t) + '</span>' +
-      (scene ? '<span class="demo-where">' + esc(scene.place || scene.name) + ', ' + esc(scene.where) + '</span>' : '') +
+      // Место берём так же, как шапка шага (sceneHead): у разговора на выходе оно своё,
+      // и операторская полоса обязана называть то же место, что видит участник.
+      (scene ? '<span class="demo-where">' + esc(act.place || scene.place || scene.name) + ', ' + esc(act.where || scene.where) + '</span>' : '') +
       '</div>' +
       (what ? '<p class="demo-p">' + what + '</p>' : '') +
       (m.how ? '<p class="demo-p demo-p-dim">' + esc(m.how) + '</p>' : '');
@@ -1733,7 +1742,12 @@
     return '<div class="sc-head">' +
       '<span class="sc-head-name">' + esc(t) + '</span>' +
       '<span class="sc-head-sep">·</span>' +
-      '<span class="sc-head-where">' + esc(scene.place || scene.name) + ', ' + esc(scene.where) + '</span>' +
+      // ⚠ МЕСТО И ВРЕМЯ МОЖНО ПЕРЕОПРЕДЕЛИТЬ НА САМОМ ШАГЕ (правка владельца 28.08).
+      // Разговор на выходе стал третьим шагом «Прожектора», но происходит он не в
+      // кофейне и не в 11:35: у акта свои place/where, и шапка обязана говорить его,
+      // а не адрес этапа. Без этого на экране стояла бы неправда — подпись «догоняет
+      // на выходе из офиса» под шапкой «Кофейня «Прожектор», Понедельник, 11:35».
+      '<span class="sc-head-where">' + esc(act.place || scene.place || scene.name) + ', ' + esc(act.where || scene.where) + '</span>' +
       '</div>' + measuresLine(act);
   }
 
@@ -2815,6 +2829,22 @@
       if (foot) actHost.appendChild(foot);
     }
     var waiting = !!now.querySelector('[data-reveal="1"]');
+    // ⚠ ОДНА РЕПЛИКА — БЕЗ ПОКАЗА ПО ОЧЕРЕДИ (правка владельца 28.08). «Тут пусть всё сразу
+    // появляется, реплика одна, и вот это появление карточки и блока для ответа вообще ни к
+    // чему». Показ по одной осмыслен там, где реплик несколько: он держит темп чтения. Когда
+    // реплика одна, очередь состоит из неё же — и вслед за ней по той же механике выезжают
+    // карточка заявки и поле ответа, хотя читать между ними нечего. Снимаем метку показа:
+    // waiting становится false, openWork зовётся сразу, и шаг встаёт целиком.
+    // Тот же довод, по которому 28.08 форма цели перестала всплывать по частям.
+    if (waiting) {
+      var only = now.querySelectorAll('[data-reveal="1"]');
+      if (only.length === 1 && only[0].classList.contains('chat')) {
+        only[0].removeAttribute('data-reveal');
+        only[0].classList.add('is-in');
+        if (only[0].dataset && only[0].dataset.rk) shownBubbles[only[0].dataset.rk] = 1;
+        waiting = false;
+      }
+    }
     // ⚠ РЯД ДЕЙСТВИЯ НЕ ПРЯЧЕТСЯ, ПОКА ИДЁТ МОНОЛОГ (правка владельца 07.08). Раньше
     // он появлялся и исчезал на каждом шаге, и кнопка мигала. Теперь он стоит на
     // месте, а кнопки на время монолога выключены — видно, что действие будет, но
@@ -2942,7 +2972,7 @@
     autoGrowAll(now);
     // И только теперь открываем рабочую область: её подтяжка к кнопке — последняя,
     // и затирать её больше нечему (см. предупреждение о порядке выше).
-    if (waiting) revealRun(now, openWork); else openWork();
+    if (waiting) revealRun(now, openWork, true); else openWork();
   }
 
   // Счётчика «N / 6» в шапке нет (решение владельца 04.08, СПЕК §4.4: прогресс дня живёт

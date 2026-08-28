@@ -1314,11 +1314,40 @@
             '</div>';
         }
         host.innerHTML = h;
+        // ⚠ КНОПКА ВЫБОРА ПРИХОДИТ С ПЕРВЫМ ЗНАКОМ, А НЕ ПО BLUR (правка владельца 28.08).
+        // «Неудобно, что с окна ввода надо куда-то кликнуть, чтобы на последнем появилась
+        // эта кнопка»: у первой карточки она возникала сразу (её рисует draw при добавлении
+        // второй), а у только что добавленной — лишь когда участник уходил из поля. Значит
+        // отметить самый вероятный вариант нельзя было, не щёлкнув мимо.
+        // Полную перерисовку на каждый символ по-прежнему делать НЕЛЬЗЯ — она сбивает
+        // курсор (та же причина, по которой у вилки в С3 перерисовки по blur нет вовсе:
+        // там два поля в одной карточке). Поэтому трогаем только подвал СВОЕЙ карточки.
+        // Условие «карточка заполнена» остаётся: на пустой кнопка предлагала бы отметить
+        // ничто, а метка на пустом варианте прошла бы гейт и напечаталась пустой строкой.
+        var syncCtrl = function (ta) {
+          var i = Number(ta.dataset.fu);
+          var card = ta.closest('.mx-card');
+          var foot = card && card.querySelector('.mx-acts-foot');
+          if (!foot || m.bet === i) return;      // у отмеченной карточки кнопка своя, её не трогаем
+          var btn = foot.querySelector('[data-bet]');
+          var need = !!String(m.cards[i] || '').trim() && m.cards.length > 1;
+          if (need && !btn) {
+            btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 's2-act';
+            btn.setAttribute('data-bet', String(i));
+            btn.textContent = COPY.futures.betPick;
+            foot.insertBefore(btn, foot.firstChild);   // порядок тот же, что в разметке: выбор, потом «убрать»
+          } else if (!need && btn) {
+            foot.removeChild(btn);
+          }
+        };
         host.querySelectorAll('[data-fu]').forEach(function (ta) {
-          ta.addEventListener('input', function () { m.cards[Number(ta.dataset.fu)] = ta.value; ctx.save(); ctx.sync(); });
-          // Кнопка выбора появляется по blur, а не на каждый ввод: перерисовка на
-          // каждый символ сбивала бы курсор. Та же причина, по которой у вилки в
-          // С3 перерисовки по blur нет вовсе — там два поля в одной карточке.
+          ta.addEventListener('input', function () {
+            m.cards[Number(ta.dataset.fu)] = ta.value; syncCtrl(ta); ctx.save(); ctx.sync();
+          });
+          // blur оставляем: он приводит карточку к полному виду (подсветка отмеченной,
+          // состояние «убрать») — но кнопка выбора его больше не ждёт.
           ta.addEventListener('blur', function () { draw(); ctx.sync(); });
         });
         var w = host.querySelector('#mxBw');
