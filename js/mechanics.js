@@ -1041,6 +1041,10 @@
         // раз нажимал кнопки в порядке «берём · не сейчас · не делаем» и видел стопки в
         // том же порядке, а в документе, который Агеев положит на стол правления, порядок
         // менялся. Причины у прежнего порядка в коде не было.
+        // Заявку правления спрашиваем ОДИН раз на весь лист: ctx.forcedId ленив (см.
+        // engine.js), и звать его на каждую из двадцати строк значило бы двадцать раз
+        // пересчитать одно и то же.
+        var fid = (typeof ctx.forcedId === 'function') ? ctx.forcedId() : (ctx.forcedId || null);
         [['Берём', 'take'], ['Не сейчас', 'later'], ['Не делаем', 'never']].forEach(function (p) {
           var arr = by(p[1]);
           out += '<div class="bl-col-head" style="margin-top:14px;">' + p[0] + ' <span>· ' + arr.length + '</span></div>' +
@@ -1052,7 +1056,7 @@
                   // а помнить цены наизусть — не работа участника.
                   // Подсветка заявки, на которой настоит правление: у листа на шаге обмена
                   // ctx.forcedId заполнен, у листа печати — нет (см. engine.js).
-                  return '<li' + (ctx.forcedId && r.id === ctx.forcedId ? ' class="is-forced"' : '') + '>' +
+                  return '<li' + (fid && r.id === fid ? ' class="is-forced"' : '') + '>' +
                     '<span class="off-t">' + ctx.esc(r.title) +
                       '<button type="button" class="off-i" aria-label="описание заявки">i</button>' +
                     '</span>' +
