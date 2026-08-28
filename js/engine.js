@@ -2632,7 +2632,16 @@
         // спросили и получили ответ, а ниже шёл следующий вопрос. Два вопроса на экране,
         // живой только один. Свёртка остаётся: монолог никуда не пропал, он под «показать».
         if (past) hideK = true;
-        now.appendChild(foldedSpeech(st.act, pending, hideK));
+        // ⚠ ВОПРОСЫ ВТОРОГО ТАКТА ИДУТ В ЭТУ ЖЕ СВЁРТКУ (правка владельца 28.08). Они
+        // звучат после первого такта, поэтому в pending их нет — но своя свёртка рядом
+        // была бы вторым свёрнутым блоком на одном экране, а такого узора в дне нет.
+        // Условие то же, по которому механика рисует второй такт: hideKept.
+        var speeches = pending;
+        if (st.act.probeAsk && hideK && !past) {
+          speeches = pending.concat([{ id: st.act.id + '.probeAsk', who: st.act.probeAsk.who,
+                                       note: st.act.probeAsk.note, bubbles: st.act.probeAsk.bubbles }]);
+        }
+        now.appendChild(foldedSpeech(st.act, speeches, hideK));
         pending = [];
       } else {
         flush(current);
@@ -2677,6 +2686,24 @@
     flush(tail);
 
     if (state.cursor >= route.length && !state.finished) {
+      // ⚠ НА ПОСЛЕДНЕМ ЭКРАНЕ ПОКАЗЫВАЕМ САМО ПИСЬМО (правка владельца 28.08). С тех пор
+      // как пройденные шаги из колонки убраны, здесь не оставалось ничего: у финального
+      // экрана СВОИХ шагов нет, все они позади, — и участник видел пустой лист с кнопкой
+      // «Закончить ассессмент». Письмо — то, ради чего построен день, и уходить с ним
+      // не глядя неправильно. Лист тот же, что во вкладке «Мои ответы», и раскрыт.
+      var lastMech = null;
+      S.windows().forEach(function (w) {
+        if (w.mech && state.mechAt && state.mechAt[w.mech]) lastMech = w;
+      });
+      if (lastMech) {
+        var doc = document.createElement('div');
+        doc.className = 's2-block';
+        doc.innerHTML = '<details class="recap-doc" open><summary class="recap-sum">' +
+          '<span class="recap-q">' + esc(mechTitle(lastMech.mech)) + '</span></summary>' +
+          '<div class="recap-a">' + mechAnswerHtml(lastMech.mech) + '</div></details>';
+        if (window.imp && window.imp.typoDom) window.imp.typoDom(doc);
+        now.appendChild(doc);
+      }
       var fin = document.createElement('div');
       fin.className = 's2-block';
       // Записки «ассессмент закроется…» здесь больше нет (правка владельца 07.08):

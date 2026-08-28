@@ -57,9 +57,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "60f46f63d2db",
+  "sha": "90e32796f768",
   "keys": {
-   "assessment.html": 102
+   "assessment.html": 104
   }
  },
  "js/expert-api.js": {
@@ -70,10 +70,10 @@
   }
  },
  "js/expert-corpus.js": {
-  "sha": "(шифротекст, меняется при каждой сборке)",
+  "sha": "6a8532299551",
   "keys": {
-   "expert.html": 5,
-   "expert-report.html": 5
+   "expert-report.html": 5,
+   "expert.html": 5
   }
  },
  "js/expert-lock.js": {
@@ -115,11 +115,11 @@
   }
  },
  "js/mechanics.js": {
-  "sha": "f4242e695277",
+  "sha": "c98251341ebc",
   "keys": {
-   "assessment.html": 83,
-   "cabinet.html": 83,
-   "harness.html": 83
+   "assessment.html": 86,
+   "cabinet.html": 86,
+   "harness.html": 86
   }
  },
  "js/report-texts.js": {
@@ -155,13 +155,6 @@
    "intro.html": 2,
    "role.html": 2,
    "vitrina.html": 2
-  }
- },
- "css/expert.css": {
-  "sha": "b4b0dbe65f78",
-  "keys": {
-   "expert.html": 4,
-   "expert-report.html": 4
   }
  }
 }
