@@ -70,10 +70,10 @@
   }
  },
  "js/expert-corpus.js": {
-  "sha": "558d17637c71",
+  "sha": "(шифротекст, меняется при каждой сборке)",
   "keys": {
-   "expert-report.html": 4,
-   "expert.html": 4
+   "expert.html": 5,
+   "expert-report.html": 5
   }
  },
  "js/expert-lock.js": {
