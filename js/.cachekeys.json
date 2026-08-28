@@ -62,6 +62,39 @@
    "assessment.html": 98
   }
  },
+ "js/expert-api.js": {
+  "sha": "f967a65caf21",
+  "keys": {
+   "expert-report.html": 1,
+   "expert.html": 1
+  }
+ },
+ "js/expert-corpus.js": {
+  "sha": "ad413552380f",
+  "keys": {
+   "expert-report.html": 3,
+   "expert.html": 3
+  }
+ },
+ "js/expert-lock.js": {
+  "sha": "1aad89d590b3",
+  "keys": {
+   "expert-report.html": 1,
+   "expert.html": 1
+  }
+ },
+ "js/expert-report.js": {
+  "sha": "be3c703317b8",
+  "keys": {
+   "expert-report.html": 2
+  }
+ },
+ "js/expert.js": {
+  "sha": "94d2447d95b1",
+  "keys": {
+   "expert.html": 5
+  }
+ },
  "js/main.js": {
   "sha": "bf06424bd396",
   "keys": {
@@ -116,52 +149,12 @@
   "keys": {
    "assessment.html": 2,
    "cabinet.html": 2,
+   "expert-report.html": 2,
+   "expert.html": 2,
    "index.html": 2,
    "intro.html": 2,
    "role.html": 2,
-   "vitrina.html": 2,
-   "expert.html": 2,
-   "expert-report.html": 2
-  }
- },
- "js/expert.js": {
-  "sha": "94d2447d95b1",
-  "keys": {
-   "expert.html": 5
-  }
- },
- "js/expert-report.js": {
-  "sha": "be3c703317b8",
-  "keys": {
-   "expert-report.html": 2
-  }
- },
- "js/expert-api.js": {
-  "sha": "f967a65caf21",
-  "keys": {
-   "expert.html": 1,
-   "expert-report.html": 1
-  }
- },
- "js/expert-lock.js": {
-  "sha": "1aad89d590b3",
-  "keys": {
-   "expert.html": 1,
-   "expert-report.html": 1
-  }
- },
- "js/expert-corpus.js": {
-  "sha": "(шифротекст, меняется при каждой сборке)",
-  "keys": {
-   "expert.html": 3,
-   "expert-report.html": 3
-  }
- },
- "css/expert.css": {
-  "sha": "b4b0dbe65f78",
-  "keys": {
-   "expert.html": 4,
-   "expert-report.html": 4
+   "vitrina.html": 2
   }
  }
 }

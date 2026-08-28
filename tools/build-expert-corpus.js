@@ -456,6 +456,36 @@ fs.writeFileSync(outPath, head + 'window.IMP_EXPERT_SEALED = ' + JSON.stringify(
   if (back.cards.length !== 50) throw new Error('обратная расшифровка дала ' + back.cards.length + ' карточек');
 })();
 
+// ⚠ КЛЮЧ КЭША ПОДНИМАЕТ САМА СБОРКА, И БОЛЬШЕ ЭТОГО СДЕЛАТЬ НЕКОМУ. Соль и IV здесь
+// случайные на каждую сборку — так и должно быть, — поэтому шифротекст меняется даже на
+// том же тексте методологии, и sha этого файла ничего не говорит о его содержании:
+// проверка ключей (eval/lint_cache_keys.js) его не сверяет и сверять не может. Значит
+// единственное место, которое ЗНАЕТ, что файл переписан, — вот это. Без подъёма ключа
+// эксперт открывает старый корпус: адрес файла не изменился, обновление страницы не
+// помогает — ровно тот случай, из-за которого проверка ключей и появилась.
+var bumped = (function () {
+  var dir = path.join(__dirname, '..');
+  var re = /(js\/expert-corpus\.js\?v=)(\d+)/g;
+  var pages = fs.readdirSync(dir).filter(function (f) { return /\.html$/.test(f); });
+  var seen = {};
+  pages.forEach(function (p) {
+    var src = fs.readFileSync(path.join(dir, p), 'utf8');
+    if (!re.test(src)) return;
+    re.lastIndex = 0;
+    src.replace(re, function (all, head, n) { seen[p] = Number(n); return all; });
+  });
+  var keys = Object.keys(seen);
+  if (!keys.length) return null;
+  // Один ключ на все страницы: две копии одного файла с разными ключами — это две
+  // разные копии в кэше браузера, и какая достанется, зависит от порядка открытия.
+  var next = Math.max.apply(null, keys.map(function (p) { return seen[p]; })) + 1;
+  keys.forEach(function (p) {
+    var f = path.join(dir, p);
+    fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(re, '$1' + next), 'utf8');
+  });
+  return { next: next, pages: keys };
+})();
+
 // ------------------------------------------------------------------ отчёт
 
 var lens = cards.map(function (c) { return c.len; }).sort(function (a, b) { return a - b; });
@@ -468,6 +498,9 @@ console.log('  длина карточки   мин ' + lens[0] + ', медиа�
 console.log('  вычищено         ' + scrubLog.levels + ' ссылок на номер уровня, ' +
   scrubLog.codes + ' кодов способностей, ' + scrubLog.names + ' упоминаний фамилий');
 console.log('  утечек           нет');
+console.log(bumped
+  ? '  ключ кэша        ?v=' + bumped.next + '  (поднят в ' + bumped.pages.join(', ') + ')'
+  : '  ключ кэша        ⚠ ни одна страница не грузит js/expert-corpus.js — поднимать нечего');
 
 // Длина карточки коррелирует с уровнем (верхние уровни в методологии описаны
 // подробнее). Это подсказка, которую вычисткой не убрать, не переписав саму
