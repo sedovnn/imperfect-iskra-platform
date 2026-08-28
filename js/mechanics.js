@@ -527,13 +527,23 @@
         // ⚠ Слот отмеченного стоит ПЕРВЫМ и появляется только когда симптом отмечен
         // (правка владельца 07.08): пустая рамка «пока ничего» внизу занимала экран
         // обещанием, а отмеченное — то, ради чего Агеев просил отметить отдельно.
-        var h = '<div class="mx-slot-host"></div>' + head(COPY.theses.section, normCount(m.cards.length, NORM));
+        var h = head(COPY.theses.section, normCount(m.cards.length, NORM));
         m.cards.forEach(function (x, i) {
           h += numbered(i + 1, '<div class="mx-card' + (m.first === x.id ? ' is-first' : '') + '" data-card="' + x.id + '">' +
             '<textarea class="mx-input" data-answer="1" rows="3" data-text="' + x.id + '" placeholder="' + ctx.esc(COPY.theses.item.ph) + '">' + ctx.esc(x.text) + '</textarea>' +
             // Подпись нейтральная (правка ревью №14): «Где в материалах это видно»
             // внушало, что легитимны только тезисы из пакета, а выход за кейс —
             // ровно граница АК-1 3→4.
+            // ⚠ «ПОЧЕМУ ИМЕННО ЭТО?» ЖИВЁТ В САМОЙ ОТМЕЧЕННОЙ КАРТОЧКЕ (правка владельца
+            // 28.08). Оно всплывало отдельным блоком НАД списком: карточка отмечена внизу,
+            // а вопрос про неё появлялся вверху, вместе с копией её текста, — структура
+            // окна ломалась на ровном месте. Вопрос остаётся: он объявленный якорь
+            // перехода АК-2 2→3 («раскрыт ли конкретный механизм влияния»), убрать его
+            // значит оставить ступень без поля. Меняется только место.
+            (m.first === x.id
+              ? field(ctx, { id: 'mxWhy', f: 'why', label: COPY.theses.why.label,
+                             ph: COPY.theses.why.ph, val: m.why })
+              : '') +
             anchorHtml(x, '<div class="mx-acts">' +
               (m.first === x.id
                 // Метка-заголовок без стрелки и без глагола (лор §С1): «самым
@@ -594,38 +604,18 @@
                           ph: COPY.theses.lconc.ph, val: m.conc || '' }) + '</div>');
         host.innerHTML = h;
 
-        // Части, зависящие от текста карточек. Зовётся и из draw(), и на каждый ввод
-        // символа — но перерисовывает ТОЛЬКО себя, поэтому каретка не двигается.
-        var drawDerived = function () {
-          var slot = host.querySelector('.mx-slot-host');
-          if (slot) {
-            var f = m.first != null && byId(m.first) ? String(byId(m.first).text).trim() : '';
-            slot.innerHTML = f
-              ? '<div class="mx-slot">' +
-                  '<span class="mx-title">' + ctx.esc(COPY.theses.worst) + '</span>' +
-                  '<p class="mx-quote">' + ctx.br(f) + '</p>' +
-                  field(ctx, { id: 'mxWhy', f: 'why', label: COPY.theses.why.label, rows: 2, ph: COPY.theses.why.ph, val: m.why }) +
-                '</div>'
-              : '';
-            var w2 = slot.querySelector('#mxWhy');
-            if (w2) w2.addEventListener('input', function () { m.why = w2.value; ctx.save(); });
-          }
-          // ⚠ ВЫБОР КАРТОЧЕК ДЛЯ СВЯЗКИ УБРАН 14.08 вместе с самим конструктором.
-          // Здесь стоял список чекбоксов «отметьте от 2 до 4 карточек» и кнопка
-          // «создать связь из выбранных». Теперь про связи спрашивают двумя полями,
-          // и выбирать карточки не нужно: тезисы приезжают судье пронумерованными,
-          // ссылка словами разрешается однозначно.
-        };
-        drawDerived();
+        // ⚠ ОТДЕЛЬНОГО БЛОКА НАД СПИСКОМ БОЛЬШЕ НЕТ (правка владельца 28.08): вопрос про
+        // отмеченное наблюдение стоит в самой карточке, копия её текста не нужна. Вместе с
+        // блоком ушёл и перерисовщик, который держал его в согласии с текстом карточек, —
+        // теперь согласовывать нечего.
+        var w2 = host.querySelector('#mxWhy');
+        if (w2) w2.addEventListener('input', function () { m.why = w2.value; ctx.save(); });
 
         dropWire(host);
         host.querySelectorAll('[data-text]').forEach(function (ta) {
           ta.addEventListener('input', function () {
             byId(Number(ta.dataset.text)).text = ta.value;
             ctx.save(); ctx.sync();
-            // Слот и список связок читают этот текст — обновляем их сразу, а не к
-            // следующей перерисовке верстака.
-            drawDerived();
           });
         });
         host.querySelectorAll('[data-anchor]').forEach(function (i2) {
