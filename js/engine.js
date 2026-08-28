@@ -2818,7 +2818,15 @@
         if (current && !state.answersAt[st.act.save]) wb.classList.add('is-await');
         now.appendChild(wb);
         // Ответ зафиксирован — собеседник отвечает на него, и «Дальше» ждёт последнего пузыря.
-        if (current && state.answersAt[st.act.save] && st.act.after) now.appendChild(afterBlock(st.act.after, st.act.id));
+        // ⚠ ПРОЩАНИЕ ОСТАЁТСЯ И У ПРОЙДЕННОГО ШАГА (правка владельца 28.08). Здесь стояло
+        // `current &&`: прощание Дарьи и Олега рисовалось, только пока шаг текущий. Пока
+        // «Прожектор» кончался на вопросе Олега, это было незаметно — шаг оставался текущим
+        // до кнопки. После слияния этапов разговор идёт дальше сам (flow), шаг становится
+        // пройденным в тот же миг, и прощание пропадало: Заславский влетал сразу после
+        // ответа участника. Условие снято — пройденный шаг доезжает сюда только тогда, когда
+        // он ОСТАЁТСЯ на экране (документ его не срезал), то есть ровно там, где разговор
+        // продолжается и прощание на месте.
+        if (state.answersAt[st.act.save] && st.act.after) now.appendChild(afterBlock(st.act.after, st.act.id));
       }
       else if (st.act.kind === 'mechanic') {
         var fixedAt = st.act.mech ? (state.mechAt && state.mechAt[st.act.mech]) : null;
