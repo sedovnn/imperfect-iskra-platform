@@ -3740,6 +3740,12 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .mx-host .mx-ansbox {
   width: 100%; min-width: 0; max-width: var(--w-form); margin-left: 0;
 }
+/* ⚠ ШКАЛА СРОКА — ПО ШИРИНЕ ПОЛЕЙ (правка владельца 28.08: «нужно, чтобы ползунок по ширине
+   окон выравнивался для ответа»). Поля верстака держит мера письма (--w-form, правило выше),
+   а ползунок и его подписи были прямыми детьми хоста и тянулись во всю колонку: на 1680 поля
+   кончались на 880, шкала шла до 1594. Одна мера на весь верстак цели, чтобы правый край у
+   всего, что участник заполняет, был один. */
+.mx-host[data-mech="goal"] > * { max-width: var(--w-form); }
 
 /* Кнопка «+ наблюдение» / «+ ещё связь» встаёт ровно под голубой карточкой:
    номер вынесен влево и сдвигает карточку на свою ширину плюс зазор, а кнопка
@@ -4201,6 +4207,15 @@ details.talk-folded[open] + .talk-kept { display: none; }
   font-size: var(--fs-dense); line-height: 1.4;
 }
 .off-list li:last-child { border-bottom: 0; }
+/* ⚠ ЗАЯВКА, НА КОТОРОЙ НАСТОИТ ПРАВЛЕНИЕ (правка владельца 28.08). В листе из двадцати
+   строк искать её глазами по названию из реплики Агеева — работа, к замеру не относящаяся.
+   Тот же голубой, которым помечено всё, с чем участник работает руками (--band и его линия):
+   нового цвета не заводим. Полоса слева, а не заливка во всю строку: строка остаётся строкой
+   списка, а не превращается в карточку. Класс ставит механика только на шаге обмена. */
+.off-list li.is-forced {
+  background: var(--band); border-left: 3px solid var(--jb-ink);
+  margin: 0 -10px; padding-left: 10px; padding-right: 10px; border-radius: 6px;
+}
 .off-cost {
   display: block; margin-top: 2px;
   font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums;

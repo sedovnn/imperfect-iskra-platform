@@ -1727,9 +1727,9 @@
     t = t ? t.charAt(0).toUpperCase() + t.slice(1) : (scene ? esc(scene.name) : '');
     return '<div class="demo-top"><span class="demo-tag">демо</span>' +
       '<span class="demo-step">' + esc(t) + '</span>' +
-      // Место берём так же, как шапка шага (sceneHead): у разговора на выходе оно своё,
-      // и операторская полоса обязана называть то же место, что видит участник.
-      (scene ? '<span class="demo-where">' + esc(act.place || scene.place || scene.name) + ', ' + esc(act.where || scene.where) + '</span>' : '') +
+      // Место берём так же, как шапка шага (sceneHead) — у сцены. Про act здесь тоже нельзя:
+      // на финальном экране его нет.
+      (scene ? '<span class="demo-where">' + esc(scene.place || scene.name) + ', ' + esc(scene.where) + '</span>' : '') +
       '</div>' +
       (what ? '<p class="demo-p">' + what + '</p>' : '') +
       (m.how ? '<p class="demo-p demo-p-dim">' + esc(m.how) + '</p>' : '');
@@ -1765,12 +1765,15 @@
     return '<div class="sc-head">' +
       '<span class="sc-head-name">' + esc(t) + '</span>' +
       '<span class="sc-head-sep">·</span>' +
-      // ⚠ МЕСТО И ВРЕМЯ МОЖНО ПЕРЕОПРЕДЕЛИТЬ НА САМОМ ШАГЕ (правка владельца 28.08).
-      // Разговор на выходе стал третьим шагом «Прожектора», но происходит он не в
-      // кофейне и не в 11:35: у акта свои place/where, и шапка обязана говорить его,
-      // а не адрес этапа. Без этого на экране стояла бы неправда — подпись «догоняет
-      // на выходе из офиса» под шапкой «Кофейня «Прожектор», Понедельник, 11:35».
-      '<span class="sc-head-where">' + esc(act.place || scene.place || scene.name) + ', ' + esc(act.where || scene.where) + '</span>' +
+      // ⚠ МЕСТО БЕРЁТСЯ У СЦЕНЫ, И ТОЛЬКО У НЕЁ (починка 28.08). Утром здесь появилось
+      // переопределение на самом шаге — act.place || scene.place, — чтобы разговор на
+      // выходе показывал своё место внутри «Прожектора». К вечеру он стал происходить на
+      // выходе из КАФЕ, то есть в том же месте, и переопределение из сцен ушло. А в движке
+      // осталось — и на ФИНАЛЬНОМ экране, где текущего шага нет вовсе (курсор за концом
+      // маршрута), act приходит undefined и чтение act.place роняло весь render. Это и был
+      // «не переходит на страницу окончания»: кнопка «Закончить ассессмент» не рисовалась,
+      // потому что отрисовка падала раньше. Сеть тут ни при чём.
+      '<span class="sc-head-where">' + esc(scene.place || scene.name) + ', ' + esc(scene.where) + '</span>' +
       '</div>' + measuresLine(act);
   }
 
@@ -2041,30 +2044,23 @@
         if (shownBubbles[rk]) return { cls: ' is-staged is-in', attr: '' };
         return { cls: ' is-staged', attr: ' data-reveal="1" data-rk="' + esc(rk) + '"' };
       },
-      // ⚠ После кнопки второго такта заход уезжает в свёртку (см. speeches выше), и рисовать
-      // его ещё и здесь значило бы показать одну реплику в двух местах.
-      probe: (act && act.probe && !(state.entered && state.entered[act.id + '#2'])) ? act.probe : null,
-      // Реплики второго такта, которые на экране ответа стоят СВЁРНУТЫМИ (act.probeAsk).
-      // Нужны там, где форма несёт те же вопросы подписями полей: вопрос обязан прозвучать,
-      // но повторять его пузырём рядом с полем — показывать одно и то же дважды.
-      probeAsk: (act && act.probeAsk) || null,
+      probe: (act && act.probe) || null,
+      // ⚠ ЗАЯВКА, НА КОТОРОЙ НАСТОИТ ПРАВЛЕНИЕ, ПОДСВЕЧЕНА В ЛИСТЕ (правка владельца 28.08:
+      // «а то сейчас сложно в огромном списке её искать»). Отдаём только на шаге обмена: на
+      // печати правления тот же лист, и подсветка одной отклонённой заявки там была бы шумом
+      // — предмет разговора другой. Заявку выбирает то же правило, что подставляет её в
+      // реплику Агеева (js/backlog.js, forcedPick), и с тем же признаком демо.
+      forcedId: (function () {
+        var ca = route[state.cursor] && route[state.cursor].act;
+        if (!ca || ca.save !== 'forced') return null;
+        var it = window.imp.forcedPick(refusedIds(), listSums() || totals(), LIM, isDemo);
+        return it ? it.id : null;
+      })(),
       // Имя участника — для письма: оно оформлено как письмо, и в шапке стоит «От кого».
       // Пустое имя механика обязана переживать: вход по номеру без самозаписи возможен.
       pname: function () { return pname(); },
-      // Свёрнутый блок реплик — той же разметкой, что свёртка монолога у шага (foldedSpeech):
-      // участник узнаёт вид и знает, что под ним.
-      speechFold: function (sp) {
-        if (!sp || !sp.bubbles || !sp.bubbles.length) return '';
-        var n = sp.bubbles.length;
-        return '<details class="s2-block talk-folded"><summary class="talk-folded-sum">' +
-          '<span class="talk-folded-t">' + esc(sp.fold || 'Реплики') + '</span>' +
-          '<span class="talk-folded-n">' + n + ' ' +
-            plural(n, 'реплика', 'реплики', 'реплик') + ' · показать</span>' +
-          '</summary><div class="talk-folded-body">' +
-          speechHtml({ who: sp.who, note: sp.note, bubbles: sp.bubbles }, false,
-                     ((act && act.id) || 'mx') + '/probeAsk') +
-          '</div></details>';
-      },
+      // ⚠ ctx.probeAsk и ctx.speechFold убраны 28.08 вместе со вторым тактом «Рекомендаций»:
+      // ни одна механика их не звала, и оставаться им было незачем.
       // Вторая редакция вопроса второго такта — для того, кто написал одно будущее
       // (правка 8.5). Выбор между ними делает механика: у неё под рукой состояние.
       probeOne: (act && act.probeOne) || null,
@@ -2679,12 +2675,22 @@
     // Есть ли после текущей остановки только речь до конца сцены. Если дальше стоит
         // ещё одна остановка, реплики принадлежат ЕЙ, а не текущему шагу.
     var tailOk = sceneTailSpeech(state.cursor).length > 0;
-    // Разбит ли этот этап документами: есть ли у его шагов свёртки. Если нет — этап читается
-    // одной беседой, и пройденные шаги из колонки не убираются (см. ниже).
-    var sceneHasFold = false;
-    route.forEach(function (r) {
-      if (r.sceneIx === curSceneIx && r.act && r.act.fold) sceneHasFold = true;
-    });
+    // ⚠ КОЛОНКУ РЕЖУТ ДОКУМЕНТЫ, А НЕ ЭТАП (правка 28.08). Прежний признак был на весь
+    // этап: «есть ли хоть у одного шага свёртка». Он верно работал в двух крайних случаях —
+    // «Прожектор» без свёрток вовсе (беседа не режется) и кабинет Агеева, где свёртка у
+    // каждого шага (после каждого документа колонка чистится), — но третий случай сломался
+    // сразу, как только внутри кабинета появился диалог из нескольких вопросов подряд: у
+    // этапа свёртки есть, значит пройденные шаги уходят, и на втором вопросе исчезал первый
+    // вместе с ответом. Признак теперь ТОЧНЫЙ: колонка показывает всё, что было ПОСЛЕ
+    // последнего документа. Документ — шаг со свёрткой; он и все шаги до него уходят,
+    // диалог после него накапливается.
+    var lastFoldIx = -1;
+    for (var fi = 0; fi < state.cursor && fi < route.length; fi++) {
+      var rf = route[fi];
+      if (rf.sceneIx !== curSceneIx) continue;
+      if (!applies(rf.act)) continue;
+      if (rf.act.fold) lastFoldIx = fi;
+    }
     // ⚠ ШАГ МОЖЕТ ПОПРОСИТЬ ОСТАВИТЬ ПРЕДЫДУЩИЙ НА ЭКРАНЕ (правка владельца 28.08).
     // «Нет смысла такие маленькие шаги разводить на разные экраны»: вопрос про заявку, на
     // которой настоит правление, читается только рядом с разобранным набором, а вопрос про
@@ -2748,7 +2754,7 @@
       // одного шага этапа нет свёртки, этап — ОДНА БЕСЕДА, и резать её нельзя: в «Прожекторе»
       // разговор на четыре голоса шёл вперёд, а на вопросе Олега его начало исчезало с
       // экрана. Признак берём тот же, которым этап разбивается на шаги, — наличие свёрток.
-      if (past && sceneHasFold && i !== keepPrevIx) { pending = []; continue; }
+      if (past && i <= lastFoldIx && i !== keepPrevIx) { pending = []; continue; }
 
       var fold = st.act.fold;
       // Верстак берёт такт «приступить»: монолог целиком → кнопка → монолог свёрнут,
@@ -2764,16 +2770,6 @@
       var mspec = st.act.mech && window.imp.mechanics && window.imp.mechanics[st.act.mech];
       var mstate = st.act.mech && state.mech && state.mech[st.act.mech];
       var hideK = !!(mspec && mspec.hideKept && mstate && mspec.hideKept(mstate));
-      // ⚠ ВТОРОЙ ТАКТ ВЕРСТАКА (правка владельца 28.08). «Тут надо сначала показать 4
-      // реплики Агеева… а потом через кнопку „Дальше" появляется 3 окна для ответа и весь
-      // монолог Агеева свёрнут». До этого вопросы второго такта уезжали в свёртку сразу, а
-      // на экране оставался один заход «Так. Теперь ту, которую вы придержали» — то есть
-      // участник видел одну реплику из четырёх и три поля, подписанных вопросами, которых
-      // он не слышал. Устройство ровно то же, что у первого такта: монолог целиком → кнопка
-      // → монолог свёрнут, поля на экране.
-      var key2 = st.act.id + '#2';
-      var entered2 = !!(state.entered && state.entered[key2]);
-      var awaitEnter2 = current && takesEnter && entered && !!st.act.probeAsk && hideK && !entered2;
       // Свёрнут монолог у пройденного шага и у верстака, к которому уже приступили.
       if (fold && pending.length && (past || (current && takesEnter && entered))) {
         // ⚠ У ПРОЙДЕННОГО ШАГА ОСТАВЛЕННЫЕ РЕПЛИКИ ТОЖЕ ПРЯЧЕМ (правка владельца 23.08).
@@ -2787,38 +2783,16 @@
         // звучат после первого такта, поэтому в pending их нет — но своя свёртка рядом
         // была бы вторым свёрнутым блоком на одном экране, а такого узора в дне нет.
         // Условие то же, по которому механика рисует второй такт: hideKept.
-        // ⚠ ЗАХОД И ВОПРОСЫ ВТОРОГО ТАКТА УХОДЯТ В ЭТУ ЖЕ СВЁРТКУ — но только после его
-        // кнопки (правка владельца 28.08): «весь монолог Агеева свёрнут». Своя свёртка рядом
-        // была бы вторым свёрнутым блоком на одном экране, а такого узора в дне нет.
-        var speeches = pending;
-        if (st.act.probeAsk && hideK && !past && entered2) {
-          if (st.act.probe) {
-            speeches = speeches.concat([{ id: st.act.id + '.probe', who: st.act.probe.who,
-                                          note: st.act.probe.note, bubbles: st.act.probe.bubbles }]);
-          }
-          speeches = speeches.concat([{ id: st.act.id + '.probeAsk', who: st.act.probeAsk.who,
-                                        note: st.act.probeAsk.note, bubbles: st.act.probeAsk.bubbles }]);
-        }
-        now.appendChild(foldedSpeech(st.act, speeches, hideK));
+        // ⚠ probeAsk И ЕГО ТАКТ «ДАЛЬШЕ» УБРАНЫ (решение владельца 28.08). Единственным
+        // владельцем был второй такт «Рекомендаций», а он стал тремя шагами диалога — значит
+        // ни у одного акта probeAsk больше нет, и машинерия осталась бы без адресата.
+        now.appendChild(foldedSpeech(st.act, pending, hideK));
         pending = [];
       } else {
         flush(current);
       }
 
       if (awaitEnter) { now.appendChild(enterBlock(st.act, st.act.id)); break; }
-      // Второй такт: четыре реплики Агеева живьём, поля — по кнопке.
-      if (awaitEnter2) {
-        var pb = document.createElement('div');
-        pb.className = 's2-block';
-        var pv = st.act.probe;
-        pb.innerHTML =
-          (pv ? speechHtml({ who: pv.who, note: pv.note, bubbles: pv.bubbles }, true, st.act.id + '/probe') : '') +
-          speechHtml({ who: st.act.probeAsk.who, note: st.act.probeAsk.note, bubbles: st.act.probeAsk.bubbles },
-                     true, st.act.id + '/probeAsk', pv ? subst(pv.who || '') : null);
-        now.appendChild(pb);
-        now.appendChild(enterBlock(st.act, key2, 'Дальше →'));
-        break;
-      }
 
       // ⚠ Строки «✓ Пакет материалов прочитан» здесь больше нет (решение владельца
       // 07.08): пройденный шаг помечен галочкой в столбике этапов, и вторая отметка
