@@ -15,7 +15,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=238" />
+<link rel="stylesheet" href="css/styles.css?v=239" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -144,7 +144,12 @@
     <!-- ?start=1 — признак «участник прошёл оба экрана до старта». Без него
          ассессмент отправляет на первый экран пути: порядок входа один, а не два.
          Сама кнопка стоит выше, в одной строке с полем имени. -->
+    <!-- ⚠ ПОДПИСЬ ПОДВАЛА ВЕРНУЛАСЬ (правка владельца 28.08). Здесь стояла одна ссылка
+         назад, и «© futureproof · ассессмент «Искра»» — строка, которая внизу страницы
+         стоит всегда — на этом экране пропадала. Подпись слева, как на первом экране,
+         чтобы место у неё было одно на обоих; ссылка назад уходит вправо. -->
     <footer class="intro-foot">
+      <span>© futureproof · ассессмент «Искра»</span>
       <a class="intro-back" href="intro.html">← Что требуется от вас</a>
     </footer>
 
@@ -152,7 +157,7 @@
 </div>
 
 <script src="js/main.js?v=7"></script>
-<script src="js/scenes.js?v=170"></script>
+<script src="js/scenes.js?v=171"></script>
 <script>
   (function () {
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('roleBody')) return;

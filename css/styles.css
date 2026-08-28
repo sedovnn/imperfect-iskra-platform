@@ -4067,7 +4067,13 @@ details.talk-folded[open] + .talk-kept { display: none; }
    в колонке-флексе отступы не схлопываются, и эти 30px резервируются раньше, чем auto
    разберёт остаток. */
 .intro-row:last-of-type { margin-bottom: 30px; }
-.intro-foot { margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px; font-size: var(--fs-util); color: var(--muted-soft); }
+/* Подвал — ряд: подпись слева (её место одно на обоих экранах), ссылка назад справа.
+   На первом экране в ряду только подпись, и flex-строка её не двигает. */
+.intro-foot {
+  margin-top: auto; border-top: 1px solid var(--hairline); padding: 16px 0 30px;
+  font-size: var(--fs-util); color: var(--muted-soft);
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
 .intro-back { color: var(--muted); text-decoration: none; }
 .intro-back:hover { color: var(--ink); text-decoration: underline; }
 /* Роль на своём экране: абзацы истории читаются как проза, а не как лид-врезка. */
