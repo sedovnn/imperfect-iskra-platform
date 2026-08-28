@@ -57,9 +57,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "c06495f53d52",
+  "sha": "06b94602f220",
   "keys": {
-   "assessment.html": 106
+   "assessment.html": 107
   }
  },
  "js/expert-api.js": {
@@ -115,11 +115,11 @@
   }
  },
  "js/mechanics.js": {
-  "sha": "93642a22c436",
+  "sha": "0a7ca736840f",
   "keys": {
-   "assessment.html": 87,
-   "cabinet.html": 87,
-   "harness.html": 87
+   "assessment.html": 88,
+   "cabinet.html": 88,
+   "harness.html": 88
   }
  },
  "js/report-texts.js": {

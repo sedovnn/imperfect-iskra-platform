@@ -2287,6 +2287,16 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .recap-doc > .recap-a {
   border-left: 0; padding: 14px 18px 18px; max-width: none;
 }
+/* ── ПИСЬМО ПРАВЛЕНИЮ В ЛИСТЕ ОТВЕТОВ ──
+   Форма та же, что у письма Агеева в кейсе (blockquote.letter). Внутри листа своя
+   рамка была бы рамкой в рамке, поэтому здесь только фон и отступы: границу держит
+   сам лист. Шапка «От/Кому/Дата/Тема» отделена линией, как в бумажном письме. */
+.recap-a > blockquote.letter-mine { margin: 0; border: 0; border-radius: 8px; }
+.recap-a > blockquote.letter-mine > p:first-child {
+  padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid var(--hairline);
+  color: var(--muted);
+}
+.recap-a > blockquote.letter-mine > p:first-child b { color: var(--ink); }
 .recap-list { margin: 0; padding-left: 18px; font-size: var(--fs-dense); line-height: 1.55; }
 .recap-list li { margin-bottom: 4px; }
 /* Номер участника в шапке дня. Свой класс, а не общий .bib: тот рисует тёмную
