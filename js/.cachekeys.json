@@ -108,18 +108,18 @@
   }
  },
  "js/mech-fields.js": {
-  "sha": "8f14ace5edc9",
+  "sha": "a94d99163c40",
   "keys": {
-   "assessment.html": 37,
-   "harness.html": 37
+   "assessment.html": 38,
+   "harness.html": 38
   }
  },
  "js/mechanics.js": {
-  "sha": "b319066a77c6",
+  "sha": "027b0d45ff55",
   "keys": {
-   "assessment.html": 79,
-   "cabinet.html": 79,
-   "harness.html": 79
+   "assessment.html": 80,
+   "cabinet.html": 80,
+   "harness.html": 80
   }
  },
  "js/report-texts.js": {
