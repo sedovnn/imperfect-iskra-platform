@@ -1487,6 +1487,12 @@
   // то есть уже после того, как переход её открыл: раскрытый лист закрывался бы сам через
   // мгновение. Поэтому запоминаем ключ и применяем его при каждой отрисовке вкладки.
   var recapOpen = '';
+  // Ключ САМОГО ПОЗДНЕГО листа, который вкладка показывала в прошлый раз. По нему видно,
+  // что появился новый: тогда он и раскрывается, а прежний сворачивается (правка
+  // владельца 28.08 — «ответил рекомендации: наблюдения сворачиваются, рекомендации
+  // открываются»). Между появлениями листов выбор остаётся за участником.
+  var recapLatest = '';
+  var recapLastKey = '';
 
   function applyRecapOpen() {
     var host = el('supAnswersBody');
@@ -1510,6 +1516,7 @@
 
   function answersHtml() {
     var out = '';
+    recapLastKey = '';
     S.windows().forEach(function (w) {
       // Механики отдают свой след сами: у них нет одного поля ответа, есть ветка
       // состояния. Без этой ветки вкладка «Мои ответы» после маршрута v4.4.f была
@@ -1528,12 +1535,14 @@
         var sealedFirst = !!(mst && (mst.picked != null || mst.asked || mst.confirmed != null));
         if (!(state.mechAt && state.mechAt[w.mech]) && !sealedFirst) return;
         out += recapDoc(w.mech, w.scene.name + ' · ' + mechTitle(w.mech), mechAnswerHtml(w.mech));
+        recapLastKey = w.mech;
         return;
       }
       if (!state.answersAt[w.save]) return;
       var val = state.answers[w.save];
       out += recapDoc(w.save, w.scene.name + ' · ' + w.label,
         String(val || '').trim() ? br(val) : '<i>промолчали</i>');
+      recapLastKey = w.save;
     });
     if (state.picksAt) {
       var t = totals(), p = picksForJudge(), byId = {};
@@ -1551,6 +1560,7 @@
         (t.over ? ' — вне бюджета' : ' — в бюджете') + '</p>' +
         '<p style="margin:10px 0 4px;"><b>Берём (' + p.taken.length + ')</b></p><ul class="recap-list">' + line(p.taken) + '</ul>' +
         '<p style="margin:10px 0 4px;"><b>Не сейчас (' + p.dropped.length + ')</b></p><ul class="recap-list">' + line(p.dropped) + '</ul>');
+      recapLastKey = 'picks';
     }
     return out || '<p class="support-note">Пока ничего не зафиксировано.</p>';
   }
@@ -1559,6 +1569,12 @@
     var host = el('supAnswersBody');
     host.innerHTML = answersHtml();
     if (window.imp && window.imp.typoDom) window.imp.typoDom(host);
+    // Появился новый лист — раскрываем его, прежний сворачивается сам (он перерисован
+    // закрытым). Пока новых нет, держим тот, что выбрал участник или переход.
+    if (recapLastKey && recapLastKey !== recapLatest) {
+      recapLatest = recapLastKey;
+      recapOpen = recapLastKey;
+    }
     applyRecapOpen();
     // Свернул сам — значит больше не держим лист раскрытым: иначе следующая
     // перерисовка открывала бы его обратно, и участник спорил бы с экраном.
@@ -1567,8 +1583,11 @@
       host.dataset.recapWired = '1';
       host.addEventListener('toggle', function (e) {
         var d = e.target;
-        if (d && d.classList && d.classList.contains('recap-doc') && !d.open &&
-            d.getAttribute('data-recap') === recapOpen) recapOpen = '';
+        if (!d || !d.classList || !d.classList.contains('recap-doc')) return;
+        // Раскрыл сам — держим раскрытым его: иначе следующая перерисовка вернула бы
+        // прежний, и участник спорил бы с экраном. Свернул — не держим ничего.
+        if (d.open) recapOpen = d.getAttribute('data-recap');
+        else if (d.getAttribute('data-recap') === recapOpen) recapOpen = '';
       }, true);
     }
   }
