@@ -2287,6 +2287,14 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .recap-doc > .recap-a {
   border-left: 0; padding: 14px 18px 18px; max-width: none;
 }
+/* Подпись шага внутри листа этапа: лист теперь один на этап, и внутри у него может быть
+   до пяти шагов — без подписи они слились бы в один текст. */
+.recap-step {
+  margin: 18px 0 6px; font-family: var(--ff-display); font-size: var(--fs-util);
+  font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+}
+.recap-a > .recap-step:first-child { margin-top: 0; }
+
 /* ── ПИСЬМО ПРАВЛЕНИЮ В ЛИСТЕ ОТВЕТОВ ──
    Форма та же, что у письма Агеева в кейсе (blockquote.letter). Внутри листа своя
    рамка была бы рамкой в рамке, поэтому здесь только фон и отступы: границу держит
