@@ -74,13 +74,27 @@
     if (/^save/.test(action) && window.imp.telemetry && typeof window.imp.telemetry.snapshot === 'function') {
       try { body.telemetry = window.imp.telemetry.snapshot(); } catch (e) {}
     }
+    // ⚠ ПРЕДЕЛ ОЖИДАНИЯ (правка владельца 28.08). Без него сорванное соединение оставляло
+    // обещание вечно неразрешённым: на завершении дня finish() ждёт именно его, и экран
+    // замирал навсегда. Тридцать секунд — с запасом на холодный старт Apps Script (там
+    // бывает 5–10 с на первый вызов); по истечении срабатывает обычная ветка отказа, то
+    // есть снимок уходит в очередь и повторяется сам, а не теряется.
+    var ctl = (typeof AbortController === 'function') ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, 30000) : null;
     return fetch(API_URL, {
       method: 'POST',
       // text/plain — намеренно не application/json: иначе браузер шлёт CORS-preflight,
       // который Apps Script Web App не умеет обрабатывать (см. backend/README.md).
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(body)
-    }).then(function (res) { return res.json(); });
+      body: JSON.stringify(body),
+      signal: ctl ? ctl.signal : undefined
+    }).then(function (res) {
+      if (timer) clearTimeout(timer);
+      return res.json();
+    }, function (err) {
+      if (timer) clearTimeout(timer);
+      throw err;
+    });
   }
 
   var flushing = false;

@@ -1362,34 +1362,57 @@
       });
     }
 
-    // ⚠ УПРАВЛЕНИЕ ПЕРЕЕЗЖАЕТ В СТРОКУ РАЗДЕЛИТЕЛЯ ПАКЕТА (правка владельца 25.08).
-    // Кнопки лежат в разметке ассессмента (один дом, видно при чтении файла), а живут
-    // в строке «Искра» · пакет материалов» — там же, где заголовок пакета. Своей
-    // строки у них больше нет: она несла второй заголовок об одном и том же и две
-    // линии вокруг. Перенос делаем ЗДЕСЬ, а не в case-v8.html: кейс правится только
-    // новой версией файла. Разделителей в документе два (пакет и приложения) — берём
-    // первый: это шапка пакета, приложения открываются иначе.
-    // Если разделителя нет (другая версия кейса, чужая разметка), полоса показывается
-    // по-прежнему отдельной строкой — управление не должно пропасть совсем.
+    // ⚠ У КАЖДОГО БЛОКА СВОЯ ПАРА «РАЗВЕРНУТЬ / СВЕРНУТЬ ВСЁ» (правка владельца 28.08).
+    // «Развернуть и свернуть всё нужно оставить под этой чертой, и отдельно на приложения
+    // и текст кейса сделать». С 25.08 действия стояли в строке заголовка пакета, и пара
+    // была ОДНА на весь документ: «развернуть всё» раскрывало и семь разделов, и десять
+    // приложений, хотя приложения свёрнуты намеренно (правка 07.08) — «приложение
+    // открывают нарочно». Теперь строка действий встаёт ПОД чертой своего заголовка, а
+    // область действия — только свёртки до следующего заголовка.
+    // Кнопки по-прежнему живут в разметке ассессмента (#caseBar — один дом, видно при
+    // чтении файла); отсюда берётся их разметка. Вставку делаем ЗДЕСЬ, а не в
+    // case-v8.html: кейс правится только новой версией файла.
+    // Если разделителей нет (другая версия кейса, чужая разметка), полоса показывается
+    // по-прежнему отдельной строкой и одна на всё — управление не должно пропасть совсем.
     var bar = el('caseBar');
     if (bar) {
-      var div = host.querySelector('.appx-divider');
-      if (div) {
-        var acts = document.createElement('span');
-        acts.className = 'appx-divider-acts';
-        while (bar.firstChild) acts.appendChild(bar.firstChild);
-        div.appendChild(acts);
-        div.classList.add('has-acts');
+      var divs = [].slice.call(host.querySelectorAll('.appx-divider'));
+      // Свёртки, принадлежащие заголовку: идём по соседям вниз до следующего заголовка.
+      // Свёртки лежат на том же уровне, что и разделители (движок ставит <details> на
+      // место <article>), поэтому обход соседями и есть обход блока.
+      var blocksOf = function (div) {
+        var out = [], n = div.nextElementSibling;
+        while (n && !(n.classList && n.classList.contains('appx-divider'))) {
+          if (n.tagName === 'DETAILS' && n.classList.contains('case-block')) out.push(n);
+          else [].push.apply(out, [].slice.call(n.querySelectorAll('details.case-block')));
+          n = n.nextElementSibling;
+        }
+        return out;
+      };
+      var wire = function (row, pick) {
+        row.addEventListener('click', function (e) {
+          var v = e.target.getAttribute && e.target.getAttribute('data-caseall');
+          if (v === null || v === undefined) return;
+          var open = v === '1';
+          pick().forEach(function (d) { d.open = open; });
+        });
+      };
+      if (divs.length) {
+        var tpl = bar.innerHTML;
+        divs.forEach(function (div) {
+          var row = document.createElement('div');
+          row.className = 'case-acts';
+          row.innerHTML = tpl;
+          div.parentNode.insertBefore(row, div.nextSibling);
+          wire(row, function () { return blocksOf(div); });
+        });
+        bar.innerHTML = '';
       } else {
         bar.style.display = '';
+        wire(bar, function () {
+          return [].slice.call(host.querySelectorAll('details.case-block'));
+        });
       }
-      var onAll = function (e) {
-        var v = e.target.getAttribute && e.target.getAttribute('data-caseall');
-        if (v === null || v === undefined) return;
-        var open = v === '1';
-        host.querySelectorAll('details.case-block').forEach(function (d) { d.open = open; });
-      };
-      (div || bar).addEventListener('click', onAll);
     }
 
   }
@@ -1815,7 +1838,12 @@
   function forcedCardHtml() {
     return backlogCardHtml(
       window.imp.forcedPick(refusedIds(), listSums() || totals(), LIM, isDemo),
-      'Заявка, на которой настояло правление');
+      // ⚠ «МОЖЕТ НАСТОЯТЬ», А НЕ «НАСТОЯЛО» (правка владельца 28.08). Вопрос Агеева
+      // условный — «что если правление настояло», — и подпись в изъявительном наклонении
+      // сообщала участнику, что решение уже принято. Это не косметика: шаг спрашивает, за
+      // счёт чего он взял бы заявку в работу, то есть предлагает разобрать гипотезу, а не
+      // исполнить приказ.
+      'Заявка, на которой может настоять правление');
   }
 
   function partsHtml(act, vals) {
@@ -2026,7 +2054,9 @@
         if (shownBubbles[rk]) return { cls: ' is-staged is-in', attr: '' };
         return { cls: ' is-staged', attr: ' data-reveal="1" data-rk="' + esc(rk) + '"' };
       },
-      probe: (act && act.probe) || null,
+      // ⚠ После кнопки второго такта заход уезжает в свёртку (см. speeches выше), и рисовать
+      // его ещё и здесь значило бы показать одну реплику в двух местах.
+      probe: (act && act.probe && !(state.entered && state.entered[act.id + '#2'])) ? act.probe : null,
       // Реплики второго такта, которые на экране ответа стоят СВЁРНУТЫМИ (act.probeAsk).
       // Нужны там, где форма несёт те же вопросы подписями полей: вопрос обязан прозвучать,
       // но повторять его пузырём рядом с полем — показывать одно и то же дважды.
@@ -2365,15 +2395,18 @@
   // Монолог показывается целиком, рабочей области ещё нет; по кнопке монолог
   // сворачивается в строку, и верстак занимает экран. У разговоров со свободным
   // ответом такта нет — там пузырь ответа появляется в общем потоке.
-  function enterBlock(act) {
+  // ⚠ КЛЮЧ И ПОДПИСЬ — АРГУМЕНТЫ (правка владельца 28.08). У верстака теперь ДВА такта с
+  // кнопкой: первый открывает рабочую область, второй — поля второго вопроса (варианты,
+  // будущее). Ключ у каждого свой, иначе второй такт считался бы уже пройденным.
+  function enterBlock(act, key, cta) {
     var d = document.createElement('div');
     d.className = 's2-block is-await';
     d.innerHTML = '<div class="win-foot">' +
-      '<button class="btn btn-primary" id="enterBtn">' + esc((act.enter && act.enter.cta) || 'Приступить →') + '</button>' +
+      '<button class="btn btn-primary" id="enterBtn">' + esc(cta || (act.enter && act.enter.cta) || 'Приступить →') + '</button>' +
       '</div>';
     d.querySelector('#enterBtn').addEventListener('click', function () {
       if (!state.entered) state.entered = {};
-      state.entered[act.id] = nowIso();
+      state.entered[key || act.id] = nowIso();
       saveState();
       render();
     });
@@ -2716,14 +2749,26 @@
       var takesEnter = st.act.kind === 'mechanic' && !!fold;
       var entered = !!(state.entered && state.entered[st.act.id]);
       var awaitEnter = current && takesEnter && !entered;
+      // Второй такт верстака (варианты, будущее) задаёт свой вопрос — оставленную
+      // реплику первого такта в этот момент прячем: иначе на экране два вопроса,
+      // и только один из них живой.
+      // ⚠ Признак поднят ВЫШЕ свёртки (правка 28.08): по нему решается не только состав
+      // свёртки, но и нужен ли второй такт «Дальше» (см. awaitEnter2 ниже).
+      var mspec = st.act.mech && window.imp.mechanics && window.imp.mechanics[st.act.mech];
+      var mstate = st.act.mech && state.mech && state.mech[st.act.mech];
+      var hideK = !!(mspec && mspec.hideKept && mstate && mspec.hideKept(mstate));
+      // ⚠ ВТОРОЙ ТАКТ ВЕРСТАКА (правка владельца 28.08). «Тут надо сначала показать 4
+      // реплики Агеева… а потом через кнопку „Дальше" появляется 3 окна для ответа и весь
+      // монолог Агеева свёрнут». До этого вопросы второго такта уезжали в свёртку сразу, а
+      // на экране оставался один заход «Так. Теперь ту, которую вы придержали» — то есть
+      // участник видел одну реплику из четырёх и три поля, подписанных вопросами, которых
+      // он не слышал. Устройство ровно то же, что у первого такта: монолог целиком → кнопка
+      // → монолог свёрнут, поля на экране.
+      var key2 = st.act.id + '#2';
+      var entered2 = !!(state.entered && state.entered[key2]);
+      var awaitEnter2 = current && takesEnter && entered && !!st.act.probeAsk && hideK && !entered2;
       // Свёрнут монолог у пройденного шага и у верстака, к которому уже приступили.
       if (fold && pending.length && (past || (current && takesEnter && entered))) {
-        // Второй такт верстака (варианты, будущее) задаёт свой вопрос — оставленную
-        // реплику первого такта в этот момент прячем: иначе на экране два вопроса,
-        // и только один из них живой.
-        var mspec = st.act.mech && window.imp.mechanics && window.imp.mechanics[st.act.mech];
-        var mstate = st.act.mech && state.mech && state.mech[st.act.mech];
-        var hideK = !!(mspec && mspec.hideKept && mstate && mspec.hideKept(mstate));
         // ⚠ У ПРОЙДЕННОГО ШАГА ОСТАВЛЕННЫЕ РЕПЛИКИ ТОЖЕ ПРЯЧЕМ (правка владельца 23.08).
         // Пузыри с keep стоят над свёрткой затем, чтобы участник видел вопрос, пока на
         // него отвечает. Шаг пройден — вопрос отвечен, и держать его на экране незачем:
@@ -2735,10 +2780,17 @@
         // звучат после первого такта, поэтому в pending их нет — но своя свёртка рядом
         // была бы вторым свёрнутым блоком на одном экране, а такого узора в дне нет.
         // Условие то же, по которому механика рисует второй такт: hideKept.
+        // ⚠ ЗАХОД И ВОПРОСЫ ВТОРОГО ТАКТА УХОДЯТ В ЭТУ ЖЕ СВЁРТКУ — но только после его
+        // кнопки (правка владельца 28.08): «весь монолог Агеева свёрнут». Своя свёртка рядом
+        // была бы вторым свёрнутым блоком на одном экране, а такого узора в дне нет.
         var speeches = pending;
-        if (st.act.probeAsk && hideK && !past) {
-          speeches = pending.concat([{ id: st.act.id + '.probeAsk', who: st.act.probeAsk.who,
-                                       note: st.act.probeAsk.note, bubbles: st.act.probeAsk.bubbles }]);
+        if (st.act.probeAsk && hideK && !past && entered2) {
+          if (st.act.probe) {
+            speeches = speeches.concat([{ id: st.act.id + '.probe', who: st.act.probe.who,
+                                          note: st.act.probe.note, bubbles: st.act.probe.bubbles }]);
+          }
+          speeches = speeches.concat([{ id: st.act.id + '.probeAsk', who: st.act.probeAsk.who,
+                                        note: st.act.probeAsk.note, bubbles: st.act.probeAsk.bubbles }]);
         }
         now.appendChild(foldedSpeech(st.act, speeches, hideK));
         pending = [];
@@ -2746,7 +2798,20 @@
         flush(current);
       }
 
-      if (awaitEnter) { now.appendChild(enterBlock(st.act)); break; }
+      if (awaitEnter) { now.appendChild(enterBlock(st.act, st.act.id)); break; }
+      // Второй такт: четыре реплики Агеева живьём, поля — по кнопке.
+      if (awaitEnter2) {
+        var pb = document.createElement('div');
+        pb.className = 's2-block';
+        var pv = st.act.probe;
+        pb.innerHTML =
+          (pv ? speechHtml({ who: pv.who, note: pv.note, bubbles: pv.bubbles }, true, st.act.id + '/probe') : '') +
+          speechHtml({ who: st.act.probeAsk.who, note: st.act.probeAsk.note, bubbles: st.act.probeAsk.bubbles },
+                     true, st.act.id + '/probeAsk', pv ? subst(pv.who || '') : null);
+        now.appendChild(pb);
+        now.appendChild(enterBlock(st.act, key2, 'Дальше →'));
+        break;
+      }
 
       // ⚠ Строки «✓ Пакет материалов прочитан» здесь больше нет (решение владельца
       // 07.08): пройденный шаг помечен галочкой в столбике этапов, и вторая отметка
@@ -3022,12 +3087,23 @@
     }
   }
 
+  // ⚠ ЭКРАН НЕ ГАСНЕТ, ПОКА ИДЁТ ОТПРАВКА (правка владельца 28.08 — «зависла платформа на
+  // отправке финального письма»). Здесь стоял render() ПЕРЕД запросом: он выполнялся уже с
+  // state.finished = true, а блок финального экрана рисуется по условию `!state.finished`, —
+  // значит письмо и кнопка исчезали, а оверлей ждал ответа сети. Участник видел пустую
+  // колонку без единого признака работы и читал это как «зависло»: при холодном старте
+  // Apps Script ответ идёт секунды, а при сорванном соединении — не идёт вовсе, потому что
+  // предела ожидания у fetch не было (заведён в js/api.js той же правкой).
+  // Теперь: письмо остаётся на экране, кнопка становится неактивной и говорит, что делает.
+  // Оверлей по-прежнему показывается и на успехе, и на отказе — отказ не теряется, снимок
+  // уходит в очередь, а строка состояния показывает «не сохранено».
   function finish() {
     state.finished = true;
     state.finishedAt = nowIso();
     saveState();
     clearTimeout(syncTimer);
-    render();
+    var btn = el('finishBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Отправляю…'; }
     sync().then(showFinish, showFinish);
   }
 
