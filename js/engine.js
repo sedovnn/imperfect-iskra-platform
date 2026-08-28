@@ -823,12 +823,12 @@
       host.innerHTML = '';
       return;
     }
-    // draggable у цитаты: пометку можно перетащить на карточку тезиса (механика
-    // тезисов принимает drop). Клик-выбор из карточки остаётся вторым путём —
-    // перетаскивание недоступно с клавиатуры и на планшете.
+    // ⚠ ПЕРЕТАСКИВАНИЕ ЦИТАТЫ УБРАНО (28.08) вместе с опорой наблюдения: тащить её было
+    // некуда — карточка тезиса больше не принимает drop. Живой атрибут без адресата хуже,
+    // чем его отсутствие: он обещает действие, которого нет.
     host.innerHTML = list.map(function (m) {
       return '<div class="mark-item" data-mark="' + m.id + '">' +
-        '<blockquote class="mark-quote" draggable="true" data-dragmark="' + m.id + '">' + esc(m.quote) + '</blockquote>' +
+        '<blockquote class="mark-quote">' + esc(m.quote) + '</blockquote>' +
         // data-answer здесь НЕТ сознательно: это не ответ, и в замер вставок и
         // набора поле не идёт. Именно из-за обратного пришлось убрать заметки.
         '<textarea class="mark-note" rows="2" data-note="' + m.id + '" placeholder="личный комментарий, не идёт в оценку">' + esc(m.note || '') + '</textarea>' +
@@ -1044,17 +1044,6 @@
         var m = (state.marks || []).filter(function (x) { return x.id === show; })[0];
         if (m) showMarkInCase(m.quote);
       }
-    });
-    el('supMarksBody').addEventListener('dragstart', function (e) {
-      var q = e.target.getAttribute && e.target.getAttribute('data-dragmark');
-      if (!q || !e.dataTransfer) return;
-      var m = (state.marks || []).filter(function (x) { return x.id === q; })[0];
-      if (!m) return;
-      // Два формата: свой — чтобы принимающая сторона знала, что это пометка, и
-      // text/plain — чтобы цитата не потерялась, если drop случится в поле ввода.
-      e.dataTransfer.setData('text/imp-mark', m.id);
-      e.dataTransfer.setData('text/plain', m.quote);
-      e.dataTransfer.effectAllowed = 'copy';
     });
     el('supMarksBody').addEventListener('input', function (e) {
       var id = e.target.getAttribute && e.target.getAttribute('data-note');

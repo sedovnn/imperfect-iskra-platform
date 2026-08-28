@@ -95,11 +95,9 @@
       // и на то, что не выписывал, а требовать выписку значило бы требовать пользоваться
       // инструментом». Значит разводим роли словами: это указатель на МЕСТО в материалах,
       // а не рассказ о рассуждении. Судья теперь тоже видит его подписанным (v2MechText_).
-      // ⚠ «ПОДТВЕРДИТЬ» УБРАНО (правка 2.5). Слово задавало норму: наблюдение
-      // полагается чем-то подтверждать из пакета. А верх АК-1 — это как раз то, чего
-      // в пакете прямо нет, и кнопка стоит у КАЖДОЙ карточки, то есть норма
-      // повторялась столько раз, сколько наблюдений. Та же ошибка, что чинили,
-      // когда убирали подпись «Где в материалах это видно».
+      // ⚠ ОПОРА СНЯТА С ЭКРАНА 28.08 — записи ниже нужны только читателям прежних
+      // прогонов: у них опора записана, и печать для судьи и лист «Мои ответы» её
+      // показывают. Новых значений сюда больше никто не пишет.
       src:     { label: 'Приложить заметку',
                  ph: 'или место в материалах словами (необязательно)' },
       // ⚠ «СИМПТОМ» → «НАБЛЮДЕНИЕ» (правка 2.9). Во всём окне человек пишет
@@ -447,82 +445,18 @@
       // ⚠ ГРАНИЦА: сами пометки судье НЕ отдаются (решение 03.08, marksJson в
       //   вход судьи не входит). Выписка, ВЫБРАННАЯ опорой тезиса, — уже часть
       //   ответа, и она уезжает: участник сказал ею, а не просто выделил.
-      var picking = {};
-      // ── ПЕРЕТАСКИВАНИЕ ПОМЕТКИ НА КАРТОЧКУ ТЕЗИСА ──
-      // Решение владельца 06.08. Клик-выбор («Подтвердить пометкой в материалах») остаётся: мышь
-      // есть не у всех и не всегда, а на планшете перетаскивание вообще недоступно.
-      // Здесь добавлен второй путь для того, у кого пометки уже открыты рядом:
-      // тащит цитату из панели прямо на карточку.
-      var dropWire = function (host2) {
-        host2.querySelectorAll('.mx-card').forEach(function (card) {
-          var id = Number(card.getAttribute('data-card'));
-          if (!id) return;
-          card.addEventListener('dragover', function (e) {
-            if (!e.dataTransfer) return;
-            e.preventDefault();
-            card.classList.add('is-drop');
-          });
-          card.addEventListener('dragleave', function () { card.classList.remove('is-drop'); });
-          card.addEventListener('drop', function (e) {
-            card.classList.remove('is-drop');
-            if (!e.dataTransfer) return;
-            e.preventDefault();
-            var mid = e.dataTransfer.getData('text/imp-mark');
-            var quote = e.dataTransfer.getData('text/plain');
-            if (!mid && !quote) return;
-            var c = byId(id);
-            if (!c) return;
-            c.anchor = quote || '';
-            c.anchorRef = mid || 'drag';
-            ctx.save(); draw(); ctx.sync();
-          });
-        });
-      };
-      // ⚠ МЕТКА СТОИТ В ОДНОМ РЯДУ С ОПОРОЙ (решение владельца 19.08). Под полем
-      // отдельной строкой она занимала лишнюю полосу, а по смыслу это соседи: и то
-      // и другое — что участник делает с уже написанным наблюдением. Ряд приходит
-      // сюда готовым, чтобы место метки решалось в одном месте, а не в двух.
-      // ⚠ ТРИ СОСТОЯНИЯ КАРТОЧКИ (правка 2.8, путь А). Строка «или место в материалах
-      // словами» рисовалась ВСЕГДА, при любом состоянии опоры: при восьми наблюдениях
-      // это восемь лишних полей ввода на экране, где и без них пять разных типов
-      // вопросов. Теперь она живёт внутри панели заметок — там же, где список выписок,
-      // — и закрытая карточка это одно поле и две маленькие кнопки. Ничего не теряется:
-      // строка необязательная и ни в одной лестнице не участвует.
-      // ОБЯЗАТЕЛЬНОЕ УСЛОВИЕ ПРАВКИ: написанное словами видно на закрытой карточке,
-      // иначе человек закроет панель и решит, что запись пропала. Поэтому у карточки с
-      // опорой вместо кнопки стоит сама опора и «изменить» рядом с «убрать заметку».
-      // Порядок проверок важен: панель открыта → рисуем панель, даже если опора уже
-      // есть, — по «изменить» приходят ровно сюда.
-      var anchorHtml = function (x, actsHtml) {
-        var marks = ctx.marks ? ctx.marks() : [];
-        var foot = actsHtml ? '<div class="mx-acts mx-acts-foot">' +
-          actsHtml.replace(/^<div[^>]*>|<\/div>$/g, '') + '</div>' : '';
-        if (picking[x.id]) {
-          return '<div class="mx-anchor">' + (marks.length
-              ? '<span class="mx-anchor-k">какая из ваших выписок</span>' + marks.map(function (mk) {
-                  return '<button type="button" class="mx-anchor-pick" data-anchorset="' + x.id +
-                    '" data-mid="' + mk.id + '">' + ctx.esc(cut(mk.quote, 90)) + '</button>';
-                }).join('')
-              : '<p class="mx-hint">Заметок пока нет. Выделите фрагмент в материалах справа — появится кнопка «отметить».</p>') +
-            '<input type="text" class="mx-input mx-input-thin" data-answer="1" data-anchor="' + x.id + '"' +
-              ' placeholder="' + ctx.esc(COPY.theses.src.ph) + '" value="' +
-              ctx.esc(x.anchorRef ? '' : x.anchor) + '" />' +
-            '<button type="button" class="s2-act" data-anchorclose="' + x.id + '">скрыть</button></div>' + foot;
-        }
-        if (String(x.anchor).trim()) {
-          return '<div class="mx-anchor">' + (x.anchorRef
-              ? '<span class="mx-anchor-k">выписка из материалов</span>' +
-                '<blockquote class="mark-quote">' + ctx.esc(x.anchor) + '</blockquote>'
-              : '<span class="mx-anchor-k">место в материалах</span>' +
-                '<p class="mx-quote">' + ctx.br(x.anchor) + '</p>') +
-            '<button type="button" class="s2-act" data-anchoropen="' + x.id + '">изменить</button>' +
-            '<button type="button" class="s2-act" data-anchoroff="' + x.id + '">убрать заметку</button></div>' + foot;
-        }
-        return '<div class="mx-card-row">' +
-          '<button type="button" class="s2-act mx-anchor-open" data-anchoropen="' + x.id + '">' +
-          COPY.theses.src.label + (marks.length ? ' (' + marks.length + ')' : '') + '</button>' +
-          (actsHtml || '') + '</div>';
-      };
+      // ⚠ ОПОРА НАБЛЮДЕНИЯ СНЯТА С ЭКРАНА (решение владельца 28.08). Здесь жили кнопка
+      // «Приложить заметку», панель выбора выписки, строка «или место в материалах словами»
+      // и приём перетаскивания пометки на карточку. Причина снятия — замер: у этого поля
+      // НОЛЬ якорей в реестре лестниц, ни один из сорока переходов на него не ссылается,
+      // судья видел его только скобкой рядом с наблюдением. То есть чистое удобство, за
+      // которое участник платил кнопкой на каждой карточке и двухступенчатой панелью за
+      // ней, — при восьми наблюдениях восемь кнопок ради функции, о которой на экране
+      // ничего не сказано.
+      // Что осталось: вкладка «Мои заметки» и выделение в кейсе — это отдельный
+      // инструмент, он и правда для удобства. И читатели прежних записей: у прогонов до
+      // правки опора записана, печать для судьи и лист «Мои ответы» её показывают, —
+      // иначе скобка исчезла бы у старых прогонов молча.
       var draw = function () {
         // ⚠ Слот отмеченного стоит ПЕРВЫМ и появляется только когда симптом отмечен
         // (правка владельца 07.08): пустая рамка «пока ничего» внизу занимала экран
@@ -544,7 +478,7 @@
               ? field(ctx, { id: 'mxWhy', f: 'why', label: COPY.theses.why.label,
                              ph: COPY.theses.why.ph, val: m.why })
               : '') +
-            anchorHtml(x, '<div class="mx-acts">' +
+            '<div class="mx-acts mx-acts-foot">' +
               (m.first === x.id
                 // Метка-заголовок без стрелки и без глагола (лор §С1): «самым
                 // тревожным →» читалось командой, а это пометка, а не переход.
@@ -554,7 +488,7 @@
                   '" title="Нажмите ещё раз, чтобы снять метку">' + ctx.esc(COPY.theses.worst) + '</button>'
                 : '<button type="button" class="s2-act" data-first="' + x.id + '">' + ctx.esc(COPY.theses.worst) + '</button>') +
               (m.cards.length > 1 ? '<button type="button" class="s2-act" data-del="' + x.id + '">убрать</button>' : '') +
-            '</div>') +
+            '</div>' +
             '</div>');
         });
         h += numbered('', '<button type="button" class="mx-add" data-add="1">+ наблюдение</button>');
@@ -611,22 +545,10 @@
         var w2 = host.querySelector('#mxWhy');
         if (w2) w2.addEventListener('input', function () { m.why = w2.value; ctx.save(); });
 
-        dropWire(host);
         host.querySelectorAll('[data-text]').forEach(function (ta) {
           ta.addEventListener('input', function () {
             byId(Number(ta.dataset.text)).text = ta.value;
             ctx.save(); ctx.sync();
-          });
-        });
-        host.querySelectorAll('[data-anchor]').forEach(function (i2) {
-          i2.addEventListener('input', function () {
-            var c3 = byId(Number(i2.dataset.anchor));
-            if (!c3) return;
-            // Опора одна, и её вид определяет то, чем участник задал её последним:
-            // слова заменяют выписку так же, как выбор другой выписки заменяет прежнюю.
-            // Иначе в состоянии «опора есть» рядом с цитатой лежал бы невидимый текст.
-            c3.anchor = i2.value; c3.anchorRef = null;
-            ctx.save();
           });
         });
         // Селектор ровно такой, какой выдаёт field(): data-f="…" + data-i="…".
@@ -686,24 +608,6 @@
           }
           if (t.getAttribute && t.getAttribute('data-tieadd')) {
             tiesOf(m).push({ why: '', conc: '' }); ctx.save(); draw(); ctx.sync(); return;
-          }
-          if ((a = t.getAttribute && t.getAttribute('data-anchoropen'))) { picking[Number(a)] = true; draw(); return; }
-          if ((a = t.getAttribute && t.getAttribute('data-anchorclose'))) { picking[Number(a)] = false; draw(); return; }
-          if ((a = t.getAttribute && t.getAttribute('data-anchorset'))) {
-            var card = byId(Number(a));
-            var mk = (ctx.marks ? ctx.marks() : []).filter(function (q) { return q.id === t.getAttribute('data-mid'); })[0];
-            if (card && mk) {
-              // Пишем САМУ цитату, а не ссылку на пометку: пометку можно убрать,
-              // а сказанное участником исчезать не должно.
-              card.anchor = mk.quote; card.anchorRef = mk.id;
-              picking[card.id] = false; ctx.save(); draw(); ctx.sync();
-            }
-            return;
-          }
-          if ((a = t.getAttribute && t.getAttribute('data-anchoroff'))) {
-            var c2 = byId(Number(a));
-            if (c2) { c2.anchor = ''; c2.anchorRef = null; ctx.save(); draw(); ctx.sync(); }
-            return;
           }
       });
       draw();
