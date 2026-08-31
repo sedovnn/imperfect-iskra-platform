@@ -912,6 +912,12 @@
     var k = Number(String(g || '').replace(/[^0-9]/g, ''));
     return (k >= 2 && k <= 5) ? (k - 1) + 'to' + k : null;
   }
+  // BOUNDARY_NAMES стоит в дательном падеже — он собран под фразу «остановился на границе
+  // 3→4». В списке свидетельств граница это подпись, и падеж нужен другой.
+  function bndWord(g) {
+    var k = Number(String(g || '').replace(/[^0-9]/g, ''));
+    return (k >= 2 && k <= 5) ? 'граница ' + (k - 1) + '→' + k : '';
+  }
 
   // Блокирующая граница — то, из-за чего уровень не выше. Достаём из вердикта:
   // по четырём булевым видно, где участник остановился.
@@ -954,13 +960,13 @@
             (st ? ' <span class="cab-dim">— чтение: ' + esc(st) + '</span>' : '') + '</div>';
     h += ev.length
       ? '<ul class="cab-evid">' + ev.map(function (e) {
-          var b = bndOfGate(e['гейт']);
           return '<li><b>' + esc(e['гейт']) + '</b> <span class="cab-dim">' +
-                 (b ? BOUNDARY_NAMES[b] : '') + '</span><br>«' + esc(e['цитата']) + '»</li>';
+                 bndWord(e['гейт']) + '</span><br>«' + esc(e['цитата']) + '»</li>';
         }).join('') + '</ul>'
       : '<p class="cab-dim">Ни одного гейта с дословной цитатой: по протоколу это первый уровень.</p>';
     if (unp) {
-      h += '<p class="cab-evid-un"><b>' + esc(unp['гейт']) + '</b> не пройден' +
+      h += '<p class="cab-evid-un"><b>' + esc(unp['гейт']) + '</b> <span class="cab-dim">' +
+           bndWord(unp['гейт']) + '</span> не пройден' +
            (unp['чего_не_хватило'] ? ': ' + esc(unp['чего_не_хватило']) : '') + '</p>';
     } else if (out['уровень'] === 5) {
       h += '<p class="cab-dim">Выше границ нет: взят верхний уровень.</p>';
