@@ -169,6 +169,16 @@
 .xresume .xgrid2 { grid-template-columns: 220px; margin-top: 10px; }
 
 .xpick-q { font-size: var(--fs-dense); font-weight: 600; color: var(--muted); margin: 0 0 8px; }
+/* Два шага выбора — капсом, как подписи полей на платформе (.field label): это
+   не вопрос, а название шага, и от пяти вопросов на экране карты, набранных тем
+   же .xpick-q, оно должно отличаться. Регистр задаётся стилем, а не текстом:
+   в разметке слова написаны обычным образом и читаются вслух программой чтения
+   с экрана, а не по буквам. */
+.xpick-step {
+  font-size: var(--fs-op); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  color: var(--muted);
+}
 .xpick-row { display: grid; gap: 8px; margin-bottom: 14px; }
 @media (min-width: 760px) { .xpick-row { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
 .xopt {
