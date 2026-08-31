@@ -88,7 +88,7 @@
       who: { first: '', last: '' },
       startedAt: new Date().toISOString(),
       free: [], attr: {}, order: {}, touched: {},
-      map: { rel: {}, pair: {}, extra: [], meta: {}, tools: {}, missing: [] },
+      map: { rel: {}, pair: {}, meta: {}, tools: {}, missing: [], extraNote: '', dupNote: '' },
       at: { screen: 'intro', i: 0 },
       finishedAt: null
     };
@@ -283,6 +283,18 @@
       '</div>' +
       '<p class="field-err" id="xIntroErr" style="display:none;">Заполните имя и фамилию.</p>' +
       '<button class="btn btn-primary" id="xIntroGo">Начать →</button>' +
+      // ⚠ БЕЗ ЭТОГО ПОЛЯ НОМЕР БЫЛ БЕСПОЛЕЗЕН. Номер жил только в адресе (?e=…),
+      // и вернуться по нему можно было, лишь дописав его в строку браузера
+      // руками. С другого устройства человек открывал обычную ссылку, получал
+      // новый номер и начинал заново — при том что экран сам просил номер
+      // запомнить. Теперь есть куда его ввести; дальше работает та же проверка,
+      // что и по ссылке с ?e=: свой разбор из этого браузера, чужой — с
+      // подтверждением имени, ненайденный — с предложением проверить номер.
+      '<details class="xresume"><summary>Уже начинали — продолжить по номеру</summary>' +
+      '<div class="xgrid2"><div class="field"><label for="xResume">Номер разбора</label>' +
+      '<input type="text" id="xResume" inputmode="numeric" maxlength="5" autocomplete="off" /></div></div>' +
+      '<p class="field-err" id="xResumeErr" style="display:none;">Номер — три или четыре цифры.</p>' +
+      '<button class="btn btn-ghost btn-sm" id="xResumeGo">Продолжить →</button></details>' +
       '</div>';
   };
   screens.intro.after = function () {
@@ -296,6 +308,15 @@
       save(true);
       go('free');
     };
+    // Перезагрузка с ?e=<номер>, а не прямой вход: так номер проходит через ту
+    // же ветку разбора адреса, что и переход по ссылке, и все её проверки —
+    // включая «это я / это не я» — работают без второй копии логики.
+    $('xResumeGo').onclick = function () {
+      var v = ($('xResume').value || '').trim();
+      if (!/^\d{3,5}$/.test(v)) { $('xResumeErr').style.display = ''; return; }
+      location.search = '?e=' + encodeURIComponent(v);
+    };
+    $('xResume').onkeydown = function (e) { if (e.key === 'Enter') $('xResumeGo').click(); };
   };
 
   // --- В-0 · свободный вызов ------------------------------------------------
@@ -690,8 +711,9 @@
     });
 
     h += '<section class="xmap-skill"><h3>Что в оценку не входит</h3>' +
-      '<p class="section-lead">Методология объявляет два этажа за пределами оценки. ' +
-      'Согласны ли вы с этим решением?</p>' +
+      '<p class="section-lead">Модель устроена в три уровня, и оценивается только средний — ' +
+      'пять навыков выше. Два других в оценку не входят: то, что лежит под навыками, ' +
+      'и то, что лежит над ними. Согласны ли вы с этим решением?</p>' +
       '<p class="xmap-line"><b>Метанавыки:</b> ' +
       esc(C.excluded.metaskills.map(function (x) { return x.name; }).join(', ')) +
       '. Влияют на то, насколько эффективно работает стратегическое мышление, но сами им не являются.</p>' +
@@ -699,7 +721,7 @@
       '<button type="button" class="xopt xopt-sm' + (m.meta.verdict === 'agree' ? ' is-on' : '') +
       '" data-meta="agree">верно не оценивать</button>' +
       '<button type="button" class="xopt xopt-sm' + (m.meta.verdict === 'disagree' ? ' is-on' : '') +
-      '" data-meta="disagree">что-то из этого надо оценивать</button></div>' +
+      '" data-meta="disagree">надо оценивать</button></div>' +
       '<textarea id="xMetaNote" rows="2" placeholder="Что именно и почему?">' + esc(m.meta.note || '') + '</textarea>' +
       '<p class="xmap-line"><b>Инструменты:</b> ' + esc(C.excluded.toolsNote) + '</p>' +
       '<div class="xscale">' +
@@ -713,20 +735,32 @@
     h += '<section class="xmap-skill"><h3>Чего в карте не хватает</h3>' +
       '<p class="section-lead">Составляющие стратегического мышления, которых в этих десяти ' +
       'способностях нет, а оценивать их стоило бы. До трёх пунктов; если всё на месте — оставьте пустым.</p>';
+    // ⚠ type="text" и label обязательны. Правило платформы записано как
+    // .field input[type="text"], а подпись поднимает поле в общий вид: без них
+    // три строки подряд рисовались браузерным дефолтом — мельче и не в стиле
+    // остальных экранов. Ровно та же дырка была на вводном экране.
     for (var k = 0; k < 3; k++) {
-      h += '<div class="field"><input class="xmissing" data-i="' + k + '" value="' +
+      h += '<div class="field"><label for="xMissing' + k + '">' + (k + 1) + '</label>' +
+        '<input type="text" id="xMissing' + k + '" class="xmissing" data-i="' + k + '" value="' +
         esc(m.missing[k] || '') + '" /></div>';
     }
     h += '</section>';
 
-    h += '<section class="xmap-skill"><h3>Что здесь лишнее</h3>' +
-      '<p class="section-lead">Способности, которые, на ваш взгляд, к стратегическому мышлению ' +
-      'не относятся или дублируют друг друга.</p><div class="xchecks">';
-    ABILITIES.forEach(function (a) {
-      h += '<label class="xcheck"><input type="checkbox" class="xextra" value="' + esc(a.code) + '"' +
-        (m.extra.indexOf(a.code) >= 0 ? ' checked' : '') + ' /> ' + esc(a.name) + '</label>';
-    });
-    h += '</div><textarea id="xExtraNote" rows="2" placeholder="Почему?">' + esc(m.extraNote || '') + '</textarea></section>';
+    // Два вопроса, два поля. Раньше это был один экран: десять способностей
+    // галочками плюс одно «Почему?». Отметить галочкой можно было только «эта
+    // лишняя», а вопрос стоял сразу про два разных случая — лишнее и дублирующее
+    // друг друга, — и во втором случае помечать пришлось бы обе способности из
+    // пары, не сказав, что они пара. Свободный ответ отвечает на оба, галочки
+    // не отвечают ни на один.
+    h += '<section class="xmap-skill"><h3>Лишнее и повторы</h3>' +
+      '<p class="section-lead">Оба поля необязательны — заполняйте, если есть что сказать.</p>' +
+      '<p class="xpick-q">Есть ли среди десяти способностей лишние — то, что к стратегическому ' +
+      'мышлению не относится?</p>' +
+      '<textarea id="xExtraNote" rows="3" placeholder="Что именно и почему">' +
+      esc(m.extraNote || '') + '</textarea>' +
+      '<p class="xpick-q">Есть ли такие, что дублируют друг друга?</p>' +
+      '<textarea id="xDupNote" rows="3" placeholder="Какие и почему">' +
+      esc(m.dupNote || '') + '</textarea></section>';
 
     return h + '<p class="field-err" id="xMapErr" style="display:none;">' +
       'Ответьте на оба вопроса по каждому из пяти навыков.</p>' +
@@ -759,17 +793,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('.xmissing'), function (el) {
       el.oninput = function () { m.missing[Number(el.dataset.i)] = el.value; save(); };
     });
-    Array.prototype.forEach.call(document.querySelectorAll('.xextra'), function (el) {
-      el.onchange = function () {
-        var i = m.extra.indexOf(el.value);
-        if (el.checked && i < 0) m.extra.push(el.value);
-        if (!el.checked && i >= 0) m.extra.splice(i, 1);
-        save();
-      };
-    });
     $('xMetaNote').oninput = function () { m.meta.note = this.value; save(); };
     $('xToolsNote').oninput = function () { m.tools.note = this.value; save(); };
     $('xExtraNote').oninput = function () { m.extraNote = this.value; save(); };
+    $('xDupNote').oninput = function () { m.dupNote = this.value; save(); };
 
     $('xMapGo').onclick = function () {
       var ready = C.skills.every(function (s) {
