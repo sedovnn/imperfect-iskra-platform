@@ -67,8 +67,18 @@
   // четырнадцать волн» и «раз в полтораста»; цена — одна лишняя цифра в письме.
   // Совсем до нуля это не доводит, поэтому возврат по номеру всё равно
   // показывает имя владельца и спрашивает подтверждение.
+  // ⚠ 9999 — НОМЕР ПРОСМОТРА, НЕ РАЗБОР. Под ним можно пройти все экраны
+  // насквозь, ничего не заполняя: три обязательных проверки (имя, четыре пункта
+  // в В-0, оба вопроса по каждому навыку) пропускаются, а ответы НЕ уходят на
+  // сервер — иначе просмотр лёг бы в таблицу рядом с настоящими и попал бы в
+  // сводку. Из выдачи номеров он исключён: иначе живой эксперт получил бы его
+  // случайно и работал бы в режиме, где ничего не сохраняется.
+  var PREVIEW_ID = '9999';
+  var preview = false;
+
   function newId() {
     var taken = {};
+    taken[PREVIEW_ID] = true;
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
@@ -119,6 +129,8 @@
   }
 
   function push() {
+    // Просмотр остаётся в браузере: в таблицу он попасть не должен.
+    if (preview) return;
     // Свой клиент к своему бэкенду (js/expert-api.js). Скрипт ассессмента эта
     // страница не трогает: там другие данные, другой объём и другой срок жизни.
     if (window.imp && window.imp.saveExpert) window.imp.saveExpert(S.id, S);
@@ -304,7 +316,7 @@
     });
     $('xIntroGo').onclick = function () {
       S.who = { first: $('xFirst').value.trim(), last: $('xLast').value.trim() };
-      if (!S.who.first || !S.who.last) { $('xIntroErr').style.display = ''; return; }
+      if (!preview && (!S.who.first || !S.who.last)) { $('xIntroErr').style.display = ''; return; }
       save(true);
       go('free');
     };
@@ -345,7 +357,7 @@
     });
     $('xFreeGo').onclick = function () {
       var filled = S.free.filter(function (s) { return s && s.trim(); }).length;
-      if (filled < FREE_MIN) { $('xFreeErr').style.display = ''; return; }
+      if (!preview && filled < FREE_MIN) { $('xFreeErr').style.display = ''; return; }
       save(true);
       go('briefA');
     };
@@ -439,7 +451,7 @@
     h += '</div><div class="xnav">' +
       '<button type="button" class="btn btn-ghost" id="xPrev"' + (i === 0 ? ' disabled' : '') + '>← назад</button>' +
       '<button type="button" class="btn btn-primary" id="xNext"' +
-      ((a.ability || a.unsure) ? '' : ' disabled') + '>' +
+      ((preview || a.ability || a.unsure) ? '' : ' disabled') + '>' +
       (i === deck.length - 1 ? 'Завершить блок →' : 'дальше →') + '</button>' +
       '</div></div>';
     return h;
@@ -505,7 +517,7 @@
       var u = $('xUnsure');
       u.classList.toggle('is-on', !!a.unsure);
       u.textContent = a.unsure ? '✓ не могу выбрать ни одну' : 'не могу выбрать ни одну';
-      $('xNext').disabled = !(a.ability || a.unsure);
+      $('xNext').disabled = !(preview || a.ability || a.unsure);
     }
 
     function bindAbils() {
@@ -642,7 +654,7 @@
       // Нетронутый экран — это случайная раскладка, выданная нами же.
       // Записать её как ответ значило бы налить в сводку шум под видом
       // суждения. Поэтому подтверждение спрашивается явно.
-      if (!S.touched[code]) {
+      if (!preview && !S.touched[code]) {
         if (!window.confirm('Вы не меняли порядок на этом экране. Записать его как ваш ответ?')) return;
         S.touched[code] = true;
         save();
@@ -802,7 +814,7 @@
       var ready = C.skills.every(function (s) {
         return m.rel[s.code] && m.pair[s.code] && m.pair[s.code].verdict;
       });
-      if (!ready) { $('xMapErr').style.display = ''; return; }
+      if (!preview && !ready) { $('xMapErr').style.display = ''; return; }
       S.finishedAt = new Date().toISOString();
       save(true);
       go('done');
@@ -846,7 +858,22 @@
 
   // ------------------------------------------------------------------ запуск
 
+  // Метка режима ставится и здесь, и в boot: boot настраивает шапку ДО того,
+  // как разобран адрес, то есть до того, как известно, просмотр это или разбор.
+  // В просмотре отправок нет вовсе, колбэк синхронизации может не сработать ни
+  // разу — а без метки просмотр не отличить от разбора, и час работы уехал бы
+  // в никуда.
+  function markPreview() {
+    var status = $('xSync');
+    if (!status || !preview) return false;
+    status.className = 'cab-status xpreview';
+    status.textContent = 'просмотр — ответы не сохраняются';
+    return true;
+  }
+
   function begin(id) {
+    preview = (String(id) === PREVIEW_ID);
+    markPreview();
     S = load(id) || blank(id);
     try { localStorage.setItem('imp_expert_last', id); } catch (e) {}
     // Номер живёт в адресе: закладка на эту ссылку возвращает эксперта в свой
@@ -862,8 +889,10 @@
     host = $('xHost');
 
     var status = $('xSync');
+    markPreview();
     if (status && window.imp && window.imp.onExpertSync) {
       window.imp.onExpertSync(function (s) {
+        if (markPreview()) return;
         status.textContent = !s.configured ? ''
           : (s.failed ? 'не отправлено: ' + s.failed
             : (s.pending ? 'сохраняю…' : (s.lastOkAt ? 'сохранено' : '')));
@@ -904,6 +933,9 @@
     var id = asked || last;
 
     if (!id) { begin(newId()); return; }
+    // Просмотр открывается сразу: искать его на сервере незачем — он туда не
+    // отправляется, и «номер не найден» был бы единственным исходом.
+    if (String(id) === PREVIEW_ID) { begin(id); return; }
     if (load(id)) { begin(id); return; }
 
     // Номер есть, а записи в этом браузере нет — эксперт пересел за другой
