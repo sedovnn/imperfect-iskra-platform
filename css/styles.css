@@ -2608,6 +2608,11 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-skill-box b { font-size: var(--fs-op-xl); font-variant-numeric: tabular-nums; }
 .cab-skill-box i { font-size: var(--fs-op-sm); color: var(--muted-soft); font-style: normal; }
 .cab-skill-box.is-total { border-color: var(--ink); }
+/* Неровный навык виден до наведения курсора: §9.5 требует показать разрыв внутри пары,
+   а не только сумму, которая его прячет. Рамка, а не цвет: флаг — приглашение перечитать,
+   не ошибка участника. */
+.cab-skill-box.is-asym { border-color: var(--accent-ink); }
+.cab-skill-box.is-asym i { color: var(--accent-ink); }
 
 /* Оценка стоит первым блоком карточки (правка 12.08), и штатные 72 пикселя сверху
    читались как дырка под кнопкой «Пересудить». Первому блоку отступ сверху меньше. */
@@ -2666,6 +2671,14 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-ability-name { font-size: var(--fs-op); font-weight: 600; }
 .cab-level { margin-left: auto; font-size: var(--fs-op-h); font-weight: 700; font-variant-numeric: tabular-nums; }
 .cab-jitter { color: var(--accent-ink); }
+/* Свидетельства по гейтам: цитата — основание уровня, поэтому читается как цитата,
+   а не как строка данных. Ширина по колонке чтения: длинные цитаты иначе тянутся
+   на всю карточку и глазом не берутся. */
+.cab-evid { list-style: none; margin: 6px 0 0; padding: 0; max-width: var(--w-read); }
+.cab-evid li { font-size: var(--fs-op); line-height: 1.55; padding: 6px 0 6px 10px;
+  border-left: 2px solid var(--hairline); margin-bottom: 6px; }
+.cab-evid li b { font-variant-numeric: tabular-nums; }
+.cab-evid-un { font-size: var(--fs-op); color: var(--muted); margin-top: 6px; max-width: var(--w-read); }
 .cab-reasoning summary { cursor: pointer; font-size: var(--fs-op); color: var(--muted); margin-top: 4px; }
 .cab-reasoning > div { font-size: var(--fs-op); line-height: 1.55; color: var(--ink); margin-top: 6px; max-width: var(--w-read); }
 .cab-control { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--soft); font-size: var(--fs-op); }
