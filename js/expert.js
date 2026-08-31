@@ -417,13 +417,13 @@
       progressHtml(done, deck.length, (i + 1) + ' из ' + deck.length) +
       '<div class="xc-slot">' + cardHtml(card) + '</div>' +
       '<div class="xpick" id="xPick">' +
-      '<p class="xpick-q">Навык</p><div class="xpick-row xpick-skills" id="xSkills">';
+      '<p class="xpick-q xpick-step">Выберите навык</p><div class="xpick-row xpick-skills" id="xSkills">';
     C.skills.forEach(function (s) {
       h += '<button type="button" class="xchip' + (a.skill === s.code ? ' is-on' : '') +
         '" data-skill="' + esc(s.code) + '">' + esc(s.name) + '</button>';
     });
     h += '</div>' +
-      '<p class="xpick-q">Способность</p><div class="xpick-row xpick-abils" id="xAbils">' +
+      '<p class="xpick-q xpick-step">Выберите способность</p><div class="xpick-row xpick-abils" id="xAbils">' +
       abilsHtml(a) + '</div>';
 
     // Кнопкой, а не ссылкой: «не могу выбрать» — такой же полноценный ответ,
