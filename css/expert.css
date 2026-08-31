@@ -305,7 +305,17 @@
 /* ---- В-0 и карта ---- */
 .xfree-row { display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 8px; }
 .xfree-n { font-size: var(--fs-dense); color: var(--muted-soft); font-weight: 600; }
-.xmap-skill { border-top: 1px solid var(--hairline); padding-top: 20px; margin-top: 24px; }
+/* ⚠ padding-bottom: 0 ОБЯЗАТЕЛЕН. Блок навыка — это <section>, и на него падает
+   лендинговое section { padding: 72px 0 } из styles.css. Верхний отступ здесь
+   переопределён, нижний оставался лендинговым: под каждым из восьми блоков
+   висело 72 пикселя пустоты плюс отступ последней строки — на экране это
+   читалось разрывом между навыками. Та же ловушка уже ловила .casewide на
+   экране кейса; там она снята тем же способом. */
+.xmap-skill {
+  border-top: 1px solid var(--hairline);
+  padding: 20px 0 0;
+  margin-top: 24px;
+}
 .xmap-ab { margin: 0 0 14px; padding-left: 18px; }
 .xmap-ab li { font-size: var(--fs-dense); color: var(--muted); line-height: 1.5; margin-bottom: 6px; }
 .xmap-ab li b { color: var(--ink); }
