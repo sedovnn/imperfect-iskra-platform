@@ -67,8 +67,18 @@
   // четырнадцать волн» и «раз в полтораста»; цена — одна лишняя цифра в письме.
   // Совсем до нуля это не доводит, поэтому возврат по номеру всё равно
   // показывает имя владельца и спрашивает подтверждение.
+  // ⚠ 9999 — НОМЕР ПРОСМОТРА, НЕ РАЗБОР. Под ним можно пройти все экраны
+  // насквозь, ничего не заполняя: три обязательных проверки (имя, четыре пункта
+  // в В-0, оба вопроса по каждому навыку) пропускаются, а ответы НЕ уходят на
+  // сервер — иначе просмотр лёг бы в таблицу рядом с настоящими и попал бы в
+  // сводку. Из выдачи номеров он исключён: иначе живой эксперт получил бы его
+  // случайно и работал бы в режиме, где ничего не сохраняется.
+  var PREVIEW_ID = '9999';
+  var preview = false;
+
   function newId() {
     var taken = {};
+    taken[PREVIEW_ID] = true;
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var k = localStorage.key(i);
@@ -88,7 +98,7 @@
       who: { first: '', last: '' },
       startedAt: new Date().toISOString(),
       free: [], attr: {}, order: {}, touched: {},
-      map: { rel: {}, pair: {}, extra: [], meta: {}, tools: {}, missing: [] },
+      map: { rel: {}, pair: {}, meta: {}, tools: {}, missing: [], extraNote: '', dupNote: '' },
       at: { screen: 'intro', i: 0 },
       finishedAt: null
     };
@@ -119,6 +129,8 @@
   }
 
   function push() {
+    // Просмотр остаётся в браузере: в таблицу он попасть не должен.
+    if (preview) return;
     // Свой клиент к своему бэкенду (js/expert-api.js). Скрипт ассессмента эта
     // страница не трогает: там другие данные, другой объём и другой срок жизни.
     if (window.imp && window.imp.saveExpert) window.imp.saveExpert(S.id, S);
@@ -186,43 +198,18 @@
   // Поэтому наблюдаемые признаки убраны под раскрытие: образ уровня («суть»)
   // для сравнения достаточен, признаки нужны только при сомнении.
   function cardHtml(card, compact) {
+    // Карточка — абзацы описания уровня, целиком и без раскрытий. Прежде здесь
+    // была тройка «ярлык + суть + список признаков» с прятанием признаков под
+    // details: она повторяла разметку §10, где уровень описан заголовком,
+    // абзацем-сутью и перечнем «Ярлык. Пояснение». Описания больше не режутся
+    // из §10 — они написаны под эту задачу связной прозой, и прятать в них
+    // нечего: спрятанная половина описания — это половина основания для
+    // раскладки, которую эксперт не увидит.
     var h = '<article class="xc' + (compact ? ' xc-compact' : '') + '">';
-    if (card.lead) h += '<p class="xc-lead">' + esc(card.lead) + '</p>';
-    if (card.gist) h += '<p class="xc-gist">' + esc(card.gist) + '</p>';
-    // В сжатом виде под раскрытие уходят только ИЗБЫТОЧНЫЕ признаки — те, у
-    // которых уже есть «суть». У части способностей (ГА-1 и ГА-2 на средних
-    // уровнях) блока «Суть» в методологии нет вовсе, и правило «признаки всегда
-    // прячем» оставляло бы на экране одну строку заголовка: эксперт сравнивал
-    // бы абзац с ярлыком. Прячем второе, когда есть первое, — и ничего иначе.
-    var does = card.does || [];
-    if (does.length) {
-      var body = doesHtml(does);
-      h += (compact && card.gist)
-        ? '<details class="xc-more"><summary>признаки</summary>' + body + '</details>'
-        : body;
-    }
-    return h + '</article>';
-  }
-
-  // Признаки — списком, как в методологии, а не абзацем. В §10 это отдельные
-  // строки вида «Ярлык. Пояснение»; склеенные в прозу, ярлыки читаются
-  // обрывками, и всё описание — набором огрызков. Ярлык выделяется жирным:
-  // по нему признак опознаётся с одного взгляда, и эксперт сравнивает уровни
-  // по ярлыкам, а не перечитывает четыре абзаца целиком.
-  function doesHtml(items) {
-    if (items.length === 1) return '<p class="xc-does">' + esc(items[0]) + '</p>';
-    var h = '<ul class="xc-list">';
-    items.forEach(function (t) {
-      var dot = t.indexOf('. ');
-      // Ярлык — короткое первое предложение, за которым идёт пояснение.
-      // Длинное первое предложение это уже сам признак, выделять нечего.
-      if (dot > 0 && dot <= 45) {
-        h += '<li><b>' + esc(t.slice(0, dot + 1)) + '</b> ' + esc(t.slice(dot + 2)) + '</li>';
-      } else {
-        h += '<li>' + esc(t) + '</li>';
-      }
+    (card.paras || []).forEach(function (t, i) {
+      h += '<p class="xc-para' + (i === 0 ? ' xc-para-first' : '') + '">' + esc(t) + '</p>';
     });
-    return h + '</ul>';
+    return h + '</article>';
   }
 
   // Справочник по способностям — открыт всегда. Принцип тот же, что на
@@ -259,22 +246,10 @@
     render();
   }
 
-  // Шесть из пятидесяти описаний в отведённую высоту не помещаются. Молча
-  // обрезать их нельзя: эксперт судил бы по половине текста и не знал бы об
-  // этом. Поэтому у обрезанной карточки низ уходит в градиент и стоит подпись —
-  // сигнал, что там есть ещё. Подпись гаснет, когда докрутили до конца.
-  function markScrollable() {
-    var slot = host.querySelector('.xc-slot');
-    if (!slot) return;
-    var card = slot.querySelector('.xc');
-    if (!card) return;
-    var sync = function () {
-      var more = card.scrollHeight - card.clientHeight - card.scrollTop > 4;
-      slot.classList.toggle('is-more', more);
-    };
-    card.onscroll = sync;
-    sync();
-  }
+  // Карточка показывается целиком и не прокручивается — размечать нечего.
+  // Функция оставлена пустой, чтобы не разбирать три места вызова: если высота
+  // когда-нибудь снова станет ограниченной, сигнал вернётся сюда.
+  function markScrollable() {}
 
   var lastAt = '';
   function render() {
@@ -300,16 +275,12 @@
       '<div class="xnarrow">' +
       '<p class="kicker">Валидация методологии</p>' +
       '<h1>Разбор описаний уровней</h1>' +
-      '<p class="section-lead">Вы получите пятьдесят описаний — по ним в оценке ставится уровень. ' +
-      'Задача: определить, к какой способности относится каждое и как они выстраиваются от низшего ' +
-      'к высшему. Правильные ответы у нас есть; смысл в том, чтобы понять, читается ли это ' +
-      'так же кем-то, кроме авторов.</p>' +
-      '<p class="section-lead">Займёт около часа. Прерваться можно в любой момент.</p>' +
+      '<p class="section-lead">Займёт около часа.</p>' +
       // Номер показывается ДО работы, а не только на финише: закрыть вкладку
       // можно на любой карточке, и узнать номер к тому моменту будет негде.
       '<p class="xbadge">Ваш номер <b>' + esc(S.id) + '</b></p>' +
-      '<p class="xnote">Запишите его. По нему вы вернётесь к своему разбору — с этого ' +
-      'компьютера просто откройте ту же ссылку, с другого понадобится номер.</p>' +
+      '<p class="xnote">Номер может понадобиться, если вы не успеете пройти всё тестирование ' +
+      'за один раз, — запомните его или запишите.</p>' +
       // Только имя и фамилия. Компанию, роль и стаж спрашивать незачем: мы сами
       // зовём этих людей и всё это про них знаем, а лишние поля на входе — три
       // повода передумать.
@@ -324,8 +295,18 @@
       '</div>' +
       '<p class="field-err" id="xIntroErr" style="display:none;">Заполните имя и фамилию.</p>' +
       '<button class="btn btn-primary" id="xIntroGo">Начать →</button>' +
-      '<p class="xnote">Имя и фамилия нужны, чтобы не смешать ответы разных экспертов и чтобы ' +
-      'вы могли вернуться. В сводке ответы обезличены.</p>' +
+      // ⚠ БЕЗ ЭТОГО ПОЛЯ НОМЕР БЫЛ БЕСПОЛЕЗЕН. Номер жил только в адресе (?e=…),
+      // и вернуться по нему можно было, лишь дописав его в строку браузера
+      // руками. С другого устройства человек открывал обычную ссылку, получал
+      // новый номер и начинал заново — при том что экран сам просил номер
+      // запомнить. Теперь есть куда его ввести; дальше работает та же проверка,
+      // что и по ссылке с ?e=: свой разбор из этого браузера, чужой — с
+      // подтверждением имени, ненайденный — с предложением проверить номер.
+      '<details class="xresume"><summary>Уже начинали — продолжить по номеру</summary>' +
+      '<div class="xgrid2"><div class="field"><label for="xResume">Номер разбора</label>' +
+      '<input type="text" id="xResume" inputmode="numeric" maxlength="5" autocomplete="off" /></div></div>' +
+      '<p class="field-err" id="xResumeErr" style="display:none;">Номер — три или четыре цифры.</p>' +
+      '<button class="btn btn-ghost btn-sm" id="xResumeGo">Продолжить →</button></details>' +
       '</div>';
   };
   screens.intro.after = function () {
@@ -335,10 +316,19 @@
     });
     $('xIntroGo').onclick = function () {
       S.who = { first: $('xFirst').value.trim(), last: $('xLast').value.trim() };
-      if (!S.who.first || !S.who.last) { $('xIntroErr').style.display = ''; return; }
+      if (!preview && (!S.who.first || !S.who.last)) { $('xIntroErr').style.display = ''; return; }
       save(true);
       go('free');
     };
+    // Перезагрузка с ?e=<номер>, а не прямой вход: так номер проходит через ту
+    // же ветку разбора адреса, что и переход по ссылке, и все её проверки —
+    // включая «это я / это не я» — работают без второй копии логики.
+    $('xResumeGo').onclick = function () {
+      var v = ($('xResume').value || '').trim();
+      if (!/^\d{3,5}$/.test(v)) { $('xResumeErr').style.display = ''; return; }
+      location.search = '?e=' + encodeURIComponent(v);
+    };
+    $('xResume').onkeydown = function (e) { if (e.key === 'Enter') $('xResumeGo').click(); };
   };
 
   // --- В-0 · свободный вызов ------------------------------------------------
@@ -349,11 +339,9 @@
     var h = '<div class="xnarrow">' +
       '<p class="kicker">1 из 4 · три минуты</p>' +
       '<h2>Своими словами</h2>' +
-      '<p class="section-lead">Пока вы не видели нашу модель. Назовите от четырёх до семи ' +
-      'составляющих стратегического мышления, которые вы стали бы оценивать у руководителя. ' +
-      'Коротко, как считаете нужным — списком, без пояснений.</p>' +
-      '<p class="xnote">Этот ответ нельзя будет изменить после того, как вы увидите карту модели: ' +
-      'он для того и нужен, чтобы остаться независимым от неё.</p>';
+      '<p class="section-lead">Прежде чем начать — назовите от четырёх до семи составляющих ' +
+      'стратегического мышления, которые вы стали бы оценивать у руководителя. ' +
+      'Коротко, без подробных пояснений.</p>';
     for (var i = 0; i < FREE_MAX; i++) {
       h += '<div class="field xfree-row"><span class="xfree-n">' + (i + 1) + '</span>' +
         '<input type="text" class="xfree" data-i="' + i + '" value="' + esc(S.free[i] || '') + '" ' +
@@ -369,7 +357,7 @@
     });
     $('xFreeGo').onclick = function () {
       var filled = S.free.filter(function (s) { return s && s.trim(); }).length;
-      if (filled < FREE_MIN) { $('xFreeErr').style.display = ''; return; }
+      if (!preview && filled < FREE_MIN) { $('xFreeErr').style.display = ''; return; }
       save(true);
       go('briefA');
     };
@@ -386,10 +374,8 @@
       'в описании.</p>' +
       '<p class="section-lead">Сначала читаете описание, потом выбираете навык из пяти ' +
       'возможных, потом одну из двух способностей внутри этого навыка. Определения всегда ' +
-      'под рукой — справочник открывается кнопкой сверху.</p>' +
+      'под рукой — справочник раскрывается внизу экрана.</p>' +
       '<ul class="xlist">' +
-      '<li>Номера уровней и коды из описаний убраны. Если что-то похожее попалось — ' +
-      'это наш недосмотр, отметьте в заметке.</li>' +
       '<li>Если описание не ложится ни к одной способности — отметьте кнопкой ' +
       '«не могу выбрать». Это не пропуск, а самый ценный ответ: значит, описание не работает.</li>' +
       '<li>Если подходят две — выберите основную, потом отметьте вторую. Пары, которые ' +
@@ -431,13 +417,13 @@
       progressHtml(done, deck.length, (i + 1) + ' из ' + deck.length) +
       '<div class="xc-slot">' + cardHtml(card) + '</div>' +
       '<div class="xpick" id="xPick">' +
-      '<p class="xpick-q">Навык</p><div class="xpick-row xpick-skills" id="xSkills">';
+      '<p class="xpick-q xpick-step">Выберите навык</p><div class="xpick-row xpick-skills" id="xSkills">';
     C.skills.forEach(function (s) {
       h += '<button type="button" class="xchip' + (a.skill === s.code ? ' is-on' : '') +
         '" data-skill="' + esc(s.code) + '">' + esc(s.name) + '</button>';
     });
     h += '</div>' +
-      '<p class="xpick-q">Способность</p><div class="xpick-row xpick-abils" id="xAbils">' +
+      '<p class="xpick-q xpick-step">Выберите способность</p><div class="xpick-row xpick-abils" id="xAbils">' +
       abilsHtml(a) + '</div>';
 
     // Кнопкой, а не ссылкой: «не могу выбрать» — такой же полноценный ответ,
@@ -465,7 +451,7 @@
     h += '</div><div class="xnav">' +
       '<button type="button" class="btn btn-ghost" id="xPrev"' + (i === 0 ? ' disabled' : '') + '>← назад</button>' +
       '<button type="button" class="btn btn-primary" id="xNext"' +
-      ((a.ability || a.unsure) ? '' : ' disabled') + '>' +
+      ((preview || a.ability || a.unsure) ? '' : ' disabled') + '>' +
       (i === deck.length - 1 ? 'Завершить блок →' : 'дальше →') + '</button>' +
       '</div></div>';
     return h;
@@ -531,7 +517,7 @@
       var u = $('xUnsure');
       u.classList.toggle('is-on', !!a.unsure);
       u.textContent = a.unsure ? '✓ не могу выбрать ни одну' : 'не могу выбрать ни одну';
-      $('xNext').disabled = !(a.ability || a.unsure);
+      $('xNext').disabled = !(preview || a.ability || a.unsure);
     }
 
     function bindAbils() {
@@ -668,7 +654,7 @@
       // Нетронутый экран — это случайная раскладка, выданная нами же.
       // Записать её как ответ значило бы налить в сводку шум под видом
       // суждения. Поэтому подтверждение спрашивается явно.
-      if (!S.touched[code]) {
+      if (!preview && !S.touched[code]) {
         if (!window.confirm('Вы не меняли порядок на этом экране. Записать его как ваш ответ?')) return;
         S.touched[code] = true;
         save();
@@ -737,8 +723,10 @@
     });
 
     h += '<section class="xmap-skill"><h3>Что в оценку не входит</h3>' +
-      '<p class="section-lead">Методология объявляет два этажа за пределами оценки. ' +
-      'Согласны ли вы с этим решением?</p>' +
+      // Слово «уровень» здесь обходится нарочно: на этой странице оно занято
+      // уровнями L1–L5, и второй смысл рядом с ними читается как ошибка.
+      '<p class="section-lead">В оценку входят только пять навыков выше. Метанавыки и ' +
+      'инструменты в модели описаны, но не оцениваются — согласны ли вы с этим?</p>' +
       '<p class="xmap-line"><b>Метанавыки:</b> ' +
       esc(C.excluded.metaskills.map(function (x) { return x.name; }).join(', ')) +
       '. Влияют на то, насколько эффективно работает стратегическое мышление, но сами им не являются.</p>' +
@@ -746,7 +734,7 @@
       '<button type="button" class="xopt xopt-sm' + (m.meta.verdict === 'agree' ? ' is-on' : '') +
       '" data-meta="agree">верно не оценивать</button>' +
       '<button type="button" class="xopt xopt-sm' + (m.meta.verdict === 'disagree' ? ' is-on' : '') +
-      '" data-meta="disagree">что-то из этого надо оценивать</button></div>' +
+      '" data-meta="disagree">надо оценивать</button></div>' +
       '<textarea id="xMetaNote" rows="2" placeholder="Что именно и почему?">' + esc(m.meta.note || '') + '</textarea>' +
       '<p class="xmap-line"><b>Инструменты:</b> ' + esc(C.excluded.toolsNote) + '</p>' +
       '<div class="xscale">' +
@@ -760,20 +748,32 @@
     h += '<section class="xmap-skill"><h3>Чего в карте не хватает</h3>' +
       '<p class="section-lead">Составляющие стратегического мышления, которых в этих десяти ' +
       'способностях нет, а оценивать их стоило бы. До трёх пунктов; если всё на месте — оставьте пустым.</p>';
+    // ⚠ type="text" и label обязательны. Правило платформы записано как
+    // .field input[type="text"], а подпись поднимает поле в общий вид: без них
+    // три строки подряд рисовались браузерным дефолтом — мельче и не в стиле
+    // остальных экранов. Ровно та же дырка была на вводном экране.
     for (var k = 0; k < 3; k++) {
-      h += '<div class="field"><input class="xmissing" data-i="' + k + '" value="' +
+      h += '<div class="field"><label for="xMissing' + k + '">' + (k + 1) + '</label>' +
+        '<input type="text" id="xMissing' + k + '" class="xmissing" data-i="' + k + '" value="' +
         esc(m.missing[k] || '') + '" /></div>';
     }
     h += '</section>';
 
-    h += '<section class="xmap-skill"><h3>Что здесь лишнее</h3>' +
-      '<p class="section-lead">Способности, которые, на ваш взгляд, к стратегическому мышлению ' +
-      'не относятся или дублируют друг друга.</p><div class="xchecks">';
-    ABILITIES.forEach(function (a) {
-      h += '<label class="xcheck"><input type="checkbox" class="xextra" value="' + esc(a.code) + '"' +
-        (m.extra.indexOf(a.code) >= 0 ? ' checked' : '') + ' /> ' + esc(a.name) + '</label>';
-    });
-    h += '</div><textarea id="xExtraNote" rows="2" placeholder="Почему?">' + esc(m.extraNote || '') + '</textarea></section>';
+    // Два вопроса, два поля. Раньше это был один экран: десять способностей
+    // галочками плюс одно «Почему?». Отметить галочкой можно было только «эта
+    // лишняя», а вопрос стоял сразу про два разных случая — лишнее и дублирующее
+    // друг друга, — и во втором случае помечать пришлось бы обе способности из
+    // пары, не сказав, что они пара. Свободный ответ отвечает на оба, галочки
+    // не отвечают ни на один.
+    h += '<section class="xmap-skill"><h3>Лишнее и повторы</h3>' +
+      '<p class="section-lead">Оба поля необязательны — заполняйте, если есть что сказать.</p>' +
+      '<p class="xpick-q">Есть ли среди десяти способностей лишние — то, что к стратегическому ' +
+      'мышлению не относится?</p>' +
+      '<textarea id="xExtraNote" rows="3" placeholder="Что именно и почему">' +
+      esc(m.extraNote || '') + '</textarea>' +
+      '<p class="xpick-q">Есть ли такие, что дублируют друг друга?</p>' +
+      '<textarea id="xDupNote" rows="3" placeholder="Какие и почему">' +
+      esc(m.dupNote || '') + '</textarea></section>';
 
     return h + '<p class="field-err" id="xMapErr" style="display:none;">' +
       'Ответьте на оба вопроса по каждому из пяти навыков.</p>' +
@@ -806,23 +806,16 @@
     Array.prototype.forEach.call(document.querySelectorAll('.xmissing'), function (el) {
       el.oninput = function () { m.missing[Number(el.dataset.i)] = el.value; save(); };
     });
-    Array.prototype.forEach.call(document.querySelectorAll('.xextra'), function (el) {
-      el.onchange = function () {
-        var i = m.extra.indexOf(el.value);
-        if (el.checked && i < 0) m.extra.push(el.value);
-        if (!el.checked && i >= 0) m.extra.splice(i, 1);
-        save();
-      };
-    });
     $('xMetaNote').oninput = function () { m.meta.note = this.value; save(); };
     $('xToolsNote').oninput = function () { m.tools.note = this.value; save(); };
     $('xExtraNote').oninput = function () { m.extraNote = this.value; save(); };
+    $('xDupNote').oninput = function () { m.dupNote = this.value; save(); };
 
     $('xMapGo').onclick = function () {
       var ready = C.skills.every(function (s) {
         return m.rel[s.code] && m.pair[s.code] && m.pair[s.code].verdict;
       });
-      if (!ready) { $('xMapErr').style.display = ''; return; }
+      if (!preview && !ready) { $('xMapErr').style.display = ''; return; }
       S.finishedAt = new Date().toISOString();
       save(true);
       go('done');
@@ -866,7 +859,22 @@
 
   // ------------------------------------------------------------------ запуск
 
+  // Метка режима ставится и здесь, и в boot: boot настраивает шапку ДО того,
+  // как разобран адрес, то есть до того, как известно, просмотр это или разбор.
+  // В просмотре отправок нет вовсе, колбэк синхронизации может не сработать ни
+  // разу — а без метки просмотр не отличить от разбора, и час работы уехал бы
+  // в никуда.
+  function markPreview() {
+    var status = $('xSync');
+    if (!status || !preview) return false;
+    status.className = 'cab-status xpreview';
+    status.textContent = 'просмотр — ответы не сохраняются';
+    return true;
+  }
+
   function begin(id) {
+    preview = (String(id) === PREVIEW_ID);
+    markPreview();
     S = load(id) || blank(id);
     try { localStorage.setItem('imp_expert_last', id); } catch (e) {}
     // Номер живёт в адресе: закладка на эту ссылку возвращает эксперта в свой
@@ -882,8 +890,10 @@
     host = $('xHost');
 
     var status = $('xSync');
+    markPreview();
     if (status && window.imp && window.imp.onExpertSync) {
       window.imp.onExpertSync(function (s) {
+        if (markPreview()) return;
         status.textContent = !s.configured ? ''
           : (s.failed ? 'не отправлено: ' + s.failed
             : (s.pending ? 'сохраняю…' : (s.lastOkAt ? 'сохранено' : '')));
@@ -924,6 +934,9 @@
     var id = asked || last;
 
     if (!id) { begin(newId()); return; }
+    // Просмотр открывается сразу: искать его на сервере незачем — он туда не
+    // отправляется, и «номер не найден» был бы единственным исходом.
+    if (String(id) === PREVIEW_ID) { begin(id); return; }
     if (load(id)) { begin(id); return; }
 
     // Номер есть, а записи в этом браузере нет — эксперт пересел за другой

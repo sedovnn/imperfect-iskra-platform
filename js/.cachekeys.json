@@ -70,10 +70,10 @@
   }
  },
  "js/expert-corpus.js": {
-  "sha": "6a8532299551",
+  "sha": "d0e147f94586",
   "keys": {
-   "expert-report.html": 5,
-   "expert.html": 5
+   "expert-report.html": 8,
+   "expert.html": 8
   }
  },
  "js/expert-lock.js": {
@@ -84,15 +84,15 @@
   }
  },
  "js/expert-report.js": {
-  "sha": "be3c703317b8",
+  "sha": "8393e8915dc9",
   "keys": {
-   "expert-report.html": 2
+   "expert-report.html": 4
   }
  },
  "js/expert.js": {
-  "sha": "94d2447d95b1",
+  "sha": "935394e6d536",
   "keys": {
-   "expert.html": 5
+   "expert.html": 14
   }
  },
  "js/main.js": {

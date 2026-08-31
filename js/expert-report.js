@@ -98,8 +98,7 @@
   // карточки давала бы другую, более пугающую цифру, но эксперт её не видит,
   // и порог получился бы завышенным.
   function visibleLen(c) {
-    var body = c.gist || (c.does || []).join(' ');
-    return (c.lead ? c.lead.length + 1 : 0) + body.length;
+    return (c.paras || []).join(' ').length;
   }
   function lengthBaseline(code) {
     var cards = C.cards.filter(function (c) { return c.ability === code; });
@@ -209,11 +208,12 @@
       };
     });
 
-    var extraVotes = {};
+    var extras = [], dups = [];
     var missing = [], freeLists = [], metaDis = [], toolsDis = [];
     experts.forEach(function (e) {
       var m = e.map || {};
-      (m.extra || []).forEach(function (c) { extraVotes[c] = (extraVotes[c] || 0) + 1; });
+      if ((m.extraNote || '').trim()) extras.push({ who: e.who, text: m.extraNote.trim() });
+      if ((m.dupNote || '').trim()) dups.push({ who: e.who, text: m.dupNote.trim() });
       (m.missing || []).forEach(function (t) {
         if (t && t.trim()) missing.push({ who: e.who, text: t.trim() });
       });
@@ -224,7 +224,7 @@
 
     return {
       N: N, perCard: perCard, matrix: matrix, unsureByAbility: unsureByAbility,
-      perAbility: perAbility, mapStats: mapStats, extraVotes: extraVotes,
+      perAbility: perAbility, mapStats: mapStats, extras: extras, dups: dups,
       missing: missing, freeLists: freeLists, metaDis: metaDis, toolsDis: toolsDis
     };
   }
@@ -375,13 +375,19 @@
         ' (принятый порог 0.90).</p>';
     }
 
-    // «Лишнее» и несогласие с границами модели
-    var extraKeys = Object.keys(R.extraVotes).sort(function (a, b) { return R.extraVotes[b] - R.extraVotes[a]; });
-    if (extraKeys.length) {
+    // «Лишнее», «повторы» и несогласие с границами модели.
+    // Было голосование галочками по десяти способностям и одна цифра «названо
+    // лишним N из M». Считать было нечего: галочка не отличала «эта лишняя» от
+    // «эти две дублируют друг друга», а именно вторым случаем ответы и были.
+    // Теперь два свободных ответа и они показываются как есть.
+    if (R.extras.length) {
       h += '<h3>Названо лишним</h3><ul class="xr-list">';
-      extraKeys.forEach(function (k) {
-        h += '<li>' + esc(ABILITY_BY_CODE[k].name) + ' — ' + R.extraVotes[k] + ' из ' + R.N + '</li>';
-      });
+      R.extras.forEach(function (d) { h += '<li>' + esc(who(d.who)) + ': ' + esc(d.text) + '</li>'; });
+      h += '</ul>';
+    }
+    if (R.dups.length) {
+      h += '<h3>Названо дублирующим друг друга</h3><ul class="xr-list">';
+      R.dups.forEach(function (d) { h += '<li>' + esc(who(d.who)) + ': ' + esc(d.text) + '</li>'; });
       h += '</ul>';
     }
     if (R.metaDis.length || R.toolsDis.length) {
