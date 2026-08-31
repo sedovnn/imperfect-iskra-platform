@@ -1,12 +1,12 @@
 {
  "js/api.js": {
-  "sha": "1fe04ab44e12",
+  "sha": "6ee8c5ef4e9d",
   "keys": {
-   "assessment.html": 5,
-   "cabinet.html": 5,
-   "harness.html": 5,
-   "index.html": 5,
-   "vitrina.html": 5
+   "assessment.html": 6,
+   "cabinet.html": 6,
+   "harness.html": 6,
+   "index.html": 6,
+   "vitrina.html": 6
   }
  },
  "js/backlog.js": {
@@ -57,34 +57,34 @@
   }
  },
  "js/engine.js": {
-  "sha": "60f46f63d2db",
+  "sha": "a7ab314afbc5",
   "keys": {
-   "assessment.html": 102
+   "assessment.html": 123
   }
  },
  "js/expert-api.js": {
   "sha": "f967a65caf21",
   "keys": {
-   "expert-report.html": 1,
-   "expert.html": 1
+   "expert.html": 6,
+   "expert-report.html": 6
   }
  },
  "js/expert-corpus.js": {
   "sha": "(шифротекст, меняется при каждой сборке)",
   "keys": {
-   "expert.html": 6,
-   "expert-report.html": 6
+   "expert.html": 8,
+   "expert-report.html": 8
   }
  },
  "js/expert-lock.js": {
   "sha": "1aad89d590b3",
   "keys": {
-   "expert-report.html": 1,
-   "expert.html": 1
+   "expert.html": 1,
+   "expert-report.html": 1
   }
  },
  "js/expert-report.js": {
-  "sha": "be3c703317b8",
+  "sha": "d6a5c5fe50e7",
   "keys": {
    "expert-report.html": 3
   }
@@ -108,18 +108,18 @@
   }
  },
  "js/mech-fields.js": {
-  "sha": "3b66314ee420",
+  "sha": "146564a262ae",
   "keys": {
-   "assessment.html": 39,
-   "harness.html": 39
+   "assessment.html": 40,
+   "harness.html": 40
   }
  },
  "js/mechanics.js": {
-  "sha": "9296b4bea7f3",
+  "sha": "998215255195",
   "keys": {
-   "assessment.html": 82,
-   "cabinet.html": 82,
-   "harness.html": 82
+   "assessment.html": 93,
+   "cabinet.html": 93,
+   "harness.html": 93
   }
  },
  "js/report-texts.js": {
@@ -135,13 +135,13 @@
   }
  },
  "js/scenes.js": {
-  "sha": "03624314a42d",
+  "sha": "e9281dd02184",
   "keys": {
-   "assessment.html": 163,
-   "cabinet.html": 163,
-   "harness.html": 163,
-   "intro.html": 163,
-   "role.html": 163
+   "assessment.html": 176,
+   "cabinet.html": 176,
+   "harness.html": 176,
+   "intro.html": 176,
+   "role.html": 176
   }
  },
  "js/typo.js": {
