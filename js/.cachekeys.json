@@ -72,8 +72,8 @@
  "js/expert-corpus.js": {
   "sha": "(шифротекст, меняется при каждой сборке)",
   "keys": {
-   "expert.html": 5,
-   "expert-report.html": 5
+   "expert.html": 6,
+   "expert-report.html": 6
   }
  },
  "js/expert-lock.js": {
@@ -86,13 +86,13 @@
  "js/expert-report.js": {
   "sha": "be3c703317b8",
   "keys": {
-   "expert-report.html": 2
+   "expert-report.html": 3
   }
  },
  "js/expert.js": {
   "sha": "94d2447d95b1",
   "keys": {
-   "expert.html": 5
+   "expert.html": 6
   }
  },
  "js/main.js": {
@@ -160,8 +160,8 @@
  "css/expert.css": {
   "sha": "b4b0dbe65f78",
   "keys": {
-   "expert.html": 4,
-   "expert-report.html": 4
+   "expert.html": 5,
+   "expert-report.html": 5
   }
  }
 }
