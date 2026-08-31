@@ -158,10 +158,27 @@
   }
  },
  "css/expert.css": {
-  "sha": "27abadb036bf",
+  "sha": "0a71a583e6f0",
   "keys": {
-   "expert.html": 7,
-   "expert-report.html": 7
+   "expert.html": 8,
+   "expert-report.html": 8
+  }
+ },
+ "css/styles.css": {
+  "sha": "326e6a282f6f",
+  "keys": {
+   "assessment.html": 242,
+   "cabinet.html": 242,
+   "case-v6.html": 242,
+   "case-v7.html": 242,
+   "case-v8.html": 242,
+   "expert-report.html": 242,
+   "expert.html": 242,
+   "harness.html": 242,
+   "index.html": 242,
+   "intro.html": 242,
+   "role.html": 242,
+   "vitrina.html": 242
   }
  }
 }
