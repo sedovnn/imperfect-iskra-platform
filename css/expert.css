@@ -134,6 +134,15 @@
 .xc-compact { margin-bottom: 0; padding: 14px 16px; border: 0; }
 .xc-compact p { font-size: var(--fs-read); line-height: 1.5; margin-bottom: 8px; }
 
+/* ---- шапка непрозрачна ---- */
+/* .station-header в styles.css стоит sticky, но фона у неё нет: текст экрана
+   при прокрутке уезжал ПОД неё и просвечивал сквозь лого и кнопки. Заметно
+   стало на разборе, где страницы длинные и прокручиваются все.
+   Правлю у себя, а не в styles.css: это общий файл двух потоков, и ассессмент
+   его сейчас правит — чинить там значило бы столкнуть потоки на ровном месте.
+   ⚠ На экранах ассессмента дырка та же и остаётся открытой. */
+body.p-expert .station-header { background: var(--paper); }
+
 /* ---- справочник: опора рядом, а не за кнопкой ---- */
 .xref { border: 1px solid var(--hairline); border-radius: var(--radius); margin-bottom: 20px; }
 .xref > summary {
