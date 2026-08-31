@@ -98,8 +98,7 @@
   // карточки давала бы другую, более пугающую цифру, но эксперт её не видит,
   // и порог получился бы завышенным.
   function visibleLen(c) {
-    var body = c.gist || (c.does || []).join(' ');
-    return (c.lead ? c.lead.length + 1 : 0) + body.length;
+    return (c.paras || []).join(' ').length;
   }
   function lengthBaseline(code) {
     var cards = C.cards.filter(function (c) { return c.ability === code; });

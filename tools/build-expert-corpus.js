@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /* Сборка корпуса карточек для экспертной валидации методологии.
  *
- *   node tools/build-expert-corpus.js ~/Desktop/FP/01_methodology_v11.md
+ *   node tools/build-expert-corpus.js 01_methodology_v11.md expert-levels.md <пароль>
  *
- * Читает методологию, вынимает из неё три вещи и кладёт в js/expert-corpus.js:
+ * Читает ДВА файла и кладёт результат в js/expert-corpus.js:
  *
- *   1) карту модели (§5.1–5.3) — навыки, способности, определения, метанавыки
- *      и инструменты. Нужна блоку В: эксперт судит о полноте карты.
- *   2) 50 карточек уровней (§10) — по одной на каждую пару способность×уровень.
- *      Нужны блокам А и Б.
+ *   1) карту модели (§5.1–5.3 методологии) — навыки, способности, определения,
+ *      метанавыки и инструменты. Нужна блоку В: эксперт судит о полноте карты.
+ *   2) 50 карточек уровней (expert-levels.md) — по одной на каждую пару
+ *      способность×уровень. Нужны блокам А и Б.
  *   3) отчёт о вычистке — что и сколько раз вырезано из карточек.
  *
  * ⚠ ПОЧЕМУ ЭТО ОТДЕЛЬНЫЙ ШАГ, А НЕ РУЧНАЯ ПРАВКА.
@@ -39,17 +39,19 @@ var path = require('path');
 // ---------------------------------------------------------------- аргументы
 
 var srcPath = process.argv[2];
-var PASSWORD = process.argv[3] || process.env.EXPERT_PASS || '';
-if (!srcPath || !PASSWORD) {
-  console.error('Использование: node tools/build-expert-corpus.js <путь к методологии.md> <пароль>');
-  console.error('  Пароль — тот, что выдаётся экспертам. Им же корпус ШИФРУЕТСЯ:');
-  console.error('  на сервере не лежит читаемая рубрика, а в исходнике страницы нет пароля.');
+var lvlPath = process.argv[3];
+var PASSWORD = process.argv[4] || process.env.EXPERT_PASS || '';
+if (!srcPath || !lvlPath || !PASSWORD) {
+  console.error('Использование: node tools/build-expert-corpus.js <методология.md> <описания-уровней.md> <пароль>');
+  console.error('  методология    — из неё берётся карта модели: §5.1–5.3.');
+  console.error('  описания       — из них берутся пятьдесят карточек: expert-levels.md.');
+  console.error('  пароль         — тот, что выдаётся экспертам. Им же корпус ШИФРУЕТСЯ:');
+  console.error('                   на сервере не лежит читаемая рубрика, а в исходнике страницы нет пароля.');
   process.exit(2);
 }
-if (!fs.existsSync(srcPath)) {
-  console.error('Файл не найден: ' + srcPath);
-  process.exit(2);
-}
+[srcPath, lvlPath].forEach(function (f) {
+  if (!fs.existsSync(f)) { console.error('Файл не найден: ' + f); process.exit(2); }
+});
 
 var src = fs.readFileSync(srcPath, 'utf8');
 var srcName = path.basename(srcPath);
@@ -157,124 +159,58 @@ if (metaskills.length < 4) throw new Error('Метанавыки из §5.1 не
 var toolsLine = archBlock.match(/\*\*Уровень 3 — Инструменты\.\*\*\s*([^.]+\.)/);
 var toolsNote = toolsLine ? squash(toolsLine[1]) : '';
 
-// ---------------------------------------------------- описания уровней §10
+// -------------------------------------------- описания уровней: отдельный файл
+//
+// ⚠ КАРТОЧКИ БОЛЬШЕ НЕ РЕЖУТСЯ ИЗ §10, И ЭТО НЕ УПРОЩЕНИЕ, А СМЕНА ПРЕДМЕТА.
+// §10 написан для судьи, у которого перед глазами все пять уровней сразу,
+// кейс и граничные тесты. Эксперт видит одну карточку из пятидесяти и не
+// знает даже, к какой способности она относится. Всё, что в §10 держится на
+// соседнем уровне («но не…», «чтобы выйти в…»), на кейсе («явно акцентировано
+// в кейсе») или на перекрёстной ссылке («Отличать от МК-1 L1…»), при нарезке
+// превращалось либо в подсказку, либо в обрывок. Последнее особенно дорого:
+// разграничения способностей живут в §10 ровно в перекрёстных ссылках, и без
+// них пара уровней МК-1/МК-2 на входе неразличима по построению.
+//
+// Поэтому источник карточек — expert-levels.md, переложение §10 под эту
+// задачу. Карта модели (§5.1–5.3) по-прежнему берётся из методологии: справочник
+// эксперту показывается тот самый, что в документе.
+var lvlSrc = fs.readFileSync(lvlPath, 'utf8');
+var lvlName = path.basename(lvlPath);
 
-var lvlBlock = section('### МК-1 · Оперирование');
-
-// Разрез по способностям: заголовок вида "### МК-1 · Название".
-var abilityChunks = {};
-var abRe = /^### ((?:МК|ПП|АК|ПР|ГА)-[12]) · .*$/gm;
-var marks = [];
-var m;
-while ((m = abRe.exec(lvlBlock))) marks.push({ code: m[1], at: m.index });
-marks.forEach(function (mk, i) {
-  var end = i + 1 < marks.length ? marks[i + 1].at : lvlBlock.length;
-  abilityChunks[mk.code] = lvlBlock.slice(mk.at, end);
-});
+// Разрез: "## МК-1" → "### L1" → абзацы до следующего "###" или "---".
+var levelTexts = {};
+(function () {
+  var blocks = lvlSrc.split(/\n## (?=(?:МК|ПП|АК|ПР|ГА)-[12]\s*$)/m);
+  blocks.forEach(function (b) {
+    var head = b.split('\n')[0].trim();
+    if (!/^(?:МК|ПП|АК|ПР|ГА)-[12]$/.test(head)) return;
+    var byLevel = {};
+    b.split(/\n### (?=L[1-5]\s*$)/m).forEach(function (part) {
+      var m = part.match(/^L([1-5])\s*\n([\s\S]*)$/);
+      if (!m) return;
+      var text = m[2].split(/\n---/)[0];
+      byLevel[Number(m[1])] = text.trim().split(/\n\s*\n/)
+        .map(function (s) { return squash(s); })
+        .filter(Boolean);
+    });
+    levelTexts[head] = byLevel;
+  });
+})();
 CODES.forEach(function (c) {
-  if (!abilityChunks[c]) throw new Error('В §10 не найден блок способности ' + c);
+  if (!levelTexts[c]) throw new Error(lvlName + ': не найден блок способности ' + c);
+  for (var L = 1; L <= 5; L++) {
+    if (!(levelTexts[c][L] || []).length) throw new Error(lvlName + ': пуст уровень ' + c + ' L' + L);
+  }
 });
 
-// Отпечаток версии считается НИЖЕ, когда карточки собраны, — см. «версия».
-
-// Внутри способности: разрез по "L1 · ярлык", "L2 · ярлык", …
-// Ярлыки прогрессии («Ближний контур», «Реактивная позиция», «Единичный
-// элемент») приходят из таблиц §6 и по построению говорят номер уровня —
-// в карточку они не попадают. Хвост после тире — содержательный, он остаётся.
+// Ярлыки прогрессии из таблиц §6: по построению говорят номер уровня. В
+// переложении их быть не должно — проверяется ниже, в разделе про подсказки.
 var PROGRESSION_LABELS = [
   'Не проявлено',
   'Единичный элемент', 'Множественные элементы', 'Интегрированная картина', 'Системная картина',
   'Реактивная позиция', 'Осознанная позиция', 'Интегрирующая позиция', 'Проектирующая позиция',
   'Ближний контур', 'Средний контур', 'Дальний контур', 'За пределами контура'
 ];
-
-function splitHeader(line) {
-  // "L4 · Дальний контур — «другая роль»" → {level:4, tail:'«другая роль»'}
-  // ⚠ Заголовок бывает жирным: **L1 · Не проявлено**. В одном экспорте
-  // методологии так набраны пять уровней из пятидесяти, в другом — целая
-  // способность. Сборщик на таком падал с «найдено уровней 0» — падал честно,
-  // но чинить это каждый раз руками нельзя: разметка документа не наша.
-  var h = line.replace(/^\*\*|\*\*$/g, '').match(/^L([1-5])\s*·\s*(.*)$/);
-  if (!h) return null;
-  var rest = h[2].trim();
-  var tail = '';
-  var dash = rest.indexOf('—');
-  if (dash >= 0) { tail = rest.slice(dash + 1).trim(); rest = rest.slice(0, dash).trim(); }
-  // если перед тире стоял не ярлык прогрессии, а содержание — оно тоже нужно
-  if (PROGRESSION_LABELS.indexOf(rest) < 0 && rest) tail = tail ? rest + ' — ' + tail : rest;
-  return { level: Number(h[1]), tail: tail };
-}
-
-// ⚠ Без \b: в JS граница слова считается по ASCII, между «Т» и «.» её нет, и
-// /ДЕЛАЕТ\b/ по кириллице не срабатывает НИКОГДА. С этой ошибкой обе секции
-// молча уезжали в «суть», и в карточку попадало «НЕ ДЕЛАЕТ» — то есть правило
-// перехода на следующий уровень, ровно то, что карточка показывать не должна.
-var DOES_RE = /^(?:ЧТО\s+)?ДЕЛАЕТ(?![А-ЯЁ])/;
-var NOT_RE = /^(?:ЧТО\s+)?НЕ\s+ДЕЛАЕТ(?![А-ЯЁ])/;
-var STOP_RE = /^(?:МАРКЕР|Маркер|Пример-маркер|Пограничные ловушки|Ловушка|Быстрая эвристика|Отличие от|Сквозная лестница|Три сквозных|Стены\.)/;
-
-// ⚠ И ещё одна разметка. В новом экспорте МК-1 переписана списком с жирными
-// заголовками секций: «- **ДЕЛАЕТ:** …», «- **НЕ ДЕЛАЕТ:** …»,
-// «**Пограничные ловушки:**». Все три правила выше якорятся на начало строки,
-// поэтому «- **» им не по зубам: секции не опознавались вовсе, и весь блок
-// уровня уезжал в «суть». В карточках МК-1 оказывались и «НЕ ДЕЛАЕТ», и обрывки
-// пограничных ловушек — то есть правила перехода на соседний уровень, ровно то,
-// что эксперт видеть не должен. Разметка документа не наша и в следующем
-// экспорте может смениться опять, поэтому снимаем её здесь.
-var LISTED_HEAD_RE = /^(?:[-*•]\s+)?\*\*/;
-
-function unlist(line) {
-  if (!LISTED_HEAD_RE.test(line)) return { text: line, listed: false };
-  return { text: line.replace(/^[-*•]\s+/, '').replace(/\*\*/g, '').trim(), listed: true };
-}
-
-function parseLevels(code) {
-  var chunk = abilityChunks[code];
-  var lines = chunk.split('\n');
-  var out = [];
-  var cur = null;
-
-  lines.forEach(function (raw) {
-    var line = raw.trim();
-    var hdr = splitHeader(line);
-    if (hdr) {
-      if (cur) out.push(cur);
-      cur = { level: hdr.level, tail: hdr.tail, sut: [], does: [], where: 'sut' };
-      return;
-    }
-    if (!cur || !line) return;
-    var head = unlist(line);
-    if (NOT_RE.test(head.text) || STOP_RE.test(head.text)) { cur.where = 'stop'; return; }
-    if (DOES_RE.test(head.text)) {
-      cur.where = 'does';
-      // «ДЕЛАЕТ: описывает проблемы…» — содержание на той же строке
-      var inline = head.text.replace(DOES_RE, '').replace(/^\s*(?:—[^:]*)?[:.]\s*/, '').trim();
-      // Куда его класть, решает разметка, а не длина. В старом формате на этой
-      // строке лежит первый признак — он и должен быть первым пунктом списка. В
-      // новом (списочном) за «ДЕЛАЕТ:» идёт связный абзац-сводка, а признаки
-      // перечислены ниже отдельными строками: сводке место в «сути», иначе
-      // карточка МК-1 начиналась бы пунктом на пять строк рядом с тремя
-      // короткими — там, где у остальных девяти способностей стоит абзац.
-      if (inline) (head.listed ? cur.sut : cur.does).push(inline);
-      return;
-    }
-    // Строка целиком в скобках — редакторская ремарка составителя методологии
-    // («Здесь и в L5 „интегрированная“ означает…»), а не описание уровня.
-    // Раньше она склеивалась со следующей фразой в одно «предложение», и
-    // вычистка по ссылке на уровень уносила ОБЕ: у АК-1 карточка начиналась с
-    // «Границу открывают также…» — с «также» без того, к чему оно также.
-    if (/^\(.*\)$/.test(line)) return;
-    if (cur.where === 'sut') cur.sut.push(line.replace(/^Суть(?:\s+уровня)?\.\s*/, ''));
-    else if (cur.where === 'does') cur.does.push(line);
-  });
-  if (cur) out.push(cur);
-
-  if (out.length !== 5) throw new Error(code + ': найдено уровней ' + out.length + ', ожидалось 5');
-  out.forEach(function (l, i) {
-    if (l.level !== i + 1) throw new Error(code + ': уровни идут не по порядку');
-  });
-  return out;
-}
 
 // ------------------------------------------------------------- вычистка
 
@@ -328,54 +264,29 @@ function scrub(text) {
 
 var cards = [];
 CODES.forEach(function (code) {
-  var chunk = abilityChunks[code];
-  var progM = chunk.match(/\*\*Тип прогрессии:\*\*\s*(.+)/);
-  var progression = progM ? progM[1].trim() : '';
-
-  parseLevels(code).forEach(function (lv) {
-    // Карточка = ярлык-хвост + «суть» + «ДЕЛАЕТ».
-    // «НЕ ДЕЛАЕТ», маркеры и ловушки в карточку не идут: первое — правило
-    // перехода («чтобы выйти в L4…»), второе — чужие ответы с фамилиями,
-    // третье — тоже про границы, а не про уровень. Карточка должна нести то,
-    // по чему уровень опознаётся, а не то, чем он отличается от соседнего:
-    // иначе эксперт восстанавливает порядок из формулировок «выше/ниже», и
-    // блок Б перестаёт что-либо мерить.
-    // Три поля, а не одна склейка: «суть» и «делает» — разные регистры (образ
-    // уровня и наблюдаемые признаки), и склеенные через пробел они читались
-    // как оборванная фраза («…поломки. описывает проблемы…»). На экране это
-    // два абзаца, в сводке — один текст.
-    var lead = scrub(lv.tail ? lv.tail.replace(/^«|»$/g, '') : '');
-    var gist = scrub(lv.sut.join(' '));
-    if (gist) gist = gist.charAt(0).toUpperCase() + gist.slice(1);
-
-    // ⚠ СПИСОК ОСТАЁТСЯ СПИСКОМ. Здесь стояло lv.does.join(' ') — четыре
-    // отдельные строки «Ярлык. Пояснение» склеивались в один абзац, и ярлыки
-    // превращались в обрывки посреди прозы: «Планирование от цели. Цель
-    // зафиксирована первой… Крупноблочная декомпозиция. Путь разложен…».
-    // Читалось как набор несвязанных огрызков — владелец так и сказал, открыв
-    // карточки. Текст при этом был дословный; сломана была структура, а
-    // структура здесь и есть половина смысла.
-    var does = lv.does.map(function (line) { return scrub(line); })
-      .filter(function (t) { return t && t.length > 2; })
-      .map(function (t) { return t.charAt(0).toUpperCase() + t.slice(1); });
-
-    var total = (lead + gist + does.join(' ')).length;
-    if (total < 40) {
-      throw new Error(code + ' L' + lv.level + ': после вычистки осталось ' + total +
+  for (var L = 1; L <= 5; L++) {
+    // Карточка — абзацы описания, ничего сверх. Прежняя тройка «ярлык + суть +
+    // список признаков» повторяла разметку §10; в переложении её нет, и
+    // раскрывать в интерфейсе тоже нечего — четыре коротких абзаца читаются
+    // целиком. Поле «тип прогрессии» убрано: оно попадало в зашифрованный
+    // корпус, никем не читалось и при этом называло логику роста уровней.
+    var paras = levelTexts[code][L]
+      .map(function (t) { return scrub(t); })
+      .filter(function (t) { return t && t.length > 2; });
+    var total = paras.join(' ').length;
+    if (total < 200) {
+      throw new Error(code + ' L' + L + ': после вычистки осталось ' + total +
         ' знаков — карточка пустая, разбор сломался');
     }
     cards.push({
-      id: code + '-L' + lv.level,
+      id: code + '-L' + L,
       ability: code,
       skill: code.slice(0, 2),
-      level: lv.level,
-      progression: progression,
-      lead: lead,
-      gist: gist,
-      does: does,
+      level: L,
+      paras: paras,
       len: total
     });
-  });
+  }
 });
 
 if (cards.length !== 50) throw new Error('Карточек ' + cards.length + ', ожидалось 50');
@@ -384,16 +295,16 @@ if (cards.length !== 50) throw new Error('Карточек ' + cards.length + ',
 
 var leaks = [];
 cards.forEach(function (c) {
-  var t = [c.lead, c.gist].concat(c.does || []).join(' ');
+  var t = c.paras.join(' ');
   if (/L[1-5]/.test(t)) leaks.push(c.id + ': остался номер уровня');
   if (/(?:МК|ПП|АК|ПР|ГА)-[12]/.test(t)) leaks.push(c.id + ': остался код способности');
+  if (/\bкейс/i.test(t)) leaks.push(c.id + ': осталась отсылка к кейсу');
+  if (/редк|высш|исключительн/i.test(t)) leaks.push(c.id + ': осталось слово-подсказка о высоте уровня');
   SURNAMES.forEach(function (n) {
     if (t.indexOf(n) >= 0) leaks.push(c.id + ': осталась фамилия ' + n);
   });
   PROGRESSION_LABELS.forEach(function (lab) {
-    if (c.lead.indexOf(lab) === 0 || c.gist.indexOf(lab) === 0) {
-      leaks.push(c.id + ': карточка начинается ярлыком прогрессии «' + lab + '»');
-    }
+    if (t.indexOf(lab) === 0) leaks.push(c.id + ': карточка начинается ярлыком прогрессии «' + lab + '»');
   });
 });
 if (leaks.length) {
@@ -427,7 +338,7 @@ var VERSIONED = {
       }));
   }),
   cards: cards.map(function (c) {
-    return [c.id, c.lead, c.gist].concat(c.does || []).join('·');
+    return [c.id].concat(c.paras).join('·');
   })
 };
 CORPUS_VERSION = CORPUS_VERSION_BASE + '.' + require('crypto').createHash('sha1')
@@ -560,21 +471,31 @@ var byLevel = [1, 2, 3, 4, 5].map(function (l) {
   var a = cards.filter(function (c) { return c.level === l; }).map(function (c) { return c.len; });
   return Math.round(a.reduce(function (s, x) { return s + x; }, 0) / a.length);
 });
-console.log('  длина по L1..L5  ' + byLevel.join(' / ') + ' знаков — верхние уровни длиннее,');
-console.log('                   длина работает подсказкой; сводка считает поправку на это.');
+// Сообщение зависит от замера, а не печатается всегда: пока карточки резались
+// из §10, верхние уровни были стабильно длиннее нижних, и фраза «длина работает
+// подсказкой» была верна. На выровненных описаниях она была бы неправдой,
+// напечатанной собственным инструментом.
+var spread = Math.max.apply(null, byLevel) - Math.min.apply(null, byLevel);
+var rising = byLevel.every(function (v, i) { return i === 0 || v >= byLevel[i - 1]; });
+console.log('  длина по L1..L5  ' + byLevel.join(' / ') + ' знаков' +
+  (rising && spread > 80 ? ' — верхние уровни длиннее,' : ''));
+console.log('                   ' + (rising && spread > 80
+  ? 'длина работает подсказкой; сводка считает поправку на это.'
+  : 'разброс ' + spread + ' зн., порядок по длине не читается; поправку сводка всё равно считает.'));
 
 // Вычистка режет предложениями, и обрубок иногда теряет то, на что ссылался
 // («Границу открывают ТАКЖЕ…»). Автоматически это не чинится — фразу должен
 // переписать человек. Поэтому подозрительные начала названы поимённо.
 var DANGLING = /^(Это|Этот|Эта|Эти|Такой|Такая|Такие|Он|Она|Они|Оба|Здесь|Там|Тогда|Поэтому|Границу|Кроме того|Также|Тоже|Второй|Второе|Первый)\b/;
 var dangling = cards.filter(function (c) {
-  return DANGLING.test(c.gist) || /\bтакже\b/.test(c.gist.split(/(?<=[.!?])\s/)[0] || '');
+  var first = c.paras[0] || '';
+  return DANGLING.test(first) || /\bтакже\b/.test(first.split(/(?<=[.!?])\s/)[0] || '');
 });
 if (dangling.length) {
   console.log('\n  ⚠ ВЫЧИТАТЬ ГЛАЗАМИ — карточка начинается со ссылки на то, чего в ней нет');
   console.log('    (вычистка вырезала предложение, на которое опиралось следующее):');
   dangling.forEach(function (c) {
-    console.log('    ' + c.id + '  «' + c.gist.slice(0, 78) + '…»');
+    console.log('    ' + c.id + '  «' + (c.paras[0] || '').slice(0, 78) + '…»');
   });
 }
 
@@ -583,25 +504,11 @@ if (dropped.length) {
   dropped.forEach(function (d) { console.log('    · ' + d.slice(0, 96) + (d.length > 96 ? '…' : '')); });
 }
 
-// §10 методологии обещает у каждого уровня «Суть» и поведенческие признаки.
-// Там, где «Сути» нет, карточка держится на одном перечне признаков — читать
-// её труднее, и в блоке Б она визуально короче соседних. Это находка про сам
-// документ, а не про сборку, поэтому названа отдельно.
-var noGist = cards.filter(function (c) { return !c.gist; });
-if (noGist.length) {
-  console.log('\n  ⚠ уровни без блока «Суть» в методологии (' + noGist.length + '):');
-  console.log('    ' + noGist.map(function (c) { return c.id; }).join(', '));
-  console.log('    карточка собрана из одних признаков — стоит дописать «Суть» в §10.');
-}
-
 // Длина сама по себе способна выдать порядок уровней. Где она выдаёт его
 // целиком, блок Б валидации становится пустым: побить идеальный порог нельзя.
-// Считаем по ВИДИМОЙ части карточки — ярлык плюс «суть», как её показывает
-// экран раскладки.
-function visibleLen(c) {
-  var body = c.gist || (c.does || []).join(' ');
-  return (c.lead ? c.lead.length + 1 : 0) + body.length;
-}
+// Карточка теперь показывается на экране целиком, поэтому видимая длина — это
+// вся её длина.
+function visibleLen(c) { return c.len; }
 var perfect = [];
 CODES.forEach(function (code) {
   var five = cards.filter(function (c) { return c.ability === code; })
@@ -613,8 +520,8 @@ if (perfect.length) {
   console.log('    там блок Б ничего не измерит — описания уровней стоит выровнять по объёму.');
 }
 
-var short = cards.filter(function (c) { return c.len < 150; });
+var short = cards.filter(function (c) { return c.len < 400; });
 if (short.length) {
   console.log('\n  ⚠ короткие карточки (стоит вычитать глазами):');
-  short.forEach(function (c) { console.log('    ' + c.id + '  ' + c.len + ' зн.  ' + (c.gist || c.lead).slice(0, 70) + '…'); });
+  short.forEach(function (c) { console.log('    ' + c.id + '  ' + c.len + ' зн.  ' + c.paras[0].slice(0, 70) + '…'); });
 }
