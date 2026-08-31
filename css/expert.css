@@ -153,6 +153,17 @@
 .xref-skill li b { color: var(--ink); }
 
 /* ---- выбор ---- */
+/* Вход по номеру — под кнопкой «Начать», раскрытием. Большинство приходит
+   впервые, и поле для номера в основном потоке читалось бы как обязательное. */
+.xresume { margin-top: 28px; }
+.xresume > summary {
+  cursor: pointer; font-size: var(--fs-dense); color: var(--muted); list-style: none;
+}
+.xresume > summary::-webkit-details-marker { display: none; }
+.xresume > summary::before { content: '+ '; }
+.xresume[open] > summary::before { content: '– '; }
+.xresume .xgrid2 { grid-template-columns: 220px; margin-top: 10px; }
+
 .xpick-q { font-size: var(--fs-dense); font-weight: 600; color: var(--muted); margin: 0 0 8px; }
 .xpick-row { display: grid; gap: 8px; margin-bottom: 14px; }
 @media (min-width: 760px) { .xpick-row { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); } }
@@ -296,9 +307,6 @@
 .xmap-ab li b { color: var(--ink); }
 .xmap-line { font-size: var(--fs-read); line-height: 1.5; max-width: var(--w-read); margin: 14px 0 8px; }
 .xpair-note[hidden] { display: none; }
-.xchecks { display: grid; gap: 6px; margin-bottom: 12px; }
-@media (min-width: 760px) { .xchecks { grid-template-columns: 1fr 1fr; } }
-.xcheck { font-size: var(--fs-read); cursor: pointer; }
 
 /* =====================  СВОДКА (expert-report.html)  ===================== */
 .xr-kpi { display: grid; gap: 12px; margin-bottom: 28px; }
