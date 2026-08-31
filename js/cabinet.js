@@ -206,9 +206,21 @@
     window.imp.callApi('v2List', { password: val }).then(function (res) {
       btn.disabled = false; btn.textContent = 'Войти →';
       if (!res || !res.ok) {
-        document.getElementById('cabPassErr').style.display = '';
+        // ⚠ «НЕВЕРНЫЙ ПАРОЛЬ» СТОЯЛО НА ЛЮБОЙ НЕУДАЧЕ (правка 31.08). Сообщение врало на
+        // самом дорогом случае: первый вызов после обновления бэкенда бывает дольше
+        // тридцати секунд (Apps Script пересобирает проект), запрос обрывается по таймауту,
+        // callApi возвращает null — и кабинет объявлял, что пароль не тот. На этом 31.08
+        // потерян час: пароль был правильный, а я по этой надписи решил, что его сменили.
+        // Теперь три случая различаются: пароль, молчание бэкенда и всё остальное.
+        var err = document.getElementById('cabPassErr');
+        err.textContent = !res
+          ? 'Бэкенд не ответил. Первый вызов после обновления бывает долгим — нажмите «Войти» ещё раз.'
+          : (res.error === 'unauthorized' ? 'Неверный пароль.'
+                                          : 'Бэкенд ответил ошибкой: ' + String(res.error || 'без кода') + '.');
+        err.style.display = '';
         return;
       }
+      document.getElementById('cabPassErr').style.display = 'none';
       pw = val;
       try { sessionStorage.setItem(PW_KEY, val); } catch (e) {}
       gate.style.display = 'none';
