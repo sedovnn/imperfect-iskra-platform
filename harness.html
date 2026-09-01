@@ -713,6 +713,10 @@
   });
 
   el('hsAccept').addEventListener('click', function () {
+    // Починка разбора называется вслух ВМЕСТЕ с приёмом шага: отдельную строку статуса
+    // тут же затирает следующая, и оператор её не увидит. mended живёт на весь приём.
+    var mended = '';
+    var note = function () { return mended ? ' · разобрал, поправив ' + mended + ' — сверьте текст' : ''; };
     if (!run) {
       el('hsGate').innerHTML = '<p class="hs-note">Прогон не начат. Впишите метку модели и нажмите «Начать прогон».</p>';
       return;
@@ -754,7 +758,7 @@
           return;
         }
         wObj = wRead.obj;
-        if (wRead.repaired) say('разобрал, поправив ' + wRead.repaired + ' — сверьте текст в ответе');
+        if (wRead.repaired) mended = wRead.repaired;
         var joined = window.imp.winParts.toText(wAct, wObj);
         if (!String(joined).trim()) {
           el('hsGate').innerHTML = '<p class="hs-gate">Ни одно поле не заполнено. ' +
@@ -765,12 +769,12 @@
         }
         run.answers[s.key] = joined;
         run.answersAt[s.key] = new Date().toISOString();
-        save(); render(); say('шаг принят');
+        save(); render(); say('шаг принят' + note());
         return;
       }
       run.answers[s.key] = raw;
       run.answersAt[s.key] = new Date().toISOString();
-      save(); render(); say('шаг принят');
+      save(); render(); say('шаг принят' + note());
       return;
     }
 
@@ -795,7 +799,7 @@
         return;
       }
       obj = read.obj;
-      if (read.repaired) say('разобрал, поправив ' + read.repaired + ' — сверьте текст в ответе');
+      if (read.repaired) mended = read.repaired;
     }
     var f = F[s.mech];
 
@@ -972,7 +976,7 @@
     var recap = s.mech === 'list' ? window.imp.listRecap(obj, helpers()) : '';
     render();
     if (recap) el('hsGate').innerHTML = '<p class="hs-note"><b>Записано:</b></p><pre class="hs-out" style="max-height:22vh;">' + esc(recap) + '</pre>';
-    say('верстак зафиксирован');
+    say('верстак зафиксирован' + note());
   });
 
 
