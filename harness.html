@@ -173,7 +173,7 @@
 <script src="js/backlog.js?v=8"></script>
 <script src="js/scenes.js?v=177"></script>
 <script src="js/mechanics.js?v=93"></script>
-<script src="js/mech-fields.js?v=41"></script>
+<script src="js/mech-fields.js?v=42"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -340,6 +340,19 @@
     // Поймано владельцем 31.08 на ручном прогоне.
     return s.mech ? run.mech[s.mech] !== undefined : run.answers[s.key] !== undefined;
   }
+  // Какой такт сейчас идёт и спрашивается ли он обычным текстом. Одно место на обе
+  // стороны страницы: и на сборку вопроса, и на разбор ответа — иначе спросят текстом,
+  // а разберут как JSON, и мы вернёмся к тому же классу поломок.
+  function plainKeyOf(step, run) {
+    if (!step || !step.mech || !run || !window.imp.mechPlain) return null;
+    var key = null;
+    if (step.mech === 'list' && run.listStage === 'why') key = 'formWhy';
+    if (step.mech === 'seal') {
+      key = (run.sealStage === 'phrase') ? 'formPhrase' : (run.sealBack ? 'formHeld' : 'form');
+    }
+    return (key && window.imp.mechPlain.is(step.mech, key)) ? key : null;
+  }
+
   // ⚠ `unless` — ТО ЖЕ УСЛОВИЕ НАОБОРОТ, И ХАРНЕСС ЕГО НЕ ЗНАЛ (правка 21.08).
   // В сценах на нём разведён вопрос про плату: перебравшему Агеев говорит про
   // превышение (`when: 'overspend'`), уложившемуся — про состав решений
@@ -563,6 +576,11 @@
       // Человеку этого текста не нужно: он ВИДИТ свои ответы в полях и правит их прямо
       // там. Для модели то же самое приходится сказать словами — это паритет, а не
       // подсказка сверх экрана.
+      // ⚠ ТАКТ ИЗ ОДНОГО ПОЛЯ — ОБЫЧНЫМ ТЕКСТОМ (решение владельца 31.08). Скобки и
+      // «верните ОДНИМ объектом» ради одного поля ничего не несут: у человека там просто
+      // подписанное поле. Реестр и текст вопроса — общие с CLI-харнессом
+      // (window.imp.mechPlain), чтобы формулировка не разошлась между двумя прогонами.
+      var plainKey = plainKeyOf(step, run);
       var filledIn = sumBeat || (step.mech === 'list' && run.sealBack && run.sealBack.prev);
       var howTo = filledIn
         ? 'Ниже ваш прежний ответ — он стоит в полях, как вы его оставили. Поправьте в нём то, что решили, и верните ОДНИМ объектом JSON целиком — без пояснений до и после:\n'
@@ -571,7 +589,8 @@
         mat.replace(/^\n\n/, '') + (mat ? '\n\n' : '') +
         (probe.length ? probe.join('\n') + '\n\n' : '') +
         (ask.length ? ask.join('\n') + '\n\n' : '') +
-        howTo + JSON.stringify(form, null, 1);
+        (plainKey ? window.imp.mechPlain.ask(step.mech, plainKey)
+                  : howTo + JSON.stringify(form, null, 1));
     } else if (act && Array.isArray(act.parts) && act.parts.length) {
       // ⚠ ОКНО НА НЕСКОЛЬКО ВОПРОСОВ СПРАШИВАЕТСЯ ФОРМОЙ (правка 21.08). На экране у
       // этого шага столько полей, сколько вопросов, и над каждым стоит его вопрос —
@@ -617,7 +636,10 @@
     var s = STEPS[cur];
     el('hsNum').textContent = (cur + 1) + ' из ' + STEPS.length;
     el('hsLabel').textContent = s.label;
-    el('hsKind').textContent = s.mech ? 'верстак · JSON' : 'окно · текст';
+    // Такт из одного поля спрашивается текстом — подпись обязана это говорить, иначе
+    // оператор ждёт JSON там, где его не просят.
+    var plainNow = plainKeyOf(s, run);
+    el('hsKind').textContent = s.mech ? ('верстак · ' + (plainNow ? 'текст' : 'JSON')) : 'окно · текст';
     // Оператору тоже надо понимать, какой такт идёт.
     var beat = (s.mech === 'list' && run.listStage === 'sum')
       ? 'Такт 2 из 3: модель разложила заявки, ей показан счёт взятого — как человеку над стопкой «Берём». Может оставить как есть или переложить. '
@@ -627,7 +649,7 @@
       ? (run.sealStage === 'phrase' ? 'Второй такт печати: модель подтвердила, осталась одна фраза. '
         : (run.sealBack ? 'Модель уже возвращалась к разбору — второй раз нельзя, только подтверждение. ' : ''))
       : '';
-    el('hsHint').textContent = beat + (run.sentSetup && !fullAgain() ? 'Кейс и установка уже уехали — здесь только новое с прошлого шага. ' : '') + (s.mech
+    el('hsHint').textContent = beat + (run.sentSetup && !fullAgain() ? 'Кейс и установка уже уехали — здесь только новое с прошлого шага. ' : '') + (s.mech && !plainNow
       ? 'Ответ модели вставьте как JSON — страница переведёт его в состояние и проверит тем же гейтом, что держит человека.'
       : 'Ответ модели вставьте как обычный текст.');
     el('hsPrompt').textContent = promptFor(s, cur);
@@ -751,13 +773,20 @@
     }
 
     var obj;
-    try {
-      var t = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-      obj = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
-    } catch (e) {
-      el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(e.message) +
-        '. Попросите модель вернуть один объект, начиная с «{».</p>';
-      return;
+    // Такт из одного поля: ответ приходит текстом и заворачивается под ту же подпись,
+    // какой его спросили, — дальше его читает прежний парный читатель.
+    var plainNow = plainKeyOf(s, run);
+    if (plainNow) {
+      obj = window.imp.mechPlain.wrap(s.mech, plainNow, raw);
+    } else {
+      try {
+        var t = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+        obj = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
+      } catch (e) {
+        el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(e.message) +
+          '. Попросите модель вернуть один объект, начиная с «{».</p>';
+        return;
+      }
     }
     var f = F[s.mech];
 
