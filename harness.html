@@ -173,7 +173,7 @@
 <script src="js/backlog.js?v=8"></script>
 <script src="js/scenes.js?v=177"></script>
 <script src="js/mechanics.js?v=93"></script>
-<script src="js/mech-fields.js?v=42"></script>
+<script src="js/mech-fields.js?v=43"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -744,15 +744,17 @@
       var wAct = null;
       S.route().forEach(function (r) { if (r.sceneIx === s.ix && r.actIx === s.actIx) wAct = r.act; });
       if (wAct && Array.isArray(wAct.parts) && wAct.parts.length) {
-        var wObj;
-        try {
-          var wt = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-          wObj = JSON.parse(wt.slice(wt.indexOf('{'), wt.lastIndexOf('}') + 1));
-        } catch (e) {
-          el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(e.message) +
-            '. Попросите модель вернуть один объект, начиная с «{».</p>';
+        // Тот же общий читатель, что у верстаков: окно на три вопроса Штерна тоже
+        // спрашивается формой, и кавычки внутри ответа ломают его ровно так же.
+        var wRead = window.imp.readJson(raw), wObj;
+        if (!wRead.obj) {
+          el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(wRead.error) + '</p>' +
+            (wRead.at ? '<p class="hs-note">Сломалось здесь: …' + esc(wRead.at) + '…</p>' : '') +
+            '<p class="hs-note">Чаще всего причина — прямые кавычки внутри текста: для JSON это конец строки.</p>';
           return;
         }
+        wObj = wRead.obj;
+        if (wRead.repaired) say('разобрал, поправив ' + wRead.repaired + ' — сверьте текст в ответе');
         var joined = window.imp.winParts.toText(wAct, wObj);
         if (!String(joined).trim()) {
           el('hsGate').innerHTML = '<p class="hs-gate">Ни одно поле не заполнено. ' +
@@ -779,14 +781,21 @@
     if (plainNow) {
       obj = window.imp.mechPlain.wrap(s.mech, plainNow, raw);
     } else {
-      try {
-        var t = raw.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
-        obj = JSON.parse(t.slice(t.indexOf('{'), t.lastIndexOf('}') + 1));
-      } catch (e) {
-        el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(e.message) +
-          '. Попросите модель вернуть один объект, начиная с «{».</p>';
+      // ⚠ РАЗБОР ОБЩИЙ С CLI-ХАРНЕССОМ (правка 31.08). Здесь стоял свой JSON.parse и общая
+      // жалоба «начните с „{"» — на ответе, где структура верна, а внутри значения стоят
+      // прямые кавычки, оператор видел только «Unrecognized token „о"» и не понимал, что
+      // чинить. Общий читатель поправляет ровно эту ошибку, говорит о починке вслух и при
+      // неудаче показывает кусок, на котором сломалось.
+      var read = window.imp.readJson(raw);
+      if (!read.obj) {
+        el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(read.error) + '</p>' +
+          (read.at ? '<p class="hs-note">Сломалось здесь: …' + esc(read.at) + '…</p>' : '') +
+          '<p class="hs-note">Чаще всего причина — прямые кавычки внутри текста: для JSON это конец строки. ' +
+          'Попросите модель повторить ответ, заменив внутренние кавычки на «ёлочки» или экранировав их.</p>';
         return;
       }
+      obj = read.obj;
+      if (read.repaired) say('разобрал, поправив ' + read.repaired + ' — сверьте текст в ответе');
     }
     var f = F[s.mech];
 
