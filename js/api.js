@@ -79,8 +79,19 @@
     // замирал навсегда. Тридцать секунд — с запасом на холодный старт Apps Script (там
     // бывает 5–10 с на первый вызов); по истечении срабатывает обычная ветка отказа, то
     // есть снимок уходит в очередь и повторяется сам, а не теряется.
+    // ⚠ СУДЕЙСТВУ ТРИДЦАТИ СЕКУНД МАЛО (починка 01.09). Одно судейское задание — это
+    // вызов модели на 30–90 секунд, а кабинет просит по три за раз. Каждый вызов
+    // обрывался по этому пределу, цикл в кабинете видел null и говорил «сбой очереди»,
+    // хотя Apps Script в это время спокойно доделывал работу. Внешне это выглядело так:
+    // карточка висит неоценённой, а очередь стоит на десяти заданиях (поймано владельцем
+    // на 001010 и 001011). Судейским действиям даём предел исполнения Apps Script —
+    // шесть минут плюс запас; остальным остаются тридцать секунд, ради которых предел и
+    // заводили: сорванный снимок ответа должен быстро уйти в очередь повтора.
+    var LONG = { runJudgeQueue: 1, judgeAnswers: 1, judgeCalib: 1, judgeStation1: 1,
+                 judgeStation2: 1, judgeRoomFuture: 1, judgeRoomAlternatives: 1, judgeRoomPath: 1 };
+    var waitMs = LONG[action] ? 400000 : 30000;
     var ctl = (typeof AbortController === 'function') ? new AbortController() : null;
-    var timer = ctl ? setTimeout(function () { ctl.abort(); }, 30000) : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, waitMs) : null;
     return fetch(API_URL, {
       method: 'POST',
       // text/plain — намеренно не application/json: иначе браузер шлёт CORS-preflight,

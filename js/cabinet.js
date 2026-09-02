@@ -1304,6 +1304,9 @@
   function judge(bib, btn) {
     btn.disabled = true;
     var state = document.getElementById('cabJudgeState');
+    // Сколько заданий оставалось на прошлом круге и сколько кругов подряд без движения:
+    // по этим двум числам цикл решает, ждать дальше или сдаться (см. ветку обрыва ниже).
+    var lastLeft = Infinity, stall = 0;
     var step = function (n) {
       state.textContent = 'оцениваю… (заданий обработано: ' + n + ')';
       // ⚠ bib ОБЯЗАТЕЛЕН (правка владельца 21.08). Без него бэкенд разбирал очередь
@@ -1311,7 +1314,34 @@
       // чужими деньгами и в чужой отчёт, — а кабинет считает эти задания сделанными для
       // 1002 и в конце открывает его карточку, где баллов по-прежнему нет.
       return window.imp.callApi('runJudgeQueue', { password: pw, max: 3, bib: bib }).then(function (r) {
-        if (!r || !r.ok) { state.textContent = 'сбой очереди — попробуйте ещё раз'; btn.disabled = false; return; }
+        if (!r || !r.ok) {
+          // ⚠ ОБРЫВ ОЖИДАНИЯ — НЕ ОТКАЗ (починка 01.09). Здесь цикл прекращался словами
+          // «сбой очереди», и участник оставался с недобранной очередью: карточка висит
+          // неоценённой, а в листе десять заданий ждут. Apps Script при этом продолжает
+          // работу — браузер лишь перестал ждать ответа. Поэтому спрашиваем состояние
+          // очереди и продолжаем, пока она движется; сдаёмся только если три круга подряд
+          // без движения.
+          return window.imp.callApi('v2Detail', { password: pw, bib: bib }).then(function (d) {
+            var q = d && d.queue;
+            if (!q) { state.textContent = 'бэкенд не ответил — нажмите «Оценить» ещё раз'; btn.disabled = false; return; }
+            var left = (q.queued || 0) + (q.running || 0);
+            if (left <= 0) {
+              btn.disabled = false;
+              state.textContent = 'готово: заданий сделано ' + (q.done || 0) +
+                ((q.error || 0) ? ' · с ошибками: ' + q.error : '');
+              return refresh().then(function () { openCard({ bib: bib, fio: '' }); });
+            }
+            if (left < lastLeft) { lastLeft = left; stall = 0; }
+            else if (++stall >= 3) {
+              btn.disabled = false;
+              state.textContent = 'очередь не двигается: осталось ' + left +
+                ' заданий · нажмите «Оценить» ещё раз или посмотрите ошибки в листе JudgeQueue';
+              return;
+            }
+            state.textContent = 'оцениваю… (в очереди осталось ' + left + ')';
+            return step(n);
+          });
+        }
         var total = n + (r.done || 0);
         if (r.errors && r.errors.length) {
           state.textContent = 'ошибки в заданиях: ' + r.errors.map(function (e) { return e.taskId + ' (' + e.error + ')'; }).join(', ');

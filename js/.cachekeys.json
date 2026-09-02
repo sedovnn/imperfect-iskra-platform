@@ -1,12 +1,12 @@
 {
  "js/api.js": {
-  "sha": "6ee8c5ef4e9d",
+  "sha": "51c1dae1d3c4",
   "keys": {
-   "assessment.html": 6,
-   "cabinet.html": 6,
-   "harness.html": 6,
-   "index.html": 6,
-   "vitrina.html": 6
+   "assessment.html": 7,
+   "cabinet.html": 7,
+   "harness.html": 7,
+   "index.html": 7,
+   "vitrina.html": 7
   }
  },
  "js/backlog.js": {
@@ -24,9 +24,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "d6ce660308d1",
+  "sha": "7246698ac58b",
   "keys": {
-   "cabinet.html": 27
+   "cabinet.html": 28
   }
  },
  "js/case-ref.js": {
