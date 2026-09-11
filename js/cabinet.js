@@ -1122,7 +1122,12 @@
         line += ' · верх пройден в обход границы 3→4: ресурс перераспределён без правила';
       }
 
-      var mine = flagsOf(allFlags, a);
+      var mineAll = flagsOf(allFlags, a);
+      // ⚠ ЗЕЛЁНЫЙ ФЛАГ НЕ ЗОВЁТ ЧЕЛОВЕКА (11.09). Он отмечает сильную сторону ответа, а не
+      // сомнение судьи: «приоритет назван вместе с метрикой». Считать его вместе с прочими
+      // значило бы звать оценщика туда, где перечитывать нечего.
+      var green = mineAll.filter(function (f) { return f.kind === 'green'; });
+      var mine = mineAll.filter(function (f) { return f.kind !== 'green'; });
       var steps = ABILITY_STEPS[a] || { main: [], control: [] };
       var stepsHtml = steps.main.map(function (k) {
         var st = stepByKey(k);
@@ -1166,6 +1171,9 @@
         '<div class="cab-ab-body">' +
           (isOv && o.reason ? '<div class="cab-ov-why">Почему вы поставили свой: ' + br(o.reason) + '</div>' : '') +
           (mine.length ? '<ul class="cab-flags">' + mine.map(function (x) {
+            return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + '</li>';
+          }).join('') + '</ul>' : '') +
+          (green.length ? '<ul class="cab-flags cab-flags-green">' + green.map(function (x) {
             return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + '</li>';
           }).join('') + '</ul>' : '') +
           evidHtml(out) +

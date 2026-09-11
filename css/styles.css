@@ -2690,6 +2690,13 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-control { margin-top: 14px; padding: 12px 14px; border: 1px solid var(--hairline); border-radius: var(--radius); background: var(--soft); font-size: var(--fs-op); }
 .cab-control p { margin: 0 0 8px; }
 .cab-flags { margin: 0; padding-left: 18px; font-size: var(--fs-op); line-height: 1.55; }
+/* ⚠ ЗЕЛЁНЫЙ ФЛАГ — ПОЛОЖИТЕЛЬНАЯ ПОМЕТКА (11.09). Собственного зелёного в палитре нет,
+   и заводить его ради одной строки значило бы расширить систему цветов на четвёртый.
+   Берём читаемый синий, который уже живёт в системе для информационных пометок, и
+   отделяем подписью: в списке рядом не должно быть сомнения, что это не «перечитать». */
+.cab-flags-green { margin-top: 8px; color: var(--jb-ink); }
+.cab-flags-green::before { content: 'Сильная сторона'; display: block; margin-left: -18px;
+  font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
 
 .cab-answer { padding: 14px 0; border-top: 1px solid var(--hairline); }
 .cab-answer-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 6px; }
