@@ -173,7 +173,7 @@
 <script src="js/backlog.js?v=8"></script>
 <script src="js/scenes.js?v=184"></script>
 <script src="js/mechanics.js?v=93"></script>
-<script src="js/mech-fields.js?v=44"></script>
+<script src="js/mech-fields.js?v=45"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -332,7 +332,10 @@
     // зовёт current(), то есть done(), — обработчик умирал молча, и нажатие до начала
     // прогона не делало ВООБЩЕ ничего, без единого слова оператору.
     if (!run) return false;
-    if (s.mech === 'list' && (run.listStage === 'sum' || run.listStage === 'why')) return false;
+    // ⚠ ТАКТА СЧЁТА БОЛЬШЕ НЕТ (решение владельца 11.09): счёт показывается вместе с
+    // вопросом об основании, а не отдельным кругом, где модель второй раз присылала ту же
+    // раскладку. Тактов два: раскладка и основание.
+    if (s.mech === 'list' && run.listStage === 'why') return false;
     // ⚠ У ВАРИАНТОВ БУДУЩЕГО ТОЖЕ ДВА ТАКТА (правка 11.09). Пока не задан вопрос Лемеха,
     // шаг не пройден: у человека он звучит ПОСЛЕ того, как варианты записаны и отмечен
     // наиболее вероятный, и его редакция зависит от того, один вариант или несколько.
@@ -498,7 +501,7 @@
     // Сами карточки остаются: человек на возврате смотрит именно на них.
     var again = (step.mech === 'seal' && run.sealStage === 'phrase') ||
                 (step.mech === 'list' && run.sealBack && run.sealBack.prev) ||
-                (step.mech === 'list' && (run.listStage === 'sum' || run.listStage === 'why'));
+                (step.mech === 'list' && run.listStage === 'why');
     var heard = again ? [] : heardBetween(from, step);
 
     // ⚠ НИ ОДНОГО СВОЕГО СЛОВА СВЕРХ ЭКРАНА. Раньше здесь стояли «РАБОЧАЯ ОБЛАСТЬ»,
@@ -534,10 +537,8 @@
       // стоят над стопкой «Берём» у человека, и его же раскладка в полях.
       // Такт 2 — счёт и раскладка; такт 3 — одно поле основания. Ни списка заявок, ни
       // монолога: модель получила их такт назад в том же чате.
-      var sumBeat = (step.mech === 'list' && run.listStage === 'sum' && run.mech.list);
       var whyBeat = (step.mech === 'list' && run.listStage === 'why' && run.mech.list);
       var backBeat = (step.mech === 'list' && run.sealBack && run.sealBack.prev);
-      if (sumBeat) form = window.imp.mechFilled ? window.imp.mechFilled('list', run.mech.list) : form;
       if (whyBeat) form = f.formWhy;
       // ⚠ ВАРИАНТЫ БУДУЩЕГО: ВОПРОС ЛЕМЕХА — ОТДЕЛЬНЫЙ ТАКТ (правка 11.09). На первом такте
       // его нет вовсе: у человека он появляется только после того, как варианты записаны.
@@ -576,12 +577,11 @@
           probe = [];
         }
       }
-      var mat = material(step.mech, beat);
-      // Строку счёта собирает mech-fields.js на такте 'sum' — общий код с CLI-харнессом,
-      // чтобы не держать две копии одной строки. Слово в слово как шапка стопки «Берём»,
-      // без сравнения с рамкой и без предупреждения: их человеку не показывают.
-      if (sumBeat) mat = material('list', 'sum');
-      if (whyBeat) mat = '';
+      var mat = material(step.mech, whyBeat ? 'why' : beat);
+      // Строку счёта собирает mech-fields.js — общий код с CLI-харнессом, чтобы не держать
+      // две копии одной строки. Слово в слово как шапка стопки «Берём», без сравнения с
+      // рамкой и без предупреждения: их человеку не показывают. С 11.09 она приходит на
+      // такте основания, вместе с вопросом «почему именно такой состав».
       // На возврате человек видит и карточки, и счётчик над стопкой — значит и модель.
       // Счёт берём тем же общим кодом, только состояние подставляем прежнее: раскладка
       // из run.mech.list на возврате удалена, она лежит в run.sealBack.prev.
@@ -604,7 +604,7 @@
       // подписанное поле. Реестр и текст вопроса — общие с CLI-харнессом
       // (window.imp.mechPlain), чтобы формулировка не разошлась между двумя прогонами.
       var plainKey = plainKeyOf(step, run);
-      var filledIn = sumBeat || (step.mech === 'list' && run.sealBack && run.sealBack.prev);
+      var filledIn = (step.mech === 'list' && run.sealBack && run.sealBack.prev);
       var howTo = filledIn
         ? 'Ниже ваш прежний ответ — он стоит в полях, как вы его оставили. Поправьте в нём то, что решили, и верните ОДНИМ объектом JSON целиком — без пояснений до и после:\n'
         : 'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n';
@@ -664,10 +664,8 @@
     var plainNow = plainKeyOf(s, run);
     el('hsKind').textContent = s.mech ? ('верстак · ' + (plainNow ? 'текст' : 'JSON')) : 'окно · текст';
     // Оператору тоже надо понимать, какой такт идёт.
-    var beat = (s.mech === 'list' && run.listStage === 'sum')
-      ? 'Такт 2 из 3: модель разложила заявки, ей показан счёт взятого — как человеку над стопкой «Берём». Может оставить как есть или переложить. '
-      : (s.mech === 'list' && run.listStage === 'why')
-      ? 'Такт 3 из 3: раскладка устоялась, спрашиваем «Почему именно так» — один раз, когда сумма уже известна. '
+    var beat = (s.mech === 'list' && run.listStage === 'why')
+      ? 'Такт 2 из 2: раскладка принята, модель видит счёт взятого и отвечает, почему именно такой состав. '
       : (s.mech === 'seal')
       ? (run.sealStage === 'phrase' ? 'Второй такт печати: модель подтвердила, осталась одна фраза. '
         : (run.sealBack ? 'Модель уже возвращалась к разбору — второй раз нельзя, только подтверждение. ' : ''))
@@ -975,10 +973,10 @@
       }
       run.mech.list = { decided: obj.decided, chosen: {}, obj: {},
                         criteria: (run.mech.list && run.mech.list.criteria) || '' };
-      run.listStage = (run.listStage === 'sum') ? 'why' : 'sum';
+      // Раскладка принята — сразу к основанию: счёт модель увидит вместе с вопросом.
+      run.listStage = 'why';
       save(); render();
-      say(run.listStage === 'sum' ? 'раскладка принята, показываю счёт'
-                                  : 'счёт показан, спрашиваю основание');
+      say('раскладка принята, показываю счёт и спрашиваю основание');
       return;
     }
     if (s.mech === 'list') {
