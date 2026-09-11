@@ -372,7 +372,11 @@
     // называем — молча пропасть строки не должны.
     var oldEl = document.getElementById('cabShowOld');
     var withOld = !!(oldEl && oldEl.checked);
-    var isOld = function (p) { return !!p.waveArchived || (!p.answered && !!p.legacyAnswered); };
+    // ⚠ СИРОТА УДАЛЁННОЙ ВОЛНЫ — ТОЖЕ ПРЕЖНИЙ ПРОГОН (правка 11.09, поймано владельцем:
+    // «вернулись кучей старые прогоны без волны»). Удаление волны сносило только её строку,
+    // номера оставались, и у них waveArchived всегда false — значит фильтр их не прятал, и
+    // они висели среди строк идущего дня. Бэкенд теперь помечает такие строки waveMissing.
+    var isOld = function (p) { return !!p.waveArchived || !!p.waveMissing || (!p.answered && !!p.legacyAnswered); };
     var hiddenOld = withOld ? 0 : rows.filter(isOld).length;
     var shown = 0;
     var html = '<table class="cab-table"><thead><tr>' +
@@ -410,7 +414,7 @@
     }
     if (hiddenOld) {
       html += '<p class="cab-dim">Скрыто прежних прогонов: ' + hiddenOld +
-        '. Это история прошлых потоков и архивных волн.</p>';
+        '. Это история прошлых потоков, архивных и удалённых волн.</p>';
     }
     if (filterCount) {
       var need = rows.filter(function (p) { return attention(p).length; }).length;
