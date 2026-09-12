@@ -173,7 +173,7 @@
 <script src="js/backlog.js?v=8"></script>
 <script src="js/scenes.js?v=184"></script>
 <script src="js/mechanics.js?v=93"></script>
-<script src="js/mech-fields.js?v=46"></script>
+<script src="js/mech-fields.js?v=47"></script>
 <script src="js/case-text.js?v=1"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -354,7 +354,12 @@
     if (!step || !step.mech || !run || !window.imp.mechPlain) return null;
     var key = null;
     if (step.mech === 'list' && run.listStage === 'why') key = 'formWhy';
-    if (step.mech === 'futures' && run.futuresStage === 'why') key = 'formWhy';
+    if (step.mech === 'futures' && run.futuresStage === 'why') {
+      // Редакция ключа идёт за редакцией вопроса: несколько вариантов — одна, один — другая.
+      var fuP = run.mech.futures || {};
+      key = ((fuP.cards || []).filter(function (t) { return String(t || '').trim(); }).length > 1)
+        ? 'formWhy' : 'formWhyOne';
+    }
     if (step.mech === 'seal') {
       key = (run.sealStage === 'phrase') ? 'formPhrase' : (run.sealBack ? 'formHeld' : 'form');
     }
@@ -549,7 +554,7 @@
         if (run.futuresStage === 'why') {
           var fu = run.mech.futures || {};
           var manyFu = ((fu.cards || []).filter(function (t) { return String(t || '').trim(); }).length > 1);
-          form = f.formWhy;
+          form = manyFu ? f.formWhy : f.formWhyOne;
           beat = 'why';
           head = [];
           ask = [];

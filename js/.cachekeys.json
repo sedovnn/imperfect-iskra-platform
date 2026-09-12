@@ -108,10 +108,10 @@
   }
  },
  "js/mech-fields.js": {
-  "sha": "2d5f236b5926",
+  "sha": "a7ce1ed44da2",
   "keys": {
-   "assessment.html": 45,
-   "harness.html": 45
+   "assessment.html": 47,
+   "harness.html": 47
   }
  },
  "js/mechanics.js": {
