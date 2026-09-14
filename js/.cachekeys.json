@@ -37,9 +37,9 @@
   }
  },
  "js/case-text.js": {
-  "sha": "852fddfe3e89",
+  "sha": "878cdbe41fd1",
   "keys": {
-   "harness.html": 1
+   "harness.html": 2
   }
  },
  "js/dialog.js": {

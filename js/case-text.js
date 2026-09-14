@@ -47,9 +47,29 @@
   // html — содержимое файла кейса целиком. Возвращает текст от #caseContent и до
   // конца, с таблицами в читаемом виде.
   window.imp.caseToText = function (html) {
-    var i = String(html).indexOf('id="caseContent"');
-    if (i < 0) return null;
-    var s = String(html).slice(i);
+    // ⚠ РЕЖЕМ ПО МАРКЕРАМ, А НЕ ПО СЕРЕДИНЕ ТЕГА (починка 12.09, поймано владельцем на
+    // прогоне: в тексте кейса у модели стояла строка `id="caseContent" data-case-version=
+    // "case-v8">`). Здесь стоял indexOf('id="caseContent"') и slice от него — то есть срез
+    // начинался ВНУТРИ открывающего тега. В остатке нет «<», поэтому общее срезание тегов
+    // его не трогало, и атрибуты доезжали до модели как обычные слова. Человек этого не
+    // видел никогда: ему кейс собирает DOM (case-ref.js), а не разбор строки.
+    // Кейс несёт явные маркеры <!--case:start--> и <!--case:end--> — берём их, они же
+    // единственное, что отделяет текст кейса от служебной части страницы. Хвост после
+    // case:end (подвал, кнопки) раньше тоже уезжал модели целиком.
+    var all = String(html);
+    var s, mStart = all.indexOf('<!--case:start-->');
+    if (mStart >= 0) {
+      s = all.slice(mStart + '<!--case:start-->'.length);
+      var mEnd = s.indexOf('<!--case:end-->');
+      if (mEnd >= 0) s = s.slice(0, mEnd);
+    } else {
+      // Запасной путь для файлов без маркеров: от КОНЦА открывающего тега, а не от его
+      // середины.
+      var i = all.indexOf('id="caseContent"');
+      if (i < 0) return null;
+      var gt = all.indexOf('>', i);
+      s = all.slice(gt >= 0 ? gt + 1 : i);
+    }
 
     s = s.replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ');
     // Таблицы — до общего срезания тегов, иначе от них останутся склеенные числа.
