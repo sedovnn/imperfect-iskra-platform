@@ -171,7 +171,7 @@
 <script src="js/api.js?v=7"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/backlog.js?v=8"></script>
-<script src="js/scenes.js?v=184"></script>
+<script src="js/scenes.js?v=185"></script>
 <script src="js/mechanics.js?v=93"></script>
 <script src="js/mech-fields.js?v=47"></script>
 <script src="js/case-text.js?v=2"></script>
@@ -379,7 +379,12 @@
     return a.when ? applies(a.when) : true;
   }
   // Условие у отдельного пузыря — та же проверка, что у акта (правка 13.2).
-  var bubbleOk = function (b) { return actApplies(b); };
+  // ⚠ ПРИДЕРЖАННЫЕ ПУЗЫРИ СЮДА НЕ ПОПАДАЮТ. Пузырь с меткой beat приезжает не с
+  // историей, а со своим тактом (см. heldBetween ниже и S.bubbleBeat в scenes.js).
+  var bubbleOk = function (b) { return !S.bubbleBeat(b) && actApplies(b); };
+  var heldOk = function (name) {
+    return function (b) { return S.bubbleBeat(b) === name && actApplies(b); };
+  };
   function skipped(s) { return !actApplies(s); }
   function current() {
     for (var i = 0; i < STEPS.length; i++) if (!done(STEPS[i]) && !skipped(STEPS[i])) return i;
@@ -481,6 +486,23 @@
     return out;
   }
 
+  // Придержанные реплики того же отрезка маршрута — тем же обходом, что и история,
+  // только фильтр обратный. Отдаются ровно на своём такте.
+  function heldBetween(fromStep, toStep, name) {
+    var out = [], ok = heldOk(name);
+    var after = function (r) {
+      if (!fromStep) return true;
+      return r.sceneIx > fromStep.ix || (r.sceneIx === fromStep.ix && r.actIx >= fromStep.actIx);
+    };
+    S.route().forEach(function (r) {
+      if (r.sceneIx > toStep.ix || (r.sceneIx === toStep.ix && r.actIx >= toStep.actIx)) return;
+      if (!after(r)) return;
+      if (!actApplies(r.act)) return;
+      S.speechLines(r.act, 'bubbles', ok).forEach(function (l) { out.push(sub(l)); });
+    });
+    return out;
+  }
+
   function fullAgain() { var e = el('hsFull'); return !!(e && e.checked); }
 
   function promptFor(step, ix) {
@@ -504,9 +526,18 @@
     // уже начатый — «монолог участник слушал, и заставлять слушать заново значит гонять
     // его по кругу». Возвращаясь, человек видит СВОИ двадцать карточек, а не речь снова.
     // Сами карточки остаются: человек на возврате смотрит именно на них.
+    // ⚠ ВАРИАНТОВ БУДУЩЕГО ЗДЕСЬ НЕ БЫЛО (правка 14.09, поймано владельцем: «Шаг 10 из 19
+    // зачем-то модели показывает предыдущий монолог агеева лемеха, которые вообще не
+    // актуальны в рамках задаваемого вопроса»). Второй такт вариантов я завёл 11.09, а в
+    // этот список не вписал — и на такте вопроса Лемеха модель получала всю историю
+    // заново, вторым отправлением того же самого. Правило одно на все многотактные
+    // верстаки: на втором такте услышанное не повторяется, потому что оно прозвучало
+    // такт назад в ТОМ ЖЕ чате. Список обязан перечислять все такты; проверку на это
+    // держит lint_harness.js.
     var again = (step.mech === 'seal' && run.sealStage === 'phrase') ||
                 (step.mech === 'list' && run.sealBack && run.sealBack.prev) ||
-                (step.mech === 'list' && run.listStage === 'why');
+                (step.mech === 'list' && run.listStage === 'why') ||
+                (step.mech === 'futures' && run.futuresStage === 'why');
     var heard = again ? [] : heardBetween(from, step);
 
     // ⚠ НИ ОДНОГО СВОЕГО СЛОВА СВЕРХ ЭКРАНА. Раньше здесь стояли «РАБОЧАЯ ОБЛАСТЬ»,
@@ -544,7 +575,14 @@
       // монолога: модель получила их такт назад в том же чате.
       var whyBeat = (step.mech === 'list' && run.listStage === 'why' && run.mech.list);
       var backBeat = (step.mech === 'list' && run.sealBack && run.sealBack.prev);
-      if (whyBeat) form = f.formWhy;
+      if (whyBeat) {
+        form = f.formWhy;
+        beat = 'why';
+        head = [];
+        // Просьба Агеева про основание придержана с первого такта — её место здесь,
+        // прямо над полем, которое её и спрашивает.
+        ask = heldBetween(from, step, 'why');
+      }
       // ⚠ ВАРИАНТЫ БУДУЩЕГО: ВОПРОС ЛЕМЕХА — ОТДЕЛЬНЫЙ ТАКТ (правка 11.09). На первом такте
       // его нет вовсе: у человека он появляется только после того, как варианты записаны.
       // На втором — та редакция, которую человек и увидел бы: probe, если вариантов
