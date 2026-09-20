@@ -172,6 +172,18 @@
 
   var pw = '';
   var rows = [];
+  // ⚠ НОМЕРА, ЛЕЖАЩИЕ В ЛИСТЕ ДВАЖДЫ (правка 20.09). Один участник — одна строка
+  // Answers: saveAnswers ищет строку по номеру и дописывает новую, только если не
+  // нашёл. Но 18.09 у 033011 строк оказалось две — настоящий день (cursor 56,
+  // finished) и огрызок начала сессии (cursor 2, finished FALSE, updatedAt на 25
+  // секунд РАНЬШЕ собственного startedAt: часы устройства ушли вперёд, а две
+  // записи пришли в одну секунду). Кабинет строит список по строкам Answers, а
+  // балл читает по номеру, — поэтому участник показался дважды и с одинаковым
+  // баллом, а из чего это следует, на экране не было сказано ничем. Здесь
+  // считается только факт: судья и балл всё равно читают ВЕРХНЮЮ строку
+  // (findRowIndexByColumn отдаёт первое совпадение), лишняя — мусор, и удалять её
+  // человеку, а не коду: в ней могут лежать ответы, которых нет в первой.
+  var dupBibs = {};
   var roster = [];
   var waves = [];
   var gate = document.getElementById('cabGate');
@@ -334,6 +346,11 @@
       out.push({ code: 'версии', text: 'судейство закрыто: сцены ' + p.scenesVersion +
         ' против судейских ' + p.expectScenes });
     }
+    if (dupBibs[bib6(p.bib)]) {
+      out.push({ code: 'дубль', text: 'этот номер лежит в листе Answers больше одного раза. ' +
+        'Судья и балл читают только ВЕРХНЮЮ строку — нижние не судятся и показывают тот же балл. ' +
+        'Сверьте «Ход» у строк и удалите лишнюю в таблице руками' });
+    }
     if (p.stale) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после суда' });
     if (p.queue && p.queue.error) out.push({ code: 'очередь', text: 'заданий с ошибкой: ' + p.queue.error });
     if (p.flags) {
@@ -358,6 +375,17 @@
 
   function render(participants) {
     if (participants) rows = participants;
+    // Дубли считаем до отрисовки и по ПОЛНОМУ списку, а не по видимому: строка-близнец
+    // может быть спрятана фильтром, и тогда пометка пропала бы ровно там, где нужна.
+    dupBibs = {};
+    (function () {
+      var seen = {};
+      rows.forEach(function (p) {
+        var k = bib6(p.bib);
+        if (seen[k]) dupBibs[k] = true;
+        seen[k] = true;
+      });
+    })();
     document.getElementById('cabCount').textContent = rows.length + ' в листе Answers';
     if (!rows.length) {
       listHost.innerHTML = '<p class="section-lead">Пока никто не проходил день на новой платформе. Как только появится первая строка в листе Answers, она будет здесь.</p>';
@@ -1250,12 +1278,20 @@
     window.imp.callApi('v2Detail', { password: pw, bib: p.bib }).then(function (d) {
       if (!d || !d.ok) { detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить карточку.</p>'; return; }
       var q = d.queue || {};
+      // Недобранная очередь: задания уже стоят в листе и ждут разбора. Её отдельная
+      // кнопка бесплатна относительно «Пересудить всё» — она не ставит ничего заново,
+      // а доедает оставшееся. Без неё единственным способом дооценить человека было
+      // заплатить за весь набор ещё раз (033011, 20.09: доехали 2 из 13).
+      var qLeft = (q.queued || 0) + (q.running || 0);
       detailBody.innerHTML =
         '<div class="cab-actions">' +
           '<button type="button" class="btn btn-primary btn-sm" id="cabJudge">' +
             (d.scores ? 'Пересудить всё' : 'Оценить') + '</button>' +
+          (qLeft ? '<button type="button" class="btn btn-ghost btn-sm" id="cabJudgeResume" ' +
+            'title="Разобрать то, что уже стоит в очереди. Сделанные задания заново не считаются и не оплачиваются">' +
+            'Продолжить оценку (' + qLeft + ')</button>' : '') +
           '<span class="cab-dim" id="cabJudgeState">' +
-            (q.queued || q.running ? 'в очереди: ' + (q.queued + q.running) + ' из ' + q.total
+            (qLeft ? 'в очереди: ' + qLeft + ' из ' + q.total
               : q.error ? 'заданий с ошибкой: ' + q.error : '') + '</span>' +
         '</div>' +
         // ⚠ ПОРЯДОК: ОЦЕНКА ПЕРВОЙ (решение владельца 12.08). Главное, с чем работает
@@ -1267,7 +1303,17 @@
         scoresBlock(d) + foldBlock('Ход дня и все ответы', answersBlock(d, true)) +
         foldBlock('Флаги целиком', flagsBlock(d, true)) +
         foldBlock('Процесс и версии', processBlock(d, true));
-      document.getElementById('cabJudge').addEventListener('click', function () { judge(p.bib, this); });
+      // Обе кнопки гасим на время работы вместе: пока цикл идёт, вторая привела бы
+      // к двум разборам одной очереди с одного экрана.
+      var judgeBtn = document.getElementById('cabJudge');
+      var resumeBtn = document.getElementById('cabJudgeResume');
+      var btns = [judgeBtn, resumeBtn];
+      judgeBtn.addEventListener('click', function () { judge(p.bib, btns); });
+      if (resumeBtn) {
+        resumeBtn.addEventListener('click', function () {
+          drainQueue(p.bib, btns, document.getElementById('cabJudgeState'), 0);
+        });
+      }
       wireOverrides(p.bib);
       if (window.imp && window.imp.typoDom) window.imp.typoDom(detailBody);
       detailBody.scrollTop = 0;
@@ -1312,15 +1358,23 @@
     });
   }
 
-  // Судейство: ставим все задания судьи в очередь и разбираем её вызовами по три.
-  // Числа здесь нет намеренно: состав заданий живёт в бэкенде (V2_JUDGE_TASKS), и
-  // прежнее «восемь» разошлось с ним молча.
+  // Разбор очереди: берём по три задания за вызов, пока свои не кончатся. Числа
+  // заданий здесь нет намеренно: состав живёт в бэкенде (V2_JUDGE_TASKS), и прежнее
+  // «восемь» разошлось с ним молча.
   // Триггер по времени в живом деплое недоступен (нет права script.scriptapp),
   // поэтому цикл здесь — не костыль, а рабочий путь: каждый вызов укладывается
   // в шесть минут исполнения Apps Script с запасом.
-  function judge(bib, btn) {
-    btn.disabled = true;
-    var state = document.getElementById('cabJudgeState');
+  //
+  // ⚠ ВЫДЕЛЕНО ИЗ judge() 20.09, И ВОТ ПОЧЕМУ. Разбор очереди и постановка в очередь —
+  // разные действия с разной ценой, а кнопка была одна. judgeAnswers переписывает ВСЕ
+  // строки задания в `queued`, то есть любая пауза стоила полного пересуда. У 033011
+  // 20.09 из тринадцати заданий доехали два, третье упало с judge_response_broken, а
+  // десять остались стоять `queued` — и разобрать их было нечем: триггера в живом
+  // деплое нет, а вкладка с циклом закрыта. Единственным способом дооценить человека
+  // было заплатить ещё за тринадцать вызовов. Теперь очередь можно просто доесть.
+  function drainQueue(bib, btns, state, done0) {
+    var lock = function (on) { (btns || []).forEach(function (b) { if (b) b.disabled = on; }); };
+    lock(true);
     // Сколько заданий оставалось на прошлом круге и сколько кругов подряд без движения:
     // по этим двум числам цикл решает, ждать дальше или сдаться (см. ветку обрыва ниже).
     var lastLeft = Infinity, stall = 0;
@@ -1340,19 +1394,21 @@
           // без движения.
           return window.imp.callApi('v2Detail', { password: pw, bib: bib }).then(function (d) {
             var q = d && d.queue;
-            if (!q) { state.textContent = 'бэкенд не ответил — нажмите «Оценить» ещё раз'; btn.disabled = false; return; }
+            if (!q) { state.textContent = 'бэкенд не ответил — нажмите «Продолжить оценку»'; lock(false); return; }
             var left = (q.queued || 0) + (q.running || 0);
             if (left <= 0) {
-              btn.disabled = false;
+              lock(false);
               state.textContent = 'готово: заданий сделано ' + (q.done || 0) +
                 ((q.error || 0) ? ' · с ошибками: ' + q.error : '');
               return refresh().then(function () { openCard({ bib: bib, fio: '' }); });
             }
             if (left < lastLeft) { lastLeft = left; stall = 0; }
             else if (++stall >= 3) {
-              btn.disabled = false;
+              lock(false);
+              // ⚠ ЗОВЁМ ИМЕННО «ПРОДОЛЖИТЬ», А НЕ «ОЦЕНИТЬ» (20.09): задания уже стоят в
+              // листе, и «Оценить» поставило бы их заново — вместе с теми, что сделаны.
               state.textContent = 'очередь не двигается: осталось ' + left +
-                ' заданий · нажмите «Оценить» ещё раз или посмотрите ошибки в листе JudgeQueue';
+                ' заданий · нажмите «Продолжить оценку» или посмотрите ошибки в листе JudgeQueue';
               return;
             }
             state.textContent = 'оцениваю… (в очереди осталось ' + left + ')';
@@ -1364,7 +1420,7 @@
           state.textContent = 'ошибки в заданиях: ' + r.errors.map(function (e) { return e.taskId + ' (' + e.error + ')'; }).join(', ');
         }
         if (r.left > 0) return step(total);
-        btn.disabled = false;
+        lock(false);
         // Чужие недобранные строки называем вслух: они в листе есть, но этой кнопкой
         // не разбираются — иначе фасилитатор решит, что очередь пуста.
         var alien = Math.max(0, (r.leftAll || 0) - (r.left || 0));
@@ -1377,16 +1433,27 @@
         return refresh().then(function () { openCard({ bib: bib, fio: '' }); });
       });
     };
+    return step(Number(done0) || 0);
+  }
+
+  // Судейство с нуля: ставим все задания в очередь и разбираем её. Кнопка платная —
+  // judgeAnswers переписывает в `queued` и те строки, что уже сделаны, то есть счёт
+  // идёт заново за все тринадцать заданий. Поэтому она и называется «Пересудить всё»
+  // у того, у кого оценка уже есть.
+  function judge(bib, btns) {
+    var state = document.getElementById('cabJudgeState');
+    var lock = function (on) { (btns || []).forEach(function (b) { if (b) b.disabled = on; }); };
+    lock(true);
     window.imp.callApi('judgeAnswers', { password: pw, bib: bib }).then(function (res) {
       if (!res || !res.ok) {
-        btn.disabled = false;
+        lock(false);
         var e = res && res.error ? res.error : 'не удалось поставить в очередь';
         state.textContent = e === 'scenes_version_mismatch'
           ? 'версия сцен в ответах не совпадает с судейской — судейство отказано (это защита, а не сбой)'
           : e === 'no_score' ? 'участник помечен «не оценивать»' : String(e);
         return;
       }
-      return step(0);
+      return drainQueue(bib, btns, state, 0);
     });
   }
 
