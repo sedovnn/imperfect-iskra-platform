@@ -997,6 +997,34 @@
 
   // Контроль рядом с той способностью, которую он пере-судит, а не отдельным списком
   // в конце карточки: расхождение читается только в паре с основной оценкой.
+  // Откуда читает контроль — подпись для человека. Способности, которой здесь нет,
+  // достанется общая подпись: пропасть из карточки она уже не может.
+  var CTRL_TITLE = {
+    pr2: 'Контроль по письму правлению',
+    ga1: 'Кросс-судья по ответу на развилку',
+    ak1: 'Кросс-судья по письму правлению',
+    ak2: 'Кросс-судья по письму правлению',
+    pp1: 'Кросс-судья по письму правлению'
+  };
+  // Уровень второго чтения лежит в двух местах: у ПР-2 исторически в control, у
+  // остальных в cross. Спрашиваем оба, чтобы не зависеть от этой развилки.
+  function ctrlLevelOf(s, a) {
+    var v = (s.cross && s.cross[a + 'Level'] !== undefined) ? s.cross[a + 'Level']
+          : (s.control && s.control[a + 'Level'] !== undefined) ? s.control[a + 'Level'] : null;
+    return (v === null || v === undefined || v === '') ? null : Number(v);
+  }
+  function ctrlWhyOf(s, a) {
+    if (s.cross && s.cross[a + 'Reasoning']) return s.cross[a + 'Reasoning'];
+    if (!s.control) return '';
+    if (s.control[a + 'Reasoning']) return s.control[a + 'Reasoning'];
+    // Блок control несёт ОДНО чтение, и чьё оно — видно по ключу «<способность>Level».
+    // Общий reasoning принадлежит именно ему, а не любой способности, которую спросят.
+    // Имени способности здесь нет намеренно: именно перечисление руками и стоило нам
+    // двух невидимых контролей.
+    if (s.control.reasoning && s.control[a + 'Level'] !== undefined) return s.control.reasoning;
+    return '';
+  }
+
   function ctrlPara(title, ctrlLv, mainLv, why) {
     var d2 = (ctrlLv != null && mainLv != null) ? (Number(ctrlLv) - Number(mainLv)) : null;
     var mark = (d2 !== null && Math.abs(d2) >= 2) ? ' <b class="cab-jitter">расхождение на ' + Math.abs(d2) + '</b>' : '';
@@ -1099,10 +1127,21 @@
 
       var ctl = '';
       if (canOverride[a]) {
+        // ⚠ ПРИНЯТЬ КОНТРОЛЬНЫЙ УРОВЕНЬ — ОДНОЙ КНОПКОЙ (правка 21.09). Такая кнопка
+        // была и пропала при какой-то переделке карточки: в листе правок остались строки
+        // с пометкой via=control и причиной «принята контрольная оценка», а прислать эту
+        // пометку кабинету стало нечем. Бэкенд её принимает по-прежнему (doSetScoreOverride,
+        // поле via), поэтому возвращаем ровно её, а не новый механизм. Причину пишем сами:
+        // она называет оба уровня, и через месяц видно, что это не ручная правка.
+        var cLv = ctrlLevelOf(s, a);
+        var acceptBtn = (!isOv && cLv !== null && lv !== null && cLv !== lv)
+          ? '<button type="button" class="btn btn-ghost btn-xs cab-ov-ctrl" data-lv="' + cLv +
+            '" data-main="' + lv + '">Принять контрольный L' + cLv + '</button> '
+          : '';
         ctl = '<div class="cab-ov" data-ab="' + a + '">' +
           (isOv
             ? '<button type="button" class="btn btn-ghost btn-xs cab-ov-clear">Вернуть уровень судьи</button>'
-            : '<span class="cab-dim">поставить свой:</span> ' +
+            : acceptBtn + '<span class="cab-dim">поставить свой:</span> ' +
               [1, 2, 3, 4, 5].map(function (n) {
                 return '<button type="button" class="btn btn-ghost btn-xs cab-ov-set" data-lv="' + n + '">L' + n + '</button>';
               }).join(' ') +
@@ -1154,18 +1193,17 @@
         return st ? '<p class="cab-dim">Контрольное чтение — по этому же ответу судили другим заданием:</p>' + answerCard(d, st) : '';
       }).join('');
 
-      // Контроль именно этой способности: уровень второго чтения рядом с основным.
-      var ctrlLine = '';
-      if (a === 'pr2' && s.control && s.control.pr2Level !== undefined) {
-        ctrlLine = ctrlPara('Контроль по письму правлению', s.control.pr2Level, lv, s.control.reasoning);
-      }
-      if (a === 'ga1' && s.cross && s.cross.ga1Level !== undefined) {
-        ctrlLine = ctrlPara('Кросс-судья по ответу на развилку', s.cross.ga1Level, lv,
-                            s.cross.ga1Reasoning || s.cross.reasoning || '');
-      }
-      if (a === 'ak2' && s.cross && s.cross.ak2Level !== undefined) {
-        ctrlLine = ctrlPara('Кросс-судья по письму правлению', s.cross.ak2Level, lv, s.cross.ak2Reasoning || '');
-      }
+      // ⚠ ВТОРЫЕ ЧТЕНИЯ ПОКАЗЫВАЮТСЯ ВСЕ (правка 21.09, замечание владельца «не понимаю,
+      // где оценка контрольной проверки»). Здесь стояли три ветки — pr2, ga1, ak2, — и
+      // каждая была написана руками под свою способность. Контрольных заданий пять:
+      // cross_ga1, cross_pp1, cross_pr2, cross_ak1, cross_ak2. Два чтения — АК-1 и ПП-1 —
+      // считались, оплачивались, ложились в запись и не показывались никому. У 033011
+      // контроль ПП-1 стоял на уровень выше основной, и этого не видел никто.
+      // Теперь блок не перечисляет способности, а спрашивает данные: есть второе чтение —
+      // показываем. Новая способность появится сама, без правки кабинета.
+      var ctrlLv = ctrlLevelOf(s, a), ctrlWhy = ctrlWhyOf(s, a);
+      var ctrlLine = (ctrlLv === null) ? ''
+        : ctrlPara(CTRL_TITLE[a] || 'Контрольное чтение по другому ответу', ctrlLv, lv, ctrlWhy);
 
       return '<details class="cab-ab' + (isOv ? ' is-overridden' : '') + (mine.length ? ' has-flag' : '') + '">' +
         '<summary>' +
@@ -1298,6 +1336,19 @@
             });
         });
       });
+      // Принять контрольный уровень: причина пишется сама, пометка via=control.
+      var acc = box.querySelector('.cab-ov-ctrl');
+      if (acc) {
+        acc.addEventListener('click', function () {
+          var lvC = acc.getAttribute('data-lv'), lvM = acc.getAttribute('data-main');
+          call('setScoreOverride', { bib: bib, ability: ability, level: lvC, via: 'control',
+            reason: 'принята контрольная оценка: контроль L' + lvC + ', судья L' + lvM })
+            .then(function (r) {
+              if (r && r.ok) { say('принят контрольный уровень'); return refresh().then(reopen); }
+              return after(r);
+            });
+        });
+      }
       var clr = box.querySelector('.cab-ov-clear');
       if (clr) {
         clr.addEventListener('click', function () {
