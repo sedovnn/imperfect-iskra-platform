@@ -10,11 +10,11 @@
   }
  },
  "js/backlog.js": {
-  "sha": "0809959840f8",
+  "sha": "254ccdd5bcd5",
   "keys": {
-   "assessment.html": 8,
-   "cabinet.html": 8,
-   "harness.html": 8
+   "assessment.html": 9,
+   "cabinet.html": 9,
+   "harness.html": 9
   }
  },
  "js/boot-loading.js": {
@@ -57,9 +57,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "e8bc15d642f3",
+  "sha": "a830680f74dd",
   "keys": {
-   "assessment.html": 132
+   "assessment.html": 133
   }
  },
  "js/expert-api.js": {
@@ -135,13 +135,13 @@
   }
  },
  "js/scenes.js": {
-  "sha": "e1005de1c8d2",
+  "sha": "57ba55c9f644",
   "keys": {
-   "assessment.html": 185,
-   "cabinet.html": 185,
-   "harness.html": 185,
-   "intro.html": 185,
-   "role.html": 185
+   "assessment.html": 186,
+   "cabinet.html": 186,
+   "harness.html": 186,
+   "intro.html": 186,
+   "role.html": 186
   }
  },
  "js/typo.js": {
