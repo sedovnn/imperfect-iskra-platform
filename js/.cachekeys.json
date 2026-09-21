@@ -24,9 +24,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "b02e6bd39d3b",
+  "sha": "8f7ead943861",
   "keys": {
-   "cabinet.html": 31
+   "cabinet.html": 32
   }
  },
  "js/case-ref.js": {
@@ -57,9 +57,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "25cce93f1ae2",
+  "sha": "e8bc15d642f3",
   "keys": {
-   "assessment.html": 131
+   "assessment.html": 132
   }
  },
  "js/expert-api.js": {
@@ -129,9 +129,9 @@
   }
  },
  "js/report.js": {
-  "sha": "f4d48b9fc508",
+  "sha": "3cee78e5f671",
   "keys": {
-   "report-example.html": 6
+   "report-example.html": 7
   }
  },
  "js/scenes.js": {

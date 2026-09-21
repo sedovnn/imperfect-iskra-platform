@@ -240,12 +240,14 @@
     renderRoster();
   }
 
-  function refresh() {
+  // silent — обновить список, не трогая общую строку состояния. Нужен во время
+  // судейства: там своя строка («оцениваю…»), и «обновляю…» поверх неё мигало бы.
+  function refresh(silent) {
     if (!pw) return Promise.resolve();
-    say('обновляю…');
+    if (!silent) say('обновляю…');
     return window.imp.callApi('v2List', { password: pw }).then(function (res) {
-      if (res && res.ok) { absorb(res); say(''); }
-      else say('не удалось обновить список', 'bad');
+      if (res && res.ok) { absorb(res); if (!silent) say(''); }
+      else if (!silent) say('не удалось обновить список', 'bad');
     });
   }
 
@@ -1363,7 +1365,15 @@
         if (r.errors && r.errors.length) {
           state.textContent = 'ошибки в заданиях: ' + r.errors.map(function (e) { return e.taskId + ' (' + e.error + ')'; }).join(', ');
         }
-        if (r.left > 0) return step(total);
+        // ⚠ СПИСОК ОБНОВЛЯЕТСЯ ПО ХОДУ, А НЕ ОДИН РАЗ В КОНЦЕ (правка 18.09, замечание
+        // владельца «кабинет обновляется плохо когда оно идет»). Цикл судейства живёт до
+        // десяти минут, и всё это время строка участника в списке показывала состояние на
+        // момент нажатия: ни счётчика заданий, ни появляющихся баллов. refresh молчаливый —
+        // общую строку состояния он не трогает, чтобы не перебивать «оцениваю…».
+        if (r.left > 0) {
+          state.textContent = 'оцениваю… (сделано ' + total + ', осталось ' + r.left + ')';
+          return refresh(true).then(function () { return step(total); });
+        }
         btn.disabled = false;
         // Чужие недобранные строки называем вслух: они в листе есть, но этой кнопкой
         // не разбираются — иначе фасилитатор решит, что очередь пуста.
