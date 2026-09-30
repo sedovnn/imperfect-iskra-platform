@@ -1618,8 +1618,7 @@
   M.goal.answerHtml = function (m, ctx) {
     // Срок отдельным полем больше не собирается (29.09): что участник привяжет
     // к срокам, он пишет словами в самом ответе.
-    return
-      p(COPY.goal.became.label, ctx.br(m.became)) +
+    return p(COPY.goal.became.label, ctx.br(m.became)) +
       (String(m.gave).trim() ? p(COPY.goal.gave.label, ctx.br(m.gave)) : '');
   };
 
