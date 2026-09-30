@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Вход — futureproof · i(m)perfect · «Искра»</title>
+<meta name="description" content="Ассессмент стратегического мышления. Введите номер участника и пароль." />
+<meta name="robots" content="noindex, nofollow" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- ШРИФТ ГРУЗИТСЯ НЕБЛОКИРУЮЩЕ. Обычный <link rel="stylesheet"> задерживает
+     ИСПОЛНЕНИЕ скриптов до ответа шрифтового CSS: если fonts.googleapis.com
+     отвечает медленно, страница висит пустой, хотя вся её логика уже загружена
+     (поймано 06.08 на переходе между экранами). media="print" снимает
+     блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/styles.css?v=246" />
+<style>
+  /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
+     лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
+  .entry { min-height: 100vh; display: flex; flex-direction: column; }
+  .entry-wrap { max-width: var(--maxw); width: 100%; margin: 0 auto; padding: 0 clamp(20px, 4vw, 56px); flex: 1; display: flex; flex-direction: column; }
+  .entry-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
+  .entry-sec { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-soft); }
+  .entry-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: clamp(40px, 7vh, 96px) 0; }
+  .entry-col { max-width: 460px; }
+  .entry-col h1 { font-family: var(--ff-display); font-weight: 800; font-size: clamp(38px, 6vw, 60px); line-height: 1.0; letter-spacing: -.015em; text-transform: uppercase; margin: 20px 0 0; }
+  .entry-col h1 .hl { color: var(--accent); }
+  .entry-lead { font-size: 16px; line-height: 1.55; color: var(--muted); margin-top: 18px; max-width: 42ch; }
+  .entry-form { margin-top: 34px; }
+  .entry-form .field { margin-bottom: 20px; }
+  .code-input { width: 100%; height: 56px; padding: 0 16px; font-family: inherit; font-weight: 700; font-size: 24px; letter-spacing: .3em; color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius); outline: none; background: var(--paper); }
+  .code-input::placeholder { letter-spacing: .3em; color: var(--muted-soft); font-weight: 500; }
+  .code-input:focus, .pass-input:focus { border-color: var(--ink); }
+  .pass-input { width: 100%; height: 52px; padding: 0 14px; font-family: inherit; font-size: 16px; color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius); outline: none; }
+  .entry-hint { font-size: 13px; color: var(--muted-soft); margin-top: 14px; }
+  /* Согласие стоит ПОД кнопкой и НАД подсказкой: по правилам click-wrap человек должен
+     увидеть его до действия, а не найти потом. Цвет темнее подсказки — это не сноска. */
+  .entry-consent { font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 12px; }
+  .entry-consent a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+  .entry-err { display: none; margin-top: 14px; font-size: 13px; color: #c4362b; }
+  .entry-err.show { display: block; }
+  /* продолжение живой сессии — над формой, тихим блоком с отбивкой */
+  .entry-resume { margin-top: 30px; padding: 18px 0 20px; border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); }
+  .entry-resume-msg { font-size: 15px; line-height: 1.5; color: var(--ink); margin: 0 0 14px; }
+  .entry-resume-alt { font-size: 13px; color: var(--muted-soft); margin: 14px 0 0; }
+  /* футер + скрытое тех-меню */
+  .entry-foot { border-top: 1px solid var(--hairline); padding: 16px 0 26px; display: flex; align-items: center; justify-content: space-between; }
+  .entry-fnote { font-size: 12px; color: var(--muted-soft); }
+  .dotmenu { position: relative; }
+  /* ⚠ ТРЕУГОЛЬНИКИ — БРЕНД-SVG, НЕ ЮНИКОД (правка владельца 12.08). Символ ▸ рисует
+     шрифт: своя пропорция, скруглённая вершина, — и рядом со стрелкой futureproof в
+     шапке читался как другая форма. Path тот же, что в логотипе; серый приходит через
+     currentColor, поэтому :hover остаётся одним свойством. */
+  .dotmenu-trigger { cursor: pointer; color: var(--gray-3, #c9ccd0); user-select: none; padding: 6px 4px; background: none; border: none; display: inline-flex; align-items: center; gap: 5px; }
+  .dm-tri { display: inline-block; width: 7px; height: 7px; }
+  .dm-tri svg { display: block; width: 100%; height: 100%; }
+  .dotmenu-trigger:hover { color: var(--muted); }
+  .dotmenu-list { position: absolute; right: 0; bottom: 36px; background: var(--paper); border: 1px solid var(--hairline); border-radius: var(--radius); min-width: 220px; padding: 6px; display: none; }
+  .dotmenu-list.open { display: block; }
+  .dotmenu-list a { display: block; padding: 10px 12px; font-size: 13px; color: var(--ink); text-decoration: none; border-radius: var(--radius); }
+  .dotmenu-list a:hover { background: var(--soft); }
+  .dotmenu-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-soft); padding: 8px 12px 4px; }
+</style>
+</head>
+<body>
+<div class="frame entry">
+  <div class="entry-wrap">
+
+    <header class="entry-head">
+      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      <div class="entry-sec">Ассессмент</div>
+    </header>
+
+    <main class="entry-main">
+      <div class="entry-col" id="entryCol">
+        <p class="kicker">Стратегическое мышление</p>
+        <h1>Вход</h1>
+        <p class="entry-lead">Введите номер участника, который выдала платформа.</p>
+
+        <!-- ⚠ ПЛАШКА ПРО УСТРОЙСТВО И ВРЕМЯ УБРАНА С ЭТОГО ЭКРАНА (решение владельца
+             29.09). Здесь человек называет себя — требования к технике и полтора часа
+             к этому действию отношения не имеют и забирают внимание у формы. Текст не
+             потерян: то же требование (imp.deviceReq) стоит на экране настройки, до
+             начала дня, где ему и место. -->
+
+        <!-- Участник, попавший сюда посреди ассессмента (история браузера, закладка,
+             вручную набранный адрес), раньше видел только форму и должен был снова
+             вводить пароль, которого может не быть под рукой, — при живой сессии и
+             сохранённых ответах. Теперь предлагаем продолжить. Не редирект: кто-то
+             приходит сюда именно чтобы войти под другим номером. -->
+        <div class="entry-resume" id="entryResume" style="display:none;">
+          <p class="entry-resume-msg">Вы уже вошли как <b id="entryResumeBib">№ 000000</b>.</p>
+          <a class="btn btn-primary btn-block" href="assessment.html" id="entryResumeBtn">Продолжить ассессмент →</a>
+          <p class="entry-resume-alt">Нужно войти под другим номером — заполните форму ниже.</p>
+        </div>
+
+        <!-- Заглушка на время переработки платформы. Снимается одним флагом
+             MAINTENANCE в скрипте ниже; форма и блок продолжения остаются в
+             разметке нетронутыми, чтобы возврат был возвратом, а не сборкой заново. -->
+        <div class="entry-resume" id="entryMaintenance" style="display:none;">
+          <p class="entry-resume-msg"><b>Платформа в доработке.</b></p>
+          <p class="entry-resume-alt" style="margin-top:10px;">Вход по номеру сейчас закрыт. Организатор сообщит, когда ассессмент снова будет доступен.</p>
+        </div>
+
+        <!-- Самозапись для тестовых волн: открывается ссылкой index.html?w=<3 цифры
+             волны>. Пересылать каждому номер и пароль руками — лишняя работа и
+             лишняя пересылка доступов; здесь тестер сам заходит по ссылке, называет
+             себя одним полем и сразу оказывается в дне. Волна должна быть явно
+             открыта флагом selfEnroll — номер настоящей волны в адресе входа не даёт.
+             Заглушка при этом остаётся для всех, кто пришёл без ссылки. -->
+        <form class="entry-form" id="selfForm" novalidate autocomplete="off" style="display:none;">
+          <div class="field">
+            <label for="selfName">Имя</label>
+            <input class="pass-input" id="selfName" type="text" autocomplete="off" maxlength="40" />
+          </div>
+          <div class="field">
+            <label for="selfLast">Фамилия</label>
+            <input class="pass-input" id="selfLast" type="text" autocomplete="off" maxlength="60" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Начать ассессмент →</button>
+          <!-- ⚠ СОГЛАСИЕ ПРИНИМАЕТСЯ КНОПКОЙ (решение владельца 29.09). Это click-wrap:
+               текст стоит РЯДОМ с кнопкой и ВЫШЕ подсказки, то есть человек видит его
+               до действия; сама ссылка открывает полный текст в новой вкладке, чтобы
+               уход за ним не стирал уже введённые имя и фамилию. Версия документа
+               проставлена в data-атрибуте и уезжает на сервер вместе с согласием:
+               без неё в таблице будет «согласен», но неизвестно с чем. -->
+          <p class="entry-consent" id="selfConsent" data-consent-version="soglashenie-2026-09-29">
+            Нажимая «Начать ассессмент», вы подтверждаете, что ознакомились с
+            <a href="soglashenie.html" target="_blank" rel="noopener">Согласием на обработку персональных данных</a>
+            и принимаете его условия.
+          </p>
+          <p class="entry-err" id="selfErr">Не удалось начать.</p>
+          <p class="entry-hint">Платформа выдаст вам номер участника. Запишите или сфотографируйте его: он пригодится, если прервётся связь или что-то случится с устройством, с которого вы проходите.</p>
+        </form>
+
+        <form class="entry-form" id="entryForm" novalidate autocomplete="off">
+          <div class="field">
+            <label for="entryCode">Номер участника — 6 знаков</label>
+            <!-- ⚠ inputmode УБРАН (правка 28.09): номер теперь буквенно-цифровой, и
+                 числовая клавиатура на планшете не даёт ввести буквы вовсе.
+                 autocapitalize/spellcheck выключены — иначе браузер «исправляет» номер. -->
+            <input class="code-input" id="entryCode" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="6" placeholder="HK7RQ4" />
+          </div>
+          <!-- ⚠ ПОЛЕ ПАРОЛЯ СНЯТО (решение владельца 29.09). Номер стал шестью
+               случайными знаками, перебирать его нечего, а пароль всё равно был
+               напечатан у участника в шапке — то есть от взгляда на соседний экран
+               не защищал. Вход теперь по одному номеру. -->
+          <button type="submit" class="btn btn-primary btn-block">Войти →</button>
+          <p class="entry-err" id="entryErr">Проверьте номер — шесть знаков, буквы и цифры.</p>
+          <p class="entry-hint">Не нашли номер? Обратитесь к организатору сессии.</p>
+        </form>
+      </div>
+    </main>
+
+    <footer class="entry-foot">
+      <div class="entry-fnote">© futureproof</div>
+      <div class="dotmenu">
+        <button type="button" class="dotmenu-trigger" id="dotmenuTrigger" aria-label="Служебное меню"><i class="dm-tri"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="currentColor"/></svg></i><i class="dm-tri"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="currentColor"/></svg></i><i class="dm-tri"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0 1 L13 7 L0 13 Z" fill="currentColor"/></svg></i></button>
+        <div class="dotmenu-list" id="dotmenuList">
+          <div class="dotmenu-label">Служебное</div>
+          <a href="vitrina.html">Демо</a>
+          <a href="cabinet.html">Кабинет фасилитатора</a>
+          <a href="harness.html">Прогон модели по шагам</a>
+        </div>
+      </div>
+    </footer>
+
+  </div>
+</div>
+
+<script src="js/main.js?v=11"></script>
+<script src="js/typo.js?v=2"></script>
+<script src="js/api.js?v=7"></script>
+<script>
+/* Окно входа. ⚠ Настоящая аутентификация по номеру+паролю — это ещё не
+   построенный access-бэкенд (выдача 6-значного кода + пароля в кабинете).
+   Пока — рабочий мостик к текущей модели сессии: валидный 6-значный код
+   становится bib, сессия ставится локально, переход на станцию 1. Пароль
+   ловится в сессию, но НЕ проверяется до появления бэкенд-аутентификации.
+   Заменить блок onsubmit на реальный вызов авторизации, когда бэкенд готов. */
+(function () {
+  // ⚠ ЗАГЛУШКА. true — вход закрыт, участник видит сообщение о доработке.
+  // Служебное меню (▸▸▸ → кабинет, демо) продолжает работать: иначе мы закрыли
+  // бы доступ и себе. Снять заглушку = поставить false.
+  var MAINTENANCE = true;
+
+  // ЗАПРЕТ С ТЕЛЕФОНА — раньше всего остального, включая заглушку и служебное меню.
+  // Это не предупреждение: с телефона ассессмент не проходят ни в тесте, ни в
+  // живой волне. Планшет разрешён (см. imp.isPhone: смотрим короткую сторону
+  // ЭКРАНА, а не окна, иначе запрет прилетел бы человеку с узким окном браузера).
+  if (window.imp.blockIfPhone('entryCol')) return;
+
+  // Блока с требованием к устройству на этом экране больше нет (29.09) — он остался
+  // на экране настройки. Строку заполнения снимаем вместе с ним, чтобы не искать
+  // потом элемент, которого нет.
+
+  var trigger = document.getElementById('dotmenuTrigger');
+  var list = document.getElementById('dotmenuList');
+  trigger.addEventListener('click', function (e) {
+    e.stopPropagation();
+    list.classList.toggle('open');
+  });
+  document.addEventListener('click', function () { list.classList.remove('open'); });
+
+  // ── КУДА ВЕСТИ ПОСЛЕ ВХОДА (решение владельца 06.08) ──
+  // Путь участника: настройка (intro.html) → роль (role.html) → материалы и дальше
+  // ассессмент (assessment.html). Настройку показываем ОДИН раз на номер: отметку
+  // ставит сама intro.html при нажатии кнопки. Кто уже её видел — попадает прямо в
+  // ассессмент, иначе вход с другого устройства заново читал бы инструкцию.
+  function afterLogin(bib) {
+    var seen = false;
+    try { seen = !!localStorage.getItem('imp_intro_seen_' + bib); } catch (e) {}
+    return seen ? 'assessment.html' : 'intro.html';
+  }
+
+  var form = document.getElementById('entryForm');
+  var codeEl = document.getElementById('entryCode');
+  var errEl = document.getElementById('entryErr');
+
+  // Живая сессия — предлагаем продолжить, а не требовать пароль заново.
+  // Демо-сессию (тур) не показываем: у неё свой выход из витрины.
+  var liveSession = null;
+  try {
+    var demoOn = !!JSON.parse(sessionStorage.getItem('imp_demo') || 'null');
+    if (!demoOn && window.imp && window.imp.loadSession) liveSession = window.imp.loadSession();
+  } catch (e) {}
+  if (liveSession && liveSession.bib && !MAINTENANCE) {
+    document.getElementById('entryResumeBib').textContent = '№ ' + String(liveSession.bib).padStart(6, '0');
+    document.getElementById('entryResume').style.display = '';
+  }
+
+  // ---------- самозапись по ссылке тестовой волны ----------
+  // Приоритет выше заглушки: заглушка закрывает СЛУЧАЙНОГО посетителя, а тестер
+  // приходит по адресной ссылке. Волну проверяет бэкенд (флаг selfEnroll), здесь
+  // только форма: три цифры в адресе сами по себе ничего не открывают.
+  var waveParam = '';
+  try { waveParam = (new URLSearchParams(location.search).get('w') || '').trim(); } catch (e) {}
+
+  // ⚠ ДЕМО НАЧИНАЕТСЯ С ТОЙ ЖЕ РЕГИСТРАЦИИ, ЧТО И УЧАСТНИК (решение владельца 29.09).
+  // demo.html ставит флаг и ведёт сюда без имени: смотрящий демо вводит имя и фамилию
+  // ровно там же и в той же форме, что живой участник, и видит строку про согласие.
+  // На сервер при этом ничего не уходит — номер служебный (900), запись не создаётся.
+  var demoFlow = false;
+  try { demoFlow = !!JSON.parse(sessionStorage.getItem('imp_demo') || 'null'); } catch (e) {}
+
+  if (demoFlow || /^\d{3}$/.test(waveParam)) {
+    var selfForm = document.getElementById('selfForm');
+    var nameEl = document.getElementById('selfName');
+    var selfErrEl = document.getElementById('selfErr');
+    var selfBtn = selfForm.querySelector('button[type="submit"]');
+
+    form.style.display = 'none';
+    document.getElementById('entryMaintenance').style.display = 'none';
+    selfForm.style.display = '';
+    var leadSelf = document.querySelector('.entry-lead');
+    // ⚠ «Тестовый прогон» убрано (правка 29.09): вход по ссылке потока перестал быть
+    // тестовым путём и стал основным, а участнику незачем думать, что он в черновике.
+    if (leadSelf) leadSelf.textContent = 'Назовите себя, и начнём.';
+    var h1Self = document.querySelector('.entry-col h1');
+    if (h1Self) h1Self.textContent = 'Знакомство';
+    // Уже есть живая сессия — предлагаем продолжить, а не заводить второй номер:
+    // иначе тестер, вернувшийся по той же ссылке, начинает день заново.
+    if (liveSession && liveSession.bib) {
+      document.getElementById('entryResumeBib').textContent = '№ ' + String(liveSession.bib).padStart(6, '0');
+      document.getElementById('entryResume').style.display = '';
+    }
+
+    var lastEl = document.getElementById('selfLast');
+    // ⚠ В ДЕМО ПОЛЯ ПРЕДЗАПОЛНЕНЫ (решение владельца 29.09). Демо показывают клиентам
+    // и юристам, и заставлять их сочинять себе имя, чтобы посмотреть продукт, незачем.
+    // Значения видимые, а не подставленные втихую: смотрящий видит тот же экран, что
+    // участник, и может вписать своё. У живого участника поля пустые.
+    if (demoFlow) {
+      if (!nameEl.value) nameEl.value = 'Иван';
+      if (lastEl && !lastEl.value) lastEl.value = 'Демов';
+    }
+    nameEl.addEventListener('input', function () { selfErrEl.classList.remove('show'); });
+    if (lastEl) lastEl.addEventListener('input', function () { selfErrEl.classList.remove('show'); });
+    if (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches) {
+      try { nameEl.focus(); } catch (e) {}
+    }
+
+    selfForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      // ⚠ ИМЯ И ФАМИЛИЯ — ДВА ПОЛЯ (решение владельца 28.09). Раньше было одно,
+      // «как вас называть». Имя нужно отдельно, потому что оно едет в реплики
+      // персонажей; фамилия — только чтобы организатор знал, чей это прогон.
+      // Разделять одну строку по пробелу нельзя: двойные имена и фамилии из двух
+      // слов разъезжаются молча, а к человеку потом обращаются половиной имени.
+      var nm = (nameEl.value || '').trim();
+      var ln = lastEl ? (lastEl.value || '').trim() : '';
+      selfErrEl.classList.remove('show');
+      if (!nm || !ln) {
+        selfErrEl.textContent = !nm ? 'Напишите имя — по нему к вам будут обращаться.'
+                                    : 'Напишите фамилию.';
+        selfErrEl.classList.add('show');
+        return;
+      }
+      // ⚠ ДЕМО НЕ ХОДИТ НА СЕРВЕР. Номер служебный, записи в листе не появляется,
+      // согласие не фиксируется — фиксировать нечего. Форма при этом та же самая,
+      // включая строку про согласие: демо показывает путь, а не его огрызок.
+      if (demoFlow) {
+        try {
+          sessionStorage.setItem('imp_current_session', JSON.stringify({ bib: 900, name: nm }));
+        } catch (err) {}
+        window.location.href = 'intro.html';
+        return;
+      }
+      var st = selfBtn.textContent;
+      selfBtn.disabled = true;
+      selfBtn.textContent = 'Начинаю…';
+      // Версию согласия берём из разметки, а не из константы в скрипте: текст и его
+      // версия живут в одном месте, и обновить текст, забыв версию, нельзя.
+      var consentEl = document.getElementById('selfConsent');
+      var consentVer = consentEl ? (consentEl.getAttribute('data-consent-version') || '') : '';
+      window.imp.callApi('selfEnroll', {
+        wave: waveParam, name: nm, lastName: ln, consentVersion: consentVer
+      }).then(function (res) {
+        if (res && res.ok && res.bib) {
+          // Пароль в сессию не кладём: входа по паролю больше нет (правка 29.09).
+          // Сервер его пока возвращает — колонка в листе осталась, — просто не берём.
+          var s = { bib: String(res.bib), name: res.name || nm };
+          try {
+            sessionStorage.setItem('imp_current_session', JSON.stringify(s));
+            localStorage.setItem('imp_current_session', JSON.stringify(s));
+          } catch (err) {}
+          window.location.href = afterLogin(s.bib);
+          return;
+        }
+        selfBtn.disabled = false;
+        selfBtn.textContent = st;
+        var er = res && res.error;
+        selfErrEl.textContent = er === 'self_enroll_closed' ? 'Эта поток закрыта для самозаписи.'
+          : er === 'wave_not_found' ? 'Поток с таким номером не найдена.'
+          : er === 'wave_full' ? 'В этой потоке больше нет свободных номеров.'
+          : 'Не удалось начать. Проверьте связь и попробуйте ещё раз.';
+        selfErrEl.classList.add('show');
+      });
+    });
+    return;
+  }
+
+  if (MAINTENANCE) {
+    // Форму и продолжение убираем из потока, сообщение показываем. Подзаголовок
+    // «введите номер» тоже врал бы, поэтому меняется вместе с ними.
+    form.style.display = 'none';
+    document.getElementById('entryResume').style.display = 'none';
+    document.getElementById('entryMaintenance').style.display = '';
+    var lead = document.querySelector('.entry-lead');
+    if (lead) lead.textContent = 'Ассессмент готовится к новой версии.';
+    // Заголовок «Вход» под сообщением «вход закрыт» читается как насмешка.
+    var h1 = document.querySelector('.entry-col h1');
+    if (h1) h1.textContent = 'Пауза';
+    return;
+  }
+
+  // единственная задача экрана — ввести номер: ставим курсор сразу в поле.
+  // Не через атрибут autofocus: на мобильных он поднимает клавиатуру и прячет
+  // заголовок, поэтому фокусируем только на устройствах с мышью/клавиатурой.
+  // При живой сессии курсор не ставим — главное действие там «Продолжить».
+  if (!liveSession && (!window.matchMedia || !window.matchMedia('(pointer: coarse)').matches)) {
+    try { codeEl.focus(); } catch (e) {}
+  }
+
+  codeEl.addEventListener('input', function () {
+    codeEl.value = codeEl.value.replace(/\D/g, '').slice(0, 6);
+    errEl.classList.remove('show');
+  });
+
+  var submitBtn = form.querySelector('button[type="submit"]');
+
+  function showErr(msg) {
+    errEl.textContent = msg;
+    errEl.classList.add('show');
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    // ⚠ НОМЕР — ШЕСТЬ БУКВ И ЦИФР (правка 28.09), а не шесть цифр. Приводим к верхнему
+    // регистру здесь же: номер диктуют голосом, и человек наберёт как услышит.
+    // Прежние цифровые номера этой проверке тоже удовлетворяют, старые прогоны входят.
+    var code = (codeEl.value || '').trim().toUpperCase();
+    errEl.classList.remove('show');
+    if (!/^[A-Z0-9]{6}$/.test(code)) {
+      showErr('Проверьте номер — шесть знаков, буквы и цифры.');
+      return;
+    }
+    // Код — СТРОКА (ведущие нули важны у прежних номеров: «001347»), не parseInt.
+    var t = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Вхожу…';
+    window.imp.callApi('participantLogin', { bib: code }).then(function (res) {
+      if (res && res.ok) {
+        // nickname приходит с сервера: имя, названное при самозаписи, следует за
+        // участником на другое устройство, и обращаться к нему продолжают так же.
+        // Номер берём тот, что вернул сервер: под ним лежат ответы. Пароля в сессии
+        // больше нет — входа по паролю не существует (правка 29.09).
+        var session = { bib: String(res.bib || code), name: (res.nickname || '').trim() };
+        try {
+          sessionStorage.setItem('imp_current_session', JSON.stringify(session));
+          localStorage.setItem('imp_current_session', JSON.stringify(session));
+        } catch (err) {}
+        // Три экрана до первого вопроса: настройка → роль → материалы. Карты
+        // по-прежнему нет — маршрут линейный, и ветвиться участнику негде.
+        window.location.href = afterLogin(code);
+        return;
+      }
+      submitBtn.disabled = false;
+      submitBtn.textContent = t;
+      var err = res && res.error;
+      // ⚠ ОДНОРАЗОВЫЙ НОМЕР (правка 29.09). По законченному дню вход закрыт: номера
+      // раздают поштучно, и второй проход по тому же номеру сделал бы результат
+      // бессмысленным. Формулировка без обвинения: человек мог просто перепутать номер.
+      showErr(err === 'already_finished'
+          ? 'По этому номеру ассессмент уже пройден. Если это ошибка — напишите организатору.'
+        : err === 'not_found' ? 'Такого номера участника нет.'
+        : 'Не удалось войти. Проверьте номер.');
+
+    });
+  });
+})();
+</script>
+</body>
+</html>

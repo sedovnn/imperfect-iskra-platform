@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Демо — futureproof · i(m)perfect · «Искра»</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- ШРИФТ ГРУЗИТСЯ НЕБЛОКИРУЮЩЕ. Обычный <link rel="stylesheet"> задерживает
+     ИСПОЛНЕНИЕ скриптов до ответа шрифтового CSS: если fonts.googleapis.com
+     отвечает медленно, страница висит пустой, хотя вся её логика уже загружена
+     (поймано 06.08 на переходе между экранами). media="print" снимает
+     блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/styles.css?v=246" />
+<style>
+  .vit { max-width: 1000px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 48px); }
+  .vit-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
+  /* верхняя/нижняя служебные метки — фирменный голубой: сигнал «это служебная страница» */
+  .vit-sec { font-size: 11px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--jb-ink); }
+  .vit-hero { padding: 48px 0 8px; }
+  .vit-hero h1 { font-size: clamp(36px, 6vw, 68px); font-weight: 800; text-transform: uppercase; letter-spacing: -.02em; line-height: .98; margin: 18px 0 0; }
+  .vit-hero h1 .hl { color: var(--accent); }
+  .vit-sub { font-size: 18px; line-height: 1.55; color: var(--muted); max-width: 60ch; margin-top: 20px; }
+  .vit-sub b { color: var(--ink); }
+  .vit-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--radius); overflow: hidden; margin: 44px 0 0; }
+  .vit-cell { background: var(--paper); padding: 22px 24px; }
+  .vit-cell .n { font-size: 30px; font-weight: 800; letter-spacing: -.01em; }
+  .vit-cell .l { font-size: 13px; color: var(--muted); margin-top: 6px; }
+  .vit-sec-h { font-size: 11px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--muted-soft); padding-top: 26px; border-top: 1px solid var(--hairline); margin: 48px 0 18px; }
+  .vit-day { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .vit-step { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 18px 20px; }
+  .vit-step .sn { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+  .vit-step h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .vit-step p { font-size: 13.5px; color: var(--muted); }
+  /* демо-запуск */
+  /* демо-запуск — главное действие витрины: вермилион, чтобы не терялся среди служебных блоков */
+  .vit-demo { border: 1px solid var(--accent-line); background: var(--accent-tint); border-radius: var(--radius); padding: 24px 26px; margin: 44px 0 0; }
+  .vit-demo h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--accent); }
+  .vit-demo p { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
+  .vit-profiles { display: flex; gap: 12px; flex-wrap: wrap; }
+  .vit-prof { flex: 1; min-width: 180px; text-align: left; background: var(--paper); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; font-family: inherit; }
+  .vit-prof:hover { border-color: var(--accent); }
+  .vit-prof .pt { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .vit-prof .pd { font-size: 12.5px; color: var(--muted-soft); margin-top: 4px; line-height: 1.4; }
+  .vit-demo-note { font-size: 12px; color: var(--muted-soft); margin-top: 14px; }
+  /* диапазон ИИ мини */
+  .vit-win { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 24px 26px; margin: 44px 0 0; }
+  .vit-win h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .vit-win p { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
+  .vit-mini { position: relative; height: 22px; }
+  .vit-mini .base { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--hairline); transform: translateY(-50%); }
+  /* полоса = размах 4 массовых моделей (30–34 из 50); точка Opus = 41/50; вы ≈ 31/50 */
+  .vit-mini .bnd { position: absolute; top: 50%; transform: translateY(-50%); height: 18px; background: #eaf3fb; border: 1px solid #bcd9f2; border-radius: 8px; left: 60%; right: 32%; }
+  .vit-mini .top { position: absolute; top: 50%; left: 82%; transform: translate(-50%, -50%); width: 13px; height: 13px; border-radius: 50%; background: var(--jb); border: 2px solid var(--jb-ink); z-index: 2; }
+  .vit-mini .you { position: absolute; top: 50%; left: 62%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--ink); z-index: 3; }
+  .vit-mini-leg { display: flex; gap: 22px; margin-top: 12px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+  .vit-mini-leg .d { color: var(--accent); font-weight: 700; }
+  .vit-mini-leg .td { color: var(--jb-ink); font-weight: 700; }
+  .vit-mini-leg .sw { display: inline-block; width: 16px; height: 10px; border-radius: 3px; background: #eaf3fb; border: 1px solid #bcd9f2; vertical-align: -1px; margin-right: 5px; }
+  .vit-example { margin-top: 18px; font-size: 13px; }
+  .vit-example a { color: var(--jb-ink); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--band-line); }
+  .vit-example a:hover { border-bottom-color: var(--jb-ink); }
+  .vit-foot { border-top: 1px solid var(--hairline); margin-top: 52px; padding: 20px 0 40px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  .vit-foot a { color: var(--ink); text-decoration: none; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="gate" id="vitGate">
+  <div class="gate-card">
+    <p class="kicker">Демо · служебное</p>
+    <h2>Введите пароль</h2>
+    <p class="section-lead" style="margin:0 0 20px;">Тот же пароль, что у кабинета фасилитатора.</p>
+    <div class="field">
+      <label for="vitPass">Пароль</label>
+      <input type="password" id="vitPass" autocomplete="off" data-lpignore="true" data-1p-ignore data-form-type="other" />
+    </div>
+    <div class="form-error" id="vitPassErr">Неверный пароль.</div>
+    <button class="btn btn-primary btn-block" id="vitPassBtn">Войти →</button>
+  </div>
+</div>
+
+<div class="frame" id="vitContent" style="display:none;">
+  <div class="vit">
+
+    <header class="vit-head">
+      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      <div class="vit-sec">Демо</div>
+    </header>
+
+    <div class="vit-hero">
+      <p class="kicker">Диагностика стратегического мышления</p>
+      <h1>Стратегическое<br>мышление — <span class="hl">в деле</span></h1>
+      <p class="vit-sub"><b>i(m)perfect</b> — однодневная диагностика стратегического мышления руководителя на живом бизнес-кейсе «Искра». Без ИИ-помощи, наедине с материалами. В конце — профиль по пяти навыкам и <b>диапазон ИИ</b>: где вы сильнее машины, а где она вас догнала.</p>
+    </div>
+
+    <!-- ⚠ ЧИСЛА ЗДЕСЬ СВЕРЕНЫ С КОДОМ, А НЕ НАПИСАНЫ НА ГЛАЗ (06.08, пересверено 17.09):
+         5 навыков и 10 способностей — V2_SKILLS и V2_ABILITIES в backend/code.js;
+         семь этапов — S.scenes в js/scenes.js (sc1, sc1b, sc2, sc3, sc4, sc5, sc7);
+         1,5–2 часа — imp.deviceReq в js/main.js, тот же источник, что на входе и на
+         экране роли; 30–40 минут на материалы — второе правило S.system.rules.
+         Было «~2 ч, один кейс, шесть раундов» — раундов в платформе нет с v2. -->
+    <div class="vit-strip">
+      <div class="vit-cell"><div class="n">5</div><div class="l">навыков стратегического мышления</div></div>
+      <div class="vit-cell"><div class="n">10</div><div class="l">способностей, уровни L1–L5</div></div>
+      <div class="vit-cell"><div class="n">1,5–2 ч</div><div class="l">один кейс, семь этапов</div></div>
+    </div>
+
+    <!-- Ход ассессмента описан МЕСТАМИ И ФОРМОЙ РАБОТЫ, а не вопросами: страница
+         служебная, но с неё же уходят в демо, и печатать здесь, о чём спросят на
+         каждом этапе, значило бы выдавать карту дня. Прежний текст описывал формат
+         v1 — «Раунд 1 / Раунд 2 / Раунды 3–6» и сборку в StratOS-документ, которого
+         в платформе нет (остался только в архивном кабинете фасилитатора). -->
+    <div class="vit-sec-h">Как устроен ассессмент</div>
+    <div class="vit-day">
+      <div class="vit-step"><div class="sn">Этап 1</div><h3>Материалы «Искры»</h3><p>Семь разделов о компании, письмо с постановкой задачи и десять приложений — финансы, интервью, переписка, пост-мортем, система целей. На чтение обычно уходит 30–40 минут; запоминать не нужно, пакет остаётся под рукой до конца.</p></div>
+      <div class="vit-step"><div class="sn">Этапы 2–6</div><h3>Разговоры в компании</h3><p>Свой офис, кабинет генерального, кабинет акционера, переговорная с финансовым директором, кофейня. Где-то отвечаете своими словами, где-то работаете с материалом на экране — раскладываете двадцать заявок направлений в рамку года, держите выбор под давлением.</p></div>
+      <div class="vit-step"><div class="sn">Этап 7</div><h3>Письмо правлению</h3><p>Четыре поля, которые генеральный зачитает дословно. Дальше ассессмент закрывается.</p></div>
+    </div>
+
+    <div class="vit-demo">
+      <h3>Пройти как участник</h3>
+      <p>Демо-прохождение: тот же ассессмент, что у настоящего участника — пакет материалов, разговоры в офисе, разбор заявок, письмо правлению. Ответы остаются в этом браузере и на сервер не уходят.</p>
+      <div class="vit-profiles">
+        <button type="button" class="vit-prof" data-profile="self"><div class="pt">Пройти ассессмент самому</div><div class="pd">семь этапов, девятнадцать шагов — без оценки в конце</div></button>
+      </div>
+      <!-- Демо идёт тем же путём, что участник: настройка → роль → материалы. До
+           06.08 витрина вела прямо в ассессмент, и первые два экрана в демо было не
+           посмотреть. -->
+      <p class="vit-demo-note">Демо идёт тем же путём, что настоящий участник: настройка, введение в роль, потом материалы.</p>
+      <p class="vit-demo-note">Предзаполненные профили (сильный / средний / слабый) вернутся вместе с новым отчётом участника: прежние собраны под прошлый формат ответов и к нынешнему маршруту не подходят.</p>
+      <p class="vit-demo-note" id="vitDemoErr" style="display:none;"></p>
+    </div>
+
+    <div class="vit-win">
+      <h3>Что такое диапазон ИИ</h3>
+      <p>Тот же кейс проходят эталонные нейросети. Четыре массовые модели автоматизации задают диапазон — от слабейшей к сильнейшей. Передовая модель отдельной голубой точкой: «лучшая модель уже здесь». Ваш результат ложится на ту же шкалу: внутри диапазона вы наравне с машиной, выше или ниже — там, где различаетесь.</p>
+      <div class="vit-mini"><span class="base"></span><span class="bnd"></span><span class="top"></span><span class="you"></span></div>
+      <div class="vit-mini-leg"><span><span class="d">●</span> вы</span><span><span class="sw"></span> диапазон ИИ (4 модели)</span><span><span class="td">●</span> передовая модель</span></div>
+      <p class="vit-example"><a href="report-example.html">Открыть пример отчёта · средний профиль →</a></p>
+    </div>
+
+    <footer class="vit-foot">
+      <div>© futureproof</div>
+      <div><a href="index.html">← ко входу</a> &nbsp;·&nbsp; <a href="cabinet.html">кабинет фасилитатора</a></div>
+    </footer>
+
+  </div>
+</div>
+
+<script src="js/main.js?v=11"></script>
+<script src="js/typo.js?v=2"></script>
+<script src="js/api.js?v=7"></script>
+<script>
+/* Витрина под паролем (как кабинет): пароль проверяется на бэкенде
+   (action 'verifyPassword') — в клиенте его нет. Контент виден только после входа.
+   Демо-запуск: флаг imp_demo → demo.js на станции 1 сеет профиль и снимает гейты. */
+(function () {
+  var AUTH_KEY = 'imp_vitrina_auth';
+  var gate = document.getElementById('vitGate');
+  var content = document.getElementById('vitContent');
+  var input = document.getElementById('vitPass');
+  var btn = document.getElementById('vitPassBtn');
+  var err = document.getElementById('vitPassErr');
+
+  function reveal() { gate.style.display = 'none'; content.style.display = ''; }
+
+  if (sessionStorage.getItem(AUTH_KEY) === '1') reveal();
+
+  function submit() {
+    var pw = (input.value || '').trim();
+    if (!pw) { err.classList.add('show'); return; }
+    err.classList.remove('show');
+    // локально без бэкенда проверять негде — пропускаем (витрина/демо клиентские)
+    if (!window.imp.isApiConfigured()) { sessionStorage.setItem(AUTH_KEY, '1'); reveal(); return; }
+    btn.disabled = true; btn.textContent = 'Проверяю…';
+    window.imp.callApi('verifyPassword', { password: pw }).then(function (res) {
+      btn.disabled = false; btn.textContent = 'Войти →';
+      if (res && res.ok) { sessionStorage.setItem(AUTH_KEY, '1'); reveal(); }
+      else { err.classList.add('show'); input.focus(); }
+    });
+  }
+  btn.addEventListener('click', submit);
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+
+  document.querySelectorAll('.vit-prof').forEach(function (b) {
+    b.addEventListener('click', function () {
+      try {
+        // imp_demo и сессия живут в sessionStorage — то есть только в ЭТОЙ вкладке:
+        // демо не перезаписывает реальную сессию участника в других вкладках
+        // (см. window.imp.loadSession в main.js). Номер 900 — служебный.
+        sessionStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: 'self' }));
+        sessionStorage.setItem('imp_current_session', JSON.stringify({ bib: 900, name: 'Демо' }));
+        localStorage.removeItem('imp_demo');
+        // Стираем сам прогон демо, а не только флаг. Иначе демо продолжает
+        // завершённый разговор: до 04.08 состояние лежало в localStorage под
+        // imp_v2_900 и не чистилось ничем, поэтому пройти демо второй раз было
+        // нельзя. Чистим оба хранилища: старые копии могли остаться в localStorage.
+        localStorage.removeItem('imp_v2_900');
+        sessionStorage.removeItem('imp_v2_900');
+        Object.keys(localStorage).forEach(function (k) {
+          if (k.indexOf('imp_v2_900_v_') === 0) localStorage.removeItem(k);
+        });
+        // Отметку «настройку уже видел» тоже стираем: демо обязано каждый раз
+        // показывать путь целиком, иначе второй запуск начинается с материалов и
+        // проверить первые два экрана нечем.
+        localStorage.removeItem('imp_intro_seen_900');
+      } catch (e) {}
+      // ⚠ ДЕМО ИДЁТ ТЕМ ЖЕ ПУТЁМ, ЧТО УЧАСТНИК (правка 06.08). До этого витрина
+      // вела прямо в ассессмент, и первые два экрана — настройка и введение в роль —
+      // в демо не показывались вовсе: демо служит тем, чтобы посмотреть день, а
+      // посмотреть его начало было нельзя.
+      window.location.href = 'intro.html';
+    });
+  });
+})();
+</script>
+</body>
+</html>

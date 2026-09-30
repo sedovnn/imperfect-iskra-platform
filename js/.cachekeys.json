@@ -1,0 +1,160 @@
+{
+ "js/api.js": {
+  "sha": "51c1dae1d3c4",
+  "keys": {
+   "assessment.html": 7,
+   "cabinet.html": 7,
+   "harness.html": 7,
+   "index.html": 7,
+   "vitrina.html": 7
+  }
+ },
+ "js/backlog.js": {
+  "sha": "254ccdd5bcd5",
+  "keys": {
+   "assessment.html": 9,
+   "cabinet.html": 9,
+   "harness.html": 9
+  }
+ },
+ "js/boot-loading.js": {
+  "sha": "46795025344e",
+  "keys": {
+   "assessment.html": 4
+  }
+ },
+ "js/cabinet.js": {
+  "sha": "dcb0a1e34282",
+  "keys": {
+   "cabinet.html": 40
+  }
+ },
+ "js/case-ref.js": {
+  "sha": "85a022bd3959",
+  "keys": {
+   "assessment.html": 14,
+   "harness.html": 14
+  }
+ },
+ "js/case-text.js": {
+  "sha": "878cdbe41fd1",
+  "keys": {
+   "harness.html": 2
+  }
+ },
+ "js/dialog.js": {
+  "sha": "e918cd40f0af",
+  "keys": {
+   "assessment.html": 1,
+   "cabinet.html": 1,
+   "harness.html": 1
+  }
+ },
+ "js/edits.js": {
+  "sha": "102343d933cb",
+  "keys": {
+   "assessment.html": 1
+  }
+ },
+ "js/engine.js": {
+  "sha": "f52761239a4f",
+  "keys": {
+   "assessment.html": 134
+  }
+ },
+ "js/expert-api.js": {
+  "sha": "f967a65caf21",
+  "keys": {
+   "expert-report.html": 6,
+   "expert.html": 6
+  }
+ },
+ "js/expert-corpus.js": {
+  "sha": "d0e147f94586",
+  "keys": {
+   "expert-report.html": 8,
+   "expert.html": 8
+  }
+ },
+ "js/expert-lock.js": {
+  "sha": "1aad89d590b3",
+  "keys": {
+   "expert-report.html": 1,
+   "expert.html": 1
+  }
+ },
+ "js/expert-report.js": {
+  "sha": "8393e8915dc9",
+  "keys": {
+   "expert-report.html": 4
+  }
+ },
+ "js/expert.js": {
+  "sha": "935394e6d536",
+  "keys": {
+   "expert.html": 14
+  }
+ },
+ "js/main.js": {
+  "sha": "1b784066ced4",
+  "keys": {
+   "assessment.html": 11,
+   "cabinet.html": 11,
+   "harness.html": 11,
+   "index.html": 11,
+   "intro.html": 11,
+   "role.html": 11,
+   "vitrina.html": 11
+  }
+ },
+ "js/mech-fields.js": {
+  "sha": "59d41d4f6bec",
+  "keys": {
+   "assessment.html": 50,
+   "harness.html": 50
+  }
+ },
+ "js/mechanics.js": {
+  "sha": "611e7e7cfbcc",
+  "keys": {
+   "assessment.html": 95,
+   "cabinet.html": 95,
+   "harness.html": 95
+  }
+ },
+ "js/report-texts.js": {
+  "sha": "28c06933fa24",
+  "keys": {
+   "report-example.html": 1
+  }
+ },
+ "js/report.js": {
+  "sha": "3cee78e5f671",
+  "keys": {
+   "report-example.html": 7
+  }
+ },
+ "js/scenes.js": {
+  "sha": "bbd9bd723860",
+  "keys": {
+   "assessment.html": 191,
+   "cabinet.html": 191,
+   "harness.html": 191,
+   "intro.html": 191,
+   "role.html": 191
+  }
+ },
+ "js/typo.js": {
+  "sha": "b22a347795f1",
+  "keys": {
+   "assessment.html": 2,
+   "cabinet.html": 2,
+   "expert-report.html": 2,
+   "expert.html": 2,
+   "index.html": 2,
+   "intro.html": 2,
+   "role.html": 2,
+   "vitrina.html": 2
+  }
+ }
+}

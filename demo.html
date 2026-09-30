@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<!-- ⚠ НЕ КЭШИРОВАТЬ. Это страница-переходник, её содержимое меняется вместе с
+     маршрутом демо, а ключа версии в адресе у неё нет и быть не может: ссылку
+     раздают наружу, юристам и клиентам, и она должна оставаться короткой.
+     29.09 из-за кэша у владельца открывалась прежняя копия, которая вела мимо
+     регистрации. Страховка на стороне intro.html тоже стоит. -->
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
+<title>Демо «Искры»</title>
+<style>
+  :root { color-scheme: light dark; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #1a1a1a; background: #fff;
+  }
+  @media (prefers-color-scheme: dark) { body { color: #ececec; background: #141414; } }
+  p { margin: 0; opacity: .65; }
+</style>
+</head>
+<body>
+<p id="msg">Открываем демо…</p>
+<script>
+/* Прямой вход в демо, минуя витрину (запрос владельца 28.09).
+   Делает ровно то же, что кнопка профиля на vitrina.html:
+   ставит флаг демо и служебную сессию 900, чистит прошлый прогон
+   и ведёт тем же путём, что и участника, — с экрана настройки.
+
+   ⚠ ПАРОЛЯ ЗДЕСЬ НЕТ. На витрине вход закрыт паролем, здесь — нет:
+   в этом и смысл ссылки. Кто её открыл, тот смотрит день.
+
+   ⚠ ДЕМО НИЧЕГО НЕ ОТПРАВЛЯЕТ НА СЕРВЕР. Движок проверяет флаг демо
+   перед каждой синхронизацией (js/engine.js: `if (isDemo || …) return`),
+   поэтому ответы демо-прохождения остаются в этой вкладке и никуда
+   не уезжают — ни в таблицу, ни на судейство. */
+(function () {
+  try {
+    sessionStorage.setItem('imp_demo', JSON.stringify({ active: true, profile: 'self' }));
+    // ⚠ СЕССИЮ С ИМЕНЕМ ЗДЕСЬ НЕ СТАВИМ (правка 29.09). Раньше сюда клалось служебное
+    // имя «Демо», и демо проскакивало регистрацию — путь начинался с экрана настройки.
+    // Теперь демо идёт тем же входом, что участник: имя и фамилию человек вводит на
+    // странице регистрации, там же видит строку про согласие. Сессию создаёт она.
+    sessionStorage.removeItem('imp_current_session');
+    localStorage.removeItem('imp_demo');
+    // Стираем прошлый прогон демо целиком, иначе второй заход продолжит
+    // завершённый разговор, а не начнёт день сначала.
+    localStorage.removeItem('imp_v2_900');
+    sessionStorage.removeItem('imp_v2_900');
+    Object.keys(localStorage).forEach(function (k) {
+      if (k.indexOf('imp_v2_900_v_') === 0) localStorage.removeItem(k);
+    });
+    localStorage.removeItem('imp_intro_seen_900');
+  } catch (e) {
+    document.getElementById('msg').textContent =
+      'Браузер запретил хранилище — демо не откроется. Отключите приватный режим или блокировку данных сайта.';
+    return;
+  }
+  location.replace('index.html');
+})();
+</script>
+</body>
+</html>
