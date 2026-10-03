@@ -212,10 +212,6 @@
       // Пометки едут на сервер и НЕ едут судье: buildJudgeInput_ собирает вход по
       // списку окон из V2_JUDGE_TASKS, и колонки marksJson для него не существует.
       marks: state.marks || [],
-      // Ответ на вопрос ПОСЛЕ дня («вспоминалась ли реальная компания») — по тому же
-      // праву и с тем же ограничением, что пометки: в лист едет, судье нет. Судья,
-      // прочитавший название прототипа, начал бы судить стратегию этой компании.
-      debrief: state.debrief || null,
       cursor: state.cursor,
       started: !!state.started,
       finished: !!state.finished,
@@ -517,7 +513,12 @@
     var m = Math.floor(sec / 60), ss = sec % 60;
     return m + ':' + (ss < 10 ? '0' : '') + ss;
   }
-  // Шапка: два счёта и полоса. Без таймера — «Этап N из 7» и полоса из равных отрезков.
+  // Шапка и полоса этапов (решения владельца 03.10). С таймером сверху ОДИН счёт — весь
+  // ассессмент; время этапа — в самой полосе: отрезок этапа толстый, в нём доля этапа
+  // («18 мин»), в штриховке — перенос с прошлого («+21 мин»), заливка растёт по мере
+  // расхода, остаток этапа — в подписи под полосой. Первая версия (два счёта сверху и
+  // тонкая полоса) читалась плохо: не было видно, что полоса заполняется и что штриховка —
+  // дополнительное время. Без таймера — «Этап N из 7» сверху и полоса из равных отрезков.
   function timerPaint() {
     var box = el('tmrBox'), rail = el('tmrRail');
     if (!box || !rail) return;
@@ -528,53 +529,59 @@
     var on = timerOn();
     var st = on && tStage(curId);
     var running = !!(st && st.startedAt && !st.endedAt);
+    var left = 0, alloc = 0, warn = false, bonus = 0;
     if (!on) {
+      box.className = 'tmr';
       box.innerHTML = '<div class="tmr-blk"><span class="tmr-k">Этап</span>' +
         '<span class="tmr-v"><span class="tmr-big">' + no + ' из ' + cnt + '</span></span></div>';
     } else {
       // Этап ещё не начат (экран между этапами, вступление) — время стоит и показано целиком.
-      var bonus = st ? (st.bonusSec || 0) : bonusFor(curId);
-      var alloc = (state.timing.plan[curId] || 0) * 60 + bonus;
-      var left = st ? alloc - stageUsedSec(curId) : alloc;
+      bonus = st ? (st.bonusSec || 0) : bonusFor(curId);
+      alloc = (state.timing.plan[curId] || 0) * 60 + bonus;
+      left = st ? alloc - stageUsedSec(curId) : alloc;
       var used = 0;
       TIMER_IDS.forEach(function (id) { used += stageUsedSec(id); });
       var totalLeft = state.timing.totalMin * 60 - used;
-      var warn = running && left <= 120;
-      var bonusMin = Math.floor(bonus / 60);
-      box.className = 'tmr' + (warn ? ' is-warn' : '');
+      warn = running && left <= 120;
+      box.className = 'tmr';
       box.innerHTML =
-        '<div class="tmr-blk tmr-stage' + (running ? '' : ' tmr-idle') + '">' +
-          '<span class="tmr-k">Этап ' + no + ' из ' + cnt + ' · ' + (running ? 'на этап осталось' : 'на этап') + '</span>' +
-          '<span class="tmr-v"><span class="tmr-big">' + (warn ? fmtClock(left) : fmtMin(left)) + '</span>' +
-            (running ? '<span class="tmr-of">из ' + fmtMin(alloc) + '</span>' : '') +
-            (bonusMin > 0 ? '<span class="tmr-bonus">+' + bonusMin + ' мин с прошлого этапа</span>' : '') +
-          '</span></div>' +
-        '<div class="tmr-sep"></div>' +
         '<div class="tmr-blk tmr-total"><span class="tmr-k">Весь ассессмент · осталось</span>' +
           '<span class="tmr-v"><span class="tmr-big">' + fmtMin(totalLeft) + '</span>' +
           '<span class="tmr-of">из ' + fmtMin(state.timing.totalMin * 60) + '</span></span></div>';
     }
-    // Полоса: у будущих этапов только номер — карту дня не показываем (решение 06.08).
+    // Полоса (владелец 03.10, третья редакция): короткая, в ряд с шапкой; текущий этап — широкий
+    // отрезок, в нём его название и время, перенос с прошлого — штриховкой справа с «+N мин»,
+    // расход — линией по низу отрезка; остаток — подписью под ним. Пройденные — узкие с «✓»,
+    // будущие — узкие с номером: карту дня не показываем (решение 06.08). Имена не текущих
+    // этапов — в подсказке при наведении.
     var segs = '', names = '';
     TIMER_IDS.forEach(function (id, i) {
       var sc = S.scenes.filter(function (x) { return x.id === id; })[0];
-      var w = on ? (state.timing.plan[id] || 1) * 60 + (i === curIx ? ((tStage(id) || {}).bonusSec || bonusFor(id)) : ((tStage(id) || {}).bonusSec || 0)) : 1;
-      var cls = 'tmr-seg', inner = '';
-      if (i < curIx) cls += ' is-done';
-      else if (i === curIx) {
-        if (!on) cls += ' is-now-flat';
-        else {
-          var base = (state.timing.plan[id] || 0) * 60;
-          inner = (w > base ? '<span class="tmr-extra" style="left:' + (base / w * 100) + '%;right:0"></span>' : '') +
-            '<span class="tmr-fill" style="width:' + Math.min(100, stageUsedSec(id) / w * 100) + '%"></span>';
-        }
-      }
-      segs += '<div class="' + cls + '" style="flex:' + w + '">' + inner + '</div>';
       var nm = i <= curIx ? (i + 1) + '. ' + esc((S.stageShort || [])[i] || sc.name) : 'этап ' + (i + 1);
-      // Узкий отрезок (6 минут из 90) режет подпись многоточием — полное имя в подсказке.
-      names += '<span class="' + (i === curIx ? 'is-now' : '') + '" style="flex:' + w + '" title="' + nm + '">' + nm + '</span>';
+      var w = i === curIx ? 8 : 1;
+      var cls = 'tmr-seg', inner = '', tip = nm;
+      if (i < curIx) { cls += ' is-done'; inner = '<span class="tmr-mark">✓</span>'; }
+      else if (i === curIx) {
+        cls += ' is-now' + (warn ? ' is-warn' : '');
+        if (on) {
+          var base = (state.timing.plan[id] || 0) * 60, all = Math.max(1, base + bonus);
+          // Штриховка не шире трети отрезка: название этапа и время в нём важнее.
+          var bp = Math.max(66, base / all * 100);
+          inner = (bonus >= 60 ? '<span class="tmr-extra" style="left:' + bp + '%"><b>+' + Math.floor(bonus / 60) + ' мин</b></span>' : '') +
+            '<span class="tmr-fill" style="width:' + Math.min(100, stageUsedSec(id) / all * 100) + '%"></span>' +
+            '<span class="tmr-label" style="right:' + (100 - bp) + '%">' + nm + ' · ' + fmtMin(base) + '</span>';
+        } else {
+          inner = '<span class="tmr-label">' + nm + '</span>';
+        }
+      } else {
+        inner = '<span class="tmr-mark is-next">' + (i + 1) + '</span>';
+      }
+      segs += '<div class="' + cls + '" style="flex:' + w + '" title="' + tip + '">' + inner + '</div>';
+      var tail = (i === curIx && on) ? (running ? 'осталось ' + (warn ? fmtClock(left) : fmtMin(left)) : 'на этап ' + fmtMin(alloc)) : '';
+      names += '<span class="' + (i === curIx ? 'is-now' + (warn ? ' is-warn' : '') : '') + '" style="flex:' + w + '">' +
+        (tail ? '<em>' + tail + '</em>' : '') + '</span>';
     });
-    rail.innerHTML = '<div class="tmr-segs">' + segs + '</div><div class="tmr-names">' + names + '</div>';
+    rail.innerHTML = '<div class="tmr-segs' + (on ? ' is-timed' : '') + '">' + segs + '</div><div class="tmr-names">' + names + '</div>';
   }
   // Время этапа вышло: ответ сохраняется как есть, этап закрывается, участник идёт дальше.
   function timeUp() {
@@ -2120,7 +2127,8 @@
         // приписка одна на все окна и живёт здесь: так она не может разойтись
         // по сценам, как не может разойтись строка настроя межсценового экрана.
         window.imp.alert((act.silence ? act.silence + ' ' : '') +
-          'Ответьте своими словами — если сказать нечего, напишите это словами.');
+          // Формулировка владельца 03.10 (запятые расставлены по правилам).
+          'Ответьте своими словами. Если не знаете, что ответить, просто напишите об этом.');
         try { (act.parts ? tas[0] : ta).focus(); } catch (e) {}
         return;
       }
@@ -3268,44 +3276,15 @@
     if (waiting) revealRun(now, openWork, true); else openWork();
   }
 
-  // Счётчика «N / 6» в шапке нет (решение владельца 04.08, СПЕК §4.4: прогресс дня живёт
-  // только на межэтапном экране). Если возвращать — сначала правится §4.4.
+  // Этап и время с 03.10 — в шапке (таймер и полоса, timerPaint), а не только на межэтапном
+  // экране (было СПЕК §4.4, решение 04.08) — решение владельца 03.10.
 
-  // ⚠ ВЫКЛЮЧАТЕЛЬ ВОПРОСА ПОСЛЕ ДНЯ (пункт А4, 19.08). true — на финальном экране
-  // спрашиваем про узнавание прототипа; false — экран как был. Он здесь, а не в
-  // сценах, потому что это не шаг маршрута: маршрут читают судья и харнесс, а этот
-  // вопрос не должен доехать ни до одного из них. Пилотные прогоны на людях — да,
-  // прогоны моделей — нет (harness.html не грузит этот файл).
-  var ASK_DEBRIEF = true;
-
-  function askDebrief() {
-    var box = el('debriefBox'), ta = el('debriefText'), btn = el('debriefSend');
-    if (!box || !ta || !btn) return;
-    // В демо не спрашиваем: демо смотрят с витрины, там нет ни участника, ни прогона,
-    // и запись в лист некуда прицепить.
-    if (!ASK_DEBRIEF || isDemo) return;
-    // Уже ответили (вернулись на экран после обновления страницы) — не спрашиваем
-    // второй раз, но и не прячем ответ: человек видит, что его записали.
-    if (state.debrief) { box.style.display = 'block'; ta.value = String(state.debrief.text || '');
-      ta.setAttribute('disabled', 'disabled'); btn.style.display = 'none';
-      el('debriefDone').style.display = 'block'; return; }
-    box.style.display = 'block';
-    btn.addEventListener('click', function () {
-      state.debrief = { text: String(ta.value || '').trim(), at: nowIso() };
-      saveState();
-      ta.setAttribute('disabled', 'disabled');
-      btn.style.display = 'none';
-      el('debriefDone').style.display = 'block';
-      // Ответ приходит ПОСЛЕ последней синхронизации дня, поэтому отправляем сразу
-      // сами: отложенный по таймеру sync может не успеть до закрытия вкладки.
-      sync();
-    });
-  }
+  // Вопроса после дня про узнавание прототипа больше нет (владелец 03.10: «было для теста,
+  // полностью вычищаем»): ни блока на финальном экране, ни поля в отправке.
 
   function showFinish() {
     el('assessRoot').style.display = 'none';
     el('finishOverlay').style.display = 'flex';
-    askDebrief();
     // Из демо выход ведёт на витрину, а не на вход по номеру (решение владельца
     // 04.08): демо смотрят с витрины, и отправлять человека на страницу входа
     // участника значит показывать ему гейт, к которому у него нет номера.

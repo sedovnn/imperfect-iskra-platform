@@ -262,6 +262,12 @@
   // нет — иначе экраны показывали бы состояние на разные моменты.
   function absorb(res) {
     if (res && res.role) role = String(res.role);
+    // ⚠ У КАЖДОЙ РОЛИ СВОЯ СТРАНИЦА (решение владельца 03.10): administrator.html и
+    // vedushchiy.html. Вошёл не на свою — переводим на свою; пароль лежит в sessionStorage,
+    // и там вход повторится сам. Права держит сервер — это только место, а не защита.
+    var page = document.body.getAttribute('data-page');
+    if (page === 'host' && isFull()) { location.replace('administrator.html'); return; }
+    if (page === 'admin' && !isFull()) { location.replace('vedushchiy.html'); return; }
     document.body.setAttribute('data-role', role);
     // Подпись роли в шапке: ведущему объясняет, почему он видит не всё.
     var roleEl = document.getElementById('cabRole');

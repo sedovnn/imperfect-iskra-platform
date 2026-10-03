@@ -2,19 +2,21 @@
  "js/api.js": {
   "sha": "51c1dae1d3c4",
   "keys": {
+   "administrator.html": 7,
    "assessment.html": 7,
-   "cabinet.html": 7,
    "harness.html": 7,
    "index.html": 7,
+   "vedushchiy.html": 7,
    "vitrina.html": 7
   }
  },
  "js/backlog.js": {
   "sha": "254ccdd5bcd5",
   "keys": {
+   "administrator.html": 9,
    "assessment.html": 9,
-   "cabinet.html": 9,
-   "harness.html": 9
+   "harness.html": 9,
+   "vedushchiy.html": 9
   }
  },
  "js/boot-loading.js": {
@@ -24,9 +26,10 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "8022285227ad",
+  "sha": "6ae462a1e5b7",
   "keys": {
-   "cabinet.html": 43
+   "administrator.html": 44,
+   "vedushchiy.html": 44
   }
  },
  "js/case-ref.js": {
@@ -45,9 +48,10 @@
  "js/dialog.js": {
   "sha": "e918cd40f0af",
   "keys": {
+   "administrator.html": 1,
    "assessment.html": 1,
-   "cabinet.html": 1,
-   "harness.html": 1
+   "harness.html": 1,
+   "vedushchiy.html": 1
   }
  },
  "js/edits.js": {
@@ -57,9 +61,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "3880fe845840",
+  "sha": "3bda9b33d182",
   "keys": {
-   "assessment.html": 138
+   "assessment.html": 145
   }
  },
  "js/expert-api.js": {
@@ -98,12 +102,13 @@
  "js/main.js": {
   "sha": "0964606665b9",
   "keys": {
+   "administrator.html": 12,
    "assessment.html": 12,
-   "cabinet.html": 12,
    "harness.html": 12,
    "index.html": 12,
    "intro.html": 12,
    "role.html": 12,
+   "vedushchiy.html": 12,
    "vitrina.html": 12
   }
  },
@@ -117,9 +122,10 @@
  "js/mechanics.js": {
   "sha": "2ed8841c4799",
   "keys": {
+   "administrator.html": 96,
    "assessment.html": 96,
-   "cabinet.html": 96,
-   "harness.html": 96
+   "harness.html": 96,
+   "vedushchiy.html": 96
   }
  },
  "js/report-texts.js": {
@@ -135,25 +141,27 @@
   }
  },
  "js/scenes.js": {
-  "sha": "89ea5fa08a65",
+  "sha": "740f04ef1983",
   "keys": {
-   "assessment.html": 194,
-   "cabinet.html": 194,
-   "harness.html": 194,
-   "intro.html": 194,
-   "role.html": 194
+   "administrator.html": 195,
+   "assessment.html": 195,
+   "harness.html": 195,
+   "intro.html": 195,
+   "role.html": 195,
+   "vedushchiy.html": 195
   }
  },
  "js/typo.js": {
   "sha": "b22a347795f1",
   "keys": {
+   "administrator.html": 2,
    "assessment.html": 2,
-   "cabinet.html": 2,
    "expert-report.html": 2,
    "expert.html": 2,
    "index.html": 2,
    "intro.html": 2,
    "role.html": 2,
+   "vedushchiy.html": 2,
    "vitrina.html": 2
   }
  }

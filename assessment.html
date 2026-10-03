@@ -16,7 +16,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=248" />
+<link rel="stylesheet" href="css/styles.css?v=256" />
 </head>
 <body class="p-assess">
 
@@ -68,29 +68,8 @@
     <p class="kicker">✓ Ассессмент закончен</p>
     <h2>Письмо ушло Агееву</h2>
     <p class="section-lead" style="margin:0 0 24px;">Спасибо за уделённое время. Отчёт придёт вам отдельным письмом.</p>
-    <!-- ⚠ ВОПРОС ПОСЛЕ ДНЯ, А НЕ В ДНЕ (правка владельца 19.08, пункт А4 разбора
-         исследования). Кейс «Искры» списан с реального рынка, и часть участников
-         узнаёт прототип. Узнавание может помогать (готовые ходы отрасли) или мешать
-         (пересказ чужой стратегии вместо своей) — сейчас мы не знаем даже знака, а
-         проверить это можно только одним способом: спросить и посмотреть на связь
-         с уровнями через десяток прогонов.
-         ПОЧЕМУ ЗДЕСЬ, А НЕ В МАРШРУТЕ. Спрошенное внутри дня меняет день: участник
-         начинает сверяться с прототипом, о котором мы сами напомнили. Здесь день уже
-         закрыт, письмо отправлено, менять ответы нельзя.
-         ОТВЕТ НЕ УЕЗЖАЕТ СУДЬЕ. Он пишется в отдельную колонку debriefJson, а вход
-         судьи собирается по явному списку окон V2_JUDGE_TASKS — колонки для него не
-         существует, как и для marksJson. Иначе судья читал бы название реальной
-         компании и рассуждал бы о ней.
-         МОДЕЛЬ ЭТОГО ЭКРАНА НЕ ВИДИТ: harness.html не грузит engine.js, а прогон по
-         API идёт шагами маршрута. Так и просил владелец — «в харнесс не нужно».
-         КАК ВЫКЛЮЧИТЬ, когда пилотные прогоны кончатся: ASK_DEBRIEF в js/engine.js. -->
-    <div id="debriefBox" style="display:none;margin:0 0 24px;">
-      <p class="section-lead" style="margin:0 0 12px;">Ещё один вопрос — уже не про ассессмент. Он не влияет на отчёт: день закончен, ответы отправлены. Можно пропустить.</p>
-      <p class="section-lead" style="margin:0 0 8px;">Пока вы разбирались с «Искрой», вам вспоминалась какая-нибудь реальная компания?</p>
-      <textarea id="debriefText" class="mx-input" rows="3" placeholder="если да — какая именно; если нет — так и напишите"></textarea>
-      <button type="button" class="btn btn-primary btn-block" id="debriefSend" style="margin-top:12px;">Отправить →</button>
-      <p class="section-lead" id="debriefDone" style="display:none;margin:12px 0 0;">Спасибо — записали.</p>
-    </div>
+    <!-- Вопроса про узнавание прототипа здесь больше нет (владелец 03.10: «было для теста,
+         полностью вычищаем»). Ответы, собранные до 03.10, остались в колонке debriefJson. -->
     <a class="btn btn-primary btn-block" href="index.html">На главную →</a>
   </div>
 </div>
@@ -316,7 +295,7 @@
 <script src="js/api.js?v=7"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=9"></script>
-<script src="js/scenes.js?v=194"></script>
+<script src="js/scenes.js?v=195"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -332,6 +311,6 @@
      насмерть: TypeError на чтении subFacts, а дальше — пустая колонка без поля ответа
      и без кнопки. Ловится проверкой eval/lint_wiring.js. -->
 <script src="js/mech-fields.js?v=50"></script>
-<script src="js/engine.js?v=138"></script>
+<script src="js/engine.js?v=145"></script>
 </body>
 </html>

@@ -17,7 +17,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=248" />
+<link rel="stylesheet" href="css/styles.css?v=256" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -70,13 +70,11 @@
            неизбежно тащил куски настоящих реплик. -->
       <figure class="scr" aria-hidden="true">
         <div class="scr-frame">
-          <div class="scr-top"><span class="scr-logo"></span><span class="scr-bar w40"></span></div>
+          <!-- ⚠ ЛЕВОЙ КОЛОНКИ «ЭТАПЫ» НА ЭКРАНЕ БОЛЬШЕ НЕТ (03.10, замечание владельца: «картинку не
+               поменял»): этапы и время — в шапке, полосой под ней. Схема следует экрану. -->
+          <div class="scr-top"><span class="scr-logo"></span><span class="scr-k scr-k-top" id="scrTopK">Этапы и время</span></div>
+          <div class="scr-rail"><i class="on"></i><i class="on"></i><i class="now"></i><i></i><i></i><i></i><i></i></div>
           <div class="scr-body">
-            <div class="scr-col scr-left">
-              <span class="scr-k">Этапы</span>
-              <span class="scr-bar w70"></span><span class="scr-bar w55"></span>
-              <span class="scr-bar w80"></span><span class="scr-bar w60"></span>
-            </div>
             <div class="scr-col scr-mid">
               <span class="scr-k">Разговор и ответ</span>
               <span class="scr-bubble"><span class="scr-bar w80"></span><span class="scr-bar w60"></span></span>
@@ -166,7 +164,7 @@
 </div>
 
 <script src="js/main.js?v=12"></script>
-<script src="js/scenes.js?v=194"></script>
+<script src="js/scenes.js?v=195"></script>
 <script>
   (function () {
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('roleBody')) return;
@@ -209,6 +207,9 @@
     // значит 1–3 его, а «что ещё важно знать» продолжает с 4. Числами номера нигде не
     // написаны — считаются от длины списков, поэтому смена порядка стоит одну строку.
     document.getElementById('screenKicker').textContent = sys.screenTitle || 'Экран ассессмента — два блока';
+    // Подпись шапки на схеме — как в тексте рядом: без таймера времени вверху нет.
+    var scrK = document.getElementById('scrTopK');
+    if (scrK && !(Number(sess.timerMin) > 0)) scrK.textContent = 'Этапы';
     document.getElementById('roleScreen').innerHTML = screen.map(prin).join('');
     document.getElementById('roleRules').innerHTML =
       rules.map(function (r, i) { return prin(r, screen.length + i); }).join('');

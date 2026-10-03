@@ -2349,33 +2349,47 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    всю ширину: отрезок этапа по его времени, пройденные залиты, сэкономленные минуты —
    штриховкой на текущем. У будущих этапов только номер: карту дня не показываем
    (решение 06.08). Вермилиона внутри ассессмента нет (07.08) — предупреждение синее. */
-#assessRoot .station-header { flex-wrap: wrap; row-gap: 6px; }
-.tmr { display: flex; align-items: center; gap: 28px; margin-left: auto; margin-right: 8px; min-width: 0; }
+/* ⚠ ПОЛОСА В ОДНОМ РЯДУ С ШАПКОЙ (владелец 03.10: «сделать воздушнее, сократить по длине,
+   в конце — блок с общим таймером»): лого · полоса · общий таймер · номер. */
+#assessRoot .station-header { flex-wrap: nowrap; gap: 32px; }
+#assessRoot .station-header-left { order: 1; flex: none; }
+#assessRoot .station-header-right { order: 4; flex: none; }
+.tmr { display: flex; align-items: center; gap: 28px; margin-left: auto; min-width: 0; order: 3; flex: none; }
 .tmr:empty { display: none; }
 .tmr-blk { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
 .tmr-k { font-size: 10.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .tmr-v { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
 .tmr-big { font-size: 22px; font-weight: 700; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
 .tmr-of { font-size: var(--fs-util); color: var(--muted); }
-.tmr-bonus { font-size: 12px; font-weight: 600; color: var(--jb-ink); background: var(--band); border: 1px solid var(--band-line); border-radius: 999px; padding: 2px 8px; }
-.tmr-sep { width: 1px; align-self: stretch; background: var(--hairline); }
-.tmr-total .tmr-big { font-size: 16px; font-weight: 600; color: var(--ink); }
-.tmr-idle .tmr-big { color: var(--muted); }
-.tmr.is-warn .tmr-stage .tmr-big, .tmr.is-warn .tmr-stage .tmr-k { color: var(--jb-ink); }
-.tmr-rail { flex: 0 0 100%; order: 9; }
+.tmr-rail { order: 2; flex: 1 1 760px; min-width: 0; max-width: 820px; margin-left: auto; padding-top: 14px; }
+
 /* На листе «Введение в роль» ни этапов, ни времени нет (решение владельца 03.10): они
    появляются с экрана материалов — отсчёт и начинается с кнопки «К пакету материалов». */
 .station-shell.is-role .tmr, .station-shell.is-role .tmr-rail { display: none; }
 .tmr-rail:empty { display: none; }
-.tmr-segs { display: flex; gap: 3px; height: 6px; }
-.tmr-seg { position: relative; background: var(--soft); border-radius: 2px; overflow: hidden; min-width: 6px; }
+.tmr-segs { display: flex; gap: 5px; height: 26px; }
+.tmr-seg { position: relative; background: var(--soft); border-radius: 5px; overflow: hidden; min-width: 22px;
+  display: flex; align-items: center; justify-content: center; }
 .tmr-seg.is-done { background: var(--jb-ink); }
-.tmr-seg.is-now-flat { background: var(--jb); }
-.tmr-fill { position: absolute; top: 0; bottom: 0; left: 0; background: var(--jb-ink); }
-.tmr-extra { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--jb) 0 3px, var(--band-line) 3px 6px); }
-.tmr-names { display: flex; gap: 3px; margin-top: 4px; }
-.tmr-names span { font-size: 10.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 6px; }
-.tmr-names span.is-now { color: var(--ink); font-weight: 700; }
+.tmr-seg.is-now { background: var(--band); justify-content: flex-start; }
+/* расход — линией по низу отрезка: надпись в отрезке остаётся читаемой */
+.tmr-fill { position: absolute; left: 0; bottom: 0; height: 4px; background: var(--jb-ink); }
+.tmr-seg.is-warn .tmr-fill { background: #1f4f86; }
+.tmr-extra { position: absolute; top: 0; bottom: 0; right: 0; border-left: 2px solid var(--paper);
+  background: repeating-linear-gradient(135deg, #d6e7f8 0 5px, #eef5fc 5px 10px);
+  display: flex; align-items: center; justify-content: center; }
+.tmr-extra b { font-size: 12px; font-weight: 600; color: var(--jb-ink); white-space: nowrap; background: var(--paper);
+  border-radius: 999px; padding: 1px 7px; }
+.tmr-label { position: absolute; left: 0; top: 0; bottom: 0; display: flex; align-items: center; padding: 0 10px;
+  font-size: 12px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tmr-mark { font-size: 12px; font-weight: 600; color: var(--paper); }
+.tmr-mark.is-next { color: var(--muted); font-weight: 500; }
+.tmr-names { display: flex; gap: 5px; margin-top: 5px; height: 14px; }
+.tmr-names span { min-width: 22px; }
+.tmr-names span > em { font-style: normal; font-size: 11px; font-weight: 600; color: var(--ink); white-space: nowrap; padding-left: 10px; }
+.tmr-names span.is-warn > em { color: var(--jb-ink); }
+.tmr-names span.is-now.is-warn { color: var(--jb-ink); }
+.tmr-names span.is-now.is-end { display: flex; justify-content: flex-end; }
 /* межэтапный экран: откуда минуты */
 .interlude-time { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 6px 24px;
   margin: 0 0 22px; padding-top: 16px; border-top: 1px solid var(--hairline); font-size: var(--fs-dense); }
@@ -4253,9 +4267,14 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .scr-logo { width: 46px; height: 8px; border-radius: 2px; background: var(--ink); opacity: .75; }
 /* Схема живёт в столбике страницы (≈700px), а не во всю ширину: пропорции колонок
    те же, что на экране, но полосы короче и ряд ниже. */
-.scr-body { display: grid; grid-template-columns: 0.75fr 1.4fr 1.4fr; min-height: 170px; }
+.scr-body { display: grid; grid-template-columns: 1.2fr 1fr; min-height: 170px; }
+/* полоса этапов под шапкой схемы — как на экране (03.10) */
+.scr-k-top { margin-left: auto; }
+.scr-rail { display: flex; gap: 3px; padding: 6px 10px; border-bottom: 1px solid var(--hairline); background: var(--paper); }
+.scr-rail i { flex: 1; height: 5px; border-radius: 2px; background: var(--soft); }
+.scr-rail i.on { background: var(--jb-ink); }
+.scr-rail i.now { background: var(--jb); }
 .scr-col { display: flex; flex-direction: column; gap: 7px; padding: 10px; min-width: 0; }
-.scr-left { background: var(--soft); border-right: 1px solid var(--hairline); }
 .scr-mid { border-right: 1px solid var(--hairline); }
 .scr-k {
   font-size: var(--label-size); font-weight: var(--label-weight); letter-spacing: var(--label-track);
@@ -4283,7 +4302,7 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .scr-tabs b { font-weight: 600; color: var(--ink); border-bottom: 2px solid var(--accent); padding-bottom: 2px; }
 .scr-tabs i { font-style: normal; color: var(--muted-soft); }
 .scr figcaption { margin-top: 8px; font-size: var(--fs-util); color: var(--muted-soft); }
-@media (max-width: 700px) { .scr-body { grid-template-columns: 1fr; } .scr-left, .scr-mid { border-right: none; } }
+@media (max-width: 700px) { .scr-body { grid-template-columns: 1fr; } .scr-mid { border-right: none; } }
 
 /* ── РЕПЛИКИ ПОЯВЛЯЮТСЯ ПО ОДНОЙ (решение владельца 07.08) ──
    Реплика ждёт своей очереди скрытой и въезжает снизу; рабочая область до конца
