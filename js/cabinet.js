@@ -182,6 +182,15 @@
   var isFull = function () { return role === 'full'; };
   var rows = [];
   var roster = [];
+  // ⚠ ТЁЗКИ В ПОТОКЕ (решение владельца 03.10). Самозапись имён не сверяет: один человек,
+  // потерявший номер, может записаться второй раз, а двое настоящих тёзок — тоже. Отличить
+  // их код не берётся: строки с одинаковыми именем и фамилией в одном потоке помечаются,
+  // и ведущий после ассессмента сам просит этих людей подойти. Ключ — поток + ФИО.
+  var nameTwins = {};
+  function twinKey(p) {
+    var f = String(p.fio || '').toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
+    return f ? String(p.waveId || '') + '|' + f : '';
+  }
   var waves = [];
   var gate = document.getElementById('cabGate');
   var content = document.getElementById('cabContent');
@@ -368,6 +377,10 @@
       out.push({ code: 'версии', text: 'судейство закрыто: сцены ' + p.scenesVersion +
         ' против судейских ' + p.expectScenes });
     }
+    if (nameTwins[twinKey(p)]) {
+      out.push({ code: 'тёзки', text: 'в этом потоке есть другой номер с теми же именем и фамилией. ' +
+        'Это могут быть тёзки или один человек, записавшийся дважды. Попросите их подойти после ассессмента' });
+    }
     if (p.stale) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после суда' });
     if (p.queue && p.queue.error) out.push({ code: 'очередь', text: 'заданий с ошибкой: ' + p.queue.error });
     if (p.flags) {
@@ -392,6 +405,20 @@
 
   function render(participants) {
     if (participants) rows = participants;
+    // Тёзок считаем по ПОЛНОМУ списку, а не по видимому: близнец может быть спрятан
+    // фильтром. Считаются разные НОМЕРА — две строки одного номера тёзками не являются.
+    nameTwins = {};
+    (function () {
+      var bibsOf = {};
+      rows.forEach(function (p) {
+        var k = twinKey(p);
+        if (!k) return;
+        (bibsOf[k] = bibsOf[k] || {})[bib6(p.bib)] = true;
+      });
+      Object.keys(bibsOf).forEach(function (k) {
+        if (Object.keys(bibsOf[k]).length > 1) nameTwins[k] = true;
+      });
+    })();
     document.getElementById('cabCount').textContent = rows.length + ' в листе Answers';
     if (!rows.length) {
       listHost.innerHTML = '<p class="section-lead">Пока никто не проходил день на новой платформе. Как только появится первая строка в листе Answers, она будет здесь.</p>';
@@ -465,6 +492,10 @@
       filterCount.textContent = need ? String(need) : '0';
     }
     listHost.innerHTML = html;
+    // ⚠ КАРТОЧКА — ТОЛЬКО ВЛАДЕЛЬЦУ (решение владельца 29.09, оценку запускает тоже только
+    // он — 03.10). Сервер ведущему карточку не отдаёт, и щелчок по строке приводил к
+    // «Не удалось загрузить карточку». У ведущего строка не открывается вовсе.
+    if (!isFull()) return;
     listHost.querySelectorAll('tr[data-ix]').forEach(function (tr) {
       tr.tabIndex = 0;
       tr.addEventListener('click', function () { openCard(rows[Number(tr.getAttribute('data-ix'))]); });
@@ -1439,12 +1470,20 @@
     window.imp.callApi('v2Detail', { password: pw, bib: p.bib }).then(function (d) {
       if (!d || !d.ok) { detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить карточку.</p>'; return; }
       var q = d.queue || {};
+      // Недобранная очередь: задания уже стоят в листе и ждут разбора. Её отдельная
+      // кнопка не ставит ничего заново, а доедает оставшееся (решение владельца 03.10).
+      // Без неё единственным способом дооценить человека было заплатить за весь набор
+      // ещё раз (033011, 20.09: доехали 2 из 13).
+      var qLeft = (q.queued || 0) + (q.running || 0);
       detailBody.innerHTML =
         '<div class="cab-actions">' +
           '<button type="button" class="btn btn-primary btn-sm" id="cabJudge">' +
             (d.scores ? 'Пересудить всё' : 'Оценить') + '</button>' +
+          (qLeft ? '<button type="button" class="btn btn-ghost btn-sm" id="cabJudgeResume" ' +
+            'title="Разобрать то, что уже стоит в очереди. Сделанные задания заново не считаются и не оплачиваются">' +
+            'Продолжить оценку (' + qLeft + ')</button>' : '') +
           '<span class="cab-dim" id="cabJudgeState">' +
-            (q.queued || q.running ? 'в очереди: ' + (q.queued + q.running) + ' из ' + q.total
+            (qLeft ? 'в очереди: ' + qLeft + ' из ' + q.total
               : q.error ? 'заданий с ошибкой: ' + q.error : '') + '</span>' +
         '</div>' +
         // ⚠ ПОРЯДОК: ОЦЕНКА ПЕРВОЙ (решение владельца 12.08). Главное, с чем работает
@@ -1456,7 +1495,17 @@
         scoresBlock(d) + foldBlock('Ход дня и все ответы', answersBlock(d, true)) +
         foldBlock('Флаги целиком', flagsBlock(d, true)) +
         foldBlock('Процесс и версии', processBlock(d, true));
-      document.getElementById('cabJudge').addEventListener('click', function () { judge(p.bib, this); });
+      // Обе кнопки гасим на время работы вместе: пока цикл идёт, вторая привела бы
+      // к двум разборам одной очереди с одного экрана.
+      var judgeBtn = document.getElementById('cabJudge');
+      var resumeBtn = document.getElementById('cabJudgeResume');
+      var btns = [judgeBtn, resumeBtn];
+      judgeBtn.addEventListener('click', function () { judge(p.bib, btns); });
+      if (resumeBtn) {
+        resumeBtn.addEventListener('click', function () {
+          drainQueue(p.bib, btns, document.getElementById('cabJudgeState'));
+        });
+      }
       wireOverrides(p.bib);
       if (window.imp && window.imp.typoDom) window.imp.typoDom(detailBody);
       detailBody.scrollTop = 0;
@@ -1514,15 +1563,20 @@
     });
   }
 
-  // Судейство: ставим все задания судьи в очередь и разбираем её вызовами по три.
-  // Числа здесь нет намеренно: состав заданий живёт в бэкенде (V2_JUDGE_TASKS), и
-  // прежнее «восемь» разошлось с ним молча.
+  // Разбор очереди: берём по три задания за вызов, пока свои не кончатся. Числа
+  // заданий здесь нет намеренно: состав живёт в бэкенде (V2_JUDGE_TASKS), и прежнее
+  // «восемь» разошлось с ним молча.
   // Триггер по времени в живом деплое недоступен (нет права script.scriptapp),
   // поэтому цикл здесь — не костыль, а рабочий путь: каждый вызов укладывается
   // в шесть минут исполнения Apps Script с запасом.
-  function judge(bib, btn) {
-    btn.disabled = true;
-    var state = document.getElementById('cabJudgeState');
+  //
+  // ⚠ ВЫДЕЛЕНО ИЗ judge() 03.10 (перенос из ветки 20.09, решение владельца 03.10).
+  // Постановка в очередь и её разбор — разные действия с разной ценой, а кнопка была
+  // одна. judgeAnswers переписывает в `queued` ВСЕ задания, то есть любая пауза стоила
+  // полного пересуда. «Продолжить оценку» зовёт только этот разбор.
+  function drainQueue(bib, btns, state) {
+    var lock = function (on) { (btns || []).forEach(function (b) { if (b) b.disabled = on; }); };
+    lock(true);
     // Сколько заданий оставалось на прошлом круге и сколько кругов подряд без движения:
     // по этим двум числам цикл решает, ждать дальше или сдаться (см. ветку обрыва ниже).
     var lastLeft = Infinity, stall = 0;
@@ -1542,19 +1596,21 @@
           // без движения.
           return window.imp.callApi('v2Detail', { password: pw, bib: bib }).then(function (d) {
             var q = d && d.queue;
-            if (!q) { state.textContent = 'бэкенд не ответил — нажмите «Оценить» ещё раз'; btn.disabled = false; return; }
+            if (!q) { state.textContent = 'бэкенд не ответил — нажмите «Продолжить оценку»'; lock(false); return; }
             var left = (q.queued || 0) + (q.running || 0);
             if (left <= 0) {
-              btn.disabled = false;
+              lock(false);
               state.textContent = 'готово: заданий сделано ' + (q.done || 0) +
                 ((q.error || 0) ? ' · с ошибками: ' + q.error : '');
               return refresh().then(function () { openCard({ bib: bib, fio: '' }); });
             }
             if (left < lastLeft) { lastLeft = left; stall = 0; }
             else if (++stall >= 3) {
-              btn.disabled = false;
+              lock(false);
+              // ⚠ ЗОВЁМ ИМЕННО «ПРОДОЛЖИТЬ», А НЕ «ОЦЕНИТЬ»: задания уже стоят в листе,
+              // и «Оценить» поставило бы их заново — вместе с теми, что сделаны.
               state.textContent = 'очередь не двигается: осталось ' + left +
-                ' заданий · нажмите «Оценить» ещё раз или посмотрите ошибки в листе JudgeQueue';
+                ' заданий · нажмите «Продолжить оценку» или посмотрите ошибки в листе JudgeQueue';
               return;
             }
             state.textContent = 'оцениваю… (в очереди осталось ' + left + ')';
@@ -1574,7 +1630,7 @@
           state.textContent = 'оцениваю… (сделано ' + total + ', осталось ' + r.left + ')';
           return refresh(true).then(function () { return step(total); });
         }
-        btn.disabled = false;
+        lock(false);
         // Чужие недобранные строки называем вслух: они в листе есть, но этой кнопкой
         // не разбираются — иначе фасилитатор решит, что очередь пуста.
         var alien = Math.max(0, (r.leftAll || 0) - (r.left || 0));
@@ -1587,16 +1643,27 @@
         return refresh().then(function () { openCard({ bib: bib, fio: '' }); });
       });
     };
+    return step(0);
+  }
+
+  // Судейство с нуля: ставим все задания в очередь и разбираем её. Кнопка платная —
+  // judgeAnswers переписывает в `queued` и те строки, что уже сделаны, то есть счёт
+  // идёт заново за все задания. Поэтому у того, у кого оценка уже есть, она
+  // называется «Пересудить всё».
+  function judge(bib, btns) {
+    var state = document.getElementById('cabJudgeState');
+    var lock = function (on) { (btns || []).forEach(function (b) { if (b) b.disabled = on; }); };
+    lock(true);
     window.imp.callApi('judgeAnswers', { password: pw, bib: bib }).then(function (res) {
       if (!res || !res.ok) {
-        btn.disabled = false;
+        lock(false);
         var e = res && res.error ? res.error : 'не удалось поставить в очередь';
         state.textContent = e === 'scenes_version_mismatch'
           ? 'версия сцен в ответах не совпадает с судейской — судейство отказано (это защита, а не сбой)'
           : e === 'no_score' ? 'участник помечен «не оценивать»' : String(e);
         return;
       }
-      return step(0);
+      return drainQueue(bib, btns, state);
     });
   }
 
