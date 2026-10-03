@@ -4397,3 +4397,103 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .cab-role { font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
             color: var(--muted); border: 1px solid var(--hairline); border-radius: 999px;
             padding: 3px 9px; }
+
+/* ===== Кабинет ведущего (vedushchiy.html, решение владельца 03.10) =====
+   Своя простая страница: создать поток → ссылка и QR → прохождение. Статусы —
+   голубым («идёт» — бледная заливка, «закончено» — залитый), как «вы» в дне. */
+.ved { background: var(--paper); }
+.ved-hd {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  max-width: 1040px; margin: 0 auto; padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+.ved-who { color: var(--muted); font-size: 14px; }
+.ved-who a { color: var(--muted); }
+.ved-who a:hover { color: var(--ink); }
+.ved-wrap { max-width: 1040px; margin: 0 auto; padding: 36px 24px 72px; }
+.ved-k {
+  margin: 0 0 6px; font-size: 12px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted-soft);
+}
+.ved-k-gap { margin-top: 44px; }
+.ved-h1 { max-width: none; margin: 0 0 20px; font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -.01em; }
+.ved-card { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 22px 24px; background: var(--paper); }
+.ved-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.ved-f { display: flex; flex-direction: column; gap: 6px; flex: 1 1 220px; font-size: 14px; }
+.ved-f > span { color: var(--muted); font-size: 13px; }
+.ved-f input, .ved-f select {
+  font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid #cfd1d4;
+  border-radius: var(--radius); background: var(--paper); color: var(--ink);
+}
+.ved-f input:focus, .ved-f select:focus { outline: 2px solid var(--jb); outline-offset: 0; border-color: var(--jb-ink); }
+.ved-f em { font-style: normal; color: var(--muted-soft); font-size: 13px; }
+.ved-list { display: flex; flex-direction: column; border-top: 1px solid var(--hairline); }
+.ved-list a {
+  display: flex; justify-content: space-between; gap: 16px; padding: 14px 4px;
+  border-bottom: 1px solid var(--hairline); color: var(--ink); text-decoration: none;
+}
+.ved-list a:hover { background: var(--soft); }
+.ved-list a span { color: var(--muted); font-size: 14px; white-space: nowrap; }
+.ved-share { display: flex; gap: 28px; align-items: flex-start; margin-bottom: 24px; }
+.ved-share > div { flex: 1; min-width: 0; }
+.ved-qr {
+  flex: none; width: 200px; height: 200px; padding: 10px; border: 1px solid var(--hairline);
+  border-radius: var(--radius); background: #fff; cursor: zoom-in;
+}
+.ved-qr svg { display: block; width: 100%; height: 100%; }
+.ved-link {
+  margin: 4px 0 14px; padding: 12px 14px; background: var(--soft); border-radius: var(--radius);
+  font-size: 16px; font-weight: 500; word-break: break-all; user-select: all;
+}
+.ved-dim { color: var(--muted); font-size: 14px; margin: 14px 0 0; }
+.ved-meta { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; margin: -8px 0 22px; font-size: 14px; color: var(--muted); }
+.ved-meta a { color: var(--jb-ink); }
+.ved-live { display: inline-flex; align-items: center; gap: 7px; }
+.ved-live::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%; background: #2fa36b;
+  animation: ved-pulse 2s ease-in-out infinite;
+}
+@keyframes ved-pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .ved-live::before { animation: none; } }
+.ved-tabs { display: flex; gap: 26px; border-bottom: 1px solid var(--hairline); margin-bottom: 18px; }
+.ved-tabs button {
+  font: inherit; font-size: 15px; font-weight: 500; background: none; border: 0; cursor: pointer;
+  padding: 10px 0 12px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.ved-tabs button.is-on { color: var(--ink); border-bottom-color: var(--ink); }
+.ved-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.ved-table th, .ved-table td { border: 0; text-align: left; white-space: normal; min-width: 0; background: none; }
+.ved-table th {
+  text-align: left; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted-soft); padding: 8px 12px 10px 0; border-bottom: 1px solid var(--hairline);
+}
+.ved-table td { padding: 13px 12px 13px 0; border-bottom: 1px solid var(--hairline); vertical-align: middle; }
+.ved-table td:nth-child(3), .ved-table td:nth-child(4) { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ved-name {
+  font: inherit; font-weight: 600; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer;
+  text-decoration: underline dotted #b8babd; text-underline-offset: 4px;
+}
+.ved-name:hover { text-decoration-color: var(--ink); }
+.ved-num {
+  margin-left: 10px; padding: 2px 8px; border-radius: 6px; background: var(--soft);
+  font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.ved-st { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; color: var(--muted); background: var(--soft); white-space: nowrap; }
+.ved-st.is-run { background: var(--band); color: var(--jb-ink); }
+.ved-st.is-done { background: var(--jb-ink); color: #fff; }
+.ved-empty { padding: 40px 0; color: var(--muted); text-align: center; }
+.ved-set { display: flex; flex-direction: column; gap: 18px; max-width: 560px; }
+.ved-set .ved-f { flex: none; }
+.ved-check { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.ved-qrfull {
+  position: fixed; inset: 0; z-index: 100; background: #fff; align-items: center; justify-content: center; cursor: zoom-out;
+}
+.ved-qrfull-in { text-align: center; }
+.ved-qrfull-in > div { width: min(72vh, 86vw); height: min(72vh, 86vw); margin: 0 auto 18px; }
+.ved-qrfull-in svg { width: 100%; height: 100%; }
+.ved-qrfull-in p { margin: 6px 0; font-size: 20px; font-weight: 500; word-break: break-all; }
+.ved-qrfull-in p.ved-dim { font-size: 14px; }
+@media (max-width: 720px) {
+  .ved-share { flex-direction: column; }
+  .ved-table th:nth-child(4), .ved-table td:nth-child(4) { display: none; }
+}

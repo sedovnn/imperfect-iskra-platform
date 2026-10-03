@@ -15,8 +15,7 @@
   "keys": {
    "administrator.html": 9,
    "assessment.html": 9,
-   "harness.html": 9,
-   "vedushchiy.html": 9
+   "harness.html": 9
   }
  },
  "js/boot-loading.js": {
@@ -28,8 +27,7 @@
  "js/cabinet.js": {
   "sha": "6ae462a1e5b7",
   "keys": {
-   "administrator.html": 44,
-   "vedushchiy.html": 44
+   "administrator.html": 44
   }
  },
  "js/case-ref.js": {
@@ -124,8 +122,13 @@
   "keys": {
    "administrator.html": 96,
    "assessment.html": 96,
-   "harness.html": 96,
-   "vedushchiy.html": 96
+   "harness.html": 96
+  }
+ },
+ "js/qr.js": {
+  "sha": "11e4cf1ddaef",
+  "keys": {
+   "vedushchiy.html": 1
   }
  },
  "js/report-texts.js": {
@@ -163,6 +166,12 @@
    "role.html": 2,
    "vedushchiy.html": 2,
    "vitrina.html": 2
+  }
+ },
+ "js/vedushchiy.js": {
+  "sha": "b4f095f09557",
+  "keys": {
+   "vedushchiy.html": 1
   }
  }
 }
