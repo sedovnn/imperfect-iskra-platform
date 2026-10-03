@@ -183,6 +183,17 @@
     });
     return fmtMin(t.totalMin * 60 - used);
   }
+  // Оценка в строке (решение владельца 03.10): идёт ли оценка и итог. Запускает её владелец;
+  // уровней по способностям ведущему сервер не отдаёт.
+  function scoreOf(p) {
+    if (!p) return '<span class="ved-dim0">—</span>';
+    if (p.noScore) return '<span class="ved-dim0">не оценивается</span>';
+    var q = p.queue || {};
+    if (q.queued || q.running) return '<span class="ved-st is-run">оценивается' + (q.total ? ' (' + (q.done || 0) + ' из ' + q.total + ')' : '') + '</span>';
+    if (p.total !== null && p.total !== undefined) return '<b class="ved-total">' + esc(p.total) + '</b><span class="ved-dim0"> из 50</span>';
+    if (p.finished) return '<span class="ved-dim0">ждёт оценки</span>';
+    return '<span class="ved-dim0">—</span>';
+  }
   function rowsOf(w) {
     var byBib = {};
     data.participants.forEach(function (p) { byBib[String(p.bib)] = p; });
@@ -214,13 +225,19 @@
     var body;
     if (tab === 'run') {
       body = rows.length
-        ? '<table class="ved-table"><thead><tr><th>Участник</th><th>Где сейчас</th><th>Осталось</th><th>Вошёл</th></tr></thead><tbody>' +
+        // ⚠ КНОПКИ ОТЧЁТА — ЗАГЛУШКИ (решение владельца 03.10): видны, но не работают, пока
+        // генератор отчёта не подключён к оценкам (стрим 05). Отчёт откроется и ведущему.
+        ? '<div class="ved-bar"><button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: отчёты всех участников потока">Отчёты участников · скоро</button>' +
+            '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: сводный отчёт по потоку">Отчёт по потоку · скоро</button></div>' +
+          '<table class="ved-table"><thead><tr><th>Участник</th><th>Где сейчас</th><th>Осталось</th><th>Вошёл</th><th>Оценка</th><th></th></tr></thead><tbody>' +
           rows.map(function (x) {
             var where = whereOf(x.p), bib = String(x.r.bib);
             return '<tr><td><button type="button" class="ved-name" data-bib="' + esc(bib) + '">' + esc(x.r.fio || 'без имени') + '</button>' +
               (openBib[bib] ? '<span class="ved-num">№ ' + esc(bib) + '</span>' : '') + '</td>' +
               '<td><span class="ved-st ' + where.cls + '">' + esc(where.text) + '</span></td>' +
-              '<td>' + esc(leftOf(x.p)) + '</td><td>' + esc(hhmm(x.r.registeredAt)) + '</td></tr>';
+              '<td>' + esc(leftOf(x.p)) + '</td><td>' + esc(hhmm(x.r.registeredAt)) + '</td>' +
+              '<td>' + scoreOf(x.p) + '</td>' +
+              '<td class="ved-acts"><button type="button" class="btn btn-ghost btn-xs adm-soon" disabled title="Скоро: отчёт откроется, когда участник оценён">Отчёт</button></td></tr>';
           }).join('') + '</tbody></table>' +
           '<p class="ved-dim">Нажмите на имя — покажется номер участника (нужен, если человек входит с другого компьютера).</p>'
         : '<p class="ved-empty">Пока никого. Участники появятся здесь сами, как только зарегистрируются по ссылке.</p>';
