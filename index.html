@@ -17,7 +17,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=247" />
+<link rel="stylesheet" href="css/styles.css?v=248" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -247,7 +247,10 @@
   var demoFlow = false;
   try { demoFlow = !!JSON.parse(sessionStorage.getItem('imp_demo') || 'null'); } catch (e) {}
 
-  if (demoFlow || /^\d{3}$/.test(waveParam)) {
+  // ⚠ КЛЮЧ ПОТОКА — ШЕСТЬ ЗНАКОВ С 29.09 (genWaveKey_ в code.js), прежние три цифры
+  // тоже открываются: ссылки 021 и 033 разосланы. Здесь проверялись только три цифры, и
+  // ссылка с новым ключом падала на заглушку (найдено владельцем 03.10).
+  if (demoFlow || /^\d{3}$/.test(waveParam) || /^[A-Za-z0-9]{6}$/.test(waveParam)) {
     var selfForm = document.getElementById('selfForm');
     var nameEl = document.getElementById('selfName');
     var selfErrEl = document.getElementById('selfErr');

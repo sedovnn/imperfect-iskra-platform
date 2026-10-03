@@ -571,7 +571,8 @@
       }
       segs += '<div class="' + cls + '" style="flex:' + w + '">' + inner + '</div>';
       var nm = i <= curIx ? (i + 1) + '. ' + esc((S.stageShort || [])[i] || sc.name) : 'этап ' + (i + 1);
-      names += '<span class="' + (i === curIx ? 'is-now' : '') + '" style="flex:' + w + '">' + nm + '</span>';
+      // Узкий отрезок (6 минут из 90) режет подпись многоточием — полное имя в подсказке.
+      names += '<span class="' + (i === curIx ? 'is-now' : '') + '" style="flex:' + w + '" title="' + nm + '">' + nm + '</span>';
     });
     rail.innerHTML = '<div class="tmr-segs">' + segs + '</div><div class="tmr-names">' + names + '</div>';
   }

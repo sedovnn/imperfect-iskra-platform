@@ -2363,6 +2363,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .tmr-idle .tmr-big { color: var(--muted); }
 .tmr.is-warn .tmr-stage .tmr-big, .tmr.is-warn .tmr-stage .tmr-k { color: var(--jb-ink); }
 .tmr-rail { flex: 0 0 100%; order: 9; }
+/* На листе «Введение в роль» ни этапов, ни времени нет (решение владельца 03.10): они
+   появляются с экрана материалов — отсчёт и начинается с кнопки «К пакету материалов». */
+.station-shell.is-role .tmr, .station-shell.is-role .tmr-rail { display: none; }
 .tmr-rail:empty { display: none; }
 .tmr-segs { display: flex; gap: 3px; height: 6px; }
 .tmr-seg { position: relative; background: var(--soft); border-radius: 2px; overflow: hidden; min-width: 6px; }
