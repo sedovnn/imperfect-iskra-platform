@@ -17,7 +17,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=246" />
+<link rel="stylesheet" href="css/styles.css?v=247" />
 </head>
 <body data-case-src="case-v8.html">
 
@@ -61,7 +61,7 @@
          чтения, значит теперь 1–3 у экрана и 4–6 у остального. Номера считает скрипт от
          длины списков, поэтому достаточно поменять смещение в одном месте. -->
 <div class="pgroup">
-      <p class="kicker" id="screenKicker">Экран ассессмента — три блока</p>
+      <p class="kicker" id="screenKicker">Экран ассессмента — два блока</p>
       <div id="roleScreen"><!-- S.system.screen --></div>
       <!-- СХЕМА ЭКРАНА, а не снимок (решение владельца 07.08: «посадим экран ассессмента,
            обезличенный и не раскрывающий ответов и вопросов»). Схема ничего не раскрывает
@@ -165,12 +165,17 @@
   </div>
 </div>
 
-<script src="js/main.js?v=11"></script>
-<script src="js/scenes.js?v=191"></script>
+<script src="js/main.js?v=12"></script>
+<script src="js/scenes.js?v=193"></script>
 <script>
   (function () {
     if (window.imp && window.imp.blockIfPhone && window.imp.blockIfPhone('roleBody')) return;
-    var S = window.imp.scenes, sys = (S && S.system) || {};
+    var S = window.imp.scenes;
+    // ⚠ УСТАНОВКА ПОД ВРЕМЯ ПОТОКА (решение владельца 03.10, стрим 00): время приходит с
+    // сервера при входе и лежит в сессии; без него (поток без таймера, демо) — прежние
+    // тексты. Модели установку собирает briefForModel из S.system без подмены.
+    var sess = (window.imp.loadSession && window.imp.loadSession()) || {};
+    var sys = (S && (S.systemFor ? S.systemFor(Number(sess.timerMin) || 0) : S.system)) || {};
     var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
     var br = function (s) { return esc(s).replace(/\n/g, '<br />'); };
     // ⚠ ПОДСТАНОВКИ {name} ЗДЕСЬ БОЛЬШЕ НЕТ. Она была нужна роли, а роль уехала на
@@ -203,7 +208,7 @@
     // ⚠ СМЕЩЕНИЕ ПЕРЕЕХАЛО НА rules (26.08). Экран стоит первым по порядку чтения,
     // значит 1–3 его, а «что ещё важно знать» продолжает с 4. Числами номера нигде не
     // написаны — считаются от длины списков, поэтому смена порядка стоит одну строку.
-    document.getElementById('screenKicker').textContent = sys.screenTitle || 'Экран ассессмента — три блока';
+    document.getElementById('screenKicker').textContent = sys.screenTitle || 'Экран ассессмента — два блока';
     document.getElementById('roleScreen').innerHTML = screen.map(prin).join('');
     document.getElementById('roleRules').innerHTML =
       rules.map(function (r, i) { return prin(r, screen.length + i); }).join('');

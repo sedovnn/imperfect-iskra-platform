@@ -51,7 +51,8 @@
     return S.windows().map(function (w) {
       return { key: w.save, mech: w.mech, conditional: w.conditional,
                label: w.mech ? (T[w.mech] || w.mech) : (w.label || w.save),
-               scene: (w.scene && w.scene.name) ? w.scene.name : '' };
+               scene: (w.scene && w.scene.name) ? w.scene.name : '',
+               sceneId: (w.scene && w.scene.id) || '' };
     });
   })();
 
@@ -615,6 +616,8 @@
         '<th class="cab-col-tight">Прогон ИИ</th>' +
         '<th class="cab-col-tight">Люди</th>' +
         '<th class="cab-col-tight">Вход по ссылке</th>' +
+        // Время на ассессмент задаёт ведущий своему потоку (решение владельца 03.10).
+        '<th class="cab-col-tight">Время</th>' +
         // ⚠ КОЛОНКА ВИДНА ТОЛЬКО ВЛАДЕЛЬЦУ (29.09). Ведущему показывать «ведёт: да» у
         // каждого своего потока незачем: он и так видит ровно свои.
         (isFull() ? '<th class="cab-col-tight">Ведёт</th>' : '') +
@@ -640,6 +643,13 @@
               (w.selfEnroll ? 'открыт' : 'закрыт') + '</label>' +
             (w.selfEnroll && w.num ? ' <button type="button" class="btn btn-ghost btn-xs cab-w-link">Ссылка</button>' : '') +
           '</td>' +
+          // ⚠ ВРЕМЯ ЗАМОРАЖИВАЕТСЯ У УЧАСТНИКА НА СТАРТЕ: правка потока задевает только тех,
+          // кто ещё не начал. Пусто — без таймера.
+          '<td class="cab-col-tight"><select class="cab-inp cab-w-tm" aria-label="Время на ассессмент">' +
+            [[0, 'без таймера'], [90, '1,5 ч'], [120, '2 ч'], [150, '2,5 ч'], [180, '3 ч']].map(function (o) {
+              return '<option value="' + o[0] + '"' + ((Number(w.timerMin) || 0) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+            }).join('') +
+          '</select></td>' +
           // ⚠ ВЫБОР КОНКРЕТНОГО ВЕДУЩЕГО, А НЕ ГАЛОЧКА (29.09). Галочка «ведёт» была
           // при одной безымянной роли; с именованными ведущими надо сказать, КТО.
           // Архивных в списке нет: отдать поток тому, у кого снят доступ, нельзя.
@@ -678,6 +688,11 @@
       q('.cab-w-ai').addEventListener('change', function () {
         call('setWaveMeta', { id: w.id, isAi: this.checked ? '1' : '' })
           .then(function (r) { return after(r, 'отметка сохранена'); });
+      });
+      q('.cab-w-tm').addEventListener('change', function () {
+        var v = Number(this.value) || 0;
+        call('setWaveMeta', { id: w.id, timerMin: v ? String(v) : '' })
+          .then(function (r) { return after(r, v ? 'время на ассессмент сохранено' : 'поток без таймера'); });
       });
       q('.cab-w-se').addEventListener('change', function () {
         var on = this.checked;
@@ -1004,6 +1019,15 @@
     } else {
       body = '<div class="cab-answer-text">' +
         (String((w && w.text) || '').trim() ? br(w.text) : '<i>промолчал</i>') + '</div>';
+    }
+    // ⚠ ЭТАП ЗАКРЫТ ПО ВРЕМЕНИ (решение владельца 03.10): ответ ушёл таким, каким был в
+    // момент обнуления таймера. Отличить «не успел» от «дописал, но не нажал» нельзя,
+    // поэтому пометка стоит на любом ответе этого этапа, записанном в момент закрытия.
+    var tm = (d.process && d.process.timing && d.process.timing.stages) || {};
+    var stT = s.sceneId && tm[s.sceneId];
+    if (st.state === 'done' && stT && stT.timedOut) {
+      body += '<p class="cab-dim">⏱ Этап закрыт по времени: участник мог не успеть дописать ответ, ' +
+        'поэтому оценка может быть неточной.</p>';
     }
     return '<div class="cab-answer is-' + st.state + '">' +
       '<div class="cab-answer-head">' +
@@ -1388,7 +1412,11 @@
       return '<details class="cab-ab' + (isOv ? ' is-overridden' : '') + (mine.length ? ' has-flag' : '') + '">' +
         '<summary>' +
           '<span class="cab-ab-name">' + esc(ABILITY_NAMES[a]) + '</span>' +
-          '<span class="cab-level">' + (lv === null ? '—' : 'L' + lv) + '</span>' +
+          // Пустой ответ судья не оценивает (уровня нет); называем это словами (решение
+          // владельца 03.10): «—» читалось как «ещё не судили».
+          '<span class="cab-level">' + ((lv === null || lv === '' || lv === undefined)
+            ? ((v.empty || (v.verdict && v.verdict.empty) || v.source === 'deterministic') ? 'не удалось оценить' : '—')
+            : 'L' + lv) + '</span>' +
           (mine.length ? '<span class="cab-ab-flag">нужен человек</span>' : '') +
           '<span class="cab-ab-line">' + line + '</span>' +
         '</summary>' +
@@ -1453,6 +1481,20 @@
     }
     if (p.runner) inner += '<p><span class="cab-k">Прогон модели:</span> ' + esc(JSON.stringify(p.runner)) + '</p>';
     inner += '<p><span class="cab-k">Начал:</span> ' + dt(p.startedAt) + ' · <span class="cab-k">закончил:</span> ' + (dt(p.finishedAt) || '—') + '</p>';
+    // Таймер (03.10): время потока и этапы, закрытые по времени.
+    if (p.timing && p.timing.totalMin) {
+      var SS = (window.imp.scenes && window.imp.scenes.scenes) || [];
+      var shortOf = function (id) {
+        var ix = -1, n = 0;
+        SS.forEach(function (sc) { if (!sc.hidden) { if (sc.id === id) ix = n; n++; } });
+        var nm = ((window.imp.scenes || {}).stageShort || [])[ix];
+        return ix >= 0 ? (ix + 1) + '. ' + (nm || id) : id;
+      };
+      var out = Object.keys(p.timing.stages || {}).filter(function (id) { return p.timing.stages[id].timedOut; });
+      inner += '<p><span class="cab-k">Таймер:</span> ' + (p.timing.totalMin / 60).toString().replace('.', ',') + ' ч · ' +
+        (out.length ? '<b>закрыты по времени:</b> ' + out.map(function (id) { return esc(shortOf(id)); }).join(', ')
+                    : 'все этапы закончены до конца времени') + '</p>';
+    }
     inner += '<p><span class="cab-k">Версии:</span> сцены ' + esc(d.versions.scenes) + ', кейс ' + esc(d.versions.caseVer) +
       ', портфель ' + esc(d.versions.backlog) +
       (d.versions.scenes !== d.versions.expectScenes || d.versions.caseVer !== d.versions.expectCase

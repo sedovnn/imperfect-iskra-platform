@@ -24,9 +24,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "1bff985b5cfb",
+  "sha": "8022285227ad",
   "keys": {
-   "cabinet.html": 42
+   "cabinet.html": 43
   }
  },
  "js/case-ref.js": {
@@ -57,9 +57,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "f52761239a4f",
+  "sha": "f3c3b8d825c3",
   "keys": {
-   "assessment.html": 134
+   "assessment.html": 137
   }
  },
  "js/expert-api.js": {
@@ -96,15 +96,15 @@
   }
  },
  "js/main.js": {
-  "sha": "1b784066ced4",
+  "sha": "0964606665b9",
   "keys": {
-   "assessment.html": 11,
-   "cabinet.html": 11,
-   "harness.html": 11,
-   "index.html": 11,
-   "intro.html": 11,
-   "role.html": 11,
-   "vitrina.html": 11
+   "assessment.html": 12,
+   "cabinet.html": 12,
+   "harness.html": 12,
+   "index.html": 12,
+   "intro.html": 12,
+   "role.html": 12,
+   "vitrina.html": 12
   }
  },
  "js/mech-fields.js": {
@@ -135,13 +135,13 @@
   }
  },
  "js/scenes.js": {
-  "sha": "bbd9bd723860",
+  "sha": "09e83beb0c90",
   "keys": {
-   "assessment.html": 191,
-   "cabinet.html": 191,
-   "harness.html": 191,
-   "intro.html": 191,
-   "role.html": 191
+   "assessment.html": 193,
+   "cabinet.html": 193,
+   "harness.html": 193,
+   "intro.html": 193,
+   "role.html": 193
   }
  },
  "js/typo.js": {

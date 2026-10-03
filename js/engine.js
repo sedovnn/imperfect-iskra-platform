@@ -220,7 +220,10 @@
       started: !!state.started,
       finished: !!state.finished,
       startedAt: state.startedAt,
-      finishedAt: state.finishedAt
+      finishedAt: state.finishedAt,
+      // Отметки таймера: время потока, старт и конец каждого этапа, закрыт ли по времени.
+      // Без таймера — null. Судье не уходит; кабинет показывает «закрыт по времени».
+      timing: state.timing || null
     };
   }
 
@@ -434,10 +437,180 @@
   }
 
   function advance() {
+    var was = route[state.cursor];
     state.cursor++;
     normalizeCursor();
+    var now = route[state.cursor];
+    // Этап кончился — фиксируем, сколько он занял: неистраченное уйдёт следующему.
+    if (was && (!now || now.sceneIx !== was.sceneIx)) stageEnd(S.scenes[was.sceneIx].id);
     saveState();
     render();
+  }
+
+  // ---------- таймер ассессмента (решения владельца 03.10, стрим 00) ----------
+  // Время задаёт ведущий потоку (90 / 120 / 150 / 180 минут); участник получает его при
+  // входе (session.timerMin) и ЗАМОРАЖИВАЕТ в прогоне на старте — правка потока позже его
+  // не задевает. Делится по этапам S.timerPlan. Отсчёт этапа идёт с момента, когда
+  // открывается работа: этап 1 — «К пакету материалов», где есть «Приступить» — с неё,
+  // в разговоре без неё — с появления поля ответа. Экран между этапами и вступительные
+  // реплики не считаются. Неистраченное время этапа уходит следующему. На нуле ответ
+  // сохраняется как есть, этап закрывается, участник идёт дальше; на последнем этапе —
+  // ассессмент заканчивается. Время считается от отметки старта, а не от открытой
+  // вкладки: перезагрузка отсчёт не сбрасывает, закрытая вкладка его не останавливает.
+  var TIMER_IDS = S.scenes.filter(function (sc) { return !sc.hidden; }).map(function (sc) { return sc.id; });
+  function timerOn() { return !!(state.timing && state.timing.totalMin); }
+  function timingInit() {
+    if (state.timing) return;
+    var tm = Number(session && session.timerMin) || 0;
+    var plan = S.timerPlan && S.timerPlan[tm];
+    if (!plan || plan.length !== TIMER_IDS.length) return;
+    var byId = {};
+    TIMER_IDS.forEach(function (id, i) { byId[id] = plan[i]; });
+    state.timing = { totalMin: tm, plan: byId, stages: {} };
+  }
+  function tStage(id) { return state.timing && state.timing.stages[id]; }
+  function msOf(iso) { var t = Date.parse(iso || ''); return isNaN(t) ? 0 : t; }
+  // Сколько секунд у этапа всего: его доля плюс перенос с прошлого.
+  function stageAllocSec(id) {
+    var st = tStage(id);
+    return (state.timing.plan[id] || 0) * 60 + ((st && st.bonusSec) || 0);
+  }
+  function stageUsedSec(id) {
+    var st = tStage(id);
+    if (!st || !st.startedAt) return 0;
+    var end = st.endedAt ? msOf(st.endedAt) : Date.now();
+    return Math.max(0, Math.floor((end - msOf(st.startedAt)) / 1000));
+  }
+  // Перенос на этап: неистраченное у предыдущего (по порядку) этапа, если тот закончен.
+  function bonusFor(id) {
+    var i = TIMER_IDS.indexOf(id);
+    if (i <= 0) return 0;
+    var prev = TIMER_IDS[i - 1], ps = tStage(prev);
+    if (!ps || !ps.endedAt) return 0;
+    // Целыми минутами: участник видит «10 мин + 6 мин = 16 мин», и секунды переноса
+    // делали бы сумму на экране на минуту больше слагаемых.
+    return Math.floor(Math.max(0, stageAllocSec(prev) - stageUsedSec(prev)) / 60) * 60;
+  }
+  function stageStart(id) {
+    if (!timerOn() || !id || tStage(id)) return;
+    state.timing.stages[id] = { startedAt: nowIso(), bonusSec: bonusFor(id) };
+    saveState();
+    timerPaint();
+  }
+  function stageEnd(id) {
+    var st = tStage(id);
+    if (!timerOn() || !st || st.endedAt) return;
+    st.endedAt = nowIso();
+  }
+  function curStageId() {
+    var cur = route[state.cursor];
+    return cur ? S.scenes[cur.sceneIx].id : '';
+  }
+  function fmtMin(sec) {
+    var m = Math.max(0, Math.ceil(sec / 60));
+    if (m < 60) return m + ' мин';
+    var h = Math.floor(m / 60), mm = m % 60;
+    return h + ' ч' + (mm ? ' ' + mm + ' мин' : '');
+  }
+  function fmtClock(sec) {
+    sec = Math.max(0, sec);
+    var m = Math.floor(sec / 60), ss = sec % 60;
+    return m + ':' + (ss < 10 ? '0' : '') + ss;
+  }
+  // Шапка: два счёта и полоса. Без таймера — «Этап N из 7» и полоса из равных отрезков.
+  function timerPaint() {
+    var box = el('tmrBox'), rail = el('tmrRail');
+    if (!box || !rail) return;
+    var cur = route[state.cursor];
+    if (!cur || state.finished) { box.innerHTML = ''; rail.innerHTML = ''; return; }
+    var curId = S.scenes[cur.sceneIx].id, curIx = TIMER_IDS.indexOf(curId);
+    var no = S.stageNo(cur.sceneIx), cnt = S.stageCount();
+    var on = timerOn();
+    var st = on && tStage(curId);
+    var running = !!(st && st.startedAt && !st.endedAt);
+    if (!on) {
+      box.innerHTML = '<div class="tmr-blk"><span class="tmr-k">Этап</span>' +
+        '<span class="tmr-v"><span class="tmr-big">' + no + ' из ' + cnt + '</span></span></div>';
+    } else {
+      // Этап ещё не начат (экран между этапами, вступление) — время стоит и показано целиком.
+      var bonus = st ? (st.bonusSec || 0) : bonusFor(curId);
+      var alloc = (state.timing.plan[curId] || 0) * 60 + bonus;
+      var left = st ? alloc - stageUsedSec(curId) : alloc;
+      var used = 0;
+      TIMER_IDS.forEach(function (id) { used += stageUsedSec(id); });
+      var totalLeft = state.timing.totalMin * 60 - used;
+      var warn = running && left <= 120;
+      var bonusMin = Math.floor(bonus / 60);
+      box.className = 'tmr' + (warn ? ' is-warn' : '');
+      box.innerHTML =
+        '<div class="tmr-blk tmr-stage' + (running ? '' : ' tmr-idle') + '">' +
+          '<span class="tmr-k">Этап ' + no + ' из ' + cnt + ' · ' + (running ? 'на этап осталось' : 'на этап') + '</span>' +
+          '<span class="tmr-v"><span class="tmr-big">' + (warn ? fmtClock(left) : fmtMin(left)) + '</span>' +
+            (running ? '<span class="tmr-of">из ' + fmtMin(alloc) + '</span>' : '') +
+            (bonusMin > 0 ? '<span class="tmr-bonus">+' + bonusMin + ' мин с прошлого этапа</span>' : '') +
+          '</span></div>' +
+        '<div class="tmr-sep"></div>' +
+        '<div class="tmr-blk tmr-total"><span class="tmr-k">Весь ассессмент · осталось</span>' +
+          '<span class="tmr-v"><span class="tmr-big">' + fmtMin(totalLeft) + '</span>' +
+          '<span class="tmr-of">из ' + fmtMin(state.timing.totalMin * 60) + '</span></span></div>';
+    }
+    // Полоса: у будущих этапов только номер — карту дня не показываем (решение 06.08).
+    var segs = '', names = '';
+    TIMER_IDS.forEach(function (id, i) {
+      var sc = S.scenes.filter(function (x) { return x.id === id; })[0];
+      var w = on ? (state.timing.plan[id] || 1) * 60 + (i === curIx ? ((tStage(id) || {}).bonusSec || bonusFor(id)) : ((tStage(id) || {}).bonusSec || 0)) : 1;
+      var cls = 'tmr-seg', inner = '';
+      if (i < curIx) cls += ' is-done';
+      else if (i === curIx) {
+        if (!on) cls += ' is-now-flat';
+        else {
+          var base = (state.timing.plan[id] || 0) * 60;
+          inner = (w > base ? '<span class="tmr-extra" style="left:' + (base / w * 100) + '%;right:0"></span>' : '') +
+            '<span class="tmr-fill" style="width:' + Math.min(100, stageUsedSec(id) / w * 100) + '%"></span>';
+        }
+      }
+      segs += '<div class="' + cls + '" style="flex:' + w + '">' + inner + '</div>';
+      var nm = i <= curIx ? (i + 1) + '. ' + esc((S.stageShort || [])[i] || sc.name) : 'этап ' + (i + 1);
+      names += '<span class="' + (i === curIx ? 'is-now' : '') + '" style="flex:' + w + '">' + nm + '</span>';
+    });
+    rail.innerHTML = '<div class="tmr-segs">' + segs + '</div><div class="tmr-names">' + names + '</div>';
+  }
+  // Время этапа вышло: ответ сохраняется как есть, этап закрывается, участник идёт дальше.
+  function timeUp() {
+    var cur = route[state.cursor];
+    if (!cur) return;
+    var id = S.scenes[cur.sceneIx].id, st = tStage(id);
+    if (!st || st.endedAt) return;
+    st.endedAt = new Date(msOf(st.startedAt) + stageAllocSec(id) * 1000).toISOString();
+    st.timedOut = true;
+    var act = cur.act;
+    // Текущий шаг фиксируем тем, что в нём есть, — в том числе пустым: запрет пустого
+    // ответа — гейт формы для участника, а не для часов (решение владельца 03.10).
+    if (act.kind === 'window' && !state.answersAt[act.save]) {
+      state.answersAt[act.save] = nowIso();
+      judgeStepSoon(act.save);
+    } else if (act.kind === 'mechanic' && act.mech && !(state.mechAt && state.mechAt[act.mech])) {
+      if (!state.mechAt) state.mechAt = {};
+      state.mechAt[act.mech] = nowIso();
+      judgeStepSoon(act.mech);
+    }
+    var k = state.cursor;
+    while (k < route.length && route[k].sceneIx === cur.sceneIx) k++;
+    state.cursor = k;
+    normalizeCursor();
+    state.timeUpAt = id;
+    saveState();
+    if (state.cursor >= route.length) { finish(); return; }
+    render();
+    // Дальше нет межэтапного экрана (из пакета — сразу в «Ваш офис»): говорим здесь.
+    var nx = route[state.cursor];
+    if (nx && nx.act.kind !== 'interlude') window.imp.alert('Время этапа вышло — ответ сохранён.');
+  }
+  function timerTick() {
+    if (!timerOn() || state.finished) { timerPaint(); return; }
+    var id = curStageId(), st = tStage(id);
+    if (st && st.startedAt && !st.endedAt && stageAllocSec(id) - stageUsedSec(id) <= 0) { timeUp(); return; }
+    timerPaint();
   }
 
   // ---------- речь ----------
@@ -1140,49 +1313,8 @@
   //     иначе участник узнавал бы, что где-то была развилка, и по какому признаку.
   //  3. Клик по пройденному шагу ПРОКРУЧИВАЕТ к нему, а не возвращает в него:
   //     день идёт вперёд, зафиксированное не переигрывается.
-  function renderRoute() {
-    var host = el('routeBody');
-    if (!host) return;
-    var cur = route[state.cursor];
-    var curSceneIx = cur ? cur.sceneIx : S.scenes.length - 1;
-    var html = '';
-    S.scenes.forEach(function (sc, si) {
-      if (si > curSceneIx) return;
-      html += '<div class="route-scene' + (si === curSceneIx ? ' is-now' : '') + '">' +
-        '<div class="route-where">' + esc(sc.where) + '</div>' +
-        '<div class="route-name">' + esc(sc.name) + '</div>';
-      sc.acts.forEach(function (a, ai) {
-        if (!isBlocking(a) || a.kind === 'interlude') return;
-        if (!applies(a)) return;
-        var ix = -1;
-        for (var i = 0; i < route.length; i++) {
-          if (route[i].sceneIx === si && route[i].actIx === ai) { ix = i; break; }
-        }
-        if (ix > state.cursor) return;             // будущее внутри текущей сцены не называем
-        // Названия механик в реестре строчные («тезисы и связки») — они там
-        // подписи внутри окна. В маршруте это строка списка рядом с «Пакет
-        // материалов», поэтому первая буква поднимается здесь, а не в реестре:
-        // иначе пришлось бы держать два написания одного названия.
-        var title = a.kind === 'case' ? 'Пакет материалов'
-          : (a.kind === 'mechanic' ? mechTitle(a.mech) : (a.label || 'Ответ'));
-        title = title.charAt(0).toUpperCase() + title.slice(1);
-        var done = ix < state.cursor;
-        html += '<button type="button" class="route-step' + (done ? ' is-done' : '') +
-          (ix === state.cursor ? ' is-on' : '') + '" data-rstep="' + si + '">' +
-          '<span class="route-mark">' + (done ? '✓' : '•') + '</span>' + esc(title) + '</button>';
-      });
-      html += '</div>';
-    });
-    // Скрытый этап (Коридор) в счёт не идёт — как и на межсценовом экране: иначе
-    // столбик обещает восемь, а переход говорит «из 7».
-    var left = 0;
-    for (var li = curSceneIx + 1; li < S.scenes.length; li++) if (!S.scenes[li].hidden) left++;
-    if (left > 0) {
-      html += '<p class="route-left">дальше — ещё ' +
-        left + ' ' + plural(left, 'этап', 'этапа', 'этапов') + '</p>';
-    }
-    host.innerHTML = html;
-  }
+  // Маршрута в левой колонке больше нет (решение владельца 03.10, стрим 00): этап и
+  // остаток показывает шапка — timerPaint().
 
   function plural(n, one, few, many) {
     var a = Math.abs(n) % 100, b = a % 10;
@@ -1225,47 +1357,14 @@
 
     // Справка приезжает из scenes.js: тот же блок харнесс отдаёт модели в system,
     // иначе у человека была бы опора, которой у модели нет (паритет носителей).
-    el('supRefBody').innerHTML = refHtml();
+    // В конце справки — выход к инструкции: ссылки жили внизу колонки этапов, колонки
+    // нет (решение владельца 03.10). Модели справка уходит из S.reference, не отсюда.
+    el('supRefBody').innerHTML = refHtml() +
+      '<p class="ref-setup">Перечитать инструкцию: <a href="intro.html?from=assessment.html">Что требуется</a> · ' +
+      '<a href="role.html">Как устроено</a></p>';
 
-    // Сворачивание оглавления — постоянный контрол участника. Автоматическое
-    // сворачивание ниже 1360 живёт в CSS и кнопку не заменяет: класс is-tocon
-    // говорит «участник попросил» и перебивает медиазапрос, иначе на ноутбуке
-    // кнопка «⟩ оглавление» снимала класс, которого там не было, и не делала ничего.
-    el('tocCollapse').addEventListener('click', function () {
-      el('dayGrid').classList.add('is-collapsed');
-      el('dayGrid').classList.remove('is-tocon');
-    });
-    el('tocRestore').addEventListener('click', function () {
-      el('dayGrid').classList.remove('is-collapsed');
-      el('dayGrid').classList.add('is-tocon');
-    });
-
-
-
-    // Клик по маршруту: текущий этап — прокрутка к нему, пройденный — вкладка «Мои
-    // ответы». ⚠ Ни курсор, ни зафиксированные ответы отсюда не двигаются.
-    el('routeBody').addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('[data-rstep]');
-      if (!b) return;
-      var si = Number(b.getAttribute('data-rstep'));
-      var cur = route[state.cursor];
-      if (cur && si === cur.sceneIx) {
-        var scroller = el('talkScroll'), target = el('talkCurrent');
-        if (!target) return;
-        scroller.scrollTop += target.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 8;
-        return;
-      }
-      setTab('answers');
-      var name = S.scenes[si] && S.scenes[si].name;
-      if (!name) return;
-      var host = el('supAnswersBody');
-      var hit = [].slice.call(host.querySelectorAll('.recap-q')).filter(function (q) {
-        return q.textContent.indexOf(name) === 0;
-      })[0];
-      if (!hit) return;
-      var sc2 = el('supAnswers');
-      sc2.scrollTop += hit.getBoundingClientRect().top - sc2.getBoundingClientRect().top - 8;
-    });
+    // Колонки этапов больше нет (решение владельца 03.10, стрим 00): ни её сворачивания,
+    // ни клика по маршруту. Пройденное открывается во вкладке «Мои ответы».
 
     // Обработчика «Скрыть материалы» здесь больше нет: кнопка снята из шапки
     // 04.08, класса .is-nomem в styles.css тоже нет.
@@ -2446,6 +2545,8 @@
       '<button class="btn btn-primary" id="enterBtn">' + esc(cta || (act.enter && act.enter.cta) || 'Приступить →') + '</button>' +
       '</div>';
     d.querySelector('#enterBtn').addEventListener('click', function () {
+      // «Приступить» открывает работу — с неё идёт отсчёт этапа (решение владельца 03.10).
+      stageStart(curStageId());
       if (!state.entered) state.entered = {};
       state.entered[key || act.id] = nowIso();
       saveState();
@@ -2654,7 +2755,10 @@
     // и правда — «зафиксирован».
     var sent = bridge.sent || I.sent || 'Ответ зафиксирован';
     // Без часов, как и отметка под ответом: время лора и время браузера спорят.
-    el('interludeMark').textContent = '✓ ' + sent;
+    // Этап закрыт по времени — говорим это прямо: ответ ушёл таким, каким был.
+    var prevSc = step.sceneIx > 0 ? S.scenes[step.sceneIx - 1] : null;
+    var byTime = !!(prevSc && state.timeUpAt === prevSc.id);
+    el('interludeMark').textContent = byTime ? 'Время этапа вышло — ответ сохранён' : '✓ ' + sent;
     el('interludeBridge').innerHTML = (bridge.lead || []).map(function (p) {
       return '<p class="interlude-bridge-p">' + br(p) + '</p>';
     }).join('');
@@ -2665,6 +2769,19 @@
     if (nx) nx.textContent = 'Следующий этап ' + S.stageNo(step.sceneIx) + ' из ' + S.stageCount() + ':';
     el('interludeWhere').textContent = step.scene.name;
     el('interludeWhen').textContent = step.scene.where;
+    // Время на этап: доля плюс то, что осталось от прошлого (решение владельца 03.10).
+    var it = el('interludeTime');
+    if (it) {
+      var tid = step.scene.id;
+      if (timerOn() && state.timing.plan[tid] && !tStage(tid)) {
+        var base = state.timing.plan[tid] * 60, plus = bonusFor(tid), plusMin = Math.floor(plus / 60);
+        it.innerHTML = '<span>Время на этап</span><b>' + fmtMin(base) + '</b>' +
+          (plusMin > 0
+            ? '<span class="is-plus">Вы закончили прошлый этап раньше</span><b class="is-plus">+ ' + plusMin + ' мин</b>' +
+              '<span>Всего на этот этап</span><b class="is-sum">' + fmtMin(base + plus) + '</b>'
+            : '');
+      } else it.innerHTML = '';
+    }
 
     // ⚠ НА ПЕРЕХОДЕ ПАНЕЛЬ ОТКРЫВАЕТСЯ НА ТОМ, ЧТО ТОЛЬКО ЧТО СКАЗАНО (правка владельца
     // 28.08). Между встречами участник смотрит назад — что он уже ответил, — и до правки
@@ -2675,7 +2792,7 @@
 
     var cta = el('interludeCta');
     cta.textContent = I.cta || 'Дальше →';
-    cta.onclick = function () { advance(); };
+    cta.onclick = function () { state.timeUpAt = ''; advance(); };
     if (window.imp && window.imp.typoDom) window.imp.typoDom(box);
   }
 
@@ -2684,7 +2801,10 @@
     // Маршрут рисуется ПЕРВЫМ и до всех возвратов: страница чтения пакета выходит
     // из render() сразу, и при вызове в конце левая колонка на первом же шаге дня
     // оставалась без маршрута — то есть ровно там, где участник впервые её видит.
-    renderRoute();
+    timerPaint();
+    // Этап 1 начался кнопкой на листе роли; если лист уже пройден, а отметки нет (прогон
+    // начат до таймера или на другом устройстве), отсчёт идёт с этого показа пакета.
+    if (cur && cur.act.kind === 'case' && state.roleSeen) stageStart(cur.scene.id);
     if (cur && applies(cur.act) && cur.act.kind === 'case') { readingMode(true, cur.act); return; }
     readingMode(false);
     interludeMode(!!(cur && applies(cur.act) && cur.act.kind === 'interlude'), cur || { scene: S.scenes[0], sceneIx: 0 });
@@ -2986,6 +3106,11 @@
       }
     }
     var openWork = function () {
+      // Поле ответа показалось — в разговоре без «Приступить» отсчёт этапа идёт отсюда.
+      var cw = route[state.cursor];
+      if (cw && (cw.act.kind === 'window' || cw.act.kind === 'mechanic') && !now.querySelector('#enterBtn')) {
+        stageStart(curStageId());
+      }
       var waits = now.querySelectorAll('.is-await');
       for (var wi = 0; wi < waits.length; wi++) waits[wi].classList.remove('is-await');
       // Поля только что показались — мерить их можно уже следующим кадром.
@@ -3110,7 +3235,6 @@
     // так последним.
     if (window.imp && window.imp.typoDom) window.imp.typoDom(now);
     if (supportTab === 'answers') renderAnswersTab();
-    renderRoute();
     // Прокрутка: начало текущего разговора — к верху колонки. Считаем по rect'ам,
     // а не по offsetTop: offsetTop меряется от позиционированного предка, и первая
     // версия увозила шапку сцены за экран.
@@ -3241,6 +3365,8 @@
       shell.classList.remove('is-role');
       state.roleSeen = nowIso();
       saveState();
+      // Отсчёт первого этапа — с этой кнопки (решение владельца 03.10).
+      stageStart(curStageId());
     };
   }
 
@@ -3357,6 +3483,12 @@
     state.started = true;
     state.startedAt = state.startedAt || nowIso();
     saveState();
+  }
+  // Таймер замораживается на старте и тикает раз в секунду (решение владельца 03.10).
+  if (state.started && !state.finished) {
+    timingInit();
+    saveState();
+    setInterval(timerTick, 1000);
   }
   if (state.started) showRoot();
   else location.replace('intro.html');

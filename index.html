@@ -17,7 +17,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=246" />
+<link rel="stylesheet" href="css/styles.css?v=247" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -84,8 +84,8 @@
         <!-- ⚠ ПЛАШКА ПРО УСТРОЙСТВО И ВРЕМЯ УБРАНА С ЭТОГО ЭКРАНА (решение владельца
              29.09). Здесь человек называет себя — требования к технике и полтора часа
              к этому действию отношения не имеют и забирают внимание у формы. Текст не
-             потерян: то же требование (imp.deviceReq) стоит на экране настройки, до
-             начала дня, где ему и место. -->
+             потерян: требование к устройству (imp.deviceReq) показывается на экране
+             «Не с телефона». -->
 
         <!-- Участник, попавший сюда посреди ассессмента (история браузера, закладка,
              вручную набранный адрес), раньше видел только форму и должен был снова
@@ -172,7 +172,7 @@
   </div>
 </div>
 
-<script src="js/main.js?v=11"></script>
+<script src="js/main.js?v=12"></script>
 <script src="js/typo.js?v=2"></script>
 <script src="js/api.js?v=7"></script>
 <script>
@@ -323,7 +323,8 @@
         if (res && res.ok && res.bib) {
           // Пароль в сессию не кладём: входа по паролю больше нет (правка 29.09).
           // Сервер его пока возвращает — колонка в листе осталась, — просто не берём.
-          var s = { bib: String(res.bib), name: res.name || nm };
+          // timerMin — время потока на ассессмент (решение владельца 03.10): 0 — без таймера.
+          var s = { bib: String(res.bib), name: res.name || nm, timerMin: Number(res.timerMin) || 0 };
           try {
             sessionStorage.setItem('imp_current_session', JSON.stringify(s));
             localStorage.setItem('imp_current_session', JSON.stringify(s));
@@ -399,7 +400,8 @@
         // участником на другое устройство, и обращаться к нему продолжают так же.
         // Номер берём тот, что вернул сервер: под ним лежат ответы. Пароля в сессии
         // больше нет — входа по паролю не существует (правка 29.09).
-        var session = { bib: String(res.bib || code), name: (res.nickname || '').trim() };
+        var session = { bib: String(res.bib || code), name: (res.nickname || '').trim(),
+                        timerMin: Number(res.timerMin) || 0 };
         try {
           sessionStorage.setItem('imp_current_session', JSON.stringify(session));
           localStorage.setItem('imp_current_session', JSON.stringify(session));
