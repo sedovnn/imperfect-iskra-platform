@@ -25,9 +25,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "6ae462a1e5b7",
+  "sha": "6500029ed56f",
   "keys": {
-   "administrator.html": 44
+   "administrator.html": 47
   }
  },
  "js/case-ref.js": {
@@ -128,6 +128,7 @@
  "js/qr.js": {
   "sha": "11e4cf1ddaef",
   "keys": {
+   "administrator.html": 1,
    "vedushchiy.html": 1
   }
  },

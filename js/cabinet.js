@@ -1,4 +1,5 @@
-// i(m)perfect — кабинет фасилитатора. ЕДИНСТВЕННЫЙ.
+// i(m)perfect — кабинет администратора (administrator.html). С 03.10 у ведущего своя страница
+// и свой скрипт (vedushchiy.html, js/vedushchiy.js); этот файл обслуживает только владельца.
 //
 // facilitator.html (кабинет v1, 1861 строка на станционных листах Round1…Round5)
 // удалён с платформы 10.08. До этого экранов было два, и функции фасилитатора между
@@ -171,18 +172,24 @@
 
   var STATE_WORDS = { done: 'зафиксирован', skipped: 'не спрашивали', wait: 'не дошёл' };
 
+
+  // ── КАБИНЕТ АДМИНИСТРАТОРА ЧЕРЕЗ ПОТОКИ (решение владельца 03.10) ─────────────
+  // Было четыре плоских вкладки: оценка всех участников разом, номера, потоки, ведущие.
+  // Стало, как у ведущего: «Все потоки» → поток (участники с оценкой и настройки) и
+  // «Ведущие»; поиск участника по всем потокам — в шапке. Вкладки «Номера участников»
+  // нет: имя, «не оценивать», сброс и удаление номера — в карточке участника, внизу.
+  // Карточка, оценка и правки уровней — прежние, ниже по файлу, не тронуты.
+  // Ведущий на этой странице не работает: у него своя (vedushchiy.html, js/vedushchiy.js).
+
   var pw = '';
-  // ⚠ РОЛЬ КАБИНЕТА (правка 29.09). 'full' — владелец, 'session' — ведущий сессии.
-  // Приходит вместе со списком: кабинет входит вызовом v2List, он же и отвечает.
-  // По роли прячем то, чего сервер всё равно не даст: удаление, сброс прогресса,
-  // перегенерацию пароля, правку уровней, служебные операции над таблицей.
-  // ⚠ ЭТО УДОБСТВО, А НЕ ЗАЩИТА. Запрет держит ACTION_ROLE на сервере; здесь мы
-  // только не показываем кнопку, которая ответит отказом. Полагаться на то, что
-  // страница честная, нельзя — её открывает кто угодно и правит в консоли.
+  // Роль приходит со списком. Здесь работает только владелец ('full'); ведущего
+  // отправляем на его страницу. ⚠ Это место, а не защита: права держит ACTION_ROLE.
   var role = 'full';
   var isFull = function () { return role === 'full'; };
-  var rows = [];
-  var roster = [];
+  var rows = [];      // лист Answers: ход и оценка
+  var roster = [];    // регистрации: все номера, включая тех, кто ещё не начал
+  var waves = [];
+  var facs = [];
   // ⚠ ТЁЗКИ В ПОТОКЕ (решение владельца 03.10). Самозапись имён не сверяет: один человек,
   // потерявший номер, может записаться второй раз, а двое настоящих тёзок — тоже. Отличить
   // их код не берётся: строки с одинаковыми именем и фамилией в одном потоке помечаются,
@@ -192,28 +199,37 @@
     var f = String(p.fio || '').toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
     return f ? String(p.waveId || '') + '|' + f : '';
   }
-  var waves = [];
-  var gate = document.getElementById('cabGate');
-  var content = document.getElementById('cabContent');
-  var listHost = document.getElementById('cabList');
-  var detail = document.getElementById('cabDetail');
-  var detailBody = document.getElementById('cabDetailBody');
-  var statusEl = document.getElementById('cabStatus');
-  var filterEl = document.getElementById('cabOnlyNeed');
-  var filterCount = document.getElementById('cabNeedCount');
+  var POLL_MS = 20000;   // сервер присылать сам не умеет — спрашиваем, пока открыт поток
+  var pollTimer = null;
+  var judging = false;   // идёт оценка: список обновляет сама оценка, опрос молчит
+  var tab = 'people';    // вкладка потока: 'people' | 'set'
+  var shareOpen = false;
+  var TIMES = [[90, '1,5 часа'], [120, '2 часа'], [150, '2,5 часа'], [180, '3 часа'], [0, 'без таймера']];
+  var S = window.imp.scenes;
+  var ROUTE = S && S.route ? S.route() : [];
+
+  var el = function (id) { return document.getElementById(id); };
+  var gate = el('cabGate');
+  var content = el('cabContent');
+  var main = el('admMain');
+  var detail = el('cabDetail');
+  var detailBody = el('cabDetailBody');
+  var statusEl = el('cabStatus');
+  var findEl = el('admFind');
 
   function esc(s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
   function br(s) { return esc(s).replace(/\n/g, '<br />'); }
-  // ⚠ БУКВЫ ИЗ НОМЕРА БОЛЬШЕ НЕ ВЫРЕЗАЮТСЯ (правка 28.09). Здесь стояло
-  // replace(/\D/g, '') — вычистить всё, кроме цифр, и дополнить нулями слева. Для
-  // прежних номеров вида 033001 это была страховка от того, что таблица отдаст их
-  // числом. С этой правки номер участника — шесть случайных букв и цифр, и та же
-  // строка превратила бы «HK7RQ4» в «000074»: в кабинете нельзя было бы найти
-  // человека по номеру, который он называет. Нули дописываем только там, где номер
-  // и правда из одних цифр, то есть у прогонов прежних волн.
+  // ⚠ БУКВЫ ИЗ НОМЕРА НЕ ВЫРЕЗАЮТСЯ (правка 28.09): номер — шесть букв и цифр. Нули
+  // дописываем только там, где номер из одних цифр, то есть у прогонов прежних потоков.
   function bib6(b) {
     var s = String(b == null ? '' : b).trim();
     return '№ ' + (/^\d+$/.test(s) ? s.padStart(6, '0') : s.toUpperCase());
+  }
+  // Ключ номера для сверки строк двух листов. Прежний bibKey вырезал буквы и у
+  // шестизначных номеров вида HK7RQ4 давал «74» — разные люди сливались в одного.
+  function bk(b) {
+    var s = String(b == null ? '' : b).trim().toUpperCase();
+    return /^\d+$/.test(s) ? String(parseInt(s, 10)) : s;
   }
   function dt(iso) {
     if (!iso) return '';
@@ -224,24 +240,42 @@
     statusEl.textContent = msg || '';
     statusEl.className = 'cab-status' + (kind ? ' is-' + kind : '');
   }
+  function timeWord(min) {
+    for (var i = 0; i < TIMES.length; i++) if (TIMES[i][0] === (Number(min) || 0)) return TIMES[i][1];
+    return 'без таймера';
+  }
+  function timeOptions(cur) {
+    return TIMES.map(function (t) {
+      return '<option value="' + t[0] + '"' + ((Number(cur) || 0) === t[0] ? ' selected' : '') + '>' + t[1] + '</option>';
+    }).join('');
+  }
+  function facName(id) {
+    if (!id) return '';
+    var f = facs.filter(function (x) { return String(x.id) === String(id); })[0];
+    return f ? (f.name || 'без имени') : 'ведущий';
+  }
+  function ownerOptions(cur) {
+    return '<option value=""' + (!cur ? ' selected' : '') + '>только вы</option>' +
+      facs.filter(function (f) { return !f.archived || f.id === cur; }).map(function (f) {
+        return '<option value="' + esc(f.id) + '"' + (cur === f.id ? ' selected' : '') + '>' +
+          esc(f.name || 'без имени') + (f.archived ? ' (доступ снят)' : '') + '</option>';
+      }).join('');
+  }
 
   // ---------- вход ----------
 
   function login() {
-    var val = (document.getElementById('cabPass').value || '').trim();
+    var val = (el('cabPass').value || '').trim();
     if (!val) return;
-    var btn = document.getElementById('cabPassBtn');
+    var btn = el('cabPassBtn');
     btn.disabled = true; btn.textContent = 'Проверяю…';
     window.imp.callApi('v2List', { password: val }).then(function (res) {
       btn.disabled = false; btn.textContent = 'Войти →';
       if (!res || !res.ok) {
-        // ⚠ «НЕВЕРНЫЙ ПАРОЛЬ» СТОЯЛО НА ЛЮБОЙ НЕУДАЧЕ (правка 31.08). Сообщение врало на
-        // самом дорогом случае: первый вызов после обновления бэкенда бывает дольше
-        // тридцати секунд (Apps Script пересобирает проект), запрос обрывается по таймауту,
-        // callApi возвращает null — и кабинет объявлял, что пароль не тот. На этом 31.08
-        // потерян час: пароль был правильный, а я по этой надписи решил, что его сменили.
-        // Теперь три случая различаются: пароль, молчание бэкенда и всё остальное.
-        var err = document.getElementById('cabPassErr');
+        // ⚠ «НЕВЕРНЫЙ ПАРОЛЬ» СТОЯЛО НА ЛЮБОЙ НЕУДАЧЕ (правка 31.08): первый вызов после
+        // обновления бэкенда бывает дольше тридцати секунд, и кабинет объявлял, что пароль
+        // не тот. Три случая различаются: пароль, молчание бэкенда и всё остальное.
+        var err = el('cabPassErr');
         err.textContent = !res
           ? 'Бэкенд не ответил. Первый вызов после обновления бывает долгим — нажмите «Войти» ещё раз.'
           : (res.error === 'unauthorized' ? 'Неверный пароль.'
@@ -249,329 +283,66 @@
         err.style.display = '';
         return;
       }
-      document.getElementById('cabPassErr').style.display = 'none';
+      el('cabPassErr').style.display = 'none';
       pw = val;
       try { sessionStorage.setItem(PW_KEY, val); } catch (e) {}
+      if (res.role && String(res.role) !== 'full') { location.replace('vedushchiy.html'); return; }
       gate.style.display = 'none';
       content.style.display = '';
-      absorb(res);
+      loadFacs().then(function () { absorb(res); });
+      startPoll();
     });
   }
 
-  // Один ответ v2List кормит все три вида: день, волны, ростер. Второго запроса
-  // нет — иначе экраны показывали бы состояние на разные моменты.
+  // Один ответ v2List кормит все экраны: второго запроса нет — иначе экраны
+  // показывали бы состояние на разные моменты.
   function absorb(res) {
     if (res && res.role) role = String(res.role);
-    // ⚠ У КАЖДОЙ РОЛИ СВОЯ СТРАНИЦА (решение владельца 03.10): administrator.html и
-    // vedushchiy.html. Вошёл не на свою — переводим на свою; пароль лежит в sessionStorage,
-    // и там вход повторится сам. Права держит сервер — это только место, а не защита.
-    var page = document.body.getAttribute('data-page');
-    if (page === 'host' && isFull()) { location.replace('administrator.html'); return; }
-    if (page === 'admin' && !isFull()) { location.replace('vedushchiy.html'); return; }
-    document.body.setAttribute('data-role', role);
-    // Подпись роли в шапке: ведущему объясняет, почему он видит не всё.
-    var roleEl = document.getElementById('cabRole');
-    if (roleEl) {
-      if (isFull()) { roleEl.hidden = true; }
-      else { roleEl.hidden = false; roleEl.textContent = 'ведущий сессии'; }
-    }
-    // Вкладка «Ведущие» — только владельцу. Сервер её действия всё равно не даст,
-    // но кнопка, которая отвечает отказом, хуже её отсутствия.
-    var facTab = document.getElementById('cabTabFac');
-    if (facTab) facTab.hidden = !isFull();
-    if (isFull()) loadFacs();
+    if (!isFull()) { location.replace('vedushchiy.html'); return; }
     rows = res.participants || [];
     roster = res.roster || [];
     waves = res.waves || [];
+    // Тёзок считаем по всем номерам, а не по видимым. Считаются разные НОМЕРА.
+    nameTwins = {};
+    var bibsOf = {};
+    people().forEach(function (p) {
+      var k = twinKey(p);
+      if (k) (bibsOf[k] = bibsOf[k] || {})[bk(p.bib)] = true;
+    });
+    Object.keys(bibsOf).forEach(function (k) { if (Object.keys(bibsOf[k]).length > 1) nameTwins[k] = true; });
     render();
-    renderWaves();
-    renderRoster();
   }
 
-  // silent — обновить список, не трогая общую строку состояния. Нужен во время
-  // судейства: там своя строка («оцениваю…»), и «обновляю…» поверх неё мигало бы.
+  // silent — не трогать строку состояния: во время оценки там идёт её счёт.
   function refresh(silent) {
     if (!pw) return Promise.resolve();
     if (!silent) say('обновляю…');
     return window.imp.callApi('v2List', { password: pw }).then(function (res) {
       if (res && res.ok) { absorb(res); if (!silent) say(''); }
-      else if (!silent) say('не удалось обновить список', 'bad');
+      else if (!silent) say('не удалось обновить', 'bad');
     });
   }
-
-  // ---------- список ----------
-
-  function skillsCell(p) {
-    if (!p.skills) return '<span class="cab-dim">—</span>';
-    return Object.keys(SKILL_NAMES).map(function (k) {
-      var v = p.skills[k];
-      return '<span class="cab-skill" title="' + SKILL_NAMES[k] + ' — сумма двух способностей, от 2 до 10">' +
-        SKILL_NAMES[k] + '<b>' + (v === null || v === undefined ? '—' : v) + '</b></span>';
-    }).join('');
+  function startPoll() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function () {
+      if (document.hidden || judging || detail.style.display !== 'none') return;
+      if (route().view !== 'wave' || tab !== 'people' || findQ()) return;
+      refresh(true);
+    }, POLL_MS);
   }
-
-  function totalCell(p) {
-    if (p.noScore) return '<span class="cab-dim" title="Помечен «не оценивать»">не оценивается</span>';
-    if (p.queue && (p.queue.queued || p.queue.running)) {
-      return '<span class="cab-dim">оценивается (' + p.queue.done + '/' + p.queue.total + ')</span>';
-    }
-    if (p.total === null || p.total === undefined) {
-      return '<span class="cab-dim">' + (p.judged ? '… (' + p.judged + '/10)' : '—') + '</span>';
-    }
-    // Итог показываем только когда оценены все десять — иначе это не балл.
-    // Флажок ⚑ убран: о флагах словом говорит колонка «Нужен человек», а два
-    // языка для одного и того же заставляли сверять значок с колонкой.
-    return '<b class="cab-total">' + p.total + '</b><span class="cab-dim"> / 50</span>' +
-      (p.stale ? ' <span class="cab-stale" title="Оценка вынесена по другому тексту ответа">устарело</span>' : '') +
-      // Правка человека — не повод для внимания, а его след: в колонку «Нужен
-      // человек» она не идёт, иначе фильтр показывал бы уже решённое.
-      (p.overridden ? ' <span class="cab-ovmark" title="Уровней поставлено вами: ' + p.overridden +
-        '">правил человек</span>' : '');
-  }
-
-  // Ход: клетка на шаг, по маршруту. Двенадцать шагов, из них два условных — у
-  // участника, которого не спросили про перебор и про Северову, клеток честно
-  // десять, а не «двух не хватает». Название и время — в подсказке клетки, словами
-  // — в колонке «Сейчас»: полоска показывает форму дня, слова говорят, где человек.
-  function progressCell(p) {
-    if (!STEPS.length) return '<span class="cab-dim">маршрут не загружен</span>';
-    // Историческая строка: шагов нынешнего маршрута у неё нет ни одного, и полоска
-    // из двенадцати пустых клеток врала бы — читалась бы как «человек не начинал».
-    if (!p.answered && p.legacyAnswered) {
-      return '<span class="cab-dim" title="Прогон прежнего маршрута: шагов v4.4.f в строке нет">не тот маршрут</span>';
-    }
-    var at = p.stepsAt || {};
-    var out = STEPS.map(function (s) {
-      var st = stepState(s, at, p.listFacts);
-      var tip = cap(s.label) + ' · ' + STATE_WORDS[st.state] + (st.at ? ' ' + dt(st.at) : '');
-      return '<span class="cab-step is-' + st.state + '" title="' + esc(tip) + '"></span>';
-    }).join('');
-    if (p.finished) out += ' <span class="cab-fin" title="День закончен">✓</span>';
-    return out;
-  }
-
-  // «Сейчас» словами: что зафиксировано последним и что следующее. Без этого
-  // полоска требует навести курсор на каждую клетку, чтобы понять одну вещь —
-  // где человек стоит.
-  function nowCell(p) {
-    if (!p.answered && p.legacyAnswered) {
-      return '<span class="cab-dim">прежний маршрут · ' + p.legacyAnswered + ' из 8</span>';
-    }
-    var at = p.stepsAt || {}, lastDone = null, next = null;
-    STEPS.forEach(function (s) {
-      var st = stepState(s, at, p.listFacts);
-      if (st.state === 'done') lastDone = s;
-      else if (!next && st.state === 'wait') next = s;
-    });
-    if (p.finished) return '<b>день закончен</b>';
-    if (!lastDone) return '<span class="cab-dim">не начинал</span>';
-    return esc(cap(lastDone.label)) +
-      (next ? ' <span class="cab-dim">→ ' + esc(next.label) + '</span>' : '');
-  }
-
-  // ── НУЖЕН ЧЕЛОВЕК ────────────────────────────────────────────────────────────
-  // Причины, по которым строку нельзя оставить машине. Каждая считается по данным,
-  // а не по чутью, и называется словами, а не значком: значок ⚑ сообщал, что
-  // что-то есть, но не что именно, и открывать карточку приходилось у всех подряд.
-  function attention(p) {
-    // Помечен «не оценивать» — вопрос закрыт решением, а не ждёт решения.
-    if (p.noScore) return [];
-    var out = [];
-    var hasWork = !!(p.answered || p.legacyAnswered);
-    var busy = !!(p.queue && (p.queue.queued || p.queue.running));
-    var versionsApart = !!(p.scenesVersion && p.expectScenes && p.scenesVersion !== p.expectScenes);
-    if (hasWork && versionsApart) {
-      out.push({ code: 'версии', text: 'судейство закрыто: сцены ' + p.scenesVersion +
-        ' против судейских ' + p.expectScenes });
-    }
-    if (nameTwins[twinKey(p)]) {
-      out.push({ code: 'тёзки', text: 'в этом потоке есть другой номер с теми же именем и фамилией. ' +
-        'Это могут быть тёзки или один человек, записавшийся дважды. Попросите их подойти после ассессмента' });
-    }
-    if (p.stale) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после суда' });
-    if (p.queue && p.queue.error) out.push({ code: 'очередь', text: 'заданий с ошибкой: ' + p.queue.error });
-    if (p.flags) {
-      out.push({ code: 'флаги', text: p.flags + ' ' + plural(p.flags, 'флаг', 'флага', 'флагов') + ' — перечитать ответ' });
-    }
-    if (p.listFacts && p.listFacts.fitsFrame === false) {
-      out.push({ code: 'рамка', text: 'разбор вышел за рамку года' });
-    }
-    if (p.finished && !busy && !versionsApart && (p.total === null || p.total === undefined)) {
-      out.push({ code: 'не оценён', text: 'день закончен, оценки нет' });
-    }
-    return out;
-  }
-
-  function attentionCell(p) {
-    var a = attention(p);
-    if (!a.length) return '<span class="cab-dim">—</span>';
-    return a.map(function (x) {
-      return '<span class="cab-need" title="' + esc(x.text) + '">' + esc(x.code) + '</span>';
-    }).join(' ');
-  }
-
-  function render(participants) {
-    if (participants) rows = participants;
-    // Тёзок считаем по ПОЛНОМУ списку, а не по видимому: близнец может быть спрятан
-    // фильтром. Считаются разные НОМЕРА — две строки одного номера тёзками не являются.
-    nameTwins = {};
-    (function () {
-      var bibsOf = {};
-      rows.forEach(function (p) {
-        var k = twinKey(p);
-        if (!k) return;
-        (bibsOf[k] = bibsOf[k] || {})[bib6(p.bib)] = true;
-      });
-      Object.keys(bibsOf).forEach(function (k) {
-        if (Object.keys(bibsOf[k]).length > 1) nameTwins[k] = true;
-      });
-    })();
-    document.getElementById('cabCount').textContent = rows.length + ' в листе Answers';
-    if (!rows.length) {
-      listHost.innerHTML = '<p class="section-lead">Пока никто не проходил день на новой платформе. Как только появится первая строка в листе Answers, она будет здесь.</p>';
-      return;
-    }
-    // Фильтр не выбрасывает строки из rows: карточка открывается по индексу в
-    // полном списке, и пересчёт индексов при каждом переключении был бы ровно тем
-    // местом, где кабинет однажды покажет чужую карточку.
-    var onlyNeed = !!(filterEl && filterEl.checked);
-    // Прежние прогоны и номера архивных волн по умолчанию не показываем: это
-    // история, а кабинет открывают, чтобы увидеть идущий день. Скрытое считаем и
-    // называем — молча пропасть строки не должны.
-    var oldEl = document.getElementById('cabShowOld');
-    var withOld = !!(oldEl && oldEl.checked);
-    // ⚠ СИРОТА УДАЛЁННОЙ ВОЛНЫ — ТОЖЕ ПРЕЖНИЙ ПРОГОН (правка 11.09, поймано владельцем:
-    // «вернулись кучей старые прогоны без волны»). Удаление волны сносило только её строку,
-    // номера оставались, и у них waveArchived всегда false — значит фильтр их не прятал, и
-    // они висели среди строк идущего дня. Бэкенд теперь помечает такие строки waveMissing.
-    var isOld = function (p) { return !!p.waveArchived || !!p.waveMissing || (!p.answered && !!p.legacyAnswered); };
-    var hiddenOld = withOld ? 0 : rows.filter(isOld).length;
-    fillDayWaveSelect();
-    var fFind = dayFind(), fWave = dayWave();
-    // Поиск идёт по номеру, имени и фамилии сразу: человек называет то, что помнит.
-    // ФИО в строке приходит одной склейкой, поэтому фамилия ищется в ней же.
-    var matches = function (p) {
-      if (fWave && String(p.waveId) !== String(fWave)) return false;
-      if (!fFind) return true;
-      return (String(p.bib) + ' ' + (p.fio || '')).toLowerCase().indexOf(fFind) >= 0;
-    };
-    var shown = 0;
-    var html = '<table class="cab-table"><thead><tr>' +
-      '<th>Номер</th><th>ФИО</th><th>Поток</th><th>Ход</th><th>Сейчас</th>' +
-      '<th>Нужен человек</th><th>Навыки</th><th>Итог</th>' +
-      '</tr></thead><tbody>';
-    rows.forEach(function (p, i) {
-      if (!withOld && isOld(p)) return;
-      if (!matches(p)) return;
-      if (onlyNeed && !attention(p).length) return;
-      shown++;
-      html += '<tr data-ix="' + i + '"' + (p.isAi ? ' class="cab-row-ai"' : '') + (p.noScore ? ' style="opacity:.5"' : '') + '>' +
-        // Значок ⚙ убран: он сообщал, что с этим номером что-то не так, но не что
-        // именно, — та же беда, что была у флажка ⚑ в «Итоге». Слово вместо значка.
-        '<td>' + esc(bib6(p.bib)) +
-          (p.isRunner ? ' <span class="cab-tag" title="День прошёл харнесс модели, а не человек: в строке заполнен runnerJson">модель</span>' : '') + '</td>' +
-        '<td>' + (esc(p.fio) || '<span class="cab-dim">—</span>') + '</td>' +
-        // В «Оценке участников» поток — это контекст, а не содержание: показываем
-        // номер, полное название держим в подсказке. Целиком оно занимало столько,
-        // что «Итог» уезжал за край экрана, а он тут главное.
-        '<td class="cab-col-tight"' + (p.wave ? ' title="' + esc(p.wave) + '"' : '') + '>' +
-          (esc(waveNumOf(p.wave)) || '<span class="cab-dim">—</span>') +
-          (p.isAi ? ' <span class="cab-ai">ИИ</span>' : '') + '</td>' +
-        '<td class="cab-progress">' + progressCell(p) + '</td>' +
-        '<td>' + nowCell(p) + '</td>' +
-        '<td>' + attentionCell(p) + '</td>' +
-        '<td>' + skillsCell(p) + '</td>' +
-        '<td>' + totalCell(p) + '</td>' +
-        '</tr>';
-    });
-    html += '</tbody></table>';
-    if (!shown) {
-      html += '<p class="cab-dim">' + (onlyNeed
-        ? 'Ни одной строки, которая ждёт человека.'
-        : 'Показывать нечего: все строки — прежние прогоны.') + '</p>';
-    }
-    if (hiddenOld) {
-      html += '<p class="cab-dim">Скрыто прежних прогонов: ' + hiddenOld +
-        '. Это история прошлых потоков, архивных и удалённых потоков.</p>';
-    }
-    if (filterCount) {
-      var need = rows.filter(function (p) { return attention(p).length; }).length;
-      filterCount.textContent = need ? String(need) : '0';
-    }
-    listHost.innerHTML = html;
-    // ⚠ КАРТОЧКА — ТОЛЬКО ВЛАДЕЛЬЦУ (решение владельца 29.09, оценку запускает тоже только
-    // он — 03.10). Сервер ведущему карточку не отдаёт, и щелчок по строке приводил к
-    // «Не удалось загрузить карточку». У ведущего строка не открывается вовсе.
-    if (!isFull()) return;
-    listHost.querySelectorAll('tr[data-ix]').forEach(function (tr) {
-      tr.tabIndex = 0;
-      tr.addEventListener('click', function () { openCard(rows[Number(tr.getAttribute('data-ix'))]); });
-      tr.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCard(rows[Number(tr.getAttribute('data-ix'))]); }
-      });
-    });
-  }
-
-  // ── РОСТЕР, ВОЛНЫ, ПАРОЛИ ────────────────────────────────────────────────────
-  // Переехали из facilitator.html (кабинет v1). Держать их там было ловушкой: тот
-  // экран показывает ход по станционным листам прежнего маршрута, поэтому человек,
-  // проходящий день сейчас, виден в ростере с пустым ходом — и это читается как
-  // «ничего не делает». Данные администрации при этом живые: лист Registrations
-  // один и тот же. Поэтому переносим сюда, а v1 остаётся смотрелкой прежних прогонов.
 
   function call(action, extra) {
     var p = { password: pw };
     Object.keys(extra || {}).forEach(function (k) { p[k] = extra[k]; });
     return window.imp.callApi(action, p);
   }
-
-  // Ответ действия: либо ok, либо ошибка словами. Молчаливый провал в кабинете
-  // страшнее шумного: фасилитатор решит, что сделано, и пойдёт дальше.
+  // Ответ действия: либо ok, либо ошибка словами. Молчаливый провал страшнее шумного.
   function after(res, okMsg) {
-    if (res && res.ok) { say(okMsg || 'готово'); return refresh(); }
+    if (res && res.ok) { say(okMsg || 'готово'); return refresh(true); }
     var msg = res && (res.message || res.error) ? String(res.message || res.error) : 'не получилось';
     return window.imp.alert('Не вышло: ' + msg).then(function () {});
   }
-
-  // ── ВОЛНЫ ────────────────────────────────────────────────────────────────────
-  // Волна — единица дня, а не строка справочника. Поэтому в её строке стоит всё,
-  // что с ней делают: сколько номеров выдано и докуда дошли люди, выдача новых
-  // номеров, ссылка самозаписи, уход в архив. Прежде выдача жила отдельной формой
-  // с выпадающим списком волн — волну приходилось выбирать второй раз и вслепую,
-  // глядя не на ту таблицу, в которой только что смотрел числа.
-  //
-  // Поля правятся без кнопки «Сохранить»: значение уезжает по уходу из поля, если
-  // оно изменилось. Кнопка на каждую строку делала ряд действий рваным — у одних
-  // строк её было четыре, у других три, и колонка действий не выравнивалась ни по
-  // одной границе.
-  function showArchived() {
-    var el = document.getElementById('cabShowArchived');
-    return !!(el && el.checked);
-  }
-
-  function bibKey(b) { return String(parseInt(String(b).replace(/\D/g, ''), 10) || 0); }
-
-  // Сколько людей в волне и докуда дошли. Считаем по ростеру и листу Answers:
-  // выдано — сколько номеров, начали — у кого есть работа, закончили — кто закрыл день.
-  function waveStats(w) {
-    var mine = {}, issued = 0, started = 0, finished = 0;
-    roster.forEach(function (r) {
-      if (String(r.waveId) !== String(w.id)) return;
-      issued++; mine[bibKey(r.bib)] = true;
-      if (r.started) started++;
-    });
-    rows.forEach(function (p) { if (mine[bibKey(p.bib)] && p.finished) finished++; });
-    return { issued: issued, started: started, finished: finished };
-  }
-
-  function selfEnrollLink(num) {
-    try { return new URL('index.html?w=' + encodeURIComponent(num), location.href).href; }
-    catch (e) { return 'index.html?w=' + num; }
-  }
-
-  // Копирование с отходным путём: на file:// и без защищённого протокола
-  // navigator.clipboard недоступен, и молчаливый отказ выглядел бы как «нажал и
-  // ничего». Тогда показываем текст, чтобы его можно было выделить руками.
+  // Копирование с отходным путём: без защищённого протокола clipboard недоступен.
   function copyText(text, okMsg) {
     var done = function () { say(okMsg || 'скопировано'); };
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -582,9 +353,7 @@
     window.imp.alert('Скопировать не дал браузер. Вот текст:\n\n' + text);
     return Promise.resolve();
   }
-
-  // Правка поля по уходу из него. Пустое значение и значение без изменений на
-  // сервер не уезжают: лишний вызов на каждый случайный клик — это тоже правка.
+  // Правка поля по уходу из него; пустое и неизменённое не уезжает.
   function onCommit(input, was, fn) {
     var send = function () {
       var val = input.value.trim();
@@ -592,376 +361,546 @@
       fn(val);
     };
     input.addEventListener('blur', send);
-    input.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
-    });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); input.blur(); } });
   }
 
-  function renderWaves() {
-    var host = document.getElementById('cabWaves');
-    if (!host) return;
-    if (!waves.length) {
-      host.innerHTML = '<p class="cab-empty">Ни одного потока. Поток — это один день с одной группой: ' +
-        'ключ потока стоит в ссылке самозаписи. Добавьте поток ниже, ' +
-        'потом выдайте в неё номера.</p>';
-      return;
+  // ---------- участники ----------
+
+  // Человек — это номер из регистраций плюс, если начал, его строка из листа Answers.
+  // Строка Answers без регистрации (прежние прогоны) тоже человек: её не теряем.
+  function people() {
+    var ans = {}, seen = {}, out = [];
+    rows.forEach(function (p) { ans[bk(p.bib)] = p; });
+    roster.forEach(function (r) {
+      var k = bk(r.bib), p = ans[k];
+      seen[k] = true;
+      out.push(p ? Object.assign({}, r, p, { firstName: r.firstName, registeredAt: r.registeredAt,
+                                              noScore: !!(p.noScore || r.noScore) })
+                 : Object.assign({ registeredOnly: true }, r));
+    });
+    rows.forEach(function (p) { if (!seen[bk(p.bib)]) out.push(p); });
+    return out;
+  }
+  function personByBib(bib) {
+    return people().filter(function (p) { return bk(p.bib) === bk(bib); })[0] || { bib: bib };
+  }
+  // Без потока: поток удалён, а номер остался, или номер выдан мимо потока.
+  function orphan(p) { return !p.waveId || !!p.waveMissing; }
+  function inWave(w) {
+    return people().filter(function (p) { return w === 'none' ? orphan(p) : String(p.waveId) === String(w.id); })
+      .sort(function (a, b) { return String(a.registeredAt || a.startedAt || '').localeCompare(String(b.registeredAt || b.startedAt || '')); });
+  }
+  function busy(p) { return !!(p.queue && (p.queue.queued || p.queue.running)); }
+  function versionsApart(p) { return !!(p.scenesVersion && p.expectScenes && p.scenesVersion !== p.expectScenes); }
+  function scored(p) { return !(p.total === null || p.total === undefined); }
+  // Ждёт оценки: закончил, оценки нет, не стоит в очереди, судейство ему не закрыто.
+  function needsJudge(p) {
+    return !!p.finished && !p.noScore && !scored(p) && !busy(p) && !versionsApart(p) && !!p.answered;
+  }
+
+  // Причины, по которым строку нельзя оставить машине. Словом, а не значком.
+  function attention(p) {
+    if (p.noScore) return [];
+    var out = [];
+    var hasWork = !!(p.answered || p.legacyAnswered);
+    if (hasWork && versionsApart(p)) {
+      out.push({ code: 'версии', text: 'судейство закрыто: сцены ' + p.scenesVersion + ' против судейских ' + p.expectScenes });
     }
-    var vis = waves.filter(function (w) { return showArchived() || !w.archived; });
-    var hidden = waves.length - vis.length;
-    if (!vis.length) {
-      host.innerHTML = '<p class="cab-empty">Все потоки в архиве. Поставьте отметку «показать архивные», чтобы увидеть их.</p>';
-      return;
+    if (nameTwins[twinKey(p)]) {
+      out.push({ code: 'тёзки', text: 'в этом потоке есть другой номер с теми же именем и фамилией. ' +
+        'Это могут быть тёзки или один человек, записавшийся дважды. Попросите их подойти после ассессмента' });
     }
-    host.innerHTML = '<table class="cab-table cab-table-tight cab-waves">' +
-      '<thead><tr>' +
-        // ⚠ ЭТО КЛЮЧ ССЫЛКИ, А НЕ НОМЕР (правка 29.09). Колонка называлась «Номер»
-        // с тех пор, когда владелец вводил три цифры руками; теперь значение
-        // выдаёт сервер и править его нельзя, а прежняя подпись читалась как
-        // «поле вернулось».
-        '<th class="cab-col-num">Ключ ссылки</th><th>Название</th>' +
-        '<th class="cab-col-tight">Прогон ИИ</th>' +
-        '<th class="cab-col-tight">Люди</th>' +
-        '<th class="cab-col-tight">Вход по ссылке</th>' +
-        // Время на ассессмент задаёт ведущий своему потоку (решение владельца 03.10).
-        '<th class="cab-col-tight">Время</th>' +
-        // ⚠ КОЛОНКА ВИДНА ТОЛЬКО ВЛАДЕЛЬЦУ (29.09). Ведущему показывать «ведёт: да» у
-        // каждого своего потока незачем: он и так видит ровно свои.
-        (isFull() ? '<th class="cab-col-tight">Ведёт</th>' : '') +
-        '<th class="cab-col-acts">Действия</th>' +
-      '</tr></thead><tbody>' +
-      vis.map(function (w, i) {
-        var s = waveStats(w);
-        return '<tr data-wix="' + i + '"' + (w.archived ? ' class="is-archived"' : '') + '>' +
-          // ⚠ КЛЮЧ ТОЛЬКО ПОКАЗЫВАЕМ (правка 29.09). Здесь было поле ввода на три
-          // знака: ключ придумывали руками. Теперь его выдаёт сервер, и менять его
-          // руками нельзя — по нему открыта уже разосланная ссылка.
-          '<td class="cab-col-num"><code class="cab-key">' + esc(w.num || '—') + '</code></td>' +
-          '<td><input type="text" class="cab-inp cab-inp-wide cab-w-name" value="' + esc(w.name) + '" placeholder="без названия" aria-label="Название потока" />' +
-            (w.archived ? ' <span class="cab-tag">в архиве</span>' : '') + '</td>' +
-          '<td class="cab-col-tight cab-center"><input type="checkbox" class="cab-w-ai"' + (w.isAi ? ' checked' : '') + ' aria-label="Прогон модели" /></td>' +
-          '<td class="cab-col-tight cab-nums">' +
-            (s.issued
-              ? '<b>' + s.issued + '</b> выдано<br /><span class="cab-dim">' + s.started + ' начали · ' + s.finished + ' закончили</span>'
-              : '<span class="cab-dim">никого</span>') +
-          '</td>' +
-          '<td class="cab-col-tight">' +
-            '<label class="cab-inline-check"><input type="checkbox" class="cab-w-se"' + (w.selfEnroll ? ' checked' : '') + ' />' +
-              (w.selfEnroll ? 'открыт' : 'закрыт') + '</label>' +
-            (w.selfEnroll && w.num ? ' <button type="button" class="btn btn-ghost btn-xs cab-w-link">Ссылка</button>' : '') +
-          '</td>' +
-          // ⚠ ВРЕМЯ ЗАМОРАЖИВАЕТСЯ У УЧАСТНИКА НА СТАРТЕ: правка потока задевает только тех,
-          // кто ещё не начал. Пусто — без таймера.
-          '<td class="cab-col-tight"><select class="cab-inp cab-w-tm" aria-label="Время на ассессмент">' +
-            [[0, 'без таймера'], [90, '1,5 ч'], [120, '2 ч'], [150, '2,5 ч'], [180, '3 ч']].map(function (o) {
-              return '<option value="' + o[0] + '"' + ((Number(w.timerMin) || 0) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
-            }).join('') +
-          '</select></td>' +
-          // ⚠ ВЫБОР КОНКРЕТНОГО ВЕДУЩЕГО, А НЕ ГАЛОЧКА (29.09). Галочка «ведёт» была
-          // при одной безымянной роли; с именованными ведущими надо сказать, КТО.
-          // Архивных в списке нет: отдать поток тому, у кого снят доступ, нельзя.
-          (isFull()
-            ? '<td class="cab-col-tight"><select class="cab-inp cab-w-own" aria-label="Кто ведёт поток">' +
-                '<option value=""' + (!w.owner ? ' selected' : '') + '>только вы</option>' +
-                facs.filter(function (f) { return !f.archived || f.id === w.owner; })
-                    .map(function (f) {
-                      return '<option value="' + esc(f.id) + '"' + (w.owner === f.id ? ' selected' : '') + '>' +
-                             esc(f.name || 'без имени') + (f.archived ? ' (доступ снят)' : '') + '</option>';
-                    }).join('') +
-              '</select></td>'
-            : '') +
-          '<td class="cab-col-acts">' +
-            '<span class="cab-issue">' +
-              '<input type="number" class="cab-inp cab-inp-num cab-w-count" min="1" max="300" value="1" aria-label="Сколько номеров выдать" />' +
-              '<button type="button" class="btn btn-ghost btn-xs cab-w-issue"' + (w.archived ? ' disabled' : '') + '>Выдать</button>' +
-            '</span>' +
-            '<button type="button" class="btn btn-ghost btn-xs cab-w-arch">' + (w.archived ? 'Из архива' : 'В архив') + '</button>' +
-            // Удаление потока — только владельцу: с ним уходят и все его участники.
-            (isFull() ? '<button type="button" class="btn btn-ghost btn-xs cab-w-del">Удалить</button>' : '') +
-          '</td></tr>';
-      }).join('') + '</tbody></table>' +
-      (hidden ? '<p class="cab-dim">Скрыто в архиве: ' + hidden + '</p>' : '');
-
-    host.querySelectorAll('tr[data-wix]').forEach(function (tr) {
-      var w = vis[Number(tr.getAttribute('data-wix'))];
-      var q = function (c) { return tr.querySelector(c); };
-      // Кнопки, скрытые ролью, в разметке отсутствуют — обработчик должен это пережить.
-      var qOpt = q;
-
-      // Правка ключа снята вместе с полем ввода (29.09).
-      onCommit(q('.cab-w-name'), w.name, function (val) {
-        call('setWaveMeta', { id: w.id, name: val }).then(function (r) { return after(r, 'название сохранено'); });
-      });
-      q('.cab-w-ai').addEventListener('change', function () {
-        call('setWaveMeta', { id: w.id, isAi: this.checked ? '1' : '' })
-          .then(function (r) { return after(r, 'отметка сохранена'); });
-      });
-      q('.cab-w-tm').addEventListener('change', function () {
-        var v = Number(this.value) || 0;
-        call('setWaveMeta', { id: w.id, timerMin: v ? String(v) : '' })
-          .then(function (r) { return after(r, v ? 'время на ассессмент сохранено' : 'поток без таймера'); });
-      });
-      q('.cab-w-se').addEventListener('change', function () {
-        var on = this.checked;
-        call('setWaveMeta', { id: w.id, selfEnroll: on ? '1' : '' })
-          .then(function (r) { return after(r, on ? 'вход по ссылке открыт' : 'вход по ссылке закрыт'); });
-      });
-      // ⚠ ОТДАТЬ ПОТОК ВЕДУЩЕМУ — ТОЛЬКО ВЛАДЕЛЕЦ (29.09). Сервер это и держит:
-      // setWaveMeta с полем owner от роли ведущего отвечает отказом. Здесь только
-      // переключатель, которого у ведущего нет в разметке.
-      var own = tr.querySelector('.cab-w-own');
-      if (own) own.addEventListener('change', function () {
-        var val = own.value;
-        var who = val ? (facs.filter(function (f) { return f.id === val; })[0] || {}).name : '';
-        call('setWaveMeta', { id: w.id, owner: val })
-          .then(function (r) { return after(r, val ? ('поток ведёт ' + (who || 'ведущий')) : 'поток снова только ваш'); });
-      });
-      if (q('.cab-w-link')) {
-        q('.cab-w-link').addEventListener('click', function () {
-          copyText(selfEnrollLink(w.num), 'ссылка на поток ' + w.num + ' скопирована');
-        });
-      }
-      q('.cab-w-issue').addEventListener('click', function () {
-        var count = Number(q('.cab-w-count').value);
-        if (!(count > 0 && count <= 300)) { window.imp.alert('Количество — от 1 до 300.'); return; }
-        issue(w, count);
-      });
-      q('.cab-w-arch').addEventListener('click', function () {
-        call('setWaveMeta', { id: w.id, archived: w.archived ? '' : '1' })
-          .then(function (r) { return after(r, w.archived ? 'поток вернулся из архива' : 'поток убран в архив'); });
-      });
-      qOpt('.cab-w-del') && qOpt('.cab-w-del').addEventListener('click', function () {
-        var s = waveStats(w);
-        window.imp.confirm('Удалить поток ' + (w.num || w.id) + '?' +
-          (s.issued ? ' Выданные в ней номера (' + s.issued + ') останутся в ростере без потока.' : ''),
-          { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
-            if (yes) call('removeWave', { id: w.id }).then(function (r) { return after(r, 'поток удалён'); });
-          });
-      });
-    });
+    if (p.stale) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после оценки' });
+    if (p.queue && p.queue.error) out.push({ code: 'очередь', text: 'заданий с ошибкой: ' + p.queue.error });
+    if (p.flags) out.push({ code: 'флаги', text: p.flags + ' ' + plural(p.flags, 'флаг', 'флага', 'флагов') + ' — перечитать ответ' });
+    if (p.listFacts && p.listFacts.fitsFrame === false) out.push({ code: 'рамка', text: 'разбор вышел за рамку года' });
+    return out;
+  }
+  function attentionCell(p) {
+    var a = attention(p);
+    if (!a.length) return '<span class="cab-dim">—</span>';
+    return a.map(function (x) { return '<span class="cab-need" title="' + esc(x.text) + '">' + esc(x.code) + '</span>'; }).join(' ');
   }
 
-  // Выдача номеров прямо из строки волны. Выданное показываем сразу и списком:
-  // это единственный момент, когда номер и пароль нужны вместе, чтобы их раздать.
-  function issue(w, count) {
-    var out = document.getElementById('cabIssueOut');
-    say('выдаю…');
-    call('createParticipants', { wave: w.id, count: count }).then(function (r) {
-      if (!r || !r.ok) return after(r);
-      var made = r.created || [];
-      // Пароли сняты 29.09 — копируем и показываем одни номера.
-      var text = made.map(function (c) { return c.bib; }).join('\n');
-      out.innerHTML = '<div class="cab-issued">' +
-        '<div class="cab-issued-head"><b>Выдано в поток ' + esc(w.num || w.id) + ': ' + made.length + '</b>' +
-          '<button type="button" class="btn btn-ghost btn-xs" id="cabIssuedCopy">Скопировать</button></div>' +
-        '<table class="cab-table cab-table-tight"><thead><tr><th>Номер</th></tr></thead><tbody>' +
-        made.map(function (c) {
-          return '<tr><td>' + esc(bib6(c.bib)) + '</td></tr>';
-        }).join('') + '</tbody></table></div>';
-      document.getElementById('cabIssuedCopy').addEventListener('click', function () {
-        copyText(text, 'номера скопированы');
-      });
-      return refresh();
-    });
+  // Где человек сейчас: этап по курсору маршрута — то же, что видит ведущий.
+  function whereOf(p) {
+    if (p.registeredOnly) return { cls: '', text: 'Зарегистрировался' };
+    if (!p.answered && p.legacyAnswered) return { cls: '', text: 'Прежний маршрут' };
+    if (p.finished) return { cls: 'is-done', text: 'Закончено' };
+    if (!p.started || p.cursor == null) return { cls: '', text: 'Читает инструкцию' };
+    var st = ROUTE[Math.min(p.cursor, ROUTE.length - 1)];
+    if (!st || !S.stageNo) return { cls: 'is-run', text: 'Проходит' };
+    var n = S.stageNo(st.sceneIx), name = (S.stageShort || [])[n - 1] || st.scene.name;
+    return { cls: 'is-run', text: 'Этап ' + n + ' из ' + S.stageCount() + ' · ' + name };
   }
 
-  // ── НОМЕРА И ПАРОЛИ ──────────────────────────────────────────────────────────
-  // Список людей, а не список полей. Слово «ростер» из подписи убрано: оно пришло из
-  // прежнего экрана и ничего не объясняет тому, кто открыл кабинет впервые. Имена
-  // элементов (cabRoster*, renderRoster) оставлены как есть — они не видны глазу, а
-  // переименование ради переименования только рвёт историю правок.
-  // Что с этим списком делают: находят человека по номеру
-  // или имени, отбирают одну волну, раздают номера с паролями, правят имя, гасят
-  // «без оценки», сбрасывают день. Ряд действий у всех строк ОДИН И ТОТ ЖЕ: там,
-  // где действие невозможно, кнопка выключена, а не убрана — иначе колонка
-  // действий скачет от строки к строке.
-  // ⚠ ТЕ ЖЕ ДВА ОТБОРА ДЛЯ «ОЦЕНКИ УЧАСТНИКОВ» (решение владельца 29.09). Отдельные
-  // функции, а не общие с ростером: у вкладок разные поля ввода и разный источник
-  // строк (здесь rows с оценками, там roster из регистраций). Общая функция с двумя
-  // ветками читалась бы хуже, чем две по четыре строки.
-  function dayFind() {
-    var el = document.getElementById('cabDayFind');
-    return el ? el.value.trim().toLowerCase() : '';
-  }
-
-  function dayWave() {
-    var el = document.getElementById('cabDayWave');
-    return el ? el.value : '';
-  }
-
-  function fillDayWaveSelect() {
-    var sel = document.getElementById('cabDayWave');
-    if (!sel) return;
-    var keep = sel.value;
-    // Архивные потоки в списке отбора показываем только когда включён показ прежних
-    // прогонов: иначе в выпадающем списке стоят потоки, строк которых на экране нет.
-    var withOld = !!(document.getElementById('cabShowOld') || {}).checked;
-    var list = waves.filter(function (w) { return withOld || !w.archived; });
-    sel.innerHTML = '<option value="">все потоки</option>' + list.map(function (w) {
-      return '<option value="' + esc(w.id) + '">' + esc((w.num || '—') + ' · ' + (w.name || 'без названия')) + '</option>';
+  function skillsCell(p) {
+    if (p.noScore) return '<span class="cab-dim">не оценивается</span>';
+    if (busy(p)) return '<span class="adm-wait is-run">оценивается (' + p.queue.done + ' из ' + p.queue.total + ')</span>';
+    if (!p.skills) {
+      if (needsJudge(p)) return '<span class="adm-wait">ждёт оценки</span>';
+      if (p.judged) return '<span class="cab-dim">оценено ' + p.judged + ' из 10</span>';
+      return '<span class="cab-dim">—</span>';
+    }
+    return Object.keys(SKILL_NAMES).map(function (k) {
+      var v = p.skills[k];
+      return '<span class="cab-skill" title="' + SKILL_NAMES[k] + ' — сумма двух способностей, от 2 до 10">' +
+        SKILL_NAMES[k] + '<b>' + (v === null || v === undefined ? '—' : v) + '</b></span>';
     }).join('');
-    if (keep) sel.value = keep;
+  }
+  // Итог — сумма десяти способностей, до 50; показываем, только когда оценены все десять.
+  function totalCell(p) {
+    if (!scored(p) || p.noScore) return '<span class="cab-dim">—</span>';
+    return '<b class="cab-total">' + p.total + '</b><span class="cab-dim"> из 50</span>' +
+      (p.stale ? ' <span class="cab-stale" title="Оценка вынесена по другому тексту ответа">устарело</span>' : '') +
+      (p.overridden ? ' <span class="cab-ovmark" title="Уровней поставлено вами: ' + p.overridden + '">правил человек</span>' : '');
   }
 
-  // ── ВЕДУЩИЕ (29.09) ────────────────────────────────────────────────────────
-  // Вкладка владельца: завести, переименовать, перевыдать ключ, снять доступ.
-  // Ключ показан открыто — решение владельца: ведущие свои, и ключ открывает только
-  // их собственные потоки. Снятие доступа — архив, а не удаление строки: иначе
-  // потеряется, кто вёл прошлые потоки.
-  var facs = [];
+  function waveStat(w) {
+    var ps = inWave(w), c = { joined: ps.length, run: 0, done: 0, wait: 0, scored: 0 };
+    ps.forEach(function (p) {
+      if (p.finished) c.done++; else if (p.started && !p.registeredOnly) c.run++;
+      if (needsJudge(p)) c.wait++;
+      if (scored(p)) c.scored++;
+    });
+    return c;
+  }
+
+  // ---------- маршрут страницы ----------
+
+  function route() {
+    var h = location.hash || '', m;
+    if ((m = /^#w=([^&]+)(&new=1)?/.exec(h))) return { view: 'wave', wave: decodeURIComponent(m[1]), fresh: !!m[2] };
+    if (h === '#fac') return { view: 'fac' };
+    return { view: 'home', arch: h === '#arch' };
+  }
+  function findQ() { return findEl ? findEl.value.trim().toLowerCase() : ''; }
+  function waveById(id) { return waves.filter(function (w) { return String(w.id) === String(id); })[0]; }
+
+  function render() {
+    // Поле в фокусе (печатают название, имя) — перерисовка его бы стёрла.
+    var a = document.activeElement;
+    if (a && main.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return;
+    var r = route();
+    [].forEach.call(document.querySelectorAll('.adm-nav a'), function (x) {
+      x.classList.toggle('is-on', !findQ() && (x.getAttribute('data-go') === 'fac') === (r.view === 'fac'));
+    });
+    if (findQ()) return renderFind();
+    if (r.view === 'fac') return renderFacs();
+    if (r.view === 'wave') {
+      if (r.wave === 'none') return renderWave('none');
+      var w = waveById(r.wave);
+      if (!w) { main.innerHTML = '<p class="ved-empty">Такого потока нет. <a href="#">Все потоки</a></p>'; return; }
+      if (r.fresh) return renderShare(w);
+      return renderWave(w);
+    }
+    renderHome(r.arch);
+  }
+
+  // ---------- все потоки ----------
+
+  function renderHome(arch) {
+    var list = waves.filter(function (w) { return arch ? w.archived : !w.archived; }).slice().reverse();
+    var nArch = waves.filter(function (w) { return w.archived; }).length;
+    var orphans = people().filter(orphan);
+    main.innerHTML =
+      '<p class="ved-k">Потоки</p><h1 class="ved-h1">' + (arch ? 'Потоки в архиве' : 'Все потоки') + '</h1>' +
+      (arch ? '' :
+      '<form class="ved-card ved-row adm-new" id="admNew">' +
+        '<label class="ved-f"><span>Название</span><input id="admNewName" placeholder="например, «Сбер, группа 2 — 14 октября»" required /></label>' +
+        '<label class="ved-f adm-f-s"><span>Время</span><select id="admNewTime">' + timeOptions(120) + '</select></label>' +
+        '<label class="ved-f adm-f-s"><span>Ведёт</span><select id="admNewOwner">' + ownerOptions('') + '</select></label>' +
+        '<label class="ved-check adm-new-ai"><input type="checkbox" id="admNewAi" /> прогон модели</label>' +
+        '<button class="btn btn-primary" type="submit" id="admNewBtn">Создать поток →</button>' +
+      '</form>') +
+      (list.length
+        ? '<div class="adm-cols adm-cols-hd"><span>Поток</span><span>Ведёт</span><span>Участники</span><span>Закончили</span><span>Ждут оценки</span><span>Время</span></div>' +
+          '<div class="ved-list adm-list">' + list.map(function (w) { return waveLine(w); }).join('') +
+            (!arch && orphans.length ? waveLine('none') : '') + '</div>'
+        : '<p class="ved-empty">' + (arch ? 'В архиве пусто.' : 'Ни одного потока. Создайте первый — получите ссылку и QR для участников.') + '</p>') +
+      '<p class="ved-dim">' + (arch ? '<a href="#">← все потоки</a>'
+        : (nArch ? '<a href="#arch">Показать архивные (' + nArch + ')</a>' : '')) + '</p>';
+    var form = el('admNew');
+    if (form) form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = (el('admNewName').value || '').trim();
+      if (!name) return;
+      var ai = el('admNewAi').checked;
+      var btn = el('admNewBtn'); btn.disabled = true; btn.textContent = 'Создаю…';
+      // Поток сразу открыт по ссылке, как у ведущего; прогон модели — закрыт.
+      call('addWave', { name: name, timerMin: el('admNewTime').value, owner: el('admNewOwner').value,
+                        isAi: ai ? '1' : '', selfEnroll: ai ? '' : '1' }).then(function (res) {
+        btn.disabled = false; btn.textContent = 'Создать поток →';
+        if (!res || !res.ok || !res.wave) { window.imp.alert('Поток не создан: ' + ((res && (res.message || res.error)) || 'сервер не ответил') + '.'); return; }
+        waves.push({ id: res.wave.id, num: res.wave.num, name: res.wave.name, isAi: !!res.wave.isAi, selfEnroll: !!res.wave.selfEnroll,
+                     timerMin: res.wave.timerMin, owner: res.wave.owner || '', archived: false });
+        location.hash = '#w=' + encodeURIComponent(res.wave.id) + (ai ? '' : '&new=1');
+      });
+    });
+  }
+  function waveLine(w) {
+    var none = w === 'none', c = waveStat(w);
+    return '<a href="#w=' + (none ? 'none' : encodeURIComponent(w.id)) + '"><div class="adm-cols">' +
+      '<b>' + (none ? 'Без потока' : esc(w.name || w.num)) + (!none && w.isAi ? '<span class="adm-ai">ИИ</span>' : '') + '</b>' +
+      '<span>' + (none ? '—' : esc(facName(w.owner) || 'только вы')) + '</span>' +
+      '<span>' + c.joined + (c.run ? ' · ' + c.run + ' ' + plural(c.run, 'проходит', 'проходят', 'проходят') : '') + '</span>' +
+      '<span>' + c.done + '</span>' +
+      '<span>' + (c.wait ? '<span class="adm-wait">' + c.wait + ' ' + plural(c.wait, 'ждёт', 'ждут', 'ждут') + '</span>'
+                         : (c.done && c.scored >= c.done ? '<span class="cab-dim">все оценены</span>' : '<span class="cab-dim">—</span>')) + '</span>' +
+      '<span>' + (none ? '—' : (w.timerMin ? timeWord(w.timerMin).replace(' часа', ' ч') : '—')) + '</span>' +
+      '</div></a>';
+  }
+
+  // ---------- ссылка и QR ----------
+
+  function link(w) {
+    try { return new URL('index.html?w=' + encodeURIComponent(w.num), location.href).href; }
+    catch (e) { return 'index.html?w=' + w.num; }
+  }
+  function shareHtml(w, fresh) {
+    return '<div class="ved-card ved-share">' +
+      '<button type="button" class="ved-qr" id="vedQr" title="QR на весь экран">' + window.imp.qrSvg(link(w)) + '</button>' +
+      '<div><p class="ved-k">Ссылка для участников</p>' +
+        '<div class="ved-link">' + esc(link(w)) + '</div>' +
+        '<div class="ved-row">' +
+          '<button type="button" class="btn btn-ghost" id="vedCopy">Скопировать ссылку</button>' +
+          '<button type="button" class="btn btn-ghost" id="vedQrBig">QR на весь экран</button>' +
+          (fresh ? '<a class="btn btn-primary" href="#w=' + encodeURIComponent(w.id) + '">Перейти к потоку →</a>' : '') +
+        '</div>' +
+        '<p class="ved-dim">Покажите QR на экране или отправьте ссылку в чат группы. Время на ассессмент — ' + timeWord(w.timerMin) + '.' +
+          (!w.selfEnroll ? ' <b>Вход по ссылке закрыт</b> — откройте его в настройках потока.' : '') + '</p>' +
+      '</div></div>';
+  }
+  function wireShare(w) {
+    var full = function () {
+      el('vedQrFullImg').innerHTML = window.imp.qrSvg(link(w));
+      el('vedQrFullLink').textContent = link(w);
+      el('vedQrFull').style.display = 'flex';
+    };
+    if (el('vedQr')) el('vedQr').addEventListener('click', full);
+    if (el('vedQrBig')) el('vedQrBig').addEventListener('click', full);
+    if (el('vedCopy')) el('vedCopy').addEventListener('click', function () {
+      var b = this;
+      copyText(link(w), 'ссылка скопирована').then(function () {
+        b.textContent = 'Скопировано ✓'; setTimeout(function () { b.textContent = 'Скопировать ссылку'; }, 1600);
+      });
+    });
+  }
+  function renderShare(w) {
+    main.innerHTML = '<p class="ved-k">Поток создан</p><h1 class="ved-h1">' + esc(w.name || w.num) + '</h1>' + shareHtml(w, true);
+    wireShare(w);
+  }
+
+  // ---------- поток ----------
+
+  function peopleTable(list, withWave) {
+    return '<table class="ved-table adm-table"><thead><tr><th>Участник</th>' + (withWave ? '<th>Поток</th>' : '') +
+      '<th>Где сейчас</th><th>Оценка по навыкам</th><th>Итог</th><th>Внимание</th></tr></thead><tbody>' +
+      list.map(function (p) {
+        var where = whereOf(p), wv = withWave ? waveById(p.waveId) : null;
+        return '<tr data-bib="' + esc(p.bib) + '" tabindex="0"' + (p.noScore ? ' class="is-off"' : '') + '>' +
+          '<td><b>' + (esc(p.fio) || '<span class="cab-dim">без имени</span>') + '</b> <span class="ved-num">' + esc(bib6(p.bib)) + '</span>' +
+            (p.isRunner ? ' <span class="adm-ai" title="Ассессмент прошла модель, а не человек">модель</span>' : '') + '</td>' +
+          (withWave ? '<td>' + (wv ? esc(wv.name || wv.num) : '<span class="cab-dim">без потока</span>') + '</td>' : '') +
+          '<td><span class="ved-st ' + where.cls + '">' + esc(where.text) + '</span></td>' +
+          '<td>' + skillsCell(p) + '</td><td>' + totalCell(p) + '</td><td>' + attentionCell(p) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+  function wireRows() {
+    [].forEach.call(main.querySelectorAll('tr[data-bib]'), function (tr) {
+      var open = function () { openCard(personByBib(tr.getAttribute('data-bib'))); };
+      tr.addEventListener('click', open);
+      tr.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    });
+  }
+
+  function renderWave(w) {
+    var none = w === 'none', c = waveStat(w), list = inWave(w);
+    var waiting = list.filter(needsJudge);
+    if (none) tab = 'people';
+    var head =
+      '<p class="ved-k">' + (none ? 'Номера без потока'
+        : 'Поток · ' + timeWord(w.timerMin) + ' · ' + (w.owner ? 'ведёт ' + esc(facName(w.owner)) : 'ведёте вы') +
+          (w.isAi ? ' · прогон модели' : '') + (w.archived ? ' · в архиве' : '')) + '</p>' +
+      '<h1 class="ved-h1">' + (none ? 'Без потока' : esc(w.name || w.num)) + '</h1>' +
+      '<div class="ved-meta"><span class="ved-live">обновляется само</span>' +
+        '<span>' + c.joined + ' вошли · ' + c.run + ' ' + plural(c.run, 'проходит', 'проходят', 'проходят') + ' · ' + c.done + ' закончили' +
+          (c.wait ? ' · ' + c.wait + ' ' + plural(c.wait, 'ждёт', 'ждут', 'ждут') + ' оценки' : '') + '</span>' +
+        (none || !w.num ? '' : '<a href="#" id="admShowShare">ссылка и QR</a>') +
+        '<a href="#">все потоки</a></div>' +
+      (none ? '' : '<div id="admShareBox"' + (shareOpen ? '' : ' style="display:none;"') + '>' + shareHtml(w) + '</div>') +
+      (none ? '' : '<nav class="ved-tabs"><button type="button" data-t="people"' + (tab === 'people' ? ' class="is-on"' : '') + '>Участники</button>' +
+        '<button type="button" data-t="set"' + (tab === 'set' ? ' class="is-on"' : '') + '>Настройки потока</button></nav>');
+    var body;
+    if (tab === 'people') {
+      body = list.length
+        ? '<div class="adm-bar"><span class="ved-dim">Нажмите на строку — откроется карточка участника.</span>' +
+            '<span class="adm-bar-acts">' +
+            // ⚠ ЗАГЛУШКИ (решение владельца 03.10): видны, но не работают — генератор отчёта
+            // ещё не подключён к оценкам (стрим 05). Показывают, где будут отчёты потока.
+            '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: отчёты всех участников потока одним архивом">Отчёты участников · скоро</button>' +
+            '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: сводный отчёт по потоку">Отчёт по потоку · скоро</button>' +
+            (waiting.length || judging ? '<button type="button" class="btn btn-primary btn-sm" id="admJudgeAll"' + (judging ? ' disabled' : '') + '>' +
+              (judging ? 'Оцениваю…' : 'Оценить закончивших (' + waiting.length + ')') + '</button>' : '') + '</span></div>' +
+          peopleTable(list)
+        : '<p class="ved-empty">Пока никого. Участники появятся здесь сами, как только зарегистрируются по ссылке.</p>';
+    } else {
+      body = settingsHtml(w);
+    }
+    main.innerHTML = head + body;
+    if (!none) {
+      wireShare(w);
+      el('admShowShare') && el('admShowShare').addEventListener('click', function (e) {
+        e.preventDefault(); shareOpen = !shareOpen; el('admShareBox').style.display = shareOpen ? '' : 'none';
+      });
+      [].forEach.call(main.querySelectorAll('.ved-tabs button'), function (b) {
+        b.addEventListener('click', function () { tab = b.getAttribute('data-t'); renderWave(w); });
+      });
+    }
+    if (tab === 'people') {
+      wireRows();
+      el('admJudgeAll') && el('admJudgeAll').addEventListener('click', function () { judgeMany(waiting); });
+    } else wireSettings(w);
+  }
+
+  // ---------- настройки потока ----------
+
+  function settingsHtml(w) {
+    return '<div class="ved-card ved-set">' +
+      '<label class="ved-f"><span>Название</span><input id="admSetName" value="' + esc(w.name || '') + '" /></label>' +
+      '<label class="ved-f"><span>Время на ассессмент</span><select id="admSetTime">' + timeOptions(w.timerMin) + '</select>' +
+        '<em>Меняется только у тех, кто ещё не вошёл: вошедшим время пришло при входе.</em></label>' +
+      '<label class="ved-f"><span>Ведёт</span><select id="admSetOwner">' + ownerOptions(w.owner || '') + '</select></label>' +
+      '<label class="ved-check"><input type="checkbox" id="admSetOpen"' + (w.selfEnroll ? ' checked' : '') + ' /> Вход по ссылке открыт</label>' +
+      '<label class="ved-check"><input type="checkbox" id="admSetAi"' + (w.isAi ? ' checked' : '') + ' /> Прогон модели</label>' +
+      '<div class="ved-row"><button type="button" class="btn btn-primary" id="admSetSave">Сохранить</button></div>' +
+    '</div>' +
+    // Ручная выдача — запасной путь: участники записываются сами по ссылке (решение владельца 03.10).
+    '<details class="ved-card adm-more"><summary>Выдать номера вручную</summary>' +
+      '<p class="ved-dim">Нужно, только если человек не может записаться по ссылке. Номер он вводит на странице входа.</p>' +
+      '<div class="ved-row"><label class="ved-f adm-f-xs"><span>Сколько</span><input type="number" id="admIssueN" min="1" max="300" value="1" /></label>' +
+      '<button type="button" class="btn btn-ghost" id="admIssue"' + (w.archived ? ' disabled' : '') + '>Выдать</button></div>' +
+      '<div id="admIssueOut" aria-live="polite"></div>' +
+    '</details>' +
+    '<div class="ved-row adm-danger">' +
+      '<button type="button" class="btn btn-ghost" id="admSetArch">' + (w.archived ? 'Вернуть из архива' : 'Убрать поток в архив') + '</button>' +
+      '<button type="button" class="btn btn-ghost" id="admSetDel">Удалить поток</button>' +
+    '</div>';
+  }
+  function wireSettings(w) {
+    el('admSetSave').addEventListener('click', function () {
+      var b = this; b.disabled = true; b.textContent = 'Сохраняю…';
+      var nm = (el('admSetName').value || '').trim(), tm = Number(el('admSetTime').value) || 0;
+      var own = el('admSetOwner').value, open = el('admSetOpen').checked, ai = el('admSetAi').checked;
+      var p = { id: w.id, name: nm, timerMin: tm ? String(tm) : '', selfEnroll: open ? '1' : '', isAi: ai ? '1' : '' };
+      if (own !== (w.owner || '')) p.owner = own;
+      call('setWaveMeta', p).then(function (res) {
+        b.disabled = false; b.textContent = 'Сохранить';
+        if (!res || !res.ok) { window.imp.alert('Не сохранилось: ' + ((res && (res.message || res.error)) || 'сервер не ответил') + '.'); return; }
+        w.name = nm; w.timerMin = tm; w.owner = own; w.selfEnroll = open; w.isAi = ai;
+        b.textContent = 'Сохранено ✓'; setTimeout(function () { b.textContent = 'Сохранить'; }, 1600);
+        say('настройки потока сохранены');
+      });
+    });
+    el('admIssue').addEventListener('click', function () {
+      var n = Number(el('admIssueN').value);
+      if (!(n > 0 && n <= 300)) { window.imp.alert('Количество — от 1 до 300.'); return; }
+      var b = this; b.disabled = true;
+      call('createParticipants', { wave: w.id, count: n }).then(function (r) {
+        b.disabled = false;
+        if (!r || !r.ok) return after(r);
+        var made = (r.created || []).map(function (c) { return c.bib; });
+        el('admIssueOut').innerHTML = '<p class="ved-dim"><b>Выдано: ' + made.length + '</b> · <a href="#" id="admIssueCopy">скопировать</a></p>' +
+          '<p class="adm-issued">' + made.map(function (x) { return esc(bib6(x)); }).join('<br />') + '</p>';
+        el('admIssueCopy').addEventListener('click', function (e) { e.preventDefault(); copyText(made.join('\n'), 'номера скопированы'); });
+        // Список обновляем без перерисовки: выданные номера должны остаться на экране.
+        window.imp.callApi('v2List', { password: pw }).then(function (res) {
+          if (res && res.ok) { rows = res.participants || []; roster = res.roster || []; waves = res.waves || []; }
+        });
+      });
+    });
+    el('admSetArch').addEventListener('click', function () {
+      var to = !w.archived;
+      call('setWaveMeta', to ? { id: w.id, archived: '1', selfEnroll: '' } : { id: w.id, archived: '' }).then(function (r) {
+        if (!r || !r.ok) return after(r);
+        w.archived = to; if (to) w.selfEnroll = false;
+        say(to ? 'поток убран в архив' : 'поток вернулся из архива');
+        location.hash = to ? '' : '#w=' + encodeURIComponent(w.id);
+        render();
+      });
+    });
+    el('admSetDel').addEventListener('click', function () {
+      var c = waveStat(w);
+      window.imp.confirm('Удалить поток «' + (w.name || w.num) + '»?' +
+        (c.joined ? ' Номера участников (' + c.joined + ') останутся — в разделе «Без потока».' : ''),
+        { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
+        if (!yes) return;
+        call('removeWave', { id: w.id }).then(function (r) {
+          if (!r || !r.ok) return after(r);
+          location.hash = '';
+          after(r, 'поток удалён');
+        });
+      });
+    });
+  }
+
+  // ---------- поиск ----------
+
+  function renderFind() {
+    var q = findQ();
+    var list = people().filter(function (p) {
+      return (String(p.bib) + ' ' + (p.fio || '') + ' ' + (p.firstName || '')).toLowerCase().indexOf(q) >= 0;
+    });
+    main.innerHTML = '<p class="ved-k">Поиск</p><h1 class="ved-h1">«' + esc(findEl.value.trim()) + '»</h1>' +
+      (list.length ? peopleTable(list, true)
+                   : '<p class="ved-empty">Никого не нашлось. Ищется номер, имя и фамилия во всех потоках, включая архивные.</p>');
+    wireRows();
+  }
+
+  // ---------- ведущие ----------
+  // Завести, переименовать, перевыдать ключ, снять доступ (29.09). Ключ показан открыто —
+  // решение владельца. Снятие доступа — архив, а не удаление: иначе потеряется, кто вёл
+  // прошлые потоки.
 
   function renderFacs() {
-    var host = document.getElementById('cabFacList');
-    if (!host) return;
-    if (!facs.length) {
-      host.innerHTML = '<p class="cab-empty">Ни одного ведущего. Заведите ниже — он получит ключ ' +
-        'и сможет войти в кабинет, когда вы отдадите ему поток.</p>';
-      return;
-    }
-    host.innerHTML = '<table class="cab-table cab-table-tight"><thead><tr>' +
-      '<th>Имя</th><th class="cab-col-tight">Ключ</th><th class="cab-col-tight">Потоков</th>' +
-      '<th class="cab-col-acts">Действия</th></tr></thead><tbody>' +
-      facs.map(function (f, i) {
-        return '<tr data-fix="' + i + '"' + (f.archived ? ' class="is-archived"' : '') + '>' +
-          '<td><input type="text" class="cab-inp cab-inp-wide cab-f-name" value="' + esc(f.name) + '" aria-label="Имя ведущего" /></td>' +
-          '<td class="cab-col-tight"><code class="cab-key">' + esc(f.key) + '</code></td>' +
-          '<td class="cab-col-tight">' + (f.waves || '<span class="cab-dim">—</span>') + '</td>' +
-          '<td class="cab-col-acts">' +
-            '<button type="button" class="btn btn-ghost btn-xs cab-f-key">Новый ключ</button>' +
-            '<button type="button" class="btn btn-ghost btn-xs cab-f-arch">' + (f.archived ? 'Вернуть' : 'Снять доступ') + '</button>' +
-          '</td></tr>';
-      }).join('') + '</tbody></table>';
-
-    host.querySelectorAll('tr[data-fix]').forEach(function (tr) {
-      var f = facs[Number(tr.getAttribute('data-fix'))];
-      onCommit(tr.querySelector('.cab-f-name'), f.name, function (val) {
-        call('setFacilitator', { id: f.id, name: val }).then(function (r) { return after(r, 'имя сохранено'); });
+    main.innerHTML = '<p class="ved-k">Ведущие</p><h1 class="ved-h1">Кто ведёт потоки</h1>' +
+      '<form class="ved-card ved-row adm-new" id="admFacNew">' +
+        '<label class="ved-f"><span>Имя и фамилия</span><input id="admFacName" placeholder="Мария Белова" required /></label>' +
+        '<button class="btn btn-primary" type="submit">Завести ведущего →</button></form>' +
+      (facs.length
+        ? '<table class="ved-table adm-table"><thead><tr><th>Ведущий</th><th>Ключ для входа</th><th>Потоки</th><th></th></tr></thead><tbody>' +
+          facs.map(function (f, i) {
+            var ws = waves.filter(function (w) { return String(w.owner) === String(f.id) && !w.archived; });
+            return '<tr data-fix="' + i + '"' + (f.archived ? ' class="is-off"' : '') + '>' +
+              '<td><input class="adm-inline" value="' + esc(f.name) + '" aria-label="Имя ведущего" />' +
+                (f.archived ? ' <span class="cab-dim">доступ снят</span>' : '') + '</td>' +
+              '<td><span class="adm-key">' + esc(f.key) + '</span> <a href="#" class="adm-copy">скопировать</a></td>' +
+              '<td>' + (ws.length ? ws.map(function (w) { return '<a href="#w=' + encodeURIComponent(w.id) + '">' + esc(w.name || w.num) + '</a>'; }).join(', ')
+                                  : '<span class="cab-dim">—</span>') + '</td>' +
+              '<td class="adm-acts"><button type="button" class="btn btn-ghost btn-sm adm-f-key">Новый ключ</button>' +
+                '<button type="button" class="btn btn-ghost btn-sm adm-f-arch">' + (f.archived ? 'Вернуть доступ' : 'Снять доступ') + '</button></td></tr>';
+          }).join('') + '</tbody></table>'
+        : '<p class="ved-empty">Ни одного ведущего. Заведите — он получит ключ и сможет сам создавать потоки.</p>') +
+      '<p class="ved-dim">Ведущий входит на страницу «Ведущий» своим ключом, создаёт потоки и видит прохождение — без оценок и карточек.</p>';
+    el('admFacNew').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var nm = (el('admFacName').value || '').trim();
+      if (!nm) return;
+      call('addFacilitator', { name: nm }).then(function (r) {
+        if (!r || !r.ok) return after(r);
+        say('ведущий заведён, ключ ' + ((r.facilitator || {}).key || ''));
+        loadFacs().then(function () { el('admFacName') && (el('admFacName').value = ''); render(); });
       });
-      tr.querySelector('.cab-f-key').addEventListener('click', function () {
-        window.imp.confirm('Выдать ' + (f.name || 'ведущему') + ' новый ключ? Прежний перестанет пускать.',
-          { confirmLabel: 'Выдать' }).then(function (yes) {
-            if (yes) call('setFacilitator', { id: f.id, newKey: '1' })
-              .then(function (r) { return after(r, r && r.key ? 'новый ключ: ' + r.key : 'ключ заменён'); });
+    });
+    [].forEach.call(main.querySelectorAll('tr[data-fix]'), function (tr) {
+      var f = facs[Number(tr.getAttribute('data-fix'))];
+      onCommit(tr.querySelector('.adm-inline'), f.name, function (val) {
+        call('setFacilitator', { id: f.id, name: val }).then(function (r) {
+          if (!r || !r.ok) return after(r);
+          f.name = val; say('имя сохранено');
+        });
+      });
+      tr.querySelector('.adm-copy').addEventListener('click', function (e) { e.preventDefault(); copyText(f.key, 'ключ скопирован'); });
+      tr.querySelector('.adm-f-key').addEventListener('click', function () {
+        window.imp.confirm('Выдать ' + (f.name || 'ведущему') + ' новый ключ? Прежний перестанет пускать.', { confirmLabel: 'Выдать' })
+          .then(function (yes) {
+            if (yes) call('setFacilitator', { id: f.id, newKey: '1' }).then(function (r) {
+              if (!r || !r.ok) return after(r);
+              say(r.key ? 'новый ключ: ' + r.key : 'ключ заменён');
+              loadFacs().then(render);
+            });
           });
       });
-      tr.querySelector('.cab-f-arch').addEventListener('click', function () {
+      tr.querySelector('.adm-f-arch').addEventListener('click', function () {
         var on = !f.archived;
-        call('setFacilitator', { id: f.id, archived: on ? '1' : '' })
-          .then(function (r) { return after(r, on ? 'доступ снят' : 'доступ возвращён'); });
+        call('setFacilitator', { id: f.id, archived: on ? '1' : '' }).then(function (r) {
+          if (!r || !r.ok) return after(r);
+          say(on ? 'доступ снят' : 'доступ возвращён');
+          loadFacs().then(render);
+        });
       });
     });
   }
 
   function loadFacs() {
-    if (!isFull()) return Promise.resolve();
     return call('listFacilitators', {}).then(function (r) {
-      if (r && r.ok) { facs = r.facilitators || []; renderFacs(); }
+      if (r && r.ok) facs = r.facilitators || [];
       return r;
     });
   }
 
-  function rosterFind() {
-    var el = document.getElementById('cabRosterFind');
-    return el ? el.value.trim().toLowerCase() : '';
-  }
-
-  function rosterWave() {
-    var el = document.getElementById('cabRosterWave');
-    return el ? el.value : '';
-  }
-
-  function fillRosterWaveSelect() {
-    var sel = document.getElementById('cabRosterWave');
-    if (!sel) return;
-    var keep = sel.value;
-    var list = waves.filter(function (w) { return showArchived() || !w.archived; });
-    sel.innerHTML = '<option value="">все потоки</option>' + list.map(function (w) {
-      return '<option value="' + esc(w.id) + '">' + esc((w.num || '—') + ' · ' + (w.name || 'без названия')) + '</option>';
-    }).join('');
-    if (keep) sel.value = keep;
-  }
-
-  function rosterVisible() {
-    var find = rosterFind(), wave = rosterWave();
-    return roster.filter(function (r) {
-      if (!showArchived() && r.waveArchived) return false;
-      if (wave && String(r.waveId) !== String(wave)) return false;
-      if (find) {
-        var hay = (String(r.bib) + ' ' + (r.fio || '') + ' ' + (r.firstName || '')).toLowerCase();
-        if (hay.indexOf(find) < 0) return false;
-      }
-      return true;
+  // ---------- оценка закончивших ----------
+  // По одному участнику, подряд: та же постановка в очередь и тот же разбор, что у
+  // кнопки «Оценить» в карточке. Каждая оценка — платные вызовы судьи, поэтому сначала
+  // вопрос с числом. Счёт идёт в строке состояния в шапке: список под ней перерисовывается.
+  function judgeMany(list) {
+    if (!list.length || judging) return;
+    window.imp.confirm('Оценить ' + list.length + ' ' + plural(list.length, 'участника', 'участников', 'участников') +
+      '? Оценка каждого — платные вызовы судьи. Идёт по одному; не закрывайте страницу, пока не закончится.',
+      { confirmLabel: 'Оценить' }).then(function (yes) {
+      if (!yes) return;
+      judging = true;
+      var i = 0, failed = [];
+      var next = function () {
+        if (i >= list.length) {
+          judging = false;
+          return refresh(true).then(function () {
+            say('оценено: ' + (list.length - failed.length) + ' из ' + list.length +
+              (failed.length ? ' · не удалось: ' + failed.join(', ') : ''), failed.length ? 'bad' : '');
+          });
+        }
+        var p = list[i++];
+        say('оцениваю ' + i + ' из ' + list.length + ' · ' + (p.fio || bib6(p.bib)));
+        render();
+        return window.imp.callApi('judgeAnswers', { password: pw, bib: p.bib }).then(function (res) {
+          if (!res || !res.ok) { failed.push(p.fio || bib6(p.bib)); return next(); }
+          return drainQueue(p.bib, [], statusEl, true).then(next);
+        });
+      };
+      next();
     });
   }
 
-  function renderRoster() {
-    var host = document.getElementById('cabRoster');
-    if (!host) return;
-    fillRosterWaveSelect();
-    if (!roster.length) {
-      host.innerHTML = '<p class="cab-empty">Ни одного номера. Номера выдаются в потоке: ' +
-        'откройте «Потоки» и нажмите «Выдать» в её строке.</p>';
-      return;
-    }
-    var vis = rosterVisible();
-    var hidden = roster.length - vis.length;
-    if (!vis.length) {
-      host.innerHTML = '<p class="cab-empty">Под этот отбор никто не подходит. Снимите поиск или выберите другой поток.</p>';
-      return;
-    }
-    host.innerHTML = '<table class="cab-table cab-table-tight cab-roster">' +
-      '<thead><tr>' +
-        '<th class="cab-col-num">Номер</th><th>Имя</th><th>Поток</th>' +
-        '<th class="cab-col-tight">День</th>' +
-        '<th class="cab-col-tight cab-center">Без оценки</th>' +
-        '<th class="cab-col-acts">Действия</th>' +
-      '</tr></thead><tbody>' +
-      vis.map(function (r, i) {
-        return '<tr data-rix="' + i + '"' + (r.noScore ? ' class="is-off"' : '') + '>' +
-          '<td class="cab-col-num">' + esc(bib6(r.bib)) + '</td>' +
-          '<td><input type="text" class="cab-inp cab-inp-wide cab-r-name" value="' + esc(r.firstName) + '" placeholder="без имени" aria-label="Имя участника" /></td>' +
-          '<td>' + (esc(r.wave) || '<span class="cab-dim">—</span>') +
-            (r.waveArchived ? ' <span class="cab-tag">архив</span>' : '') + '</td>' +
-          '<td class="cab-col-tight">' + (r.started ? 'начат' : '<span class="cab-dim">не начинал</span>') + '</td>' +
-          '<td class="cab-col-tight cab-center"><input type="checkbox" class="cab-r-nos"' + (r.noScore ? ' checked' : '') + ' aria-label="Не оценивать" /></td>' +
-          '<td class="cab-col-acts">' +
-            // ⚠ ДВЕ КНОПКИ — ТОЛЬКО ВЛАДЕЛЬЦУ (правка 29.09). Ведущий сессии ведёт
-            // прохождение, а не администрирует данные: сброс дня и удаление номера
-            // необратимы и стоят рядом с обычными кнопками.
-            // Кнопки «Новый пароль» здесь больше нет: паролей участника не существует.
-            (isFull() ? ('<button type="button" class="btn btn-ghost btn-xs cab-r-reset"' + (r.started ? '' : ' disabled title="День не начат — сбрасывать нечего"') + '>Сбросить день</button>' +
-            '<button type="button" class="btn btn-ghost btn-xs cab-r-del">Удалить</button>') : '') +
-          '</td></tr>';
-      }).join('') + '</tbody></table>' +
-      (hidden ? '<p class="cab-dim">Не попало под отбор: ' + hidden + '</p>' : '');
-
-    host.querySelectorAll('tr[data-rix]').forEach(function (tr) {
-      var r = vis[Number(tr.getAttribute('data-rix'))];
-      var q = function (c) { return tr.querySelector(c); };
-      // Кнопки, скрытые ролью, в разметке отсутствуют — обработчик должен это пережить.
-      var qOpt = q;
-      onCommit(q('.cab-r-name'), r.firstName, function (val) {
-        call('setParticipantName', { bib: r.bib, firstName: val })
-          .then(function (res) { return after(res, 'имя сохранено'); });
+  // ---------- действия с номером (в карточке) ----------
+  // Переехали из вкладки «Номера участников» (решение владельца 03.10). Сброс и удаление
+  // необратимы — у обоих вопрос с последствиями словами.
+  function numberActionsHtml(p) {
+    return '<section class="cab-block adm-num"><h3>Номер участника</h3>' +
+      '<div class="ved-row">' +
+        '<label class="ved-f"><span>Имя</span><input id="admPName" value="' + esc(p.firstName || '') + '" placeholder="без имени" /></label>' +
+        '<label class="ved-check"><input type="checkbox" id="admPNo"' + (p.noScore ? ' checked' : '') + ' /> Не оценивать этот номер</label>' +
+      '</div>' +
+      '<div class="ved-row" style="margin-top:14px">' +
+        '<button type="button" class="btn btn-ghost btn-sm" id="admPReset"' + (p.registeredOnly ? ' disabled title="Ассессмент не начат — сбрасывать нечего"' : '') + '>Сбросить ассессмент</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" id="admPDel">Удалить номер</button>' +
+      '</div></section>';
+  }
+  function wireNumberActions(p) {
+    var nm = el('admPName');
+    if (!nm) return;
+    onCommit(nm, p.firstName, function (val) {
+      call('setParticipantName', { bib: p.bib, firstName: val }).then(function (r) { return after(r, 'имя сохранено'); });
+    });
+    el('admPNo').addEventListener('change', function () {
+      call('setNoScore', { bib: p.bib, value: this.checked ? '1' : '' }).then(function (r) { return after(r, 'отметка сохранена'); });
+    });
+    el('admPReset').addEventListener('click', function () {
+      if (this.disabled) return;
+      window.imp.confirm('Стереть ассессмент у ' + bib6(p.bib) + '? Ответы, оценки и ручные правки уровней ' +
+        'по этому номеру исчезнут. Отменить это нельзя.', { confirmLabel: 'Стереть', danger: true }).then(function (yes) {
+        if (yes) call('resetProgress', { bib: p.bib, confirm: 'RESET' }).then(function (r) {
+          if (r && r.ok) closeCard();
+          return after(r, 'ассессмент стёрт');
+        });
       });
-      q('.cab-r-nos').addEventListener('change', function () {
-        call('setNoScore', { bib: r.bib, value: this.checked ? '1' : '' })
-          .then(function (res) { return after(res, 'отметка сохранена'); });
-      });
-      qOpt('.cab-r-reset') && qOpt('.cab-r-reset').addEventListener('click', function () {
-        if (this.disabled) return;
-        window.imp.confirm('Стереть день у ' + bib6(r.bib) + '? Ответы, оценки и ручные правки уровней ' +
-          'по этому номеру исчезнут. Отменить это нельзя.',
-          { confirmLabel: 'Стереть', danger: true }).then(function (yes) {
-            if (yes) call('resetProgress', { bib: r.bib, confirm: 'RESET' })
-              .then(function (res) { return after(res, 'день стёрт'); });
-          });
-      });
-      qOpt('.cab-r-del') && qOpt('.cab-r-del').addEventListener('click', function () {
-        window.imp.confirm('Удалить номер ' + bib6(r.bib) + ' вместе с ответами и оценками? Отменить нельзя.',
-          { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
-            if (yes) call('deleteParticipant', { bib: r.bib })
-              .then(function (res) { return after(res, 'номер удалён'); });
-          });
+    });
+    el('admPDel').addEventListener('click', function () {
+      window.imp.confirm('Удалить номер ' + bib6(p.bib) + ' вместе с ответами и оценками? Отменить нельзя.',
+        { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
+        if (yes) call('deleteParticipant', { bib: p.bib }).then(function (r) {
+          if (r && r.ok) closeCard();
+          return after(r, 'номер удалён');
+        });
       });
     });
   }
@@ -1514,8 +1453,15 @@
     detail.style.display = 'flex';
     detail.setAttribute('aria-hidden', 'false');
     detailBody.innerHTML = '<p class="fac-detail-loading">Загружаю карточку…</p>';
-    document.getElementById('cabDetailTitle').textContent = bib6(p.bib) + (p.fio ? ' · ' + p.fio : '');
+    document.getElementById('cabDetailTitle').textContent = bib6(p.bib) + ((p.fio || personByBib(p.bib).fio) ? ' · ' + (p.fio || personByBib(p.bib).fio) : '');
     window.imp.callApi('v2Detail', { password: pw, bib: p.bib }).then(function (d) {
+      var who = personByBib(p.bib);
+      // Номер есть, а ассессмента нет: карточка из одних действий с номером.
+      if (d && d.error === 'not_found') {
+        detailBody.innerHTML = '<p class="section-lead">Ассессмент по этому номеру ещё не начат.</p>' + numberActionsHtml(who);
+        wireNumberActions(who);
+        return;
+      }
       if (!d || !d.ok) { detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить карточку.</p>'; return; }
       var q = d.queue || {};
       // Недобранная очередь: задания уже стоят в листе и ждут разбора. Её отдельная
@@ -1530,6 +1476,9 @@
           (qLeft ? '<button type="button" class="btn btn-ghost btn-sm" id="cabJudgeResume" ' +
             'title="Разобрать то, что уже стоит в очереди. Сделанные задания заново не считаются и не оплачиваются">' +
             'Продолжить оценку (' + qLeft + ')</button>' : '') +
+          // ⚠ ЗАГЛУШКА (решение владельца 03.10): кнопка видна, но не работает — генератор
+          // отчёта ещё не подключён к оценкам (см. стрим 05). Показывает, где будет отчёт.
+          '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: генератор отчёта ещё не подключён к оценкам">Отчёт участника · скоро</button>' +
           '<span class="cab-dim" id="cabJudgeState">' +
             (qLeft ? 'в очереди: ' + qLeft + ' из ' + q.total
               : q.error ? 'заданий с ошибкой: ' + q.error : '') + '</span>' +
@@ -1542,7 +1491,8 @@
         // оценка оказывалась за экраном ответов.
         scoresBlock(d) + foldBlock('Ход дня и все ответы', answersBlock(d, true)) +
         foldBlock('Флаги целиком', flagsBlock(d, true)) +
-        foldBlock('Процесс и версии', processBlock(d, true));
+        foldBlock('Процесс и версии', processBlock(d, true)) +
+        numberActionsHtml(who);
       // Обе кнопки гасим на время работы вместе: пока цикл идёт, вторая привела бы
       // к двум разборам одной очереди с одного экрана.
       var judgeBtn = document.getElementById('cabJudge');
@@ -1555,6 +1505,7 @@
         });
       }
       wireOverrides(p.bib);
+      wireNumberActions(who);
       if (window.imp && window.imp.typoDom) window.imp.typoDom(detailBody);
       detailBody.scrollTop = 0;
     });
@@ -1622,7 +1573,8 @@
   // Постановка в очередь и её разбор — разные действия с разной ценой, а кнопка была
   // одна. judgeAnswers переписывает в `queued` ВСЕ задания, то есть любая пауза стоила
   // полного пересуда. «Продолжить оценку» зовёт только этот разбор.
-  function drainQueue(bib, btns, state) {
+  // noOpen — оценка нескольких подряд (judgeMany): карточку в конце не открывать.
+  function drainQueue(bib, btns, state, noOpen) {
     var lock = function (on) { (btns || []).forEach(function (b) { if (b) b.disabled = on; }); };
     lock(true);
     // Сколько заданий оставалось на прошлом круге и сколько кругов подряд без движения:
@@ -1650,7 +1602,7 @@
               lock(false);
               state.textContent = 'готово: заданий сделано ' + (q.done || 0) +
                 ((q.error || 0) ? ' · с ошибками: ' + q.error : '');
-              return refresh().then(function () { openCard({ bib: bib, fio: '' }); });
+              return refresh(!!noOpen).then(function () { if (!noOpen) openCard({ bib: bib, fio: '' }); });
             }
             if (left < lastLeft) { lastLeft = left; stall = 0; }
             else if (++stall >= 3) {
@@ -1688,7 +1640,7 @@
           ? ' · подобрано зависших: ' + r.reclaimed.length : '';
         state.textContent = 'готово: ' + total + ' заданий' + re +
           (alien ? ' · в очереди осталось ' + alien + ' у других участников' : '');
-        return refresh().then(function () { openCard({ bib: bib, fio: '' }); });
+        return refresh(!!noOpen).then(function () { if (!noOpen) openCard({ bib: bib, fio: '' }); });
       });
     };
     return step(0);
@@ -1722,99 +1674,21 @@
 
   // ---------- запуск ----------
 
-  document.getElementById('cabPassBtn').addEventListener('click', login);
-  document.getElementById('cabPass').addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); login(); }
+  el('cabPassBtn').addEventListener('click', login);
+  el('cabPass').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); login(); } });
+  window.addEventListener('hashchange', function () {
+    tab = 'people'; shareOpen = false;
+    if (findEl && findEl.value) findEl.value = '';
+    if (pw) render();
   });
-  document.getElementById('cabRefresh').addEventListener('click', refresh);
-  // Фильтр перерисовывает уже полученный список, не дёргая сервер: решение
-  // «показать только ждущих» — про глаза, а не про данные.
-  if (filterEl) filterEl.addEventListener('change', function () { render(); });
-  var oldEl = document.getElementById('cabShowOld');
-  if (oldEl) oldEl.addEventListener('change', function () { render(); });
-  // Новый ведущий.
-  var facAdd = document.getElementById('cabFacAdd');
-  if (facAdd) facAdd.addEventListener('click', function () {
-    var el = document.getElementById('cabFacName');
-    var nm = (el.value || '').trim();
-    if (!nm) { window.imp.alert('Напишите имя — по нему вы будете его узнавать в списке потоков.'); el.focus(); return; }
-    call('addFacilitator', { name: nm }).then(function (r) {
-      if (r && r.ok) {
-        el.value = '';
-        after(r, 'ведущий заведён, ключ ' + ((r.facilitator || {}).key || ''));
-        return loadFacs();
-      }
-      return after(r);
-    });
+  if (findEl) findEl.addEventListener('input', function () { if (pw) render(); });
+  el('admOut').addEventListener('click', function (e) {
+    e.preventDefault();
+    try { sessionStorage.removeItem(PW_KEY); } catch (x) {}
+    location.href = 'administrator.html';
   });
-
-  // Отбор в «Оценке участников» (29.09): поиск по номеру, имени и фамилии плюс поток.
-  var dayFindEl = document.getElementById('cabDayFind');
-  if (dayFindEl) dayFindEl.addEventListener('input', function () { render(); });
-  var dayWaveEl = document.getElementById('cabDayWave');
-  if (dayWaveEl) dayWaveEl.addEventListener('change', function () { render(); });
-  var archEl = document.getElementById('cabShowArchived');
-  if (archEl) archEl.addEventListener('change', function () { renderWaves(); renderRoster(); });
-
-  // ── вкладки ──
-  (function () {
-    var tabs = [].slice.call(document.querySelectorAll('.cab-tab[data-view]'));
-    var views = { day: 'cabViewDay', waves: 'cabViewWaves', roster: 'cabViewRoster', fac: 'cabViewFac' };
-    if (!tabs.length) return;
-    var show = function (name) {
-      Object.keys(views).forEach(function (k) {
-        var el = document.getElementById(views[k]);
-        if (el) el.style.display = (k === name) ? '' : 'none';
-      });
-      tabs.forEach(function (t) {
-        var on = t.getAttribute('data-view') === name;
-        t.classList.toggle('is-on', on);
-        t.setAttribute('aria-selected', on ? 'true' : 'false');
-      });
-    };
-    tabs.forEach(function (t) {
-      t.addEventListener('click', function () { show(t.getAttribute('data-view')); });
-    });
-  })();
-
-  // ── новая волна, пароли, раздача ──
-  (function () {
-    var add = document.getElementById('cabWaveAdd');
-    if (add) add.addEventListener('click', function () {
-      // ⚠ НОМЕР БОЛЬШЕ НЕ СПРАШИВАЕМ (решение владельца 29.09). Он держался на
-      // одном — был ключом в адресе ссылки самозаписи, — и был плохим ключом:
-      // три цифры подряд идущих потоков перебираются с первой попытки, а помнить
-      // свободный номер приходилось владельцу. Ключ теперь выдаёт сервер, шестью
-      // знаками без двойников. Прежние трёхзначные ссылки продолжают работать.
-      call('addWave', { name: (document.getElementById('cabWaveName').value || '').trim(),
-                        isAi: document.getElementById('cabWaveAi').checked ? '1' : '' })
-        .then(function (r) {
-          if (r && r.ok) {
-            document.getElementById('cabWaveName').value = '';
-            document.getElementById('cabWaveAi').checked = false;
-          }
-          return after(r, 'поток добавлен');
-        });
-    });
-
-    // Кнопки «дописать пароли» больше нет: паролей участника не существует (29.09).
-
-    // Раздача: по номеру на строку, ровно по текущему отбору — то, что видишь
-    // на экране, то и уедет в буфер.
-    var copy = document.getElementById('cabRosterCopy');
-    if (copy) copy.addEventListener('click', function () {
-      var vis = rosterVisible();
-      if (!vis.length) { window.imp.alert('Копировать нечего: под текущий отбор никто не подходит.'); return; }
-      copyText(vis.map(function (r) { return r.bib; }).join('\n'),
-        'скопировано строк: ' + vis.length);
-    });
-
-    var find = document.getElementById('cabRosterFind');
-    if (find) find.addEventListener('input', renderRoster);
-    var wsel = document.getElementById('cabRosterWave');
-    if (wsel) wsel.addEventListener('change', renderRoster);
-  })();
-  document.getElementById('cabDetailClose').addEventListener('click', closeCard);
+  el('vedQrFull').addEventListener('click', function () { el('vedQrFull').style.display = 'none'; });
+  el('cabDetailClose').addEventListener('click', closeCard);
   detail.addEventListener('click', function (e) { if (e.target === detail) closeCard(); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && detail.style.display !== 'none') closeCard();
@@ -1824,7 +1698,7 @@
     var saved = '';
     try { saved = sessionStorage.getItem(PW_KEY) || ''; } catch (e) {}
     if (!saved) return;
-    document.getElementById('cabPass').value = saved;
+    el('cabPass').value = saved;
     login();
   })();
 })();
