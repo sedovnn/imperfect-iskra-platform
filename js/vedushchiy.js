@@ -194,11 +194,21 @@
     if (p.finished) return '<span class="ved-dim0">ждёт оценки</span>';
     return '<span class="ved-dim0">—</span>';
   }
+  // ⚠ КЛЮЧ НОМЕРА, А НЕ СТРОКА (починка 04.10). Регистрация хранит номер текстом
+  // («033010»), а лист ответов — числом: Sheets срезает ведущий ноль, и прохождение
+  // приходит как «33010». Строковое сравнение их не сводило: у прогонов прежних потоков
+  // ведущий видел «Зарегистрировался» и прочерк вместо этапа и оценки. Правило то же,
+  // что bk() в cabinet.js и bibKey_ в бэкенде: цифровой номер — по числу, буквенный —
+  // без учёта регистра.
+  function bk(b) {
+    var s = String(b == null ? '' : b).trim().toUpperCase();
+    return /^\d+$/.test(s) ? String(parseInt(s, 10)) : s;
+  }
   function rowsOf(w) {
     var byBib = {};
-    data.participants.forEach(function (p) { byBib[String(p.bib)] = p; });
+    data.participants.forEach(function (p) { byBib[bk(p.bib)] = p; });
     return data.roster.filter(function (r) { return String(r.waveId) === String(w.id); })
-      .map(function (r) { return { r: r, p: byBib[String(r.bib)] }; })
+      .map(function (r) { return { r: r, p: byBib[bk(r.bib)] }; })
       .sort(function (a, b) { return String(a.r.registeredAt).localeCompare(String(b.r.registeredAt)); });
   }
   function counts(w) {

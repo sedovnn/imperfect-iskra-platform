@@ -1148,13 +1148,46 @@
   // в конце карточки: расхождение читается только в паре с основной оценкой.
   // Откуда читает контроль — подпись для человека. Способности, которой здесь нет,
   // достанется общая подпись: пропасть из карточки она уже не может.
+  // Карта чтения по v8 (решение владельца 04.10, запрос 04→03): контроль МК-1 — у Агеева,
+  // АК-1 — у Лемеха, в кофейне и в письме, ПР-2 и АК-2 — в письме. Контроля ГА-1 нет
+  // (ГА-1 читает весь ответ), ПП-1 в письме стала вторым основным чтением.
   var CTRL_TITLE = {
+    mk1: 'Контроль по этапу Агеева',
+    ak1: 'Контроль по Лемеху, кофейне и письму (высшее из трёх)',
     pr2: 'Контроль по письму правлению',
-    ga1: 'Кросс-судья по ответу на развилку',
-    ak1: 'Кросс-судья по письму правлению',
-    ak2: 'Кросс-судья по письму правлению',
-    pp1: 'Кросс-судья по письму правлению'
+    ak2: 'Контроль по письму правлению'
   };
+  // ⚠ ЗАДАНИЯ СУДЬИ ПО СПОСОБНОСТЯМ — ДЛЯ ПЕРЕСУДА ОДНОГО ЧТЕНИЯ (запрос 04→03, решение
+  // владельца 04.10). Повторяет V2_JUDGE_TASKS в code.js: АК-1 и АК-2 судит одно задание
+  // `ak`, ПР-1 и ПР-2 — одно задание `pr`, поэтому их пересуд идёт парой, и кнопка это
+  // называет. Бэкенд принимает taskId в judgeAnswers и ставит в очередь только его.
+  var TASK_OF = { ak1: 'ak', ak2: 'ak', mk1: 'mk1', mk2: 'mk2', pp1: 'pp1', pp2: 'pp2',
+                  pr1: 'pr', pr2: 'pr', ga1: 'ga1', ga2: 'ga2' };
+  var CTRL_TASK_OF = { mk1: 'cross_mk1', ak1: 'cross_ak1', pr2: 'cross_pr2', ak2: 'cross_ak2' };
+  var TASK_PAIR = { ak: 'АК-1 и АК-2', pr: 'ПР-1 и ПР-2' };
+  function rejudgeHtml(a, hasCtrl) {
+    var t = TASK_OF[a];
+    if (!t) return '';
+    return '<div class="cab-actions cab-rejudge-row">' +
+      '<button type="button" class="btn btn-ghost btn-xs cab-rejudge" data-task="' + t + '"' +
+        ' title="Поставить в очередь заново только это чтение. Платно: один вызов судьи">' +
+        'Пересудить это чтение' + (TASK_PAIR[t] ? ' (' + TASK_PAIR[t] + ' вместе)' : '') + '</button>' +
+      (hasCtrl && CTRL_TASK_OF[a] ? '<button type="button" class="btn btn-ghost btn-xs cab-rejudge" data-task="' + CTRL_TASK_OF[a] + '"' +
+        ' title="Поставить в очередь заново только контрольное чтение этой способности">Пересудить контроль</button>' : '') +
+    '</div>';
+  }
+  // Маркер устойчивости ПР-2 по этапам (запрос 04→03, решение владельца 04.10): в балл не
+  // входит. Есть только у оценок на рубрике m-imp-v8.3 и новее; у старых записей поля нет —
+  // строки нет. Прежнее булево heldUnderPressure на экран не выводится: оно сливало
+  // «удержал» и «сменил, объяснив».
+  function pressureHtml(v) {
+    var m = (v && v.verdict && Array.isArray(v.verdict.pressureMarks)) ? v.verdict.pressureMarks
+          : (v && v.out && Array.isArray(v.out['маркер_устойчивости'])) ? v.out['маркер_устойчивости'] : null;
+    if (!m || !m.length) return '';
+    return '<p class="cab-dim"><b>Устойчивость под давлением</b> (в балл не входит): ' + m.map(function (x) {
+      return esc(x['этап'] || '—') + ' — ' + esc(String(x['значение'] || '—').replace(/_/g, ' '));
+    }).join(' · ') + '</p>';
+  }
   // Уровень второго чтения лежит в двух местах: у ПР-2 исторически в control, у
   // остальных в cross. Спрашиваем оба, чтобы не зависеть от этой развилки.
   function ctrlLevelOf(s, a) {
@@ -1377,6 +1410,8 @@
           (reasoning ? '<div class="cab-ab-h">Обоснование судьи</div><div class="cab-ab-why">' + br(reasoning) + '</div>'
                      : '<p class="cab-dim">Обоснования нет: уровень посчитан кодом или задание не отработало.</p>') +
           ctrlLine +
+          (a === 'pr2' ? pressureHtml(v) : '') +
+          rejudgeHtml(a, ctrlLv !== null || !!CTRL_TASK_OF[a]) +
           (stepsHtml ? '<div class="cab-ab-h">Ответ, по которому это сказано</div>' + scopeNote + stepsHtml : '') +
           ctrlHtml +
           ctl +
@@ -1504,6 +1539,15 @@
           drainQueue(p.bib, btns, document.getElementById('cabJudgeState'));
         });
       }
+      detailBody.querySelectorAll('.cab-rejudge').forEach(function (b) { btns.push(b); });
+      detailBody.querySelectorAll('.cab-rejudge').forEach(function (b) {
+        b.addEventListener('click', function (e) {
+          e.preventDefault();
+          var t = b.getAttribute('data-task');
+          window.imp.confirm('Пересудить только это задание? Остальные оценки не трогаются; один платный вызов судьи.',
+            { confirmLabel: 'Пересудить' }).then(function (yes) { if (yes) judge(p.bib, btns, t); });
+        });
+      });
       wireOverrides(p.bib);
       wireNumberActions(who);
       if (window.imp && window.imp.typoDom) window.imp.typoDom(detailBody);
@@ -1650,11 +1694,14 @@
   // judgeAnswers переписывает в `queued` и те строки, что уже сделаны, то есть счёт
   // идёт заново за все задания. Поэтому у того, у кого оценка уже есть, она
   // называется «Пересудить всё».
-  function judge(bib, btns) {
+  // taskId — пересуд одного задания (04.10): бэкенд ставит в очередь только его.
+  function judge(bib, btns, taskId) {
     var state = document.getElementById('cabJudgeState');
     var lock = function (on) { (btns || []).forEach(function (b) { if (b) b.disabled = on; }); };
     lock(true);
-    window.imp.callApi('judgeAnswers', { password: pw, bib: bib }).then(function (res) {
+    var args = { password: pw, bib: bib };
+    if (taskId) { args.taskId = taskId; state.textContent = 'ставлю в очередь: ' + taskId; }
+    window.imp.callApi('judgeAnswers', args).then(function (res) {
       if (!res || !res.ok) {
         lock(false);
         var e = res && res.error ? res.error : 'не удалось поставить в очередь';
