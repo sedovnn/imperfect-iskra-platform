@@ -516,12 +516,26 @@
     var m = Math.floor(sec / 60), ss = sec % 60;
     return m + ':' + (ss < 10 ? '0' : '') + ss;
   }
-  // Шапка и полоса этапов (решения владельца 03.10). С таймером сверху ОДИН счёт — весь
-  // ассессмент; время этапа — в самой полосе: отрезок этапа толстый, в нём доля этапа
-  // («18 мин»), в штриховке — перенос с прошлого («+21 мин»), заливка растёт по мере
-  // расхода, остаток этапа — в подписи под полосой. Первая версия (два счёта сверху и
-  // тонкая полоса) читалась плохо: не было видно, что полоса заполняется и что штриховка —
-  // дополнительное время. Без таймера — «Этап N из 7» сверху и полоса из равных отрезков.
+  function fmtHMS(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), ss = sec % 60;
+    return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (ss < 10 ? '0' : '') + ss;
+  }
+  function minWord(n) {
+    var a = n % 100, b = n % 10;
+    if (a > 10 && a < 20) return 'минут';
+    if (b === 1) return 'минута';
+    if (b > 1 && b < 5) return 'минуты';
+    return 'минут';
+  }
+  // ⚠ ШАПКА — КРУЖКИ ЭТАПОВ (владелец 04.10, после показа Егору: «опять не читаемо — слишком
+  // много подписей времени и непонятно, почему слоты разные»). Было до пяти чисел времени и
+  // полоса с длиной этапов; стало: линия кружков по центру шапки на всю свободную ширину,
+  // пройденные — с галочкой, текущий — овал «Агеев · осталось 12 мин» с заливкой по мере
+  // расхода (в последние две минуты темнее и с секундами), будущие — номер. Под линией серым
+  // — откуда время этапа: «На этот этап 44 минуты: 36 по плану и 8, которые вы сэкономили
+  // раньше» или «На этот этап 18 минут». Справа один счёт — «до конца ассессмента».
+  // Длина этапов больше не рисуется. Без таймера — те же кружки без минут и «Этап N из 7».
   function timerPaint() {
     var box = el('tmrBox'), rail = el('tmrRail');
     if (!box || !rail) return;
@@ -532,7 +546,7 @@
     var on = timerOn();
     var st = on && tStage(curId);
     var running = !!(st && st.startedAt && !st.endedAt);
-    var left = 0, alloc = 0, warn = false, bonus = 0;
+    var left = 0, alloc = 0, warn = false, bonus = 0, plan = 0;
     if (!on) {
       box.className = 'tmr';
       box.innerHTML = '<div class="tmr-blk"><span class="tmr-k">Этап</span>' +
@@ -540,51 +554,36 @@
     } else {
       // Этап ещё не начат (экран между этапами, вступление) — время стоит и показано целиком.
       bonus = st ? (st.bonusSec || 0) : bonusFor(curId);
-      alloc = (state.timing.plan[curId] || 0) * 60 + bonus;
+      plan = (state.timing.plan[curId] || 0) * 60;
+      alloc = plan + bonus;
       left = st ? alloc - stageUsedSec(curId) : alloc;
       var used = 0;
       TIMER_IDS.forEach(function (id) { used += stageUsedSec(id); });
       var totalLeft = state.timing.totalMin * 60 - used;
       warn = running && left <= 120;
       box.className = 'tmr';
-      box.innerHTML =
-        '<div class="tmr-blk tmr-total"><span class="tmr-k">Весь ассессмент · осталось</span>' +
-          '<span class="tmr-v"><span class="tmr-big">' + fmtMin(totalLeft) + '</span>' +
-          '<span class="tmr-of">из ' + fmtMin(state.timing.totalMin * 60) + '</span></span></div>';
+      box.innerHTML = '<div class="tmr-blk tmr-total"><span class="tmr-k2">до конца ассессмента</span>' +
+        '<span class="tmr-big">' + fmtHMS(totalLeft) + '</span></div>';
     }
-    // Полоса (владелец 03.10, третья редакция): короткая, в ряд с шапкой; текущий этап — широкий
-    // отрезок, в нём его название и время, перенос с прошлого — штриховкой справа с «+N мин»,
-    // расход — линией по низу отрезка; остаток — подписью под ним. Пройденные — узкие с «✓»,
-    // будущие — узкие с номером: карту дня не показываем (решение 06.08). Имена не текущих
-    // этапов — в подсказке при наведении.
-    var segs = '', names = '';
-    TIMER_IDS.forEach(function (id, i) {
+    var dots = TIMER_IDS.map(function (id, i) {
       var sc = S.scenes.filter(function (x) { return x.id === id; })[0];
-      var nm = i <= curIx ? (i + 1) + '. ' + esc((S.stageShort || [])[i] || sc.name) : 'этап ' + (i + 1);
-      var w = i === curIx ? 8 : 1;
-      var cls = 'tmr-seg', inner = '', tip = nm;
-      if (i < curIx) { cls += ' is-done'; inner = '<span class="tmr-mark">✓</span>'; }
-      else if (i === curIx) {
-        cls += ' is-now' + (warn ? ' is-warn' : '');
-        if (on) {
-          var base = (state.timing.plan[id] || 0) * 60, all = Math.max(1, base + bonus);
-          // Штриховка не шире трети отрезка: название этапа и время в нём важнее.
-          var bp = Math.max(66, base / all * 100);
-          inner = (bonus >= 60 ? '<span class="tmr-extra" style="left:' + bp + '%"><b>+' + Math.floor(bonus / 60) + ' мин</b></span>' : '') +
-            '<span class="tmr-fill" style="width:' + Math.min(100, stageUsedSec(id) / all * 100) + '%"></span>' +
-            '<span class="tmr-label" style="right:' + (100 - bp) + '%">' + nm + ' · ' + fmtMin(base) + '</span>';
-        } else {
-          inner = '<span class="tmr-label">' + nm + '</span>';
-        }
-      } else {
-        inner = '<span class="tmr-mark is-next">' + (i + 1) + '</span>';
-      }
-      segs += '<div class="' + cls + '" style="flex:' + w + '" title="' + tip + '">' + inner + '</div>';
-      var tail = (i === curIx && on) ? (running ? 'осталось ' + (warn ? fmtClock(left) : fmtMin(left)) : 'на этап ' + fmtMin(alloc)) : '';
-      names += '<span class="' + (i === curIx ? 'is-now' + (warn ? ' is-warn' : '') : '') + '" style="flex:' + w + '">' +
-        (tail ? '<em>' + tail + '</em>' : '') + '</span>';
-    });
-    rail.innerHTML = '<div class="tmr-segs' + (on ? ' is-timed' : '') + '">' + segs + '</div><div class="tmr-names">' + names + '</div>';
+      var nm = esc((S.stageShort || [])[i] || sc.name);
+      if (i < curIx) return '<span class="tmr-dot is-done" title="' + (i + 1) + '. ' + nm + '">✓</span>';
+      if (i > curIx) return '<span class="tmr-dot">' + (i + 1) + '</span>';
+      var txt = nm;
+      if (on) txt += ' · ' + (running ? 'осталось ' + (warn ? fmtClock(left) : fmtMin(left)) : 'на этап ' + fmtMin(alloc));
+      var fill = on && st ? Math.min(100, stageUsedSec(id) / Math.max(1, alloc) * 100) : 0;
+      return '<span class="tmr-now' + (warn ? ' is-warn' : '') + '"><i style="width:' + fill.toFixed(1) + '%"></i>' +
+        '<span class="tmr-dot">' + (i + 1) + '</span><span class="tmr-now-t">' + txt + '</span></span>';
+    }).join('<span class="tmr-ln"></span>');
+    var cap = '';
+    if (on) {
+      var A = Math.round(alloc / 60), P = Math.round(plan / 60), B = Math.floor(bonus / 60);
+      cap = B >= 1
+        ? 'На этот этап ' + A + ' ' + minWord(A) + ': ' + P + ' по плану и ' + B + ', которые вы сэкономили раньше'
+        : 'На этот этап ' + P + ' ' + minWord(P);
+    }
+    rail.innerHTML = '<div class="tmr-steps' + (on ? '' : ' is-plain') + '">' + dots + '</div>' + (cap ? '<div class="tmr-cap">' + cap + '</div>' : '');
   }
   // Время этапа вышло: ответ сохраняется как есть, этап закрывается, участник идёт дальше.
   function timeUp() {
