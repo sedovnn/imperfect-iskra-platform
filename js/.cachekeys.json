@@ -145,14 +145,14 @@
   }
  },
  "js/scenes.js": {
-  "sha": "fa608d5fe976",
+  "sha": "5ce1bdc051e4",
   "keys": {
-   "administrator.html": 199,
-   "assessment.html": 199,
-   "harness.html": 199,
-   "intro.html": 199,
-   "role.html": 199,
-   "vedushchiy.html": 199
+   "administrator.html": 200,
+   "assessment.html": 200,
+   "harness.html": 200,
+   "intro.html": 200,
+   "role.html": 200,
+   "vedushchiy.html": 200
   }
  },
  "js/typo.js": {
