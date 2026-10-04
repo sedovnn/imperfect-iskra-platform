@@ -949,7 +949,6 @@
   // потому что рисуется в двух местах — под способностью, которую по нему судили, и в
   // полном ходе дня. Две отрисовки одного ответа однажды разошлись бы.
   function answerCard(d, s) {
-    var el = d.elicited || {};
     var byKey = {};
     (d.windows || []).forEach(function (w) { byKey[w.key] = w; });
     var mech = d.mech || {}, mechAt = d.mechAt || {};
@@ -960,7 +959,6 @@
     });
     var lf = listFactsOf(d.facts);
     var st = stepState(s, at, lf);
-    var flags = el[s.key] || [];
     var w = byKey[s.key];
     var body;
     if (st.state !== 'done') {
@@ -987,7 +985,6 @@
         '<span class="cab-dim">' + esc(s.scene) + (st.at ? ' · ' + dt(st.at) : '') +
           (!s.mech && w && w.len ? ' · ' + w.len + ' знаков' : '') + '</span>' +
       '</div>' +
-      (flags.length ? '<div class="cab-elicit" title="О чём спросили прямо — судья получает это машинно">спрошено прямо: ' + esc(flags.join(', ')) + '</div>' : '') +
       body + '</div>';
   }
 
@@ -998,7 +995,6 @@
   }
 
   function answersBlock(d, bare) {
-    var el = d.elicited || {};
     var byKey = {};
     (d.windows || []).forEach(function (w) { byKey[w.key] = w; });
     var mech = d.mech || {}, mechAt = d.mechAt || {};
@@ -1267,13 +1263,6 @@
     if (d.stale) {
       inner += '<p class="cab-warn">Оценка вынесена по другому тексту ответа: участник менял ответы после судейства. Цифры ниже устарели — пересудите.</p>';
     }
-    // Правка по способности, у которой больше нет второго чтения, перестала
-    // применяться. Молча этого не делаем: решение человека называем и объясняем.
-    (s.ignoredOverrides || []).forEach(function (o) {
-      inner += '<p class="cab-warn">Ваш уровень L' + o.level + ' по ' + (ABILITY_NAMES[o.ability] || o.ability) +
-        ' больше не применяется: у этой способности нет второго чтения, а правка задумана как разрешение спора двух судей. ' +
-        'В балле стоит уровень судьи.' + (o.reason ? ' Ваша причина была: «' + esc(o.reason) + '».' : '') + '</p>';
-    });
 
     var canOverride = {};
     (d.overrideAbilities || []).forEach(function (a) { canOverride[a] = true; });
