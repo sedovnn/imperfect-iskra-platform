@@ -173,9 +173,9 @@
 <script src="js/api.js?v=7"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/backlog.js?v=9"></script>
-<script src="js/scenes.js?v=195"></script>
-<script src="js/mechanics.js?v=96"></script>
-<script src="js/mech-fields.js?v=50"></script>
+<script src="js/scenes.js?v=199"></script>
+<script src="js/mechanics.js?v=97"></script>
+<script src="js/mech-fields.js?v=51"></script>
 <script src="js/case-text.js?v=2"></script>
 <script src="js/case-ref.js?v=14"></script>
 <script>
@@ -377,7 +377,8 @@
   // второе независимое условие, — два условия рано или поздно разъедутся.
   function actApplies(a) {
     if (!a) return true;
-    if (a.unless) return !applies(a.unless);
+    // when и unless вместе — как в движке (решение владельца 03.10).
+    if (a.unless && applies(a.unless)) return false;
     return a.when ? applies(a.when) : true;
   }
   // Условие у отдельного пузыря — та же проверка, что у акта (правка 13.2).
