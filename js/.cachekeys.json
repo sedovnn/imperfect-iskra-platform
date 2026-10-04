@@ -118,11 +118,11 @@
   }
  },
  "js/mechanics.js": {
-  "sha": "37c467fae024",
+  "sha": "f0a5f31011f9",
   "keys": {
-   "administrator.html": 97,
-   "assessment.html": 97,
-   "harness.html": 97
+   "administrator.html": 98,
+   "assessment.html": 98,
+   "harness.html": 98
   }
  },
  "js/qr.js": {
@@ -170,9 +170,9 @@
   }
  },
  "js/vedushchiy.js": {
-  "sha": "e5db07dbb1d9",
+  "sha": "83b5775b1303",
   "keys": {
-   "vedushchiy.html": 3
+   "vedushchiy.html": 4
   }
  }
 }

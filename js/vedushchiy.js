@@ -256,7 +256,7 @@
         '<label class="ved-f"><span>Название</span><input id="vedSetName" value="' + esc(w.name || '') + '" /></label>' +
         '<label class="ved-f"><span>Время на ассессмент</span><select id="vedSetTime">' +
           TIMES.map(function (t) { return '<option value="' + t[0] + '"' + ((Number(w.timerMin) || 0) === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') +
-        '</select><em>Меняется только у тех, кто ещё не начал: начавшим время зафиксировано на старте.</em></label>' +
+        '</select><em>Меняется только у тех, кто ещё не вошёл: вошедшим время пришло при входе.</em></label>' +
         '<label class="ved-check"><input type="checkbox" id="vedSetOpen"' + (w.selfEnroll !== false ? ' checked' : '') + ' /> Вход по ссылке открыт</label>' +
         '<div class="ved-row"><button type="button" class="btn btn-primary" id="vedSetSave">Сохранить</button>' +
         '<button type="button" class="btn btn-ghost" id="vedSetArch">Убрать поток в архив</button></div></div>';
