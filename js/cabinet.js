@@ -1139,7 +1139,7 @@
     h += ev.length
       ? '<ul class="cab-evid">' + ev.map(function (e) {
           return '<li><b>' + esc(e['гейт']) + '</b> <span class="cab-dim">' +
-                 bndWord(e['гейт']) + '</span><br>«' + esc(e['цитата']) + '»</li>';
+                 bndWord(e['гейт']) + (e['этап'] ? ' · ' + esc(e['этап']) : '') + '</span><br>«' + esc(e['цитата']) + '»</li>';
         }).join('') + '</ul>'
       : '<p class="cab-dim">Ни одного гейта с дословной цитатой: по протоколу это первый уровень.</p>';
     if (unp) {
@@ -1173,7 +1173,28 @@
                   pr1: 'pr', pr2: 'pr', ga1: 'ga1', ga2: 'ga2' };
   var CTRL_TASK_OF = { mk1: 'cross_mk1', ak1: 'cross_ak1', pr2: 'cross_pr2', ak2: 'cross_ak2' };
   var TASK_PAIR = { ak: 'АК-1 и АК-2', pr: 'ПР-1 и ПР-2' };
-  function rejudgeHtml(a, hasCtrl) {
+  // ⚠ ДОП. ОЦЕНКА ПО ВСЕМУ ОТВЕТУ (решение владельца 04.10, бэкенд @320, стрим 04): у каждой
+  // способности, кроме ГА-1 (она и так читает весь ответ). Запускает человек, платно; уровень
+  // показывается рядом с основным, в балл сам не идёт — принять кнопкой, как контрольный.
+  var EXTRA_OF = { ak1: 1, ak2: 1, pr1: 1, pr2: 1, mk1: 1, mk2: 1, pp1: 1, pp2: 1, ga2: 1 };
+  function extraHtml(s, a, lv, isOv) {
+    var x = s.extra && s.extra[a];
+    if (!x) return '';
+    var xl = (x.level === null || x.level === undefined || x.level === '') ? null : Number(x.level);
+    var d2 = (xl !== null && lv !== null && lv !== undefined) ? xl - lv : null;
+    var accept = (!isOv && xl !== null && lv !== null && lv !== undefined && xl !== Number(lv))
+      ? '<div class="cab-ov" data-ab="' + a + '"><button type="button" class="btn btn-ghost btn-xs cab-ov-extra" data-lv="' + xl +
+        '" data-main="' + lv + '">Принять доп. оценку L' + xl + '</button></div>' : '';
+    return '<div><div class="cab-ab-h">Доп. оценка по всему ответу' +
+        (x.at ? ' <span class="cab-dim">— ' + dt(x.at) + '</span>' : '') + '</div>' +
+      '<p>' + (xl === null ? 'не удалось оценить' : 'L' + xl) + ' против основной ' +
+        ((lv === null || lv === undefined) ? '—' : 'L' + lv) +
+        (d2 !== null && d2 !== 0 ? ' <b class="cab-jitter">' + (d2 > 0 ? 'выше' : 'ниже') + ' на ' + Math.abs(d2) + '</b>' : '') + '</p>' +
+      evidHtml(x.out || null) +
+      (x.verdict && x.verdict.reasoning ? '<div class="cab-ab-why">' + br(x.verdict.reasoning) + '</div>' : '') +
+      accept + '</div>';
+  }
+  function rejudgeHtml(a, hasCtrl, hasExtra) {
     var t = TASK_OF[a];
     if (!t) return '';
     return '<div class="cab-actions cab-rejudge-row">' +
@@ -1182,6 +1203,9 @@
         'Пересудить это чтение' + (TASK_PAIR[t] ? ' (' + TASK_PAIR[t] + ' вместе)' : '') + '</button>' +
       (hasCtrl && CTRL_TASK_OF[a] ? '<button type="button" class="btn btn-ghost btn-xs cab-rejudge" data-task="' + CTRL_TASK_OF[a] + '"' +
         ' title="Поставить в очередь заново только контрольное чтение этой способности">Пересудить контроль</button>' : '') +
+      (EXTRA_OF[a] ? '<button type="button" class="btn btn-ghost btn-xs cab-rejudge" data-task="extra_' + a + '" data-extra="1"' +
+        ' title="Судья этой способности читает весь ответ участника и ищет, где она проявилась сильнее. В балл сам не идёт">' +
+        (hasExtra ? 'Повторить доп. оценку' : 'Доп. оценка по всему ответу') + '</button>' : '') +
     '</div>';
   }
   // Маркер устойчивости ПР-2 по этапам (запрос 04→03, решение владельца 04.10): в балл не
@@ -1412,7 +1436,8 @@
                      : '<p class="cab-dim">Обоснования нет: уровень посчитан кодом или задание не отработало.</p>') +
           ctrlLine +
           (a === 'pr2' ? pressureHtml(v) : '') +
-          rejudgeHtml(a, ctrlLv !== null || !!CTRL_TASK_OF[a]) +
+          extraHtml(s, a, lv, isOv) +
+          rejudgeHtml(a, ctrlLv !== null || !!CTRL_TASK_OF[a], !!(s.extra && s.extra[a])) +
           (stepsHtml ? '<div class="cab-ab-h">Ответ, по которому это сказано</div>' + scopeNote + stepsHtml : '') +
           ctrlHtml +
           ctl +
@@ -1567,7 +1592,10 @@
         b.addEventListener('click', function (e) {
           e.preventDefault();
           var t = b.getAttribute('data-task');
-          window.imp.confirm('Пересудить только это задание? Остальные оценки не трогаются; один платный вызов судьи.',
+          var msg = b.getAttribute('data-extra')
+            ? 'Доп. оценка по всему ответу: судья этой способности читает все ответы участника. Один платный вызов судьи с полным текстом ответа. В балл сам не идёт — примете, если сочтёте верным.'
+            : 'Пересудить только это задание? Остальные оценки не трогаются; один платный вызов судьи.';
+          window.imp.confirm(msg,
             { confirmLabel: 'Пересудить' }).then(function (yes) { if (yes) judge(p.bib, btns, t); });
         });
       });
@@ -1609,6 +1637,18 @@
             reason: 'принята контрольная оценка: контроль L' + lvC + ', судья L' + lvM })
             .then(function (r) {
               if (r && r.ok) { say('принят контрольный уровень'); return refresh().then(reopen); }
+              return after(r);
+            });
+        });
+      }
+      var accX = box.querySelector('.cab-ov-extra');
+      if (accX) {
+        accX.addEventListener('click', function () {
+          var lvX = accX.getAttribute('data-lv'), lvM = accX.getAttribute('data-main');
+          call('setScoreOverride', { bib: bib, ability: ability, level: lvX, via: 'extra',
+            reason: 'принята доп. оценка по всему ответу: доп. L' + lvX + ', судья L' + lvM })
+            .then(function (r) {
+              if (r && r.ok) { say('принята доп. оценка'); return refresh().then(reopen); }
               return after(r);
             });
         });
