@@ -862,6 +862,11 @@
         return window.imp.callApi('judgeAnswers', { password: pw, bib: p.bib }).then(function (res) {
           if (!res || !res.ok) { failed.push(p.fio || bib6(p.bib)); return next(); }
           return drainQueue(p.bib, [], statusEl, true).then(next);
+        }).catch(function (e) {
+          // Сбой на одном участнике не должен оставить judging=true навсегда (06→03, 04.10).
+          if (window.console) console.error('cabinet: оценка участника прервана', e);
+          failed.push(p.fio || bib6(p.bib));
+          return next();
         });
       };
       next();
@@ -1642,6 +1647,28 @@
     // Сколько заданий оставалось на прошлом круге и сколько кругов подряд без движения:
     // по этим двум числам цикл решает, ждать дальше или сдаться (см. ветку обрыва ниже).
     var lastLeft = Infinity, stall = 0;
+    // ⚠ ЦИКЛ НЕ ОБРЫВАЕТСЯ МОЛЧА (запрос 06→03, 04.10). У цепочки не было обработчика
+    // ошибки: исключение в перерисовке списка между кругами (refresh → absorb → render)
+    // или в самом вызове останавливало цикл без слова, кнопки оставались погашенными.
+    // Вероятная причина остановки очереди после первого круга 20.09 (дважды, чат 5).
+    // Теперь сбой перерисовки называется и цикл идёт дальше; сбой вызова называется
+    // и отпускает кнопки — очередь в листе остаётся, «Продолжить оценку» её доест.
+    var errText = function (e) { return (e && e.message) ? e.message : String(e); };
+    var refreshSafe = function (silent) {
+      return Promise.resolve().then(function () { return refresh(silent); }).catch(function (e) {
+        if (window.console) console.error('cabinet: список не обновился', e);
+        state.textContent += ' · список не обновился (' + errText(e) + '), оценка идёт дальше';
+      });
+    };
+    // Оценка уже закончена: сбой при открытии карточки называем отдельно, не «прервана».
+    var reopenSafe = function () {
+      if (noOpen) return;
+      try { openCard({ bib: bib, fio: '' }); }
+      catch (e) {
+        if (window.console) console.error('cabinet: карточка не открылась', e);
+        state.textContent += ' · карточка не открылась (' + errText(e) + ') — обновите страницу';
+      }
+    };
     var step = function (n) {
       state.textContent = 'оцениваю… (заданий обработано: ' + n + ')';
       // ⚠ bib ОБЯЗАТЕЛЕН (правка владельца 21.08). Без него бэкенд разбирал очередь
@@ -1664,7 +1691,7 @@
               lock(false);
               state.textContent = 'готово: заданий сделано ' + (q.done || 0) +
                 (liveErrors(q) ? ' · с ошибками: ' + liveErrors(q) : '');
-              return refresh(!!noOpen).then(function () { if (!noOpen) openCard({ bib: bib, fio: '' }); });
+              return refreshSafe(!!noOpen).then(reopenSafe);
             }
             if (left < lastLeft) { lastLeft = left; stall = 0; }
             else if (++stall >= 3) {
@@ -1690,7 +1717,7 @@
         // общую строку состояния он не трогает, чтобы не перебивать «оцениваю…».
         if (r.left > 0) {
           state.textContent = 'оцениваю… (сделано ' + total + ', осталось ' + r.left + ')';
-          return refresh(true).then(function () { return step(total); });
+          return refreshSafe(true).then(function () { return step(total); });
         }
         lock(false);
         // Чужие недобранные строки называем вслух: они в листе есть, но этой кнопкой
@@ -1702,7 +1729,11 @@
           ? ' · подобрано зависших: ' + r.reclaimed.length : '';
         state.textContent = 'готово: ' + total + ' заданий' + re +
           (alien ? ' · в очереди осталось ' + alien + ' у других участников' : '');
-        return refresh(!!noOpen).then(function () { if (!noOpen) openCard({ bib: bib, fio: '' }); });
+        return refreshSafe(!!noOpen).then(reopenSafe);
+      }).catch(function (e) {
+        if (window.console) console.error('cabinet: цикл оценки прерван', e);
+        lock(false);
+        state.textContent = 'оценка прервана сбоем: ' + errText(e) + ' · нажмите «Продолжить оценку»';
       });
     };
     return step(0);
