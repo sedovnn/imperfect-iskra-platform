@@ -1504,6 +1504,14 @@
       // Без неё единственным способом дооценить человека было заплатить за весь набор
       // ещё раз (033011, 20.09: доехали 2 из 13).
       var qLeft = (q.queued || 0) + (q.running || 0);
+      // Упавшие задания (запрос 04→03, список — бэкенд @318): имена без повторов, снятые
+      // задания (retired, например прежний контроль ПП-1) не пересуживаются — их в списке
+      // судьи больше нет, judgeAnswers ничего бы не поставил.
+      var failedIds = [], retiredN = 0;
+      (q.failed || []).forEach(function (f) {
+        if (f.retired) { retiredN++; return; }
+        if (failedIds.indexOf(f.taskId) < 0) failedIds.push(f.taskId);
+      });
       detailBody.innerHTML =
         '<div class="cab-actions">' +
           '<button type="button" class="btn btn-primary btn-sm" id="cabJudge">' +
@@ -1511,12 +1519,16 @@
           (qLeft ? '<button type="button" class="btn btn-ghost btn-sm" id="cabJudgeResume" ' +
             'title="Разобрать то, что уже стоит в очереди. Сделанные задания заново не считаются и не оплачиваются">' +
             'Продолжить оценку (' + qLeft + ')</button>' : '') +
+          (failedIds.length && !qLeft ? '<button type="button" class="btn btn-ghost btn-sm" id="cabJudgeFailed" ' +
+            'title="Поставить заново только задания в ошибке: ' + esc(failedIds.join(', ')) + '. Остальные оценки не трогаются">' +
+            'Пересудить упавшие (' + failedIds.length + ')</button>' : '') +
           // ⚠ ЗАГЛУШКА (решение владельца 03.10): кнопка видна, но не работает — генератор
           // отчёта ещё не подключён к оценкам (см. стрим 05). Показывает, где будет отчёт.
           '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: генератор отчёта ещё не подключён к оценкам">Отчёт участника · скоро</button>' +
           '<span class="cab-dim" id="cabJudgeState">' +
             (qLeft ? 'в очереди: ' + qLeft + ' из ' + q.total
-              : q.error ? 'заданий с ошибкой: ' + q.error : '') + '</span>' +
+              : q.error ? 'заданий с ошибкой: ' + q.error +
+                (retiredN ? ' (из них снятых из судейства: ' + retiredN + ' — их не пересудить)' : '') : '') + '</span>' +
         '</div>' +
         // ⚠ ПОРЯДОК: ОЦЕНКА ПЕРВОЙ (решение владельца 12.08). Главное, с чем работает
         // фасилитатор, — оценка, и внутри каждой способности лежит всё, что нужно для
@@ -1532,7 +1544,15 @@
       // к двум разборам одной очереди с одного экрана.
       var judgeBtn = document.getElementById('cabJudge');
       var resumeBtn = document.getElementById('cabJudgeResume');
-      var btns = [judgeBtn, resumeBtn];
+      var failedBtn = document.getElementById('cabJudgeFailed');
+      var btns = [judgeBtn, resumeBtn, failedBtn];
+      if (failedBtn) {
+        failedBtn.addEventListener('click', function () {
+          window.imp.confirm('Пересудить упавшие задания (' + failedIds.length + ')? Остальные оценки не трогаются; ' +
+            'по одному платному вызову судьи на задание.', { confirmLabel: 'Пересудить' })
+            .then(function (yes) { if (yes) judge(p.bib, btns, failedIds); });
+        });
+      }
       judgeBtn.addEventListener('click', function () { judge(p.bib, btns); });
       if (resumeBtn) {
         resumeBtn.addEventListener('click', function () {
@@ -1699,9 +1719,17 @@
     var state = document.getElementById('cabJudgeState');
     var lock = function (on) { (btns || []).forEach(function (b) { if (b) b.disabled = on; }); };
     lock(true);
-    var args = { password: pw, bib: bib };
-    if (taskId) { args.taskId = taskId; state.textContent = 'ставлю в очередь: ' + taskId; }
-    window.imp.callApi('judgeAnswers', args).then(function (res) {
+    // Несколько заданий (упавшие) ставятся по одному вызову на каждое, затем общий разбор.
+    var ids = Array.isArray(taskId) ? taskId.slice() : (taskId ? [taskId] : [null]);
+    var enqueue = function (i) {
+      var args = { password: pw, bib: bib };
+      if (ids[i]) { args.taskId = ids[i]; state.textContent = 'ставлю в очередь: ' + ids[i] + (ids.length > 1 ? ' (' + (i + 1) + ' из ' + ids.length + ')' : ''); }
+      return window.imp.callApi('judgeAnswers', args).then(function (res) {
+        if (res && res.ok && i + 1 < ids.length) return enqueue(i + 1);
+        return res;
+      });
+    };
+    enqueue(0).then(function (res) {
       if (!res || !res.ok) {
         lock(false);
         var e = res && res.error ? res.error : 'не удалось поставить в очередь';
