@@ -1448,8 +1448,8 @@
   //    без правок здесь.
   //  · ID ОСТАЮТСЯ РАБОЧИМИ. Переход по пометке и по ссылке на приложение ищет
   //    элемент по id, поэтому id переносится на <details>, а не теряется.
-  //  · ПЕРВЫЙ РАЗДЕЛ ОТКРЫТ (решение владельца): закрытый целиком список на первом
-  //    экране чтения выглядел бы как пустой экран.
+  //  · РАЗДЕЛЫ ОТКРЫТЫ, СВЁРНУТЫ ТОЛЬКО ПРИЛОЖЕНИЯ (см. ниже): закрытый целиком
+  //    список на первом экране чтения выглядел бы как пустой экран.
   function buildCaseAccordion() {
     var host = el('supCaseText');
     var arts = [].slice.call(host.querySelectorAll('article[id]'));
@@ -1937,7 +1937,7 @@
   }
 
   // ── ОКНО ОТВЕТА: ДВА ДЕЙСТВИЯ, А НЕ ОДНО (решение владельца 07.08) ──
-  // «Ответить» стоит ВНУТРИ своей карточки, под полем, — это реплика участника, и
+  // «Ответить» стоит ПОД своей карточкой справа (правка владельца 07.08, см. ниже), — это реплика участника, и
   // она принадлежит его пузырю. «Далее» стоит в подвале колонки и до ответа
   // выключена: подвал — это ход по маршруту, а ходить, не ответив, нельзя.
   // Раньше кнопка была одна и делала оба дела разом: фиксировала ответ и уносила
@@ -2029,7 +2029,7 @@
     var footHtml =
       '<div class="win-foot">' +
 
-        '<button class="btn btn-primary" id="nextBtn"' + (answered ? '' : ' disabled') + '>Дальше →</button>' +
+        '<button class="btn btn-primary" id="nextBtn"' + (answered ? '' : ' disabled') + '>Далее →</button>' +
       '</div>';
     var wireNext = function () {
       var nb = d.querySelector('#nextBtn');
@@ -2738,7 +2738,7 @@
     // правилом .win-note:empty, иначе он держал бы отступ рядом с кнопкой.
     el('caseReadNote').textContent = act.note || '';
     var cta = el('caseReadCta');
-    cta.textContent = act.cta || 'Дальше →';
+    cta.textContent = act.cta || 'Далее →';
     cta.onclick = function () { advance(); };
   }
 
@@ -2750,7 +2750,7 @@
     if (!box) return;
     box.style.display = on ? 'flex' : 'none';
     if (!on) return;
-    var I = S.interlude || { cta: 'Дальше →' };
+    var I = S.interlude || { cta: 'Далее →' };
     var bridge = step.scene.bridge || {};
     // Штамп берём по последнему СОСТОЯВШЕМУСЯ шагу, а не по свободным окнам: семь
     // шагов из двенадцати — механики, и по одним answersAt на переходе из первого
@@ -2802,7 +2802,7 @@
     if (lastKey) { setTab('answers'); openRecap(lastKey); }
 
     var cta = el('interludeCta');
-    cta.textContent = I.cta || 'Дальше →';
+    cta.textContent = I.cta || 'Далее →';
     cta.onclick = function () { state.timeUpAt = ''; advance(); };
     if (window.imp && window.imp.typoDom) window.imp.typoDom(box);
   }
@@ -3032,7 +3032,7 @@
           var nf = document.createElement('div');
           nf.className = 's2-block';
           nf.innerHTML = '<div class="win-foot"><button class="btn btn-primary" id="nextBtn">' +
-            esc((st.act.after && st.act.after.cta) || 'Дальше →') + '</button></div>';
+            esc((st.act.after && st.act.after.cta) || 'Далее →') + '</button></div>';
           nf.querySelector('#nextBtn').addEventListener('click', advance);
           now.appendChild(nf);
         } else {

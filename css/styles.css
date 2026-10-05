@@ -114,6 +114,11 @@
      инлайном на двух страницах и «переезжал» сам собой. */
   --fs-hero: clamp(34px, 4.4vw, 60px);  /* h1 экранов до старта */
   --fs-hero-xl: clamp(38px, 5.6vw, 76px); /* h1 лендинга */
+  /* Два заголовка жили числом мимо шкалы (сверка 04.10) — значения прежние, токен только
+     даёт им имя: h2 экранов-заглушек (конец ассессмента, ошибки входа) и h1 экрана
+     «Не с телефона», который по построению видят только на узком экране. */
+  --fs-h2: clamp(28px, 3.2vw, 42px);
+  --fs-hero-phone: clamp(30px, 8vw, 40px);
   --fs-logo: 18px;
   /* ОПЕРАТОРСКАЯ ШКАЛА — кабинет оценок и фасилитатор. У них плотные таблицы, и
      11–15 им действительно нужны; отдельные токены здесь потому, что мешать их со
@@ -364,7 +369,7 @@ section + section { border-top: 1px solid #ececec; }
 h2 {
   font-family: var(--ff-display);
   font-weight: 800;
-  font-size: clamp(28px, 3.2vw, 42px);
+  font-size: var(--fs-h2);
   line-height: 1.08;
   letter-spacing: -0.01em;
   margin: 0;
@@ -2348,7 +2353,10 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    одно голое «24 мин» было непонятно, к чему относится. Полоса — последний ряд шапки на
    всю ширину: отрезок этапа по его времени, пройденные залиты, сэкономленные минуты —
    штриховкой на текущем. У будущих этапов только номер: карту дня не показываем
-   (решение 06.08). Вермилиона внутри ассессмента нет (07.08) — предупреждение синее. */
+   (решение 06.08). Вермилиона внутри ассессмента нет (07.08) — предупреждение синее.
+   ⚠ КЕГЛИ — ИЗ ОБЩЕЙ ШКАЛЫ (решение владельца 05.10, вариант «а»): 10,5 → метка 11,
+   22 → --fs-lead 20, 13 → --fs-util 12 в овале (с 14 овал упирался в общий таймер),
+   12,5 → --fs-util 12. Чисел в кеглях шапки больше нет. */
 /* ⚠ ПОЛОСА В ОДНОМ РЯДУ С ШАПКОЙ (владелец 03.10: «сделать воздушнее, сократить по длине,
    в конце — блок с общим таймером»): лого · полоса · общий таймер · номер. */
 #assessRoot .station-header { flex-wrap: nowrap; gap: 32px; }
@@ -2357,9 +2365,9 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .tmr { display: flex; align-items: center; gap: 28px; min-width: 0; order: 3; flex: none; }
 .tmr:empty { display: none; }
 .tmr-blk { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.tmr-k { font-size: 10.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.tmr-k { font-size: var(--label-size); font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
 .tmr-v { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; }
-.tmr-big { font-size: 22px; font-weight: 700; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.tmr-big { font-size: var(--fs-lead); font-weight: 700; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
 .tmr-of { font-size: var(--fs-util); color: var(--muted); }
 .tmr-rail { order: 2; flex: 1 1 auto; min-width: 0; margin: 0 8px; }
 
@@ -2373,18 +2381,18 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .tmr-steps { display: flex; align-items: center; gap: 6px; }
 .tmr-ln { flex: 1 1 auto; min-width: 8px; height: 2px; background: var(--hairline); }
 .tmr-dot { flex: none; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center;
-  justify-content: center; font-size: 11px; font-weight: 700; background: var(--soft); color: var(--muted); }
+  justify-content: center; font-size: var(--label-size); font-weight: 700; background: var(--soft); color: var(--muted); }
 .tmr-dot.is-done { background: var(--jb-ink); color: var(--paper); }
 .tmr-now { position: relative; flex: 0 1 320px; min-width: max-content; display: inline-flex; align-items: center; gap: 8px;
   padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--band); overflow: hidden; }
 .tmr-now > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--band-line); transition: width .8s linear; }
 .tmr-now.is-warn > i { background: #9cc2ea; }
 .tmr-now .tmr-dot { position: relative; background: var(--jb-ink); color: var(--paper); }
-.tmr-now-t { position: relative; font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap;
+.tmr-now-t { position: relative; font-size: var(--fs-util); font-weight: 600; color: var(--ink); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
-.tmr-cap { margin-top: 6px; text-align: center; font-size: 12.5px; line-height: 1.35; color: var(--muted); text-wrap: balance; }
+.tmr-cap { margin-top: 6px; text-align: center; font-size: var(--fs-util); line-height: 1.35; color: var(--muted); text-wrap: balance; }
 .tmr-steps.is-plain .tmr-now { flex: none; }
-.tmr-k2 { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.tmr-k2 { font-size: var(--fs-util); color: var(--muted); white-space: nowrap; }
 .tmr-total { align-items: flex-end; gap: 2px; }
 /* межэтапный экран: откуда минуты */
 .interlude-time { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 6px 24px;
@@ -2392,7 +2400,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .interlude-time:empty { display: none; }
 .interlude-time b { font-variant-numeric: tabular-nums; }
 .interlude-time .is-plus { color: var(--jb-ink); font-weight: 600; }
-.interlude-time .is-sum { font-size: 20px; }
+.interlude-time .is-sum { font-size: var(--fs-lead); }
 /* ссылки на инструкцию — в конце «Справки» (03.10) */
 .ref-setup { margin: 28px 0 8px; padding-top: 14px; border-top: 1px solid var(--hairline); font-size: var(--fs-util); color: var(--muted); }
 .ref-setup a { color: var(--muted); }
@@ -2757,7 +2765,6 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .cab-answer-head { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; margin-bottom: 6px; }
 .cab-answer-label { font-size: var(--fs-op-sm); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
 .cab-answer-head .cab-dim { font-size: var(--fs-op-sm); margin-left: auto; }
-.cab-elicit { font-size: var(--fs-op-sm); color: var(--accent-ink); margin-bottom: 6px; }
 .cab-answer-text { font-size: var(--fs-op); line-height: 1.6; max-width: var(--w-read); }
 .cab-answer-text ul { padding-left: 18px; }
 
@@ -3178,7 +3185,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    Не предупреждение: с телефона ассессмент не проходят. Планшет разрешён. */
 .phone-block { max-width: 30rem; }
 .phone-block h1 {
-  font-family: var(--ff-display); font-weight: 800; font-size: clamp(30px, 8vw, 40px);
+  font-family: var(--ff-display); font-weight: 800; font-size: var(--fs-hero-phone);
   line-height: 1.05; letter-spacing: -.015em; text-transform: uppercase; margin: 14px 0 0;
 }
 .phone-lead { font-size: var(--fs-read); line-height: 1.55; margin: 18px 0 0; }
@@ -4180,29 +4187,6 @@ details.talk-folded[open] + .talk-kept { display: none; }
    тоже менялась вместе с кеглем), а кнопка «сбросить» появлялась только после
    первого движения. Теперь это сетка с постоянными колонками: ползунок тянется,
    число стоит в своей колонке фиксированной ширины, кнопка на месте всегда. */
-/* ── ШКАЛА СРОКА (решение владельца 09.08, вариант 3) ──
-   Крупного числа рядом с ползунком нет: оно меняло ширину и кегль на каждом
-   движении и дёргало весь блок. Вместо него подписанные деления под ползунком —
-   они стоят на своих местах всегда, — и строка выбора ниже, постоянной высоты. */
-.mx-years { margin: 0 0 6px; }
-/* Ползунок — то, что двигает участник, значит голубой; вермилион остаётся кнопкам. */
-.mx-years input[type="range"] { display: block; width: 100%; accent-color: var(--jb-ink); }
-.mx-years-scale { position: relative; height: 18px; margin-top: 2px; }
-.mx-tick {
-  position: absolute; top: 0; transform: translateX(-50%);
-  font-size: var(--fs-util); color: var(--muted-soft); font-variant-numeric: tabular-nums;
-}
-.mx-tick[data-tick="1"] { transform: none; }
-.mx-tick[data-tick="15"] { transform: translateX(-100%); }
-.mx-tick.is-on { color: var(--jb-ink); font-weight: 700; }
-/* Ряд выбора: слева срок, справа сброс. Высота фиксирована, положение кнопки не
-   зависит от длины строки — двигаться нечему. */
-.mx-years-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  min-height: 28px; margin: 0 0 4px;
-}
-.mx-years-pick { font-size: var(--fs-dense); font-weight: 600; color: var(--ink); }
-.mx-years-pick.is-empty { font-weight: 400; color: var(--muted-soft); }
 
 /* Тихие ссылки под главной кнопкой экрана установки: перечитать настройку и роль.
    Служебный кегль и приглушённый цвет — это не действие экрана, а выход из него. */

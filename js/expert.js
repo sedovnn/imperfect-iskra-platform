@@ -349,7 +349,7 @@
     }
     return h +
       '<p class="field-err" id="xFreeErr" style="display:none;">Нужно хотя бы четыре пункта.</p>' +
-      '<button class="btn btn-primary" id="xFreeGo">Дальше →</button></div>';
+      '<button class="btn btn-primary" id="xFreeGo">Далее →</button></div>';
   };
   screens.free.after = function () {
     Array.prototype.forEach.call(document.querySelectorAll('.xfree'), function (el) {
