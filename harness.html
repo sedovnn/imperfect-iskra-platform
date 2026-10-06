@@ -68,7 +68,7 @@
      кнопками без подписей, и низ у них не совпадал. */
   .hs-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin: 16px 0 0; }
   .hs-f { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-op-sm); color: var(--muted-soft); }
-  .hs-bib { width: 110px; text-align: center; font-variant-numeric: tabular-nums; }
+  .hs-bib { width: 110px; text-align: center; font-variant-numeric: tabular-nums; text-transform: uppercase; }
   .hs-res { margin: 12px 0 0; font-size: var(--fs-op); min-height: 1.4em; }
   .hs-res.is-ok { color: var(--ink); font-weight: 600; }
   .hs-res.is-bad { color: var(--accent-ink); font-weight: 600; }
@@ -155,7 +155,7 @@
           <label class="hs-f"><span>Пароль кабинета</span>
             <input type="password" class="cab-inp" id="hsPw" autocomplete="off" /></label>
           <label class="hs-f"><span>Номер участника</span>
-            <input type="text" class="cab-inp hs-bib" id="hsBib" inputmode="numeric" placeholder="770001" /></label>
+            <input type="text" class="cab-inp hs-bib" id="hsBib" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="6" placeholder="HK7RQ4" /></label>
           <button type="button" class="btn btn-primary btn-sm" id="hsPush">Залить в лист</button>
           <button type="button" class="btn btn-ghost btn-sm" id="hsDump">Сохранить копию на диск</button>
         </div>
@@ -729,7 +729,7 @@
 
   function start(fresh) {
     var tag = (el('hsTag').value || '').trim();
-    if (!tag) { window.imp.alert('Впишите метку модели — она попадёт в имя файла и в реплики вместо имени участника.'); return; }
+    if (!tag) { window.imp.alert('Впишите метку модели — она попадёт в имя файла прогона.'); return; }
     var saved = null;
     try { saved = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) {}
     if (!fresh && saved && saved.tag === tag && saved.scenesVersion === S.version) {
@@ -1097,9 +1097,9 @@
     var btn = this;
     if (!run) { res('Прогон не начат.', 'bad'); return; }
     if (current() >= 0) { res('Прогон не закончен — залить можно только полный.', 'bad'); return; }
-    var pw = (el('hsPw').value || '').trim(), bib = (el('hsBib').value || '').trim();
+    var pw = (el('hsPw').value || '').trim(), bib = (el('hsBib').value || '').trim().toUpperCase();
     if (!pw) { res('Впишите пароль кабинета.', 'bad'); el('hsPw').focus(); return; }
-    if (!bib) { res('Впишите номер участника — он должен быть заранее выдан в кабинете.', 'bad'); el('hsBib').focus(); return; }
+    if (!bib) { res('Впишите номер участника. Его выдают в кабинете: поток с галочкой «Прогон модели» → «Выдать номера вручную».', 'bad'); el('hsBib').focus(); return; }
 
     window.imp.confirm('Залить прогон «' + run.tag + '» в лист под номером ' + bib + '?',
       { confirmLabel: 'Залить' }).then(function (yes) {
@@ -1127,10 +1127,29 @@
             res('Залито. Строка появилась в кабинете под номером ' + bib + ', с пометкой «модель».', 'ok');
             return;
           }
+          // ⚠ null НЕ ЗНАЧИТ «НЕ ЗАЛИЛОСЬ» (поймано владельцем 05.10 на прогоне DeepSeek).
+          // callApi ждёт ответа 30 секунд и обрывает ожидание, а Apps Script на полном
+          // прогоне пишет дольше и запись доводит. Харнесс говорил «не дошло», строка в
+          // листе при этом была. Поэтому на null спрашиваем лист: тот же номер, та же
+          // метка и то же начало прогона, отмечен законченным — значит, залито.
+          if (r === null) {
+            res('Сервер не ответил за 30 секунд — проверяю, дошла ли запись…');
+            btn.disabled = true;
+            return window.imp.callApi('loadAnswers', { bib: bib }).then(function (lr) {
+              btn.disabled = false;
+              var rec = lr && lr.ok && lr.record, rn = null;
+              try { rn = rec && rec.runnerJson ? JSON.parse(rec.runnerJson) : null; } catch (e) {}
+              if (rec && rn && rn.tag === run.tag && new Date(rec.startedAt).getTime() === new Date(run.startedAt).getTime() &&
+                  String(rec.finished).toLowerCase() === 'true') {
+                res('Залито (сервер отвечал дольше обычного, запись проверена). Строка в кабинете под номером ' + bib + ', с пометкой «модель».', 'ok');
+                return;
+              }
+              res('Не залилось: сервер не ответил, и в листе под номером ' + bib + ' этого прогона нет. Прогон не потерян — сохраните копию на диск.', 'bad');
+            });
+          }
           // Отказ сервера — словами, а не молчанием. Ответ показываем как есть:
           // «answer_too_long», «missing_field» и прочее это подсказка, что править.
-          var why = r === null ? 'запрос не дошёл до сервера'
-            : (r.message || r.error || JSON.stringify(r).slice(0, 200));
+          var why = r.message || r.error || JSON.stringify(r).slice(0, 200);
           res('Не залилось: ' + why + '. Прогон не потерян — сохраните копию на диск.', 'bad');
         });
       });

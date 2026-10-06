@@ -602,7 +602,7 @@
 
   function peopleTable(list, withWave) {
     return '<table class="ved-table adm-table"><thead><tr><th>Участник</th>' + (withWave ? '<th>Поток</th>' : '') +
-      '<th>Где сейчас</th><th>Оценка по навыкам</th><th>Итог</th><th>Внимание</th></tr></thead><tbody>' +
+      '<th>Где сейчас</th><th>Оценка по навыкам</th><th>Итог</th><th>Внимание</th><th></th></tr></thead><tbody>' +
       list.map(function (p) {
         var where = whereOf(p), wv = withWave ? waveById(p.waveId) : null;
         return '<tr data-bib="' + esc(p.bib) + '" tabindex="0"' + (p.noScore ? ' class="is-off"' : '') + '>' +
@@ -610,10 +610,52 @@
             (p.isRunner ? ' <span class="adm-ai" title="Ассессмент прошла модель, а не человек">модель</span>' : '') + '</td>' +
           (withWave ? '<td>' + (wv ? esc(wv.name || wv.num) : '<span class="cab-dim">без потока</span>') + '</td>' : '') +
           '<td><span class="ved-st ' + where.cls + '">' + esc(where.text) + '</span></td>' +
-          '<td>' + skillsCell(p) + '</td><td>' + totalCell(p) + '</td><td>' + attentionCell(p) + '</td></tr>';
+          '<td>' + skillsCell(p) + '</td><td>' + totalCell(p) + '</td><td>' + attentionCell(p) + '</td>' +
+          '<td class="ved-acts">' + rowJudgeBtn(p) + '</td></tr>';
       }).join('') + '</tbody></table>';
   }
+  // ⚠ ОЦЕНКА ИЗ СПИСКА, БЕЗ КАРТОЧКИ (запрос 04→03, решение владельца 06.10): тот же вызов, что
+  // «Оценить» / «Пересудить всё» в карточке — judgeAnswers по номеру, затем разбор очереди. Только
+  // у тех, у кого есть ответы, кто не помечен «не оценивать», не стоит в очереди и кому судейство
+  // не закрыто версией сцен.
+  function rowJudgeBtn(p) {
+    if (!p.answered || p.noScore || busy(p) || versionsApart(p)) return '';
+    return '<button type="button" class="btn btn-ghost btn-xs adm-row-judge" data-bib="' + esc(p.bib) + '">' +
+      (scored(p) ? 'Пересудить' : 'Оценить') + '</button>';
+  }
+  function judgeOne(p) {
+    if (judging) { say('уже идёт оценка — дождитесь конца', 'bad'); return; }
+    var who = p.fio || bib6(p.bib), again = scored(p);
+    window.imp.confirm((again ? 'Пересудить ' : 'Оценить ') + who + '? ' +
+      (again ? 'Все задания судьи будут поставлены заново и оплачены заново.' : 'Оценка — платные вызовы судьи.') +
+      ' Ход оценки — в строке вверху страницы.', { confirmLabel: again ? 'Пересудить' : 'Оценить' }).then(function (yes) {
+      if (!yes) return;
+      judging = true;
+      say('оцениваю · ' + who);
+      var done = function (msg, kind) { judging = false; return refresh(true).then(function () { say(msg, kind); }); };
+      window.imp.callApi('judgeAnswers', { password: pw, bib: p.bib }).then(function (res) {
+        if (!res || !res.ok) {
+          var e = res && res.error ? res.error : 'не удалось поставить в очередь';
+          return done(who + ': ' + (e === 'scenes_version_mismatch' ? 'версия сцен не совпадает с судейской — судейство отказано' : String(e)), 'bad');
+        }
+        return drainQueue(p.bib, [], statusEl, true).then(function () {
+          judging = false;
+          return refresh(true);
+        });
+      }).catch(function (e) {
+        if (window.console) console.error('cabinet: оценка из списка прервана', e);
+        return done(who + ': оценка прервана сбоем — откройте карточку и нажмите «Продолжить оценку»', 'bad');
+      });
+    });
+  }
   function wireRows() {
+    [].forEach.call(main.querySelectorAll('.adm-row-judge'), function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        judgeOne(personByBib(b.getAttribute('data-bib')));
+      });
+      b.addEventListener('keydown', function (e) { e.stopPropagation(); });
+    });
     [].forEach.call(main.querySelectorAll('tr[data-bib]'), function (tr) {
       var open = function () { openCard(personByBib(tr.getAttribute('data-bib'))); };
       tr.addEventListener('click', open);
@@ -901,7 +943,7 @@
       window.imp.confirm('Стереть ассессмент у ' + bib6(p.bib) + '? Ответы, оценки и ручные правки уровней ' +
         'по этому номеру исчезнут. Отменить это нельзя.', { confirmLabel: 'Стереть', danger: true }).then(function (yes) {
         if (yes) call('resetProgress', { bib: p.bib, confirm: 'RESET' }).then(function (r) {
-          if (r && r.ok) closeCard();
+          if (r && r.ok) closeCard(true);
           return after(r, 'ассессмент стёрт');
         });
       });
@@ -910,7 +952,7 @@
       window.imp.confirm('Удалить номер ' + bib6(p.bib) + ' вместе с ответами и оценками? Отменить нельзя.',
         { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
         if (yes) call('deleteParticipant', { bib: p.bib }).then(function (r) {
-          if (r && r.ok) closeCard();
+          if (r && r.ok) closeCard(true);
           return after(r, 'номер удалён');
         });
       });
@@ -1811,9 +1853,14 @@
     });
   }
 
-  function closeCard() {
+  // ⚠ СПИСОК ОБНОВЛЯЕТСЯ ПРИ ЗАКРЫТИИ КАРТОЧКИ (запрос 04→03, решение владельца 06.10). Опрос
+  // раз в 20 с молчит, пока карточка открыта, и после закрытия список до следующего опроса
+  // показывал прежние цифры: в карточке «оценено 4», в списке ещё 0. noRefresh — когда
+  // вызывающий обновит список сам (after() после удаления и сброса).
+  function closeCard(noRefresh) {
     detail.style.display = 'none';
     detail.setAttribute('aria-hidden', 'true');
+    if (noRefresh !== true && !judging) refresh(true);
   }
 
   // ---------- запуск ----------
@@ -1832,7 +1879,7 @@
     location.href = 'administrator.html';
   });
   el('vedQrFull').addEventListener('click', function () { el('vedQrFull').style.display = 'none'; });
-  el('cabDetailClose').addEventListener('click', closeCard);
+  el('cabDetailClose').addEventListener('click', function () { closeCard(); });
   detail.addEventListener('click', function (e) { if (e.target === detail) closeCard(); });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && detail.style.display !== 'none') closeCard();
