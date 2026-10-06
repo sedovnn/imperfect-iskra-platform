@@ -391,7 +391,13 @@
       .sort(function (a, b) { return String(a.registeredAt || a.startedAt || '').localeCompare(String(b.registeredAt || b.startedAt || '')); });
   }
   function busy(p) { return !!(p.queue && (p.queue.queued || p.queue.running)); }
-  function versionsApart(p) { return !!(p.scenesVersion && p.expectScenes && p.scenesVersion !== p.expectScenes); }
+  // Судейство закрыто версией маршрута. Решает сервер (scenesJudgeable: нынешняя или
+  // равнозначная версия, 06.10): строгое сравнение здесь прятало пересуд у прогонов .87,
+  // которые судейство принимает. Старый сервер поля не шлёт — тогда прежнее сравнение.
+  function versionsApart(p) {
+    if (p.scenesJudgeable !== undefined) return !p.scenesJudgeable;
+    return !!(p.scenesVersion && p.expectScenes && p.scenesVersion !== p.expectScenes);
+  }
   function scored(p) { return !(p.total === null || p.total === undefined); }
   // Ждёт оценки: закончил, оценки нет, не стоит в очереди, судейство ему не закрыто.
   function needsJudge(p) {
@@ -618,34 +624,56 @@
   // «Оценить» / «Пересудить всё» в карточке — judgeAnswers по номеру, затем разбор очереди. Только
   // у тех, у кого есть ответы, кто не помечен «не оценивать», не стоит в очереди и кому судейство
   // не закрыто версией сцен.
+  // ⚠ ОЧЕРЕДЬ ОЦЕНОК ИЗ СПИСКА (замечание владельца 06.10: второе «Пересудить», пока идёт
+  // первое, молчало — отказ писался только в строку вверху). Теперь нажатие ставит человека
+  // в очередь кабинета, кнопка сразу говорит «в очереди» / «оценивается», и оценки идут одна
+  // за другой. Очередь живёт в этой вкладке: закрыли страницу — недоставленные не начнутся.
+  var rowQueue = [], rowActive = null;
+  function rowState(bib) {
+    if (rowActive && bk(rowActive) === bk(bib)) return 'оценивается…';
+    return rowQueue.some(function (x) { return bk(x.bib) === bk(bib); }) ? 'в очереди' : '';
+  }
   function rowJudgeBtn(p) {
+    var st = rowState(p.bib);
+    if (st) return '<span class="ved-st is-run">' + st + '</span>';
     if (!p.answered || p.noScore || busy(p) || versionsApart(p)) return '';
     return '<button type="button" class="btn btn-ghost btn-xs adm-row-judge" data-bib="' + esc(p.bib) + '">' +
       (scored(p) ? 'Пересудить' : 'Оценить') + '</button>';
   }
+  function runRowQueue() {
+    if (rowActive || !rowQueue.length) return;
+    if (judging) { setTimeout(runRowQueue, 3000); return; }   // идёт оценка из карточки
+    var p = rowQueue.shift(), who = p.fio || bib6(p.bib);
+    rowActive = p.bib; judging = true;
+    render();
+    say('оцениваю · ' + who + (rowQueue.length ? ' · в очереди ещё ' + rowQueue.length : ''));
+    var next = function (msg, kind) {
+      rowActive = null; judging = false;
+      return refresh(true).then(function () { if (msg) say(msg, kind); runRowQueue(); });
+    };
+    window.imp.callApi('judgeAnswers', { password: pw, bib: p.bib }).then(function (res) {
+      if (!res || !res.ok) {
+        var e = res && res.error ? res.error : 'не удалось поставить в очередь';
+        return next(who + ': ' + (e === 'scenes_version_mismatch' ? 'версия сцен не совпадает с судейской — судейство отказано' : String(e)), 'bad');
+      }
+      return drainQueue(p.bib, [], statusEl, true).then(function () { return next(); });
+    }).catch(function (e) {
+      if (window.console) console.error('cabinet: оценка из списка прервана', e);
+      return next(who + ': оценка прервана сбоем — откройте карточку и нажмите «Продолжить оценку»', 'bad');
+    });
+  }
   function judgeOne(p) {
-    if (judging) { say('уже идёт оценка — дождитесь конца', 'bad'); return; }
+    if (rowState(p.bib)) return;
     var who = p.fio || bib6(p.bib), again = scored(p);
+    var waitN = rowQueue.length + (rowActive ? 1 : 0);
     window.imp.confirm((again ? 'Пересудить ' : 'Оценить ') + who + '? ' +
       (again ? 'Все задания судьи будут поставлены заново и оплачены заново.' : 'Оценка — платные вызовы судьи.') +
+      (waitN ? ' Сейчас оценивается другой участник — встанет в очередь за ним.' : '') +
       ' Ход оценки — в строке вверху страницы.', { confirmLabel: again ? 'Пересудить' : 'Оценить' }).then(function (yes) {
       if (!yes) return;
-      judging = true;
-      say('оцениваю · ' + who);
-      var done = function (msg, kind) { judging = false; return refresh(true).then(function () { say(msg, kind); }); };
-      window.imp.callApi('judgeAnswers', { password: pw, bib: p.bib }).then(function (res) {
-        if (!res || !res.ok) {
-          var e = res && res.error ? res.error : 'не удалось поставить в очередь';
-          return done(who + ': ' + (e === 'scenes_version_mismatch' ? 'версия сцен не совпадает с судейской — судейство отказано' : String(e)), 'bad');
-        }
-        return drainQueue(p.bib, [], statusEl, true).then(function () {
-          judging = false;
-          return refresh(true);
-        });
-      }).catch(function (e) {
-        if (window.console) console.error('cabinet: оценка из списка прервана', e);
-        return done(who + ': оценка прервана сбоем — откройте карточку и нажмите «Продолжить оценку»', 'bad');
-      });
+      rowQueue.push(p);
+      if (rowActive) { render(); say(who + ' — в очереди, ' + rowQueue.length + '-й'); }
+      runRowQueue();
     });
   }
   function wireRows() {
@@ -1559,7 +1587,8 @@
     }
     inner += '<p><span class="cab-k">Версии:</span> сцены ' + esc(d.versions.scenes) + ', кейс ' + esc(d.versions.caseVer) +
       ', портфель ' + esc(d.versions.backlog) +
-      (d.versions.scenes !== d.versions.expectScenes || d.versions.caseVer !== d.versions.expectCase
+      ((d.versions.scenesJudgeable !== undefined ? !d.versions.scenesJudgeable : d.versions.scenes !== d.versions.expectScenes) ||
+        d.versions.caseVer !== d.versions.expectCase
         ? ' <b class="cab-warn-inline">— расходятся с судейскими (' + esc(d.versions.expectScenes) + ' / ' + esc(d.versions.expectCase) + '): судейство откажет</b>'
         : '') + '</p>';
     inner = '<p class="cab-note">Ничто из этого блока в уровень не входит.</p>' + inner;
