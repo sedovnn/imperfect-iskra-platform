@@ -264,33 +264,53 @@
 
   // ---------- вход ----------
 
-  function login() {
+  // ⚠ ВХОД — ЛЁГКОЙ ПРОВЕРКОЙ ПАРОЛЯ, СПИСОК — УЖЕ ВНУТРИ (замечание владельца 06.10: при
+  // перезагрузке «Проверяю…» висело десятки секунд и могло кончиться «бэкенд не ответил»).
+  // Пароль проверялся загрузкой всего списка (v2List) — самым тяжёлым вызовом кабинета, с
+  // пределом ожидания 30 с. Теперь verifyPassword (только роль), кабинет открывается сразу,
+  // список догружается с одним повтором. Пароль по-прежнему живёт в sessionStorage этой
+  // вкладки: перезагрузка входит сама, закрытая вкладка его забывает, «Выйти» стирает.
+  function login(auto) {
     var val = (el('cabPass').value || '').trim();
     if (!val) return;
-    var btn = el('cabPassBtn');
-    btn.disabled = true; btn.textContent = 'Проверяю…';
-    window.imp.callApi('v2List', { password: val }).then(function (res) {
+    var btn = el('cabPassBtn'), err = el('cabPassErr');
+    btn.disabled = true; btn.textContent = auto ? 'Вхожу…' : 'Проверяю…';
+    window.imp.callApi('verifyPassword', { password: val }).then(function (res) {
       btn.disabled = false; btn.textContent = 'Войти →';
       if (!res || !res.ok) {
-        // ⚠ «НЕВЕРНЫЙ ПАРОЛЬ» СТОЯЛО НА ЛЮБОЙ НЕУДАЧЕ (правка 31.08): первый вызов после
-        // обновления бэкенда бывает дольше тридцати секунд, и кабинет объявлял, что пароль
-        // не тот. Три случая различаются: пароль, молчание бэкенда и всё остальное.
-        var err = el('cabPassErr');
         err.textContent = !res
-          ? 'Бэкенд не ответил. Первый вызов после обновления бывает долгим — нажмите «Войти» ещё раз.'
+          ? 'Сервер не ответил. Первый вызов после паузы бывает долгим — нажмите «Войти» ещё раз.'
           : (res.error === 'unauthorized' ? 'Неверный пароль.'
-                                          : 'Бэкенд ответил ошибкой: ' + String(res.error || 'без кода') + '.');
+                                          : 'Сервер ответил ошибкой: ' + String(res.error || 'без кода') + '.');
         err.style.display = '';
+        // Сохранённый пароль, который сервер отверг, больше не подставляем.
+        if (res && res.error === 'unauthorized') { try { sessionStorage.removeItem(PW_KEY); } catch (e) {} el('cabPass').value = ''; }
         return;
       }
-      el('cabPassErr').style.display = 'none';
+      err.style.display = 'none';
       pw = val;
       try { sessionStorage.setItem(PW_KEY, val); } catch (e) {}
       if (res.role && String(res.role) !== 'full') { location.replace('vedushchiy.html'); return; }
+      role = String(res.role || 'full');
       gate.style.display = 'none';
       content.style.display = '';
-      loadFacs().then(function () { absorb(res); });
-      startPoll();
+      main.innerHTML = '<p class="cab-dim">Загружаю потоки и участников…</p>';
+      var loadList = function (n) {
+        return window.imp.callApi('v2List', { password: pw }).then(function (r) {
+          if (r && r.ok) return r;
+          if (r === null && n < 1) { say('сервер отвечает долго — загружаю ещё раз…'); return loadList(n + 1); }
+          return r;
+        });
+      };
+      loadFacs().then(function () { return loadList(0); }).then(function (r) {
+        if (r && r.ok) { say(''); absorb(r); }
+        else {
+          main.innerHTML = '<p class="cab-dim">Список не загрузился: ' + (r === null ? 'сервер не ответил' : esc((r && r.error) || 'ошибка сервера')) +
+            '.</p><p><button type="button" class="btn btn-ghost btn-sm" id="admReload">Загрузить ещё раз</button></p>';
+          el('admReload').addEventListener('click', function () { main.innerHTML = '<p class="cab-dim">Загружаю…</p>'; refresh(); });
+        }
+        startPoll();
+      });
     });
   }
 
@@ -1942,7 +1962,7 @@
 
   // ---------- запуск ----------
 
-  el('cabPassBtn').addEventListener('click', login);
+  el('cabPassBtn').addEventListener('click', function () { login(false); });
   el('cabPass').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); login(); } });
   window.addEventListener('hashchange', function () {
     tab = 'people'; shareOpen = false;
@@ -1967,6 +1987,6 @@
     try { saved = sessionStorage.getItem(PW_KEY) || ''; } catch (e) {}
     if (!saved) return;
     el('cabPass').value = saved;
-    login();
+    login(true);
   })();
 })();
