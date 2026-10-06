@@ -944,6 +944,12 @@
         'по этому номеру исчезнут. Отменить это нельзя.', { confirmLabel: 'Стереть', danger: true }).then(function (yes) {
         if (yes) call('resetProgress', { bib: p.bib, confirm: 'RESET' }).then(function (r) {
           if (r && r.ok) closeCard(true);
+          // Пустой ответ — сервер не успел ответить за 30 с, но мог довести работу (06.10).
+          if (r === null) {
+            closeCard(true);
+            say('сервер отвечает долго — сброс, скорее всего, прошёл; проверьте строку через минуту', 'bad');
+            return refresh(true);
+          }
           return after(r, 'ассессмент стёрт');
         });
       });
@@ -952,7 +958,12 @@
       window.imp.confirm('Удалить номер ' + bib6(p.bib) + ' вместе с ответами и оценками? Отменить нельзя.',
         { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
         if (yes) call('deleteParticipant', { bib: p.bib }).then(function (r) {
-          if (r && r.ok) closeCard(true);
+          if (r && r.ok) { closeCard(true); return after(r, 'номер удалён'); }
+          // ⚠ НЕТ ОТВЕТА ≠ НЕ УДАЛЕНО (поймано владельцем 06.10). Кабинет ждёт 30 с, а удаление
+          // чистит пять листов и ждёт замка, пока идёт судейство, — сервер доводит его после
+          // того, как кабинет перестал ждать, и кабинет писал «не получилось» про удалённый
+          // номер. На пустой ответ сверяем список: номера нет — значит, удалён.
+          if (r === null) return confirmGone(p.bib);
           return after(r, 'номер удалён');
         });
       });
@@ -1555,12 +1566,43 @@
     return bare ? inner : block('Процесс', inner);
   }
 
+  // Удаление без ответа сервера: до трёх сверок списка с паузой — сервер мог ещё работать.
+  function confirmGone(bib) {
+    var tries = 0;
+    say('сервер отвечает долго — проверяю, удалён ли номер…');
+    var check = function () {
+      return refresh(true).then(function () {
+        var still = people().some(function (x) { return bk(x.bib) === bk(bib); });
+        if (!still) { closeCard(true); say('номер удалён (сервер отвечал дольше обычного)'); return; }
+        if (++tries < 3) return new Promise(function (ok) { setTimeout(ok, 5000); }).then(check);
+        say('сервер не ответил, номер ' + bib6(bib) + ' пока на месте — обновите список через минуту, прежде чем удалять снова', 'bad');
+      });
+    };
+    return check();
+  }
+
+  // ⚠ КАРТОЧКА НЕ ПАДАЕТ НА ПЕРВОМ МЕДЛЕННОМ ОТВЕТЕ (замечание владельца 06.10: «не всегда
+  // открываются с первого раза»). Кабинет ждёт ответа 30 с; первый вызов после паузы у Apps
+  // Script бывает долгим. На пустой ответ — один повтор сам, потом кнопка «Повторить».
+  // cardSeq: если человек успел открыть другую карточку, поздний ответ прежней её не затрёт.
+  var cardSeq = 0;
   function openCard(p) {
+    var seq = ++cardSeq;
     detail.style.display = 'flex';
     detail.setAttribute('aria-hidden', 'false');
     detailBody.innerHTML = '<p class="fac-detail-loading">Загружаю карточку…</p>';
     document.getElementById('cabDetailTitle').textContent = bib6(p.bib) + ((p.fio || personByBib(p.bib).fio) ? ' · ' + (p.fio || personByBib(p.bib).fio) : '');
-    window.imp.callApi('v2Detail', { password: pw, bib: p.bib }).then(function (d) {
+    var fetchDetail = function (n) {
+      return window.imp.callApi('v2Detail', { password: pw, bib: p.bib }).then(function (d) {
+        if (d === null && n < 1 && seq === cardSeq) {
+          detailBody.innerHTML = '<p class="fac-detail-loading">Сервер отвечает долго — пробую ещё раз…</p>';
+          return fetchDetail(n + 1);
+        }
+        return d;
+      });
+    };
+    fetchDetail(0).then(function (d) {
+      if (seq !== cardSeq || detail.style.display === 'none') return;
       var who = personByBib(p.bib);
       // Номер есть, а ассессмента нет: карточка из одних действий с номером.
       if (d && d.error === 'not_found') {
@@ -1568,7 +1610,13 @@
         wireNumberActions(who);
         return;
       }
-      if (!d || !d.ok) { detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить карточку.</p>'; return; }
+      if (!d || !d.ok) {
+        detailBody.innerHTML = '<p class="fac-detail-loading">Не удалось загрузить карточку' +
+          (d === null ? ': сервер не ответил.' : ': ' + esc((d && (d.message || d.error)) || 'ошибка сервера') + '.') + '</p>' +
+          '<p><button type="button" class="btn btn-ghost btn-sm" id="cabDetailRetry">Повторить</button></p>';
+        el('cabDetailRetry').addEventListener('click', function () { openCard(p); });
+        return;
+      }
       var q = d.queue || {};
       // Недобранная очередь: задания уже стоят в листе и ждут разбора. Её отдельная
       // кнопка не ставит ничего заново, а доедает оставшееся (решение владельца 03.10).
