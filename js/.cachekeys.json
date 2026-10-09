@@ -49,9 +49,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "e35a4dc73858",
+  "sha": "ca65ff6cd677",
   "keys": {
-   "administrator.html": 58
+   "administrator.html": 59
   }
  },
  "js/case-ref.js": {
@@ -121,6 +121,12 @@
    "expert.html": 15
   }
  },
+ "js/harness-core.js": {
+  "sha": "1d1bf19af7f7",
+  "keys": {
+   "harness.html": 4
+  }
+ },
  "js/main.js": {
   "sha": "0964606665b9",
   "keys": {
@@ -169,14 +175,14 @@
   }
  },
  "js/scenes.js": {
-  "sha": "16d5086edaa2",
+  "sha": "9f88d0bc0be3",
   "keys": {
-   "administrator.html": 202,
-   "assessment.html": 202,
-   "harness.html": 202,
-   "intro.html": 202,
-   "role.html": 202,
-   "vedushchiy.html": 202
+   "administrator.html": 203,
+   "assessment.html": 203,
+   "harness.html": 203,
+   "intro.html": 203,
+   "role.html": 203,
+   "vedushchiy.html": 203
   }
  },
  "js/typo.js": {

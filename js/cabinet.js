@@ -1480,7 +1480,11 @@
       // сомнение судьи: «приоритет назван вместе с метрикой». Считать его вместе с прочими
       // значило бы звать оценщика туда, где перечитывать нечего.
       var green = mineAll.filter(function (f) { return f.kind === 'green'; });
-      var mine = mineAll.filter(function (f) { return f.kind !== 'green'; });
+      // ⚠ ЗОВЁТ ЛИ ПОМЕТКА ЧЕЛОВЕКА — РЕШАЕТ БЭКЕНД (решение владельца 08.10, v2FlagCall_). Наши заметки
+      // (разброс чтений, контроли между собой) и сомнения в чтении, которое уровня не решало, «нужен человек»
+      // не зажигают, но остаются в карточке с причиной. Без отметки (прежний бэкенд) — зовёт, как было.
+      var mine = mineAll.filter(function (f) { return f.kind !== 'green' && f.human !== false; });
+      var quiet = mineAll.filter(function (f) { return f.kind !== 'green' && f.human === false; });
       var steps = ABILITY_STEPS[a] || { main: [], control: [] };
       var stepsHtml = steps.main.map(function (k) {
         var st = stepByKey(k);
@@ -1532,6 +1536,10 @@
           (green.length ? '<ul class="cab-flags cab-flags-green">' + green.map(function (x) {
             return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + '</li>';
           }).join('') + '</ul>' : '') +
+          (quiet.length ? '<p class="cab-dim">Не зовут человека — уровень от них не меняется:</p>' +
+            '<ul class="cab-flags cab-dim">' + quiet.map(function (x) {
+              return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + (x.why ? ' <i>(' + esc(x.why) + ')</i>' : '') + '</li>';
+            }).join('') + '</ul>' : '') +
           evidHtml(out) +
           (reasoning ? '<div class="cab-ab-h">Обоснование судьи</div><div class="cab-ab-why">' + br(reasoning) + '</div>'
                      : '<p class="cab-dim">Обоснования нет: уровень посчитан кодом или задание не отработало.</p>') +
@@ -1573,7 +1581,10 @@
     var body = f.length
       ? '<p class="cab-note">Флаг — приглашение перечитать ответ, а не ошибка участника и не поправка к баллу. Каждый флаг стоит и внутри своей способности.</p>' +
         '<ul class="cab-flags">' + f.map(function (x) {
-          return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + '</li>';
+          // Пометка, которая человека не зовёт (08.10), — приглушена и с причиной.
+          var q = x && x.human === false && x.kind !== 'green';
+          return '<li' + (q ? ' class="cab-dim"' : '') + '><b>' + esc(x.code) + '</b> — ' + esc(x.text) +
+            (q && x.why ? ' <i>(' + esc(x.why) + ')</i>' : '') + '</li>';
         }).join('') + '</ul>'
       : '<p class="section-lead">Ни одного. Зависимости §9 и расхождения с контролем в пределах нормы.</p>';
     return bare ? body : block('Флаги', body);

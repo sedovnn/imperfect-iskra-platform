@@ -11,11 +11,13 @@
      ПОШАГОВЫЙ ПРОГОН МОДЕЛИ. Вы — переносчик: копируете текст шага в чат модели,
      её ответ вставляете сюда, страница проверяет его гейтом самой механики.
 
-     ЗАЧЕМ РЯДОМ С eval/run_v44f.js. Тот гоняет модель через API и сам. Эта
-     страница нужна там, где API нет вовсе (YandexGPT, Алиса и прочие чаты) — и
-     тогда единственный способ провести модель тем же маршрутом это перенести
-     текст руками. Ядро у них общее: маршрут из scenes.js, гейты из mechanics.js,
-     описания верстаков из js/mech-fields.js.
+     ЗАЧЕМ РУКАМИ. Страница нужна там, где API нет вовсе (YandexGPT, Алиса и прочие
+     чаты), — тогда единственный способ провести модель тем же маршрутом, что
+     человека, это перенести текст руками. Прогона через API нет: CLI-двойник
+     run_v44f.js удалён (решение владельца 30.09, подтверждено 09.10).
+     Что уходит модели и как читается её ответ, решает js/harness-core.js (09.10):
+     маршрут из scenes.js, гейты из mechanics.js, формы из mech-fields.js, журнал
+     прогона. Здесь — только кнопки, поля, буфер и черновик в браузере.
 
      ЧЕМ ЭТО ОТЛИЧАЕТСЯ ОТ ПРЕЖНЕГО _ai_harness_steps.html. Тот держал СВОИ копии
      двадцати шести шагов и читал round1…round5.html, страниц с такими именами
@@ -27,9 +29,12 @@
      когда её убрали в архив. Этот лежит в репозитории.
 
      КАК ОТКРЫТЬ. Нужен локальный сервер: страница читает кейс через fetch, а на
-     file:// браузер это запрещает.
-         cd путь-до-imp.v3 && python3 -m http.server 8765
-         открыть http://localhost:8765/harness.html
+     file:// браузер это запрещает. Из корня клона:
+         python3 -m http.server 8765
+         открыть http://localhost:8765/frontend/harness.html
+     (сервер, запущенный из frontend/, отдаёт её по http://localhost:8765/harness.html).
+     Порядок прогона и условия сопоставимости — docs/streams/08-harness.md,
+     «Как устроено сейчас».
      ============================================================================ -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -119,9 +124,20 @@
           <input type="text" class="cab-inp cab-inp-wide" id="hsTag" placeholder="Опус 5" /></label>
         <button type="button" class="btn btn-primary btn-sm" id="hsStart">Начать прогон</button>
         <button type="button" class="btn btn-ghost btn-sm" id="hsReset">Начать заново</button>
-        <label class="cab-filter" style="margin:0;" title="Обычно на шаге уезжает только новое: модель уже слышала остальное в этом же чате. Поставьте отметку, если чат оборвался и вы начинаете новый — тогда в шаг войдут установка, кейс и все прошлые реплики.">
-          <input type="checkbox" id="hsFull" /> Начинаю новый чат — вложить кейс и всё сказанное</label>
+        <label class="cab-filter" style="margin:0;" title="Обычно на шаге уезжает только новое: модель уже слышала остальное в этом же чате. Поставьте отметку, если чат оборвался и вы начинаете новый — тогда в шаг войдут установка, кейс, все прошлые реплики и прежние ответы модели. Отметка снимается сама, когда модель ответит, и новый чат записывается в журнал.">
+          <input type="checkbox" id="hsFull" /> Начинаю новый чат — вложить кейс, всё сказанное и прежние ответы</label>
       </div>
+
+      <!-- ⚠ УСЛОВИЯ ПРОГОНА (09.10, решение владельца). Харнесс сам знает маршрут, версии и
+           время вставок; провайдера, модель, режим рассуждения и поиск видит только оператор.
+           Чего не видно — остаётся «неизвестно»: числа здесь не выдумываются. -->
+      <section class="hs-panel" style="margin:0 0 18px;">
+        <h3>Условия прогона</h3>
+        <div class="hs-form" id="hsDecl"></div>
+        <label class="cab-filter" style="margin:12px 0 0;">
+          <input type="checkbox" id="hsTest" /> Тестовая запись — не для выборки</label>
+        <p class="hs-note" id="hsStudy"></p>
+      </section>
 
       <div class="hs-steps" id="hsSteps"></div>
 
@@ -143,6 +159,10 @@
             <button type="button" class="btn btn-primary btn-sm" id="hsAccept">Принять и дальше →</button>
             <span class="cab-dim" id="hsSaved"></span>
           </div>
+          <div class="hs-acts">
+            <select class="cab-inp" id="hsFailWhy" aria-label="Что случилось с ответом"></select>
+            <button type="button" class="btn btn-ghost btn-sm" id="hsFail">Записать сбой ответа</button>
+          </div>
           <div id="hsGate"></div>
         </section>
       </div>
@@ -158,11 +178,15 @@
             <input type="text" class="cab-inp hs-bib" id="hsBib" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="6" placeholder="HK7RQ4" /></label>
           <button type="button" class="btn btn-primary btn-sm" id="hsPush">Залить в лист</button>
           <button type="button" class="btn btn-ghost btn-sm" id="hsDump">Сохранить копию на диск</button>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;">Восстановить из файла
+            <input type="file" id="hsLoad" accept="application/json,.json" style="display:none;" /></label>
         </div>
         <p class="hs-res" id="hsPushRes" aria-live="polite"></p>
 
-        <p class="hs-note">Заливка пишет в лист <code>Answers</code> тем же действием, которым пишет браузер участника, и помечает строку прогоном модели. Номер должен быть заранее выдан в кабинете — лучше в отдельной потоке для прогонов.</p>
-        <p class="hs-note">Копия на диск — на случай, если заливка не удалась: прогон живёт только в этом браузере, и файл его сохраняет.</p>
+        <p class="hs-note">Заливка пишет в лист <code>Answers</code> тем же действием, которым пишет браузер участника, и помечает строку прогоном модели. Номер должен быть заранее выдан в кабинете — в отдельном потоке «Прогон модели». Тестовую запись — номером из отдельного потока, отмеченным в кабинете «Не оценивать этот номер».</p>
+        <p class="hs-note">Копия на диск — прогон с журналом: каждое сообщение модели, каждая вставка и её статус, условия прогона. В лист уходит только сводка журнала. Файл сохраняйте после каждого прогона; «Восстановить из файла» продолжает прогон с того же места.</p>
+        <h3 style="margin:18px 0 8px;">Журнал</h3>
+        <pre class="hs-out" id="hsJournal" style="max-height:34vh;">Прогон не начат.</pre>
       </section>
 
     </div>
@@ -173,11 +197,12 @@
 <script src="js/api.js?v=7"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/backlog.js?v=9"></script>
-<script src="js/scenes.js?v=202"></script>
+<script src="js/scenes.js?v=203"></script>
 <script src="js/mechanics.js?v=100"></script>
 <script src="js/mech-fields.js?v=54"></script>
 <script src="js/case-text.js?v=2"></script>
 <script src="js/case-ref.js?v=14"></script>
+<script src="js/harness-core.js?v=4"></script>
 <script>
 /* Пароль на служебную страницу. Пароля в клиенте нет: проверяет бэкенд
    (action verifyPassword), тот же путь, что у витрины и кабинета. */
@@ -232,462 +257,111 @@
   });
 
   var need = { 'js/dialog.js': ['confirm', 'alert'], 'js/scenes.js': ['scenes'], 'js/mechanics.js': ['mechanics'],
-               'js/mech-fields.js': ['mechFields'], 'js/case-text.js': ['caseToText'], 'js/backlog.js': ['backlog'] };
+               'js/mech-fields.js': ['mechFields'], 'js/case-text.js': ['caseToText'], 'js/backlog.js': ['backlog'],
+               'js/harness-core.js': ['harnessCore'] };
   var missing = Object.keys(need).filter(function (f) {
     return need[f].some(function (k) { return !window.imp || window.imp[k] === undefined; });
   });
   if (missing.length) shout('не загрузились файлы: ' + missing.join(', '));
 
-  var S = window.imp.scenes, M = window.imp.mechanics, F = window.imp.mechFields;
-  var TITLES = window.imp.mechTitles, BACKLOG = window.imp.backlog, LIM = window.imp.backlogLimits;
+  // ⚠ ЛОГИКА ПРОГОНА — В js/harness-core.js (09.10). Что уходит модели и как читается её
+  // ответ, решает ядро; здесь только кнопки, поля, буфер и черновик в localStorage.
+  var H = window.imp.harnessCore, S = window.imp.scenes, M = window.imp.mechanics;
   var KEY = 'imp_harness_run';
 
   var el = function (id) { return document.getElementById(id); };
   var esc = function (s) { var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; };
-  var num = function (n) { return String(Math.round(Number(n) * 10) / 10).replace('.', ','); };
   var say = function (m, bad) { el('hsStatus').textContent = m || ''; el('hsStatus').className = 'cab-status' + (bad ? ' is-bad' : ''); };
 
   el('hsVer').textContent = S.version;
 
-  var run = null, caseTextCache = null;
+  var run = null;
+  var STEPS = H.steps();
 
-  function ctx() {
-    return { isDemo: false, BACKLOG: BACKLOG, LIM: LIM, esc: esc, br: esc, num: num,
-             blNum: window.imp.backlogNum, mech: function (k) { return run.mech[k]; } };
+  function fullAgain() { var e = el('hsFull'); return !!(e && e.checked); }
+  H.configure({ fullAgain: fullAgain });
+
+  // ---------- условия прогона ----------
+  // Поля — из ядра (H.DECLARED): тот же список ложится в сводку журнала и в лист.
+  el('hsDecl').innerHTML = H.DECLARED.map(function (d) {
+    var id = 'hsD_' + d.key;
+    var input = d.options
+      ? '<select class="cab-inp" id="' + id + '">' + d.options.map(function (o) {
+          return '<option value="' + esc(o) + '">' + esc(o || 'выберите') + '</option>'; }).join('') + '</select>'
+      : '<input type="text" class="cab-inp" id="' + id + '" autocomplete="off" placeholder="' + (d.need ? '' : 'неизвестно') + '" />';
+    return '<label class="hs-f"><span>' + esc(d.label) + (d.need ? ' *' : '') + '</span>' + input + '</label>';
+  }).join('');
+  el('hsStudy').textContent = 'Заполните то, что видно в интерфейсе модели; чего не видно — оставьте «неизвестно». ' +
+    'Сам харнесс этого не видит: ' + H.UNKNOWN.join('; ') + '. ' +
+    'Уточняющие вопросы: людям нельзя (' + H.STUDY.clarify.source + '), модели тоже. ' +
+    'Поиск и инструменты: ' + H.STUDY.search.source + ' — запишите, как было у модели. ' +
+    'Не перегенерируйте ответы и не правьте их: каждый полученный ответ — попытка, и она идёт в журнал.';
+  el('hsFailWhy').innerHTML = Object.keys(H.FAILURES).map(function (k) {
+    return '<option value="' + k + '">' + esc(H.FAILURES[k]) + '</option>';
+  }).join('');
+  function declaredValues() {
+    var v = {};
+    H.DECLARED.forEach(function (d) { v[d.key] = el('hsD_' + d.key).value; });
+    return v;
   }
+  function fillDeclared(r) {
+    var j = (r && r.journal) || {}, d = j.declared || {};
+    H.DECLARED.forEach(function (x) {
+      var f = el('hsD_' + x.key);
+      f.value = d[x.key] || (x.options ? x.options[0] : '');
+    });
+    el('hsTest').checked = !!j.test;
+  }
+  function declareNow() {
+    if (!run) return;
+    H.declare(declaredValues(), el('hsTest').checked);
+    save(); renderJournal();
+  }
+  H.DECLARED.forEach(function (d) { el('hsD_' + d.key).addEventListener('change', declareNow); });
+  el('hsTest').addEventListener('change', declareNow);
 
-  // Ветвления — тем же кодом, что у участника: перебор считает сама механика,
-  // Северову решает id позиции из backlog.js.
-  function applies(when) {
-    if (!when) return true;
-    // run.mech у неначатого прогона нет вовсе: `run && run.mech.list` падало на
-    // `run.mech` ровно так же, как done() выше.
-    var lm = run && run.mech && run.mech.list;
-    if (!lm) return false;
-    if (when === 'overspend') return !!M.list.sums(lm, ctx()).over;
-    // Обмен условный с правки 5.1: нет отказов — шаг не играется. Модель получает тот же
-    // день, что человек, иначе сравнивать нечего.
-    if (when === 'refused') return refusedIds().length > 0;
-    // Отложена ли выбранная заявка (правка 13.2) — от этого зависит редакция пузыря.
-    if (when === 'refusedLater') {
-      return window.imp.refusedOwnerIsLater(refusedSets(), listSumsOf(), LIM);
+  // Сводка журнала словами — то же, что уйдёт в лист.
+  function renderJournal() {
+    if (!run) { el('hsJournal').textContent = 'Прогон не начат.'; return; }
+    var j = H.summary(), o = j.observed;
+    var lines = [
+      'Сопоставим с прохождениями людей: ' + (j.comparable ? 'да' : 'нет'),
+    ].concat(j.notComparable.map(function (x) { return '  · ' + x; }), [
+      'Отметки: ' + (j.flags.length ? '' : 'нет')
+    ], j.flags.map(function (x) { return '  · ' + x; }), [
+      '',
+      'Наблюдаемое (записал харнесс):',
+      '  сообщений модели ' + o.messages + ' · знаков в них ' + o.chars + ' · ответов вставлено ' + o.answers +
+        ' · сбоев ' + o.failures,
+      '  инструкция: отпечаток ' + j.instruction.fp + ', знаков ' + j.instruction.chars + ', маршрут ' +
+        j.instruction.scenesVersion + ', общая с человеческой: ' + (j.instruction.common ? 'да' : 'нет'),
+      '  ядро ' + j.core + (j.test ? ' · тестовая запись' : ''),
+      'Заявлено оператором:'
+    ], H.DECLARED.map(function (d) { return '  ' + d.label + ': ' + j.declared[d.key]; }), [
+      'Неизвестно:'
+    ], j.unknown.map(function (x) { return '  · ' + x; }));
+    if (o.retried.length) {
+      lines.push('', 'Шаги с несколькими попытками:');
+      o.retried.forEach(function (x) { lines.push('  ' + x.step + ': ' + x.attempts.join(' → ')); });
     }
-    if (when === 'severova') {
-      // Правило одно на всех — js/backlog.js. С 14.08 встреча у каждого, кто хоть
-      // что-то отложил или отклонил, а не только у отказавших заявке №6. С правки 13.1
-      // из кандидатов исключена заявка, на которой настояло правление.
-      return window.imp.refusedTalkIds(refusedSets(), listSumsOf(), LIM).length > 0;
-    }
-    return true;
+    el('hsJournal').textContent = lines.join('\n');
   }
 
   // ---------- материалы ----------
   function caseText() {
-    if (caseTextCache) return Promise.resolve(caseTextCache);
+    if (H.caseText()) return Promise.resolve(H.caseText());
     return fetch(S.caseSrc + '?t=' + Date.now()).then(function (r) {
       if (!r.ok) throw new Error(S.caseSrc + ': ' + r.status);
       return r.text();
-    }).then(function (html) {
-      // ⚠ НЕ innerText. Он выбрасывает границы ячеек, и семь таблиц приложений
-      // превращались в склеенные числа: «%911131518212326» вместо «9 | 11 | 13 |
-      // 15 | 18 | 21 | 23 | 26». Общий переводчик из js/case-text.js работает со
-      // строкой, поэтому node и браузер отдают модели побайтово одно и то же.
-      caseTextCache = window.imp.caseToText(html);
-      if (!caseTextCache) throw new Error('в ' + S.caseSrc + ' нет #caseContent');
-      return caseTextCache;
-    });
-  }
-
-  function cheatsheet() {
-    var c = window.imp.caseCheatsheet || {};
-    var pair = function (a) { return (a || []).map(function (x) { return '· ' + x[0] + ' — ' + x[1]; }).join('\n'); };
-    return 'Кто есть кто:\n' + pair(c.people) + '\n\nЧто есть что:\n' + pair(c.things);
-  }
-
-  // Материал рабочей области и пересказ разбора — из js/mech-fields.js, общие
-  // со скриптом прогона. Здесь только вызов.
-  var helpers = function () { return { num: num, ctx: ctx }; };
-  function material(mech, beat) { return window.imp.mechMaterial(mech, run, helpers(), beat); }
-
-  // ---------- маршрут ----------
-  function steps() {
-    var out = [];
-    S.route().forEach(function (r) {
-      var a = r.act;
-      if (a.kind === 'window' || a.kind === 'mechanic') {
-        out.push({ key: a.save, mech: a.kind === 'mechanic' ? a.mech : null,
-                   when: a.when || '', unless: a.unless || '',
-                   label: a.kind === 'mechanic' ? (TITLES[a.mech] || a.mech) : (a.label || a.save),
-                   scene: r.scene.name, ix: r.sceneIx, actIx: r.actIx });
-      }
-    });
-    return out;
-  }
-  var STEPS = steps();
-
-  // Пока у разбора идёт такт счёта, шаг НЕ пройден: раскладка лежит черновиком, чтобы
-  // харнесс мог посчитать по ней сумму и показать её модели.
-  function done(s) {
-    // ⚠ ПРОГОН МОЖЕТ БЫТЬ НЕ НАЧАТ (правка 21.08). Здесь читалось run.listStage без
-    // проверки, и на пустой странице любое обращение к done() падало с «Cannot read
-    // properties of null». Ронялся не только столбик шагов: кнопка «Принять и дальше»
-    // зовёт current(), то есть done(), — обработчик умирал молча, и нажатие до начала
-    // прогона не делало ВООБЩЕ ничего, без единого слова оператору.
-    if (!run) return false;
-    // ⚠ ТАКТА СЧЁТА БОЛЬШЕ НЕТ (решение владельца 11.09): счёт показывается вместе с
-    // вопросом об основании, а не отдельным кругом, где модель второй раз присылала ту же
-    // раскладку. Тактов два: раскладка и основание.
-    if (s.mech === 'list' && run.listStage === 'why') return false;
-    // ⚠ У ВАРИАНТОВ БУДУЩЕГО ТОЖЕ ДВА ТАКТА (правка 11.09). Пока не задан вопрос Лемеха,
-    // шаг не пройден: у человека он звучит ПОСЛЕ того, как варианты записаны и отмечен
-    // наиболее вероятный, и его редакция зависит от того, один вариант или несколько.
-    if (s.mech === 'futures' && run.futuresStage === 'why') return false;
-    // ⚠ ВТОРОГО ТАКТА У ВАРИАНТОВ БОЛЬШЕ НЕТ (правка 31.08). Три вопроса про основную
-    // рекомендацию стали тремя шагами диалога в scenes.js ещё 28.08, а харнесс продолжал
-    // спрашивать снятый такт формой formMain — и модель отвечала на один и тот же вопрос
-    // дважды: сначала JSON-формой из трёх полей, потом теми же тремя окнами маршрута.
-    // Поймано владельцем 31.08 на ручном прогоне.
-    return s.mech ? run.mech[s.mech] !== undefined : run.answers[s.key] !== undefined;
-  }
-  // Какой такт сейчас идёт и спрашивается ли он обычным текстом. Одно место на обе
-  // стороны страницы: и на сборку вопроса, и на разбор ответа — иначе спросят текстом,
-  // а разберут как JSON, и мы вернёмся к тому же классу поломок.
-  function plainKeyOf(step, run) {
-    if (!step || !step.mech || !run || !window.imp.mechPlain) return null;
-    var key = null;
-    if (step.mech === 'list' && run.listStage === 'why') key = 'formWhy';
-    if (step.mech === 'futures' && run.futuresStage === 'why') {
-      // Редакция ключа идёт за редакцией вопроса: несколько вариантов — одна, один — другая.
-      var fuP = run.mech.futures || {};
-      key = ((fuP.cards || []).filter(function (t) { return String(t || '').trim(); }).length > 1)
-        ? 'formWhy' : 'formWhyOne';
-    }
-    if (step.mech === 'seal') {
-      key = (run.sealStage === 'phrase') ? 'formPhrase' : (run.sealBack ? 'formHeld' : 'form');
-    }
-    return (key && window.imp.mechPlain.is(step.mech, key)) ? key : null;
-  }
-
-  // ⚠ `unless` — ТО ЖЕ УСЛОВИЕ НАОБОРОТ, И ХАРНЕСС ЕГО НЕ ЗНАЛ (правка 21.08).
-  // В сценах на нём разведён вопрос про плату: перебравшему Агеев говорит про
-  // превышение (`when: 'overspend'`), уложившемуся — про состав решений
-  // (`unless: 'overspend'`). Проверялся только `when`, поэтому реплика с `unless`
-  // проходила ВСЕГДА — и модель слышала ОБА вопроса там, где человек слышит один.
-  // Устроено так же, как в движке (engine.js, applies): отрицание того же счёта, а не
-  // второе независимое условие, — два условия рано или поздно разъедутся.
-  function actApplies(a) {
-    if (!a) return true;
-    // when и unless вместе — как в движке (решение владельца 03.10).
-    if (a.unless && applies(a.unless)) return false;
-    return a.when ? applies(a.when) : true;
-  }
-  // Условие у отдельного пузыря — та же проверка, что у акта (правка 13.2).
-  // ⚠ ПРИДЕРЖАННЫЕ ПУЗЫРИ СЮДА НЕ ПОПАДАЮТ. Пузырь с меткой beat приезжает не с
-  // историей, а со своим тактом (см. heldBetween ниже и S.bubbleBeat в scenes.js).
-  var bubbleOk = function (b) { return !S.bubbleBeat(b) && actApplies(b); };
-  var heldOk = function (name) {
-    return function (b) { return S.bubbleBeat(b) === name && actApplies(b); };
-  };
-  function skipped(s) { return !actApplies(s); }
-  function current() {
-    for (var i = 0; i < STEPS.length; i++) if (!done(STEPS[i]) && !skipped(STEPS[i])) return i;
-    return -1;
-  }
-
-  // Реплики, произнесённые МЕЖДУ прошлым шагом и этим. Раньше на каждом шаге
-  // уезжало всё сказанное с начала дня — но вы вставляете текст в ТОТ ЖЕ чат, где
-  // модель это уже слышала: пересказ заставлял платить за одно и то же двенадцать
-  // раз и путал модель дублями (замечание владельца 11.08). Скрипту прогона
-  // история нужна — там каждый вызов к API без памяти, — а чату нет.
-  // Подстановки маршрута: {name} и единственная числовая пара {people}/{money} —
-  // тот же счётчик, который человек видит на экране разбора.
-  // Кого модель встретит на выходе. Сбор отказов здесь, правило выбора — в
-  // js/backlog.js, тот же вызов, что у движка страницы.
-  function refusedIds() {
-    var lm = run && run.mech && run.mech.list;
-    if (!lm || !lm.decided) return [];
-    var ids = [];
-    Object.keys(lm.decided).forEach(function (k) {
-      var d = lm.decided[k];
-      if (d === 'later' || d === 'never') ids.push(String(k).replace(/^a/, ''));
-    });
-    return ids;
-  }
-  // Раскладка целиком: правилу выбора собеседника нужны все три стопки (правка 13.1).
-  function refusedSets() {
-    var lm = run && run.mech && run.mech.list;
-    var out = { taken: [], later: [], never: [] };
-    if (!lm || !lm.decided) return out;
-    Object.keys(lm.decided).forEach(function (k) {
-      var d = lm.decided[k], id = String(k).replace(/^a/, '');
-      if (d === 'take') out.taken.push(id);
-      else if (d === 'later') out.later.push(id);
-      else if (d === 'never') out.never.push(id);
-    });
-    return out;
-  }
-  function listSumsOf() {
-    var lm = run && run.mech && run.mech.list;
-    return lm ? M.list.sums(lm, ctx()) : null;
-  }
-  function refusedPick() { return window.imp.refusedOwner(refusedSets(), listSumsOf(), LIM); }
-
-  // ⚠ ПОДСТАНОВКИ — ВСЕ, КАКИЕ ЕСТЬ В СЦЕНАХ (правка 21.08). Здесь стояли {name},
-  // {who}, {title}, {whoName}, {people} и {money} — и не было {over} и {futureRef},
-  // которые появились в сценах 19.08. Модель получала реплику Агеева буквально: «Так.
-  // Подождите. У вас получилось {over}» — с фигурными скобками, — а человек в этом же
-  // месте читает названное превышение. {people} и {money} в сценах больше не
-  // встречаются, но приём их оставлен: записи прежних прогонов их несут.
-  // Сам расчёт {over} и {futureRef} — в js/mech-fields.js, общий с экраном: реплика с
-  // подстановкой это вопрос, и считать его двумя кодами значит спросить разное.
-  function sub(t) {
-    var lm = run.mech.list, tt = lm ? M.list.sums(lm, ctx()) : null;
-    var pk = window.imp.refusedParts(refusedSets(), tt, LIM);
-    var SF = window.imp.subFacts;
-    var out = String(t == null ? '' : t).split('{name}').join(run.tag)
-      .split('{whoName}').join(pk.whoName)
-      .split('{who}').join(pk.who)
-      .split('{title}').join(pk.title)
-      .replace('{people}', tt ? String(tt.people) : '')
-      .replace('{money}', tt ? num(tt.money) : '')
-      .split('{а}').join(pk.she ? 'а' : '');
-    if (out.indexOf('{over}') >= 0) out = out.split('{over}').join(SF.over(tt, LIM, SF.plural, num));
-    if (out.indexOf('{futureRef}') >= 0) out = out.split('{futureRef}').join(SF.futureRef(run.mech.futures));
-    // Заявка, на которой настаивает правление (26.08) — выбор общий с экраном.
-    if (out.indexOf('{forcedTitle}') >= 0 || out.indexOf('{forcedCost}') >= 0) {
-      // Харнесс модели — не демо никогда: заглушка витрины здесь включаться не должна.
-      var fp = window.imp.forcedParts(refusedIds(), tt, LIM, num, SF.plural, false);
-      out = out.split('{forcedTitle}').join(fp.title).split('{forcedCost}').join(fp.cost);
-    }
-    return out;
-  }
-
-  // Реплики, произнесённые МЕЖДУ прошлым шагом и этим. Раньше на каждом шаге
-  // уезжало всё сказанное с начала дня — но вы вставляете текст в ТОТ ЖЕ чат, где
-  // модель это уже слышала: пересказ заставлял платить за одно и то же двенадцать
-  // раз и путал модель дублями (замечание владельца 11.08). Скрипту прогона
-  // история нужна — там каждый вызов к API без памяти, — а чату нет.
-  //
-  // ⚠ ЗАБИРАЕМ И `after`: это то, что персонаж говорит ПОСЛЕ фиксации шага, и
-  // человек слышит его перед следующим. Раньше брались только bubbles, и модель не
-  // слышала ни «Штерн пишет, что ждёт вас», ни прощаний — то есть переходов дня.
-  function heardBetween(fromStep, toStep) {
-    var out = [];
-    var after = function (r) {
-      if (!fromStep) return true;
-      return r.sceneIx > fromStep.ix || (r.sceneIx === fromStep.ix && r.actIx >= fromStep.actIx);
-    };
-    S.route().forEach(function (r) {
-      if (r.sceneIx > toStep.ix || (r.sceneIx === toStep.ix && r.actIx >= toStep.actIx)) return;
-      if (!after(r)) return;
-      var a = r.act;
-      if (!actApplies(a)) return;
-      var mine = !fromStep || r.sceneIx > fromStep.ix || r.actIx > fromStep.actIx;
-      // У самого прошлого шага берём только `after` — его bubbles модель уже слышала.
-      if (mine) S.speechLines(a, 'bubbles', bubbleOk).forEach(function (l) { out.push(sub(l)); });
-      S.speechLines(a, 'after', bubbleOk).forEach(function (l) { out.push(sub(l)); });
-    });
-    return out;
-  }
-
-  // Придержанные реплики того же отрезка маршрута — тем же обходом, что и история,
-  // только фильтр обратный. Отдаются ровно на своём такте.
-  function heldBetween(fromStep, toStep, name) {
-    var out = [], ok = heldOk(name);
-    var after = function (r) {
-      if (!fromStep) return true;
-      return r.sceneIx > fromStep.ix || (r.sceneIx === fromStep.ix && r.actIx >= fromStep.actIx);
-    };
-    S.route().forEach(function (r) {
-      if (r.sceneIx > toStep.ix || (r.sceneIx === toStep.ix && r.actIx >= toStep.actIx)) return;
-      if (!after(r)) return;
-      if (!actApplies(r.act)) return;
-      S.speechLines(r.act, 'bubbles', ok).forEach(function (l) { out.push(sub(l)); });
-    });
-    return out;
-  }
-
-  function fullAgain() { var e = el('hsFull'); return !!(e && e.checked); }
-
-  function promptFor(step, ix) {
-    // Откуда вести разговор: от прошлого СПРОШЕННОГО шага. «Всё сначала» — для
-    // нового чата, когда прежний оборвался.
-    var from = null;
-    if (!fullAgain()) {
-      for (var i = ix - 1; i >= 0; i--) { if (!skipped(STEPS[i])) { from = STEPS[i]; break; } }
-    }
-    // На ВТОРОМ такте одного и того же шага услышанное не повторяется: модель
-    // получила эти реплики такт назад, в том же чате. Раньше повторялось — тот же
-    // дубль, на который владелец указал 11.08 («зачем в каждом сообщении
-    // пересказывается всё что было до»).
-    // Второй такт остался только у печати: у разбора заявок такта пересчёта больше нет.
-    // ⚠ УСЛЫШАННОЕ НЕ ПОВТОРЯЕТСЯ, если шаг спрашивается ВТОРОЙ РАЗ в том же чате.
-    // Два таких случая, и оба на одном экране Агеева:
-    //   · второй такт печати — модель получила реплики такт назад;
-    //   · ВОЗВРАТ К РАЗБОРУ ЗАЯВОК (добавлено 13.08) — сюда правило не распространялось,
-    //     и монолог Агеева про 500 человек и 22 миллиарда уезжал второй раз целиком.
-    // У человека это прямо запрограммировано: engine.js, jumpBackTo помечает шаг как
-    // уже начатый — «монолог участник слушал, и заставлять слушать заново значит гонять
-    // его по кругу». Возвращаясь, человек видит СВОИ двадцать карточек, а не речь снова.
-    // Сами карточки остаются: человек на возврате смотрит именно на них.
-    // ⚠ ВАРИАНТОВ БУДУЩЕГО ЗДЕСЬ НЕ БЫЛО (правка 14.09, поймано владельцем: «Шаг 10 из 19
-    // зачем-то модели показывает предыдущий монолог агеева лемеха, которые вообще не
-    // актуальны в рамках задаваемого вопроса»). Второй такт вариантов я завёл 11.09, а в
-    // этот список не вписал — и на такте вопроса Лемеха модель получала всю историю
-    // заново, вторым отправлением того же самого. Правило одно на все многотактные
-    // верстаки: на втором такте услышанное не повторяется, потому что оно прозвучало
-    // такт назад в ТОМ ЖЕ чате. Список обязан перечислять все такты; проверку на это
-    // держит lint_harness.js.
-    var again = (step.mech === 'seal' && run.sealStage === 'phrase') ||
-                (step.mech === 'list' && run.sealBack && run.sealBack.prev) ||
-                (step.mech === 'list' && run.listStage === 'why') ||
-                (step.mech === 'futures' && run.futuresStage === 'why');
-    var heard = again ? [] : heardBetween(from, step);
-
-    // ⚠ НИ ОДНОГО СВОЕГО СЛОВА СВЕРХ ЭКРАНА. Раньше здесь стояли «РАБОЧАЯ ОБЛАСТЬ»,
-    // «ПОЛЕ ОТВЕТА» и «СПРАВКА (опора, не подсказка)» — наша служебная лексика,
-    // которой человек не видит, а последняя ещё и сообщала модели, что мы боимся
-    // подсказать. Осталось только то, что читает человек: реплики, подпись поля,
-    // подписи полей рабочей области.
-    // Речь вокруг рабочей области — вся, как у человека: before над ней, lead
-    // строкой-указателем, probe внутри (после действия), ask под ней.
-    var act = null;
-    S.route().forEach(function (r) { if (r.sceneIx === step.ix && r.actIx === step.actIx) act = r.act; });
-    // Пузыри с условием (правка 13.2) отдаются модели по той же ветке, что видит человек.
-    var say2 = function (field) { return act ? S.speechLines(act, field, bubbleOk).map(sub) : []; };
-
-    var body;
-    if (step.mech) {
-      var f = F[step.mech];
-      // Блок правления в листе печати — только в первом такте, как у человека (правка 6.3).
-      var boardHere = (step.mech === 'seal' && run.sealStage !== 'phrase') ? S.boardLines(act) : [];
-      // probeAsk — вопросы второго такта, которые человек видит свёрнутыми над формой.
-      // Модели отдаём их теми же словами: свернуть у неё нечего, а вопрос обязан прозвучать.
-      var form = f.form, probe = say2('probe').concat(say2('probeAsk')), ask = say2('ask'),
-          head = say2('before').concat(boardHere).concat(say2('lead'));
-      var beat = null;
-      // ⚠ ВОЗВРАТ К РАЗБОРУ: ФОРМА ПРИЕЗЖАЕТ ЗАПОЛНЕННОЙ, как поля на экране у человека.
-      // Он видит свои решения и своё обоснование и правит то, что хочет; инструкция при
-      // этом та же, что всегда, — никакого дополнительного вопроса не задаётся.
-      if (step.mech === 'list' && run.sealBack && run.sealBack.prev) {
-        form = window.imp.mechFilled ? window.imp.mechFilled('list', run.sealBack.prev) : form;
-      }
-      // ⚠ ТАКТ СЧЁТА. Список из двадцати заявок НЕ повторяем: модель получила его такт
-      // назад в том же чате. Новое здесь — только сумма взятого, теми же словами, что
-      // стоят над стопкой «Берём» у человека, и его же раскладка в полях.
-      // Такт 2 — счёт и раскладка; такт 3 — одно поле основания. Ни списка заявок, ни
-      // монолога: модель получила их такт назад в том же чате.
-      var whyBeat = (step.mech === 'list' && run.listStage === 'why' && run.mech.list);
-      var backBeat = (step.mech === 'list' && run.sealBack && run.sealBack.prev);
-      if (whyBeat) {
-        form = f.formWhy;
-        beat = 'why';
-        head = [];
-        // Просьба Агеева про основание придержана с первого такта — её место здесь,
-        // прямо над полем, которое её и спрашивает.
-        ask = heldBetween(from, step, 'why');
-      }
-      // ⚠ ВАРИАНТЫ БУДУЩЕГО: ВОПРОС ЛЕМЕХА — ОТДЕЛЬНЫЙ ТАКТ (правка 11.09). На первом такте
-      // его нет вовсе: у человека он появляется только после того, как варианты записаны.
-      // На втором — та редакция, которую человек и увидел бы: probe, если вариантов
-      // несколько, probeOne, если один. Выбор считается по принятому состоянию, тем же
-      // правилом, что в mechanics.js (many = cards.length > 1).
-      if (step.mech === 'futures') {
-        if (run.futuresStage === 'why') {
-          var fu = run.mech.futures || {};
-          var manyFu = ((fu.cards || []).filter(function (t) { return String(t || '').trim(); }).length > 1);
-          form = manyFu ? f.formWhy : f.formWhyOne;
-          beat = 'why';
-          head = [];
-          ask = [];
-          probe = manyFu ? say2('probe') : say2('probeOne');
-        } else {
-          probe = [];
-        }
-      }
-      if (step.mech === 'seal') {
-        if (run.sealStage === 'phrase') {
-          // ⚠ ВТОРОЙ ТАКТ: экран заменяет всю область одной итоговой строкой и
-          // задаёт вопрос. Ни before, ни ask здесь нет — «Ну что, с этим к ним
-          // идти? Финализируем?» относится к выбору хода, который уже сделан
-          // (mechanics.js: ask рисуется только при confirmed == null).
-          form = f.formPhrase;
-          beat = 'phrase';
-          head = [];
-          ask = [];
-          // ⚠ ПО ФАКТУ ИЗМЕНЕНИЯ, А НЕ ВОЗВРАТА (как на экране): модель могла вернуться
-          // к разбору и оставить его как был. Тогда вопрос тот же, что без возврата.
-          probe = (run.sealBack && M.seal.changed({ returned: true, snap: run.sealBack.snap }, ctx()))
-            ? say2('probeReturn') : say2('probe');
-        } else {
-          form = run.sealBack ? f.formHeld : f.form;
-          probe = [];
-        }
-      }
-      var mat = material(step.mech, whyBeat ? 'why' : beat);
-      // Строку счёта собирает mech-fields.js — общий код с CLI-харнессом, чтобы не держать
-      // две копии одной строки. Слово в слово как шапка стопки «Берём», без сравнения с
-      // рамкой и без предупреждения: их человеку не показывают. С 11.09 она приходит на
-      // такте основания, вместе с вопросом «почему именно такой состав».
-      // На возврате человек видит и карточки, и счётчик над стопкой — значит и модель.
-      // Счёт берём тем же общим кодом, только состояние подставляем прежнее: раскладка
-      // из run.mech.list на возврате удалена, она лежит в run.sealBack.prev.
-      if (backBeat) {
-        mat = mat + window.imp.mechMaterial('list', { mech: { list: run.sealBack.prev } },
-                                            helpers(), 'sum');
-      }
-      // ⚠ ИНСТРУКЦИЯ РАЗНАЯ У ПУСТОЙ И У ЗАПОЛНЕННОЙ ФОРМЫ (13.08).
-      // «Верните ровно в этом виде» верно для пустого шаблона: речь о ФОРМЕ ответа.
-      // Но на возврате к разбору форма приезжает заполненной прежним ответом — и та же
-      // фраза читается буквально: «верните то же самое». Модель, которая только что
-      // выбрала «возвращаюсь и меняю», получала указание ничего не менять. Поймано
-      // владельцем; моя же правка от 12.08 (заполнять форму) осталась недоделанной,
-      // потому что инструкцию рядом я не тронул.
-      // Человеку этого текста не нужно: он ВИДИТ свои ответы в полях и правит их прямо
-      // там. Для модели то же самое приходится сказать словами — это паритет, а не
-      // подсказка сверх экрана.
-      // ⚠ ТАКТ ИЗ ОДНОГО ПОЛЯ — ОБЫЧНЫМ ТЕКСТОМ (решение владельца 31.08). Скобки и
-      // «верните ОДНИМ объектом» ради одного поля ничего не несут: у человека там просто
-      // подписанное поле. Реестр и текст вопроса — общие с CLI-харнессом
-      // (window.imp.mechPlain), чтобы формулировка не разошлась между двумя прогонами.
-      var plainKey = plainKeyOf(step, run);
-      var filledIn = (step.mech === 'list' && run.sealBack && run.sealBack.prev);
-      var howTo = filledIn
-        ? 'Ниже ваш прежний ответ — он стоит в полях, как вы его оставили. Поправьте в нём то, что решили, и верните ОДНИМ объектом JSON целиком — без пояснений до и после:\n'
-        : 'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n';
-      body = (head.length ? head.join('\n') + '\n\n' : '') +
-        mat.replace(/^\n\n/, '') + (mat ? '\n\n' : '') +
-        (probe.length ? probe.join('\n') + '\n\n' : '') +
-        (ask.length ? ask.join('\n') + '\n\n' : '') +
-        (plainKey ? window.imp.mechPlain.ask(step.mech, plainKey)
-                  : howTo + JSON.stringify(form, null, 1));
-    } else if (act && Array.isArray(act.parts) && act.parts.length) {
-      // ⚠ ОКНО НА НЕСКОЛЬКО ВОПРОСОВ СПРАШИВАЕТСЯ ФОРМОЙ (правка 21.08). На экране у
-      // этого шага столько полей, сколько вопросов, и над каждым стоит его вопрос —
-      // три вопроса Штерна. Прежде здесь стояло общее «Поле „Путь". Напишите ответ
-      // обычным текстом»: модель отдавала один абзац, человек — размеченные части, и
-      // судья получал по одному шагу разный материал. Ключи формы — те же вопросы,
-      // склейку в ответ делает общий window.imp.winParts.
-      body = (say2('lead').length ? say2('lead').join('\n') + '\n\n' : '') +
-        'Заполните и верните ОДНИМ объектом JSON, ровно в этом виде — без пояснений до и после:\n' +
-        JSON.stringify(window.imp.winParts.form(act), null, 1);
-    } else {
-      body = (say2('lead').length ? say2('lead').join('\n') + '\n\n' : '') +
-        'Поле «' + step.label + '». Напишите ответ обычным текстом.';
-    }
-
-    var pre = (run.sentSetup && !fullAgain()) ? ''
-      : (S.briefForModel(run.tag) + '\n\nО компании\n' + (caseTextCache || '') +
-         '\n\nСправка\n' + cheatsheet() + '\n\n');
-    return pre + (heard.length ? heard.join('\n') + '\n\n' : '') + body;
+    }).then(function (html) { return H.setCaseHtml(html); });
   }
 
   // ---------- отрисовка ----------
   function renderSteps() {
-    var cur = current();
+    var cur = H.current();
     el('hsSteps').innerHTML = STEPS.map(function (s, i) {
-      var cls = skipped(s) ? 'is-skip' : done(s) ? 'is-done' : (i === cur ? 'is-now' : '');
-      return '<span class="hs-step ' + cls + '" title="' + esc(s.scene) + (skipped(s) ? ' · не спрашивали' : '') + '">' +
+      var cls = H.skipped(s) ? 'is-skip' : H.done(s) ? 'is-done' : (i === cur ? 'is-now' : '');
+      return '<span class="hs-step ' + cls + '" title="' + esc(s.scene) + (H.skipped(s) ? ' · не спрашивали' : '') + '">' +
         (i + 1) + '. ' + esc(s.label) + '</span>';
     }).join('');
   }
@@ -695,7 +369,8 @@
   function render() {
     if (!run) return;
     renderSteps();
-    var cur = current();
+    var cur = H.current();
+    renderJournal();
     if (cur < 0) {
       el('hsNum').textContent = '—'; el('hsLabel').textContent = 'все шаги пройдены'; el('hsKind').textContent = '';
       el('hsPrompt').textContent = 'Прогон закончен. Скачайте файлом или залейте в лист ниже.';
@@ -708,7 +383,7 @@
     el('hsLabel').textContent = s.label;
     // Такт из одного поля спрашивается текстом — подпись обязана это говорить, иначе
     // оператор ждёт JSON там, где его не просят.
-    var plainNow = plainKeyOf(s, run);
+    var plainNow = H.plainKeyOf(s);
     el('hsKind').textContent = s.mech ? ('верстак · ' + (plainNow ? 'текст' : 'JSON')) : 'окно · текст';
     // Оператору тоже надо понимать, какой такт идёт.
     var beat = (s.mech === 'list' && run.listStage === 'why')
@@ -720,7 +395,10 @@
     el('hsHint').textContent = beat + (run.sentSetup && !fullAgain() ? 'Кейс и установка уже уехали — здесь только новое с прошлого шага. ' : '') + (s.mech && !plainNow
       ? 'Ответ модели вставьте как JSON — страница переведёт его в состояние и проверит тем же гейтом, что держит человека.'
       : 'Ответ модели вставьте как обычный текст.');
-    el('hsPrompt').textContent = promptFor(s, cur);
+    var text = H.promptFor(s, cur);
+    el('hsPrompt').textContent = text;
+    // Что стоит на экране — в журнал (один раз на текст), и сразу на диск браузера.
+    H.noteShown(text); save(); renderJournal();
     el('hsAnswer').value = '';
     el('hsGate').innerHTML = '';
   }
@@ -736,16 +414,19 @@
       run = saved; say('черновик подхвачен');
     } else {
       if (saved && saved.scenesVersion !== S.version) say('маршрут сменился — начинаю заново');
-      run = { tag: tag, scenesVersion: S.version, caseVersion: S.caseVersion, backlogVersion: S.backlogVersion,
-              startedAt: new Date().toISOString(), answers: {}, answersAt: {}, mech: {}, mechAt: {},
-              sent: {}, sentSetup: false };
+      run = H.newRun(tag);
     }
+    H.setRun(run);
+    // Новый прогон берёт условия с панели; подхваченный черновик — свои.
+    if (run.journal && !Object.keys(run.journal.declared || {}).length && !run.journal.events.length) {
+      H.declare(declaredValues(), el('hsTest').checked);
+    } else fillDeclared(run);
     caseText().then(function () { render(); save(); })
       .catch(function (e) {
         el('hsPrompt').textContent = 'Не удалось прочитать кейс: ' + e.message +
           '\n\nСтраницу нужно открывать через локальный сервер, а не как файл:\n' +
-          '  cd путь-до-imp.v3 && python3 -m http.server 8765\n' +
-          '  затем http://localhost:8765/harness.html';
+          '  из корня клона: python3 -m http.server 8765\n' +
+          '  затем http://localhost:8765/frontend/harness.html';
         say('кейс не прочитан', true);
       });
   }
@@ -761,6 +442,7 @@
     var text = el('hsPrompt').textContent;
     var ok = function () {
       el('hsCopied').textContent = 'скопировано · ' + text.length + ' знаков';
+      if (run) { H.noteCopied(); save(); }
       // ⚠ ЗДЕСЬ ПОДНИМАЛСЯ ФЛАГ «кейс уже отправлен» (снято 13.08). Стояло:
       //     if (!run.sentSetup) { run.sentSetup = true; save(); }
       // Копирование — НЕ доставка. Буфер мог не сработать, чат мог быть не открыт,
@@ -780,316 +462,70 @@
     else el('hsCopied').textContent = 'буфер недоступен — выделите текст и скопируйте руками';
   });
 
+  // Сообщение гейта, которое оператор отправляет модели дословно.
+  var GATE_NOTE = '<p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
+
   el('hsAccept').addEventListener('click', function () {
-    // Починка разбора называется вслух ВМЕСТЕ с приёмом шага: отдельную строку статуса
-    // тут же затирает следующая, и оператор её не увидит. mended живёт на весь приём.
-    var mended = '';
-    var note = function () { return mended ? ' · разобрал, поправив ' + mended + ' — сверьте текст' : ''; };
-    if (!run) {
+    var r = H.accept(el('hsAnswer').value);
+    var note = function () { return r.mended ? ' · разобрал, поправив ' + r.mended + ' — сверьте текст' : ''; };
+    if (r.kind === 'not_started') {
       el('hsGate').innerHTML = '<p class="hs-note">Прогон не начат. Впишите метку модели и нажмите «Начать прогон».</p>';
       return;
     }
-    var cur = current();
-    // ⚠ НА ЗАКОНЧЕННОМ ПРОГОНЕ ОБЪЯСНЯЕМ, А НЕ МОЛЧИМ (правка 21.08). Здесь стоял
-    // пустой `return`: кнопка нажималась, вставленный текст никуда не шёл, и на экране
-    // не менялось ничего — оператор не мог понять, принято или нет.
-    if (cur < 0) {
+    if (r.kind === 'finished') {
       el('hsGate').innerHTML = '<p class="hs-note">Прогон закончен: все шаги пройдены. ' +
         'Скачайте копию или залейте в лист ниже, а для нового прогона нажмите «Начать заново».</p>';
       return;
     }
-    var s = STEPS[cur], raw = el('hsAnswer').value.trim();
-    if (!raw) { window.imp.alert('Вставьте ответ модели.'); return; }
+    if (r.kind === 'empty') { window.imp.alert('Вставьте ответ модели. Если модель ответила пусто — «Записать сбой ответа».'); return; }
     el('hsGate').innerHTML = '';
+    // Новый чат состоялся: дальше снова только новое с прошлого шага.
+    if (r.restarted) el('hsFull').checked = false;
+    if (r.changed) { save(); render(); }
+    else if (r.logged) { save(); renderJournal(); }
 
-    // Установка и кейс считаются доставленными, как только принят первый шаг:
-    // модель на него ответила, значит материалы получила. Прежде флаг поднимался
-    // только кнопкой «Скопировать» — кто копирует выделением, получал кейс заново
-    // на каждом шаге.
-    run.sentSetup = true;
-
-    if (!s.mech) {
-      // ⚠ ОКНО НА НЕСКОЛЬКО ВОПРОСОВ ЧИТАЕТСЯ ФОРМОЙ. Спрашивали JSON — значит и
-      // разбираем JSON, и складываем в ту же одну строку, что сохраняет экран: вопрос,
-      // под ним ответ. Иначе под ключом ответа лежал бы сырой JSON, и судья читал бы
-      // фигурные скобки вместо ответа участника.
-      var wAct = null;
-      S.route().forEach(function (r) { if (r.sceneIx === s.ix && r.actIx === s.actIx) wAct = r.act; });
-      if (wAct && Array.isArray(wAct.parts) && wAct.parts.length) {
-        // Тот же общий читатель, что у верстаков: окно на три вопроса Штерна тоже
-        // спрашивается формой, и кавычки внутри ответа ломают его ровно так же.
-        var wRead = window.imp.readJson(raw), wObj;
-        if (!wRead.obj) {
-          el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(wRead.error) + '</p>' +
-            (wRead.at ? '<p class="hs-note">Сломалось здесь: …' + esc(wRead.at) + '…</p>' : '') +
-            '<p class="hs-note">Чаще всего причина — прямые кавычки внутри текста: для JSON это конец строки.</p>';
-          return;
-        }
-        wObj = wRead.obj;
-        if (wRead.repaired) mended = wRead.repaired;
-        var joined = window.imp.winParts.toText(wAct, wObj);
-        if (!String(joined).trim()) {
-          el('hsGate').innerHTML = '<p class="hs-gate">Ни одно поле не заполнено. ' +
-            'Ключи обязаны совпадать с вопросами: ' +
-            esc(wAct.parts.map(function (p) { return '«' + p.q + '»'; }).join(', ')) +
-            '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
-          return;
-        }
-        run.answers[s.key] = joined;
-        run.answersAt[s.key] = new Date().toISOString();
-        save(); render(); say('шаг принят' + note());
-        return;
-      }
-      run.answers[s.key] = raw;
-      run.answersAt[s.key] = new Date().toISOString();
-      save(); render(); say('шаг принят' + note());
-      return;
-    }
-
-    var obj;
-    // Такт из одного поля: ответ приходит текстом и заворачивается под ту же подпись,
-    // какой его спросили, — дальше его читает прежний парный читатель.
-    var plainNow = plainKeyOf(s, run);
-    if (plainNow) {
-      obj = window.imp.mechPlain.wrap(s.mech, plainNow, raw);
-    } else {
-      // ⚠ РАЗБОР ОБЩИЙ С CLI-ХАРНЕССОМ (правка 31.08). Здесь стоял свой JSON.parse и общая
-      // жалоба «начните с „{"» — на ответе, где структура верна, а внутри значения стоят
-      // прямые кавычки, оператор видел только «Unrecognized token „о"» и не понимал, что
-      // чинить. Общий читатель поправляет ровно эту ошибку, говорит о починке вслух и при
-      // неудаче показывает кусок, на котором сломалось.
-      var read = window.imp.readJson(raw);
-      if (!read.obj) {
-        el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(read.error) + '</p>' +
-          (read.at ? '<p class="hs-note">Сломалось здесь: …' + esc(read.at) + '…</p>' : '') +
-          '<p class="hs-note">Чаще всего причина — прямые кавычки внутри текста: для JSON это конец строки. ' +
-          'Попросите модель повторить ответ, заменив внутренние кавычки на «ёлочки» или экранировав их.</p>';
-        return;
-      }
-      obj = read.obj;
-      if (read.repaired) mended = read.repaired;
-    }
-    var f = F[s.mech];
-
-    // ⚠ ПЕЧАТЬ: ХОД МОДЕЛИ ИСПОЛНЯЕТСЯ, А НЕ ЗАПИСЫВАЕТСЯ ГАЛОЧКОЙ. Человек,
-    // нажавший «← Вернуться и изменить», попадает обратно в разбор заявок и правит
-    // его; слепок снимается ДО правки, иначе «изменил под давлением» и «удержал»
-    // не различить. Прежде модель отвечала «вернуться: да», а харнесс шёл дальше —
-    // к Лемеху (поймано владельцем 11.08 на живом прогоне).
-    if (s.mech === 'seal' && run.sealStage !== 'phrase') {
-      if (f.isBack(obj) && !run.sealBack) {
-        // ⚠ ПРЕЖНИЙ ОТВЕТ СОХРАНЯЕМ. На экране человек, вернувшийся к разбору, видит свои
-        // решения и свой текст «почему именно так» УЖЕ В ПОЛЯХ — он правит то, что хочет,
-        // а не набирает заново. Модели же уезжала пустая форма, и её приходилось заполнять
-        // с нуля, включая обоснование, которого у человека повторно не спрашивают
-        // (замечание владельца 12.08).
-        run.sealBack = { returned: true, snap: M.seal.snap(ctx()), prev: run.mech.list };
-        delete run.mech.list;          // разбор снова становится текущим шагом
-        delete run.mechAt.list;
-        save(); render();
-        el('hsGate').innerHTML = '<p class="hs-gate">Модель возвращается к разбору заявок. ' +
-          'Следующий шаг — снова разбор: она правит его, и после этого печать спросит только подтверждение. ' +
-          'Вернуться можно один раз.</p>';
-        say('возврат к разбору');
-        return;
-      }
-      // Подтвердила — открывается второй такт, одна фраза.
-      run.sealStage = 'phrase';
-      save(); render();
+    if (r.kind === 'json_error') {
+      el('hsGate').innerHTML = '<p class="hs-gate">Это не разбирается как JSON: ' + esc(r.error) + '</p>' +
+        (r.at ? '<p class="hs-note">Сломалось здесь: …' + esc(r.at) + '…</p>' : '') +
+        (r.parts
+          ? '<p class="hs-note">Чаще всего причина — прямые кавычки внутри текста: для JSON это конец строки.</p>'
+          : '<p class="hs-note">Чаще всего причина — прямые кавычки внутри текста: для JSON это конец строки. ' +
+            'Попросите модель повторить ответ, заменив внутренние кавычки на «ёлочки» или экранировав их.</p>');
+    } else if (r.kind === 'parts_empty') {
+      el('hsGate').innerHTML = '<p class="hs-gate">Ни одно поле не заполнено. ' +
+        'Ключи обязаны совпадать с вопросами: ' + esc(r.questions) + '</p>' + GATE_NOTE;
+    } else if (r.kind === 'read_error') {
+      el('hsGate').innerHTML = '<p class="hs-gate">Не разобрал ответ: ' + esc(r.error) + '</p>';
+    } else if (r.kind === 'gate') {
+      el('hsGate').innerHTML = '<p class="hs-gate">Гейт верстака: ' + esc(r.message) + '</p>' + GATE_NOTE;
+    } else if (r.kind === 'seal_back') {
+      el('hsGate').innerHTML = '<p class="hs-gate">Модель возвращается к разбору заявок. ' +
+        'Следующий шаг — снова разбор: она правит его, и после этого печать спросит только подтверждение. ' +
+        'Вернуться можно один раз.</p>';
+      say('возврат к разбору');
+    } else if (r.kind === 'seal_confirmed') {
       say('подтверждено, осталась одна фраза');
-      return;
-    }
-
-    // Перевод ответа модели в состояние механики: она отвечает подписями с экрана
-    // («решения», «№5», «берём»), состояние держит свои ключи (decided, a6, take).
-    // ⚠ ОТДЕЛЬНЫЙ ЧИТАТЕЛЬ ВТОРОГО ТАКТА СНЯТ ВМЕСТЕ С ТАКТОМ (31.08). Он появился
-    // 21.08, когда харнесс спрашивал формой formMain, а разбирал ответ как веер: rays
-    // оставались пусты, гейт требовал «хотя бы одну рекомендацию с непустой сутью», и шаг
-    // вставал насмерть. Такта больше нет — веер разбирается одним читателем, как все
-    // остальные верстаки.
-    // ⚠ ТАКТ 3 РАЗБОРА ЧИТАЕТСЯ СВОИМ ЧИТАТЕЛЕМ (правка 31.08, находка владельца). Форму
-    // такта спрашивают подписью с экрана — «Почему вы выбрали именно такой состав?», — а
-    // читали общим `toState`, который знает только прежнее написание «Почему именно так»
-    // (до правки 4.3). Критерии приходили пустыми, и гейт отвечал «Критерии обязательны:
-    // на чём стоит этот выбор» на ответ, где они написаны. Шаг было не пройти в принципе:
-    // модель отвечает ровно тем ключом, который у неё спросили. Тот же класс дефекта, что
-    // 21.08 у вариантов: спрашивают одной формой, читают чужим читателем.
-    // ⚠ ВТОРОЙ ТАКТ ВАРИАНТОВ БУДУЩЕГО — ТОТ ЖЕ СЛУЧАЙ (правка 07.10, прогон примеров L5).
-    // Ответ на «Почему именно этот вариант — наиболее вероятный?» читал общий `toState`, который
-    // этой подписи не знает: текст пропадал, и ниже `whyToState` получал уже пустое состояние.
-    // Пусто было у всех десяти прогонов моделей в листе, а бэкенд отдаёт этот ответ судье МК.
-    var whyBeat = (s.mech === 'list' && run.listStage === 'why') ||
-                  (s.mech === 'futures' && run.futuresStage === 'why');
-    try {
-      obj = (s.mech === 'seal') ? f.toState(obj, run.sealBack, ctx())
-          : whyBeat ? f.whyToState(obj)
-          : f.toState(obj);
-    }
-    catch (e) {
-      el('hsGate').innerHTML = '<p class="hs-gate">Не разобрал ответ: ' + esc(e.message) + '</p>';
-      return;
-    }
-    // ⚠ СЛИЯНИЕ ВЕЕРА С ОТВЕТОМ ВТОРОГО ТАКТА СНЯТО ВМЕСТЕ С ТАКТОМ (31.08). Оно брало веер
-    // из черновика, принятого такт назад, и подмешивало к нему основную рекомендацию. Такта
-    // нет — веер приходит одним ответом целиком.
-    // ⚠ ПРЕЖНЕЕ ОСНОВАНИЕ ПЕРЕЖИВАЕТ ВОЗВРАТ. На возврате поля критериев модель не
-    // получает — экран его скрывает, человеку даются только решения. Значит и в ответе
-    // его нет, и toState вернул бы пустую строку, а гейт разбора требует непустые
-    // критерии. У человека текст просто остаётся в состоянии шага; здесь переносим его
-    // так же, из сохранённого прежнего ответа.
-    // Источник прежнего текста два: на возврате — сохранённый ответ до печати, на такте
-    // счёта — черновик раскладки, принятый такт назад. У человека в обоих случаях текст
-    // просто остаётся в поле и не пропадает, если он его не тронул.
-    if (s.mech === 'list' && !String(obj.criteria || '').trim()) {
-      var prevCrit = (run.sealBack && run.sealBack.prev && run.sealBack.prev.criteria) ||
-                     (run.mech.list && run.mech.list.criteria) || '';
-      if (prevCrit) obj.criteria = String(prevCrit);
-    }
-    // ГЕЙТ САМОЙ МЕХАНИКИ — тот же, что держит человека.
-    // ⚠ РАЗБОР ГЕЙТИТСЯ ПО ТАКТАМ, а не здесь: на тактах 1–2 критериев ещё не спрашивали,
-    // и общий гейт рубил бы шаг сообщением «Критерии обязательны» до того, как модель до
-    // них дойдёт. Ниже у разбора свои проверки: раскладка на тактах 1–2, всё целиком на
-    // такте 3. Тот же гейт механики, просто в нужный момент.
-    // ⚠ ВАРИАНТЫ БУДУЩЕГО ТОЖЕ ГЕЙТЯТСЯ ПО ТАКТАМ (починка 12.09, поймано владельцем на
-    // прогоне). С 11.09 у верстака два такта, и на втором ответ модели — одно поле текста,
-    // а не карточки. Общий гейт стоит ЗДЕСЬ, до разбора тактов, и честно отвечал «Нужна
-    // хотя бы одна карточка» на ответ, в котором карточек и не должно быть. Та же беда,
-    // что была у разбора заявок, и лечится так же: гейт вызывается в своей ветке ниже —
-    // на такте 1 по принятым карточкам, на такте 2 по собранному состоянию.
-    var fail = (s.mech === 'list' || s.mech === 'futures') ? '' : M[s.mech].gate(obj, ctx());
-    if (fail) {
-      el('hsGate').innerHTML = '<p class="hs-gate">Гейт верстака: ' + esc(fail) +
-        '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
-      return;
-    }
-    // ⚠ ТРИ ТАКТА РАЗБОРА (последовательность владельца 14.08). Человек делает всё на
-    // ОДНОМ экране: раскладывает карточки, видит сумму взятого живьём и пишет «Почему
-    // именно так» — поле стоит под стопками всё время. В переписке одного экрана нет, и
-    // порядок приходится задать:
-    //   такт 1 — разложить (только решения);
-    //   такт 2 — показать счёт и дать переложить (снова только решения: присланная
-    //            раскладка и есть подтверждение, отдельного «подтверждаю» в переписке нет);
-    //   такт 3 — написать «Почему именно так», когда сумма уже известна.
-    //
-    // ЗАЧЕМ СЧЁТ. На восьми прогонах ни один не уложился по людям (2,2×–4,1× рамки), а
-    // 2001, 2002 и 2003 в своих же критериях ПИСАЛИ, что уложились — «Бюджет распределён
-    // строго в лимитах (500 чел.)» при 1610. Модель складывала двадцать чисел в уме и
-    // узнавала итог только у печати, когда список зафиксирован. ПР-1 мерила арифметику.
-    //
-    // ЗАЧЕМ КРИТЕРИИ ПОСЛЕДНИМИ. Прежде я спрашивал их на такте 1 — до того, как модель
-    // узнала сумму, — и повторно на такте 2. Человек пишет их, уже видя итог, и один раз.
-    //
-    // Предупреждения о переборе в счёте НЕТ: человеку его намеренно не показывают, чтобы
-    // выход за рамку оставался решением с аргументацией, а не запретом.
-    // ⚠ НА ВОЗВРАТЕ ТАКТ ОДИН, И КРИТЕРИЕВ НЕ СПРАШИВАЮТ. У человека второй проход
-    // короче первого: экран разбора БЕЗ поля критериев (mechanics.js прячет его), кнопка
-    // «Продолжить →», и `onCta` сам ставит печати confirmed = true и прыгает на неё —
-    // «человек возвращается к вопросу Агеева „Что поменяли и почему?", а не в монолог,
-    // перебор и печать заново» (комментарий там же). То есть после правки заявок он
-    // слышит СРАЗУ «Что решили изменить и почему?».
-    // Модель же получала все три такта заново, включая основание, и вдобавок ещё раз
-    // «Мой ход: подтверждаю» — два вопроса, которых человеку не задают.
-    // ⚠ ВЕЕР ГЕЙТИТСЯ ОБЩИМ ПРАВИЛОМ (правка 31.08). Здесь стояли свой гейт веера и перевод
-    // шага во второй такт. Такт снят 28.08 в самой механике — «верстак теперь ровно веер
-    // альтернатив: записал — ответил — день пошёл дальше», — и эта ветка стала второй копией
-    // того же гейта: общий гейт механики выше (M[s.mech].gate) держит веер так же, как держит
-    // человека, и сообщение уходит модели тем же текстом.
-    // ⚠ ВАРИАНТЫ БУДУЩЕГО: ПЕРВЫЙ ТАКТ ЗАКРЫВАЕТСЯ БЕЗ ОТВЕТА НА ВОПРОС (правка 11.09).
-    // Модель прислала варианты и отметку наиболее вероятного — это ровно то, что человек
-    // отправляет кнопкой. Дальше звучит вопрос Лемеха, и только его ответ закрывает шаг.
-    // ⚠ ОТВЕТ УЖЕ РАЗОБРАН ВЫШЕ (правка 07.10). Здесь стоял второй `toState` поверх готового
-    // состояния: номер «наиболее вероятного» он читал из индекса как из номера и сдвигал на один
-    // назад — отмеченный №3 записывался №2, и Лемех спрашивал модель «если он сработал» не про
-    // тот вариант. Так у прогонов 3GR9UZ, EKUAN3, XA6JZN цель описывала не отмеченный вариант.
-    if (s.mech === 'futures' && run.futuresStage !== 'why') {
-      var st = obj;
-      var failFu = M.futures.gate(st, ctx());
-      if (failFu) {
-        el('hsGate').innerHTML = '<p class="hs-gate">Гейт верстака: ' + esc(failFu) +
-          '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
-        return;
-      }
-      run.mech.futures = st;
-      run.futuresStage = 'why';
-      save(); render();
+    } else if (r.kind === 'futures_beat') {
       say('варианты приняты, спрашиваю Лемеха');
-      return;
-    }
-    if (s.mech === 'futures') {
-      // Такт 2: ответ несёт одно поле, варианты берём из принятого черновика.
-      var prevFu = run.mech.futures || {};
-      var addFu = F.futures.whyToState(obj);
-      obj = { cards: prevFu.cards || [], bet: prevFu.bet, asked: true, betWhy: addFu.betWhy };
-      var failFu2 = M.futures.gate(obj, ctx());
-      if (failFu2) {
-        el('hsGate').innerHTML = '<p class="hs-gate">Гейт верстака: ' + esc(failFu2) +
-          '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
-        return;
-      }
-    }
-    var onReturn = (s.mech === 'list' && run.sealBack && run.sealBack.prev);
-    if (s.mech === 'list' && !onReturn && run.listStage !== 'why') {
-      // Гейт раскладки БЕЗ гейта критериев: их ещё не спрашивали. Пробный экземпляр с
-      // непустым основанием проверяет «все размечены» и «взято хотя бы одно», но не
-      // «критерии обязательны» — иначе шаг не пустил бы модель на такт 2.
-      var probe = { decided: obj.decided, criteria: 'ещё не спрашивали', chosen: {}, obj: {} };
-      var failList = M.list.gate(probe, ctx());
-      if (failList) {
-        el('hsGate').innerHTML = '<p class="hs-gate">Гейт верстака: ' + esc(failList) +
-          '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
-        return;
-      }
-      run.mech.list = { decided: obj.decided, chosen: {}, obj: {},
-                        criteria: (run.mech.list && run.mech.list.criteria) || '' };
-      // Раскладка принята — сразу к основанию: счёт модель увидит вместе с вопросом.
-      run.listStage = 'why';
-      save(); render();
+    } else if (r.kind === 'list_beat') {
       say('раскладка принята, показываю счёт и спрашиваю основание');
-      return;
+    } else if (r.kind === 'accepted') {
+      if (r.recap) el('hsGate').innerHTML = '<p class="hs-note"><b>Записано:</b></p><pre class="hs-out" style="max-height:22vh;">' + esc(r.recap) + '</pre>';
+      say((r.step && r.step.mech ? 'верстак зафиксирован' : 'шаг принят') + note());
     }
-    if (s.mech === 'list') {
-      // На возврате ответ несёт только раскладку — основание берём прежнее, как остаётся
-      // в поле у человека. На такте 3 наоборот: ответ несёт одно поле, раскладку берём из
-      // черновика.
-      obj = onReturn
-        ? { decided: obj.decided, chosen: {}, obj: {},
-            criteria: String(run.sealBack.prev.criteria || '') }
-        : { decided: run.mech.list.decided, chosen: {}, obj: {},
-            criteria: String(obj.criteria || run.mech.list.criteria || '') };
-      var failWhy = M.list.gate(obj, ctx());
-      if (failWhy) {
-        el('hsGate').innerHTML = '<p class="hs-gate">Гейт верстака: ' + esc(failWhy) +
-          '</p><p class="hs-note">Отправьте это сообщение модели дословно и вставьте исправленный ответ.</p>';
-        return;
-      }
-    }
-    run.mech[s.mech] = obj;
-    run.mechAt[s.mech] = new Date().toISOString();
-    if (s.mech === 'seal') delete run.sealStage;
-    if (s.mech === 'list') delete run.listStage;
-    if (s.mech === 'futures') delete run.futuresStage;
-    // ⚠ МЕТКУ ТАКТА ОБЯЗАТЕЛЬНО СНЯТЬ (правка 21.08). Здесь её не снимали, и шаг
-    // рекомендаций не заканчивался никогда: done() отдельной строкой считает шаг
-    // НЕ пройденным, пока идёт второй такт (variantsStage === 'main'), — а метка
-    // оставалась висеть. Оператор нажимал «Принять и дальше», ответ записывался,
-    // страница говорила «верстак зафиксирован» и рисовала тот же самый шаг заново:
-    // со стороны это читается как «принимает что угодно и не переключается».
-    // У печати и разбора такие же метки снимаются строками выше — эта была забыта.
-    // Метка осталась только у прогонов, начатых до 31.08: чистим, чтобы такой прогон
-    // доигрался нынешним маршрутом, а не встал на снятом такте.
-    if (s.mech === 'variants') delete run.variantsStage;
-    // ⚠ ПОСЛЕ ВОЗВРАТА ПЕЧАТЬ НЕ СПРАШИВАЕТ ХОД ЗАНОВО. У человека это делает сама
-    // механика разбора: `onCta` ставит печати confirmed = true и прыгает на неё, поэтому
-    // после правки заявок он слышит сразу «Что решили изменить и почему?». Модель же
-    // получала ещё один такт «Мой ход: подтверждаю», которого человеку не задают.
-    if (onReturn) { run.sealStage = 'phrase'; }
-    save();
-    // Разбор заявок пересказываем словами сразу после принятия: сырые ключи a1…a22
-    // глазами не проверить, а ошибку модели надо увидеть до конца прогона.
-    var recap = s.mech === 'list' ? window.imp.listRecap(obj, helpers()) : '';
-    render();
-    if (recap) el('hsGate').innerHTML = '<p class="hs-note"><b>Записано:</b></p><pre class="hs-out" style="max-height:22vh;">' + esc(recap) + '</pre>';
-    say('верстак зафиксирован' + note());
+    if (r.restarted) say('новый чат записан в журнал · ' + el('hsStatus').textContent);
+  });
+
+  // Сбой ответа: пустой, обрезанный, ошибка интерфейса. Записывается попыткой со статусом
+  // ошибки; шаг остаётся текущим, и следующий ответ модели — следующая попытка, а не подмена.
+  el('hsFail').addEventListener('click', function () {
+    if (!run || H.current() < 0) { el('hsGate').innerHTML = '<p class="hs-note">Записывать нечего: прогон не идёт.</p>'; return; }
+    var ev = H.noteFailure(el('hsFailWhy').value, el('hsAnswer').value);
+    save(); renderJournal();
+    el('hsGate').innerHTML = '<p class="hs-gate">Записано: ' + esc(ev.what) + ', попытка ' + ev.attempt + '.</p>' +
+      '<p class="hs-note">Шаг остаётся текущим. Отправьте модели то же сообщение ещё раз и вставьте ответ — он будет следующей попыткой.' +
+      (ev.reason === 'context' ? ' Прогон помечен несопоставимым: модель потеряла начало разговора.' : '') + '</p>';
+    say('сбой записан');
   });
 
 
@@ -1105,32 +541,22 @@
   el('hsPush').addEventListener('click', function () {
     var btn = this;
     if (!run) { res('Прогон не начат.', 'bad'); return; }
-    if (current() >= 0) { res('Прогон не закончен — залить можно только полный.', 'bad'); return; }
+    if (H.current() >= 0) { res('Прогон не закончен — залить можно только полный.', 'bad'); return; }
     var pw = (el('hsPw').value || '').trim(), bib = (el('hsBib').value || '').trim().toUpperCase();
     if (!pw) { res('Впишите пароль кабинета.', 'bad'); el('hsPw').focus(); return; }
     if (!bib) { res('Впишите номер участника. Его выдают в кабинете: поток с галочкой «Прогон модели» → «Выдать номера вручную».', 'bad'); el('hsBib').focus(); return; }
 
-    window.imp.confirm('Залить прогон «' + run.tag + '» в лист под номером ' + bib + '?',
+    var miss = H.declaredMissing();
+    if (miss.length) { res('Не заполнены условия прогона: ' + miss.join(', ') + '.', 'bad'); return; }
+    var sm = H.summary();
+    window.imp.confirm('Залить прогон «' + run.tag + '» в лист под номером ' + bib + '?' +
+      (sm.test ? ' Это тестовая запись — номер должен быть отмечен в кабинете «Не оценивать этот номер».' : '') +
+      (sm.comparable ? '' : ' Прогон помечен несопоставимым: ' + sm.notComparable.join('; ') + '.'),
       { confirmLabel: 'Залить' }).then(function (yes) {
         if (!yes) { res(''); return; }
         btn.disabled = true;
         res('Заливаю… это занимает несколько секунд.');
-        return window.imp.callApi('saveAnswers', {
-          bib: bib,
-          scenesVersion: run.scenesVersion, caseVersion: run.caseVersion, backlogVersion: run.backlogVersion,
-          answers: run.answers, answersAt: run.answersAt,
-          mech: run.mech, mechAt: run.mechAt,
-          // ⚠ ФЛАГИ ЭЛИСИТАЦИИ ОТДАЮТСЯ, а не пустым объектом (13.08). Здесь стояло
-          // elicited: {} — и судья получал «ни одного, всё участник принёс сам» про шаг,
-          // где варианты просят прямо. Правило чтения засчитывает непомеченное «в полную
-          // силу», то есть модели судились МЯГЧЕ живого участника, который флаги отдаёт
-          // через движок. Карта статическая (собирается из полей elicited у актов сцен),
-          // от состояния прогона не зависит — потому её можно взять прямо здесь.
-          picks: {}, elicited: S.elicitedMap(), marks: [],
-          cursor: 0, started: true, finished: true,
-          startedAt: run.startedAt, finishedAt: new Date().toISOString(),
-          runner: { harness: 'harness.html', tag: run.tag, at: new Date().toISOString() }
-        }).then(function (r) {
+        return window.imp.callApi('saveAnswers', H.uploadPayload(bib)).then(function (r) {
           btn.disabled = false;
           if (r && r.ok) {
             res('Залито. Строка появилась в кабинете под номером ' + bib + ', с пометкой «модель».', 'ok');
@@ -1174,6 +600,28 @@
       a.click();
       res('Копия сохранена в загрузки.', 'ok');
     } catch (e) { res('Не удалось сохранить копию: ' + e.message, 'bad'); }
+  });
+
+  // Файл прогона обратно в страницу — продолжить с того же места или залить.
+  el('hsLoad').addEventListener('change', function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      var obj = null;
+      try { obj = JSON.parse(String(rd.result || '')); } catch (e) { res('Файл не читается как JSON: ' + e.message, 'bad'); return; }
+      var r = H.restore(obj);
+      if (!r.ok) { res('Не восстановлено: ' + r.why + '.', 'bad'); return; }
+      run = H.getRun();
+      el('hsTag').value = run.tag;
+      fillDeclared(run);
+      caseText().then(function () {
+        save(); render();
+        res('Восстановлено из файла' + (r.journal ? '' : ' (журнала в файле не было — он начат сейчас)') + '.', 'ok');
+      }).catch(function (e) { res('Кейс не прочитан: ' + e.message, 'bad'); });
+    };
+    rd.readAsText(f);
+    this.value = '';
   });
 
   // Черновик подхватывается сам, если метку помнит браузер.
