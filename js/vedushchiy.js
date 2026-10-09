@@ -191,6 +191,8 @@
     var q = p.queue || {};
     if (q.queued || q.running) return '<span class="ved-st is-run">оценивается' + (q.total ? ' (' + (q.done || 0) + ' из ' + q.total + ')' : '') + '</span>';
     if (p.total !== null && p.total !== undefined) return '<b class="ved-total">' + esc(p.total) + '</b><span class="ved-dim0"> из 50</span>';
+    // Оценён, но часть способностей ждёт ручной проверки (рубрика m-imp-k1.0, 09.10): итог не выводится, это не «ждёт оценки».
+    if (p.pendingCount) return '<span class="ved-dim0">на ручной проверке</span>';
     if (p.finished) return '<span class="ved-dim0">ждёт оценки</span>';
     return '<span class="ved-dim0">—</span>';
   }

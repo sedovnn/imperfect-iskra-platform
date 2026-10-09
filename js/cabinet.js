@@ -418,10 +418,17 @@
     if (p.scenesJudgeable !== undefined) return !p.scenesJudgeable;
     return !!(p.scenesVersion && p.expectScenes && p.scenesVersion !== p.expectScenes);
   }
-  function scored(p) { return !(p.total === null || p.total === undefined); }
+  // ⚠ ЖДЁТ РУЧНОЙ ПРОВЕРКИ — НЕ «ЖДЁТ ОЦЕНКИ» (рубрика m-imp-k1.0, запрос 04→03 от 09.10). У участника, у которого хоть
+  // одна способность ждёт ручной проверки, итог пуст (сервер не выдаёт сумму по неполному набору), но он оценён:
+  // пересуд проверку не снимет, а заплатит заново. Сервер отдаёт эти способности в pending; старый сервер поля не шлёт.
+  function pendingOf(p) { return Array.isArray(p.pending) ? p.pending : []; }
+  function scored(p) { return !(p.total === null || p.total === undefined) || pendingOf(p).length > 0; }
   // Ждёт оценки: закончил, оценки нет, не стоит в очереди, судейство ему не закрыто.
   function needsJudge(p) {
     return !!p.finished && !p.noScore && !scored(p) && !busy(p) && !versionsApart(p) && !!p.answered;
+  }
+  function pendingNames(list) {
+    return list.map(function (a) { return String(ABILITY_NAMES[a] || a).split(' · ')[0]; }).join(', ');
   }
 
   // Причины, по которым строку нельзя оставить машине. Словом, а не значком.
@@ -445,6 +452,8 @@
     }
     if (p.stale) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после оценки' });
     if (liveErrors(p.queue)) out.push({ code: 'очередь', text: 'заданий с ошибкой: ' + liveErrors(p.queue) });
+    if (pendingOf(p).length) out.push({ code: 'проверка', text: 'ждут ручной проверки: ' + pendingNames(pendingOf(p)) +
+      ' — итог не выведен, пока оценщик их не решит' });
     if (p.flags) out.push({ code: 'флаги', text: p.flags + ' ' + plural(p.flags, 'флаг', 'флага', 'флагов') + ' — перечитать ответ' });
     if (p.listFacts && p.listFacts.fitsFrame === false) out.push({ code: 'рамка', text: 'разбор вышел за рамку года' });
     return out;
@@ -484,17 +493,24 @@
   // Итог — сумма десяти способностей, до 50; показываем, только когда оценены все десять.
   function totalCell(p) {
     if (!scored(p) || p.noScore) return '<span class="cab-dim">—</span>';
+    if (pendingOf(p).length) {
+      return '<span class="adm-wait" title="Ждут ручной проверки: ' + esc(pendingNames(pendingOf(p))) +
+        '. Итог не выводится, пока оценщик их не решит">на проверке · ' + pendingOf(p).length + '</span>' +
+        (p.confirmedSum !== null && p.confirmedSum !== undefined
+          ? '<span class="cab-dim"> · оценено ' + p.confirmedSum + ', не итог</span>' : '');
+    }
     return '<b class="cab-total">' + p.total + '</b><span class="cab-dim"> из 50</span>' +
       (p.stale ? ' <span class="cab-stale" title="Оценка вынесена по другому тексту ответа">устарело</span>' : '') +
       (p.overridden ? ' <span class="cab-ovmark" title="Уровней поставлено вами: ' + p.overridden + '">правил человек</span>' : '');
   }
 
   function waveStat(w) {
-    var ps = inWave(w), c = { joined: ps.length, run: 0, done: 0, wait: 0, scored: 0 };
+    var ps = inWave(w), c = { joined: ps.length, run: 0, done: 0, wait: 0, scored: 0, review: 0 };
     ps.forEach(function (p) {
       if (p.finished) c.done++; else if (p.started && !p.registeredOnly) c.run++;
       if (needsJudge(p)) c.wait++;
       if (scored(p)) c.scored++;
+      if (pendingOf(p).length) c.review++;
     });
     return c;
   }
@@ -579,7 +595,8 @@
       '<span>' + c.joined + (c.run ? ' · ' + c.run + ' ' + plural(c.run, 'проходит', 'проходят', 'проходят') : '') + '</span>' +
       '<span>' + c.done + '</span>' +
       '<span>' + (c.wait ? '<span class="adm-wait">' + c.wait + ' ' + plural(c.wait, 'ждёт', 'ждут', 'ждут') + '</span>'
-                         : (c.done && c.scored >= c.done ? '<span class="cab-dim">все оценены</span>' : '<span class="cab-dim">—</span>')) + '</span>' +
+                         : (c.review ? '<span class="adm-wait">' + c.review + ' на проверке</span>'
+                         : (c.done && c.scored >= c.done ? '<span class="cab-dim">все оценены</span>' : '<span class="cab-dim">—</span>'))) + '</span>' +
       '<span>' + (none ? '—' : (w.timerMin ? timeWord(w.timerMin).replace(' часа', ' ч') : '—')) + '</span>' +
       '</div></a>';
   }
@@ -688,6 +705,7 @@
     var waitN = rowQueue.length + (rowActive ? 1 : 0);
     window.imp.confirm((again ? 'Пересудить ' : 'Оценить ') + who + '? ' +
       (again ? 'Все задания судьи будут поставлены заново и оплачены заново.' : 'Оценка — платные вызовы судьи.') +
+      (pendingOf(p).length ? ' Способности на ручной проверке (' + pendingNames(pendingOf(p)) + ') ждут оценщика — пересуд это не заменяет.' : '') +
       (waitN ? ' Сейчас оценивается другой участник — встанет в очередь за ним.' : '') +
       ' Ход оценки — в строке вверху страницы.', { confirmLabel: again ? 'Пересудить' : 'Оценить' }).then(function (yes) {
       if (!yes) return;
@@ -722,7 +740,8 @@
       '<h1 class="ved-h1">' + (none ? 'Без потока' : esc(w.name || w.num)) + '</h1>' +
       '<div class="ved-meta"><span class="ved-live">обновляется само</span>' +
         '<span>' + c.joined + ' вошли · ' + c.run + ' ' + plural(c.run, 'проходит', 'проходят', 'проходят') + ' · ' + c.done + ' закончили' +
-          (c.wait ? ' · ' + c.wait + ' ' + plural(c.wait, 'ждёт', 'ждут', 'ждут') + ' оценки' : '') + '</span>' +
+          (c.wait ? ' · ' + c.wait + ' ' + plural(c.wait, 'ждёт', 'ждут', 'ждут') + ' оценки' : '') +
+          (c.review ? ' · ' + c.review + ' на ручной проверке' : '') + '</span>' +
         (none || !w.num ? '' : '<a href="#" id="admShowShare">ссылка и QR</a>') +
         '<a href="#">все потоки</a></div>' +
       (none ? '' : '<div id="admShareBox"' + (shareOpen ? '' : ' style="display:none;"') + '>' + shareHtml(w) + '</div>') +
@@ -1237,18 +1256,94 @@
     if (!ev.length && !unp) return '';
     var h = '<div class="cab-ab-h">Свидетельства по гейтам' +
             (st ? ' <span class="cab-dim">— чтение: ' + esc(st) + '</span>' : '') + '</div>';
+    // Выдача по авторскому тексту (m-imp-k1.0): у свидетельства — часть условия, поле и этап ответа.
+    var kst = out['статус_результата'];
     h += ev.length
       ? '<ul class="cab-evid">' + ev.map(function (e) {
+          var where = [e['часть'] ? 'часть «' + esc(e['часть']) + '»' : '', e['поле'] ? esc(e['поле']) : (e['этап'] ? esc(e['этап']) : '')]
+            .filter(function (x) { return x; }).join(' · ');
           return '<li><b>' + esc(e['гейт']) + '</b> <span class="cab-dim">' +
-                 bndWord(e['гейт']) + (e['этап'] ? ' · ' + esc(e['этап']) : '') + '</span><br>«' + esc(e['цитата']) + '»</li>';
+                 bndWord(e['гейт']) + (where ? ' · ' + where : '') + '</span><br>«' + esc(e['цитата']) + '»</li>';
         }).join('') + '</ul>'
-      : '<p class="cab-dim">Ни одного гейта с дословной цитатой: по протоколу это первый уровень.</p>';
+      : (kst === 'needs_review' ? '<p class="cab-dim">Подтверждённых цитатой границ нет — см. причины проверки выше.</p>'
+         : kst ? '<p class="cab-dim">Ни одна граница не выполнена: признаков в ответе нет — первый уровень.</p>'
+         : '<p class="cab-dim">Ни одного гейта с дословной цитатой: по протоколу это первый уровень.</p>');
     if (unp) {
       h += '<p class="cab-evid-un"><b>' + esc(unp['гейт']) + '</b> <span class="cab-dim">' +
            bndWord(unp['гейт']) + '</span> не пройден' +
            (unp['чего_не_хватило'] ? ': ' + esc(unp['чего_не_хватило']) : '') + '</p>';
     } else if (out['уровень'] === 5) {
       h += '<p class="cab-dim">Выше границ нет: взят верхний уровень.</p>';
+    }
+    return h;
+  }
+
+  // ⚠ СТАТУС РЕЗУЛЬТАТА ПО АВТОРСКОМУ ТЕКСТУ (рубрика m-imp-k1.0, запрос 04→03 от 09.10). Уровень есть только у
+  // «оценено» и «оценено с флагом»; у «нужна ручная проверка» — предварительные уровни с условиями (не балл), причины
+  // проверки, результаты по этапам. Технические ошибки судьи (ошибки выдачи) — отдельно от сомнений: это сбой
+  // исполнителя, а не признак ответа. У записей прежних рубрик полей нет — блок не рисуется, кроме технических ошибок
+  // (поле с 09.10, сессия 08).
+  var K_REASON = { 'невалидная_выдача': 'выдача судьи не прошла проверку и после исправления',
+                   'нехватка_данных': 'не хватает входных данных', 'неоднозначная_граница': 'граница неоднозначна',
+                   'место_ручной_проверки': 'методология отправляет это место человеку',
+                   'обход_нижней_границы': 'верхняя граница выполнена при невыполненной нижней — методология уровень не завершает',
+                   'этапы_расходятся': 'этапы дали разные результаты' };
+  var K_BOUND = { passed: 'выполнена', not_passed: 'не выполнена', ambiguous: 'неоднозначна',
+                  invalid_output: 'невалидная выдача судьи', insufficient_input: 'нехватка входных данных' };
+  function kStatusHtml(out, isOv) {
+    if (!out) return '';
+    var h = '', st = out['статус_результата'];
+    if (st) {
+      h += '<div class="cab-ab-h">Результат <span class="cab-dim">— методология ' + esc(out['версия_методологии'] || '') + '</span></div>' +
+        '<p>' + (st === 'needs_review' && isOv ? 'судья оставил на ручную проверку — уровень поставил человек'
+                 : st === 'needs_review' ? '<b class="cab-jitter">' + esc(out['статус_ru'] || 'нужна ручная проверка') + '</b> — уровень не выставлен'
+                 : esc(out['статус_ru'] || st) + (out['уровень'] ? ' · L' + out['уровень'] : '')) + '</p>';
+      var pre = out['предварительные_уровни'] || [];
+      if (pre.length) {
+        h += '<p class="cab-dim">Предварительные уровни — варианты для оценщика, не балл:</p><ul class="cab-flags">' + pre.map(function (x) {
+          return '<li><b>L' + esc(x['уровень']) + '</b> — ' + esc(x['условие'] || '') + (x['источник'] ? ' <i>(' + esc(x['источник']) + ')</i>' : '') + '</li>';
+        }).join('') + '</ul>';
+      }
+      var why = out['причины_проверки'] || [];
+      if (why.length) {
+        h += '<p class="cab-dim">Почему нужна проверка:</p><ul class="cab-flags">' + why.map(function (x) {
+          return '<li><b>' + esc(K_REASON[x['код']] || x['код']) + '</b>' + (x['граница'] ? ' · граница ' + esc(x['граница']) : '') +
+                 (x['пояснение'] ? ' — ' + esc(x['пояснение']) : '') + '</li>';
+        }).join('') + '</ul>';
+      }
+      var stages = out['этапы'] || [];
+      if (stages.length) {
+        h += '<div class="cab-ab-h">По этапам</div><ul class="cab-evid">' + stages.map(function (e) {
+          var lvTxt = (e['уровень'] !== null && e['уровень'] !== undefined) ? ' · L' + e['уровень'] : '';
+          var bs = (e['границы'] || []).map(function (b) {
+            var d = b['сомнение'] || {}, dq = b['дисквалификатор'] || {};
+            return esc(b['граница']) + ' — ' + esc(K_BOUND[b['статус']] || b['статус']) +
+              (b['статус'] === 'not_passed' && b['не_хватает'] ? ': ' + esc(b['не_хватает']) : '') +
+              (d['вид'] && d['вид'] !== 'none' ? ' · сомнение (' + esc(d['вид_ru'] || d['вид']) + ')' + (d['пояснение'] ? ': ' + esc(d['пояснение']) : '') : '') +
+              (dq['применён'] ? ' · дисквалификатор: «' + esc(dq['основание']) + '»' : '');
+          });
+          return '<li><b>' + esc(e['этап']) + '</b> <span class="cab-dim">' + esc(e['статус_ru'] || e['статус'] || '') + lvTxt + '</span>' +
+                 (bs.length ? '<br>' + bs.join('<br>') : '') + '</li>';
+        }).join('') + '</ul>';
+      }
+      var fl = (out['флаги'] || []).filter(function (f) { return f && typeof f === 'object' && f['тип']; });
+      if (fl.length) {
+        h += '<div class="cab-ab-h">Флаги — тип и основание</div><ul class="cab-flags">' + fl.map(function (f) {
+          return '<li><b>' + esc(f['тип']) + '</b>' + (f['правило'] ? ' · ' + esc(f['правило']) : '') +
+                 (f['основание'] ? ' — основание: «' + esc(f['основание']) + '»' : '') +
+                 (f['цитата'] ? '<br>«' + esc(f['цитата']) + '»' : '') +
+                 ((f['поле'] || f['этап']) ? ' <span class="cab-dim">' + esc(f['поле'] || f['этап']) + '</span>' : '') + '</li>';
+        }).join('') + '</ul>';
+      }
+    }
+    var te = out['технические_ошибки_судьи'];
+    if (Array.isArray(te) && te.length) {
+      h += '<div class="cab-ab-h">Технические ошибки судьи <span class="cab-dim">— сбой выдачи, не признак ответа</span></div>' +
+        '<ul class="cab-flags cab-dim">' + te.map(function (e) {
+          return '<li>' + (e['граница'] ? 'граница ' + esc(e['граница']) : '') + (e['этап'] ? ' · ' + esc(e['этап']) : '') +
+                 ' — ' + esc(e['что'] || e['вид'] || '') +
+                 (e['исправлено'] === true ? ' <i>(исправлено одной коррекцией)</i>' : e['исправлено'] === false ? ' <b class="cab-jitter">не исправлено</b>' : '') + '</li>';
+        }).join('') + '</ul>';
     }
     return h;
   }
@@ -1387,7 +1482,12 @@
 
       (s.profileLabel ? ' · ' + s.profileLabel : '') + '</i></div></div>';
 
-    if (s.total === null) {
+    var pend = Array.isArray(s.pending) ? s.pending : [];
+    if (s.total === null && pend.length) {
+      inner += '<p class="cab-note">Итог не выведен: ждут ручной проверки — ' + esc(pendingNames(pend)) + '. ' +
+        (s.confirmedSum !== null && s.confirmedSum !== undefined ? 'Сумма оценённых способностей — ' + s.confirmedSum + ', это не итог. ' : '') +
+        'Поставьте уровень сами (с причиной) — итог появится.</p>';
+    } else if (s.total === null) {
       inner += '<p class="cab-note">Итог не показан: оценено ' + s.judged + ' способностей из десяти. Сумма по неполному набору выглядит как балл, но им не является.</p>';
     }
     if (d.stale) {
@@ -1410,6 +1510,7 @@
     inner += '<div class="cab-abilities">' + Object.keys(ABILITY_NAMES).map(function (a) {
       var lv = s.levels[a], v = s.verdicts[a] || {};
       var out = v.out || null;
+      var kSt = (out && out['статус_результата']) || ((s.statuses || {})[a] === 'needs_review' ? 'needs_review' : '');
       var unp = out && out['непройденный_гейт'];
       // Граница — из слов судьи, если он их сказал; иначе прежняя догадка по булевым.
       var bnd = (unp && bndOfGate(unp['гейт'])) || blockingOf(v, a);
@@ -1424,6 +1525,7 @@
         ? 'уровень поставил человек' + (jl[a] === null || jl[a] === undefined ? '' : ' · судья давал L' + jl[a]) +
           (o.by ? ' · ' + esc(o.by) : '') + (o.at ? ' · ' + dt(o.at) : '')
         : (v.source === 'deterministic' ? 'посчитано кодом (ответа нет)' : 'ИИ-судья') +
+          (kSt === 'needs_review' ? ' · нужна ручная проверка' : kSt === 'scored_with_review_flag' ? ' · оценено с флагом' : '') +
           // Немонотонные случаи v10: верх бывает пройден в обход границы 3→4, и писать
           // «все границы пройдены» тогда неправда.
           (bnd
@@ -1517,15 +1619,17 @@
       var ctrlLine = (ctrlLv === null) ? ''
         : ctrlPara(CTRL_TITLE[a] || 'Контрольное чтение по другому ответу', ctrlLv, lv, ctrlWhy);
 
-      return '<details class="cab-ab' + (isOv ? ' is-overridden' : '') + (mine.length ? ' has-flag' : '') + '">' +
+      var review = !isOv && kSt === 'needs_review';
+      return '<details class="cab-ab' + (isOv ? ' is-overridden' : '') + (mine.length || review ? ' has-flag' : '') + '">' +
         '<summary>' +
           '<span class="cab-ab-name">' + esc(ABILITY_NAMES[a]) + '</span>' +
           // Пустой ответ судья не оценивает (уровня нет); называем это словами (решение
           // владельца 03.10): «—» читалось как «ещё не судили».
           '<span class="cab-level">' + ((lv === null || lv === '' || lv === undefined)
-            ? ((v.empty || (v.verdict && v.verdict.empty) || v.source === 'deterministic') ? 'не удалось оценить' : '—')
+            ? (review ? 'проверка' : (out && out['статус_результата'] === 'not_observed') ? 'не наблюдалось'
+               : (v.empty || (v.verdict && v.verdict.empty) || v.source === 'deterministic') ? 'не удалось оценить' : '—')
             : 'L' + lv) + '</span>' +
-          (mine.length ? '<span class="cab-ab-flag">нужен человек</span>' : '') +
+          (mine.length || review ? '<span class="cab-ab-flag">нужен человек</span>' : '') +
           '<span class="cab-ab-line">' + line + '</span>' +
         '</summary>' +
         '<div class="cab-ab-body">' +
@@ -1540,6 +1644,7 @@
             '<ul class="cab-flags cab-dim">' + quiet.map(function (x) {
               return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + (x.why ? ' <i>(' + esc(x.why) + ')</i>' : '') + '</li>';
             }).join('') + '</ul>' : '') +
+          kStatusHtml(out, isOv) +
           evidHtml(out) +
           (reasoning ? '<div class="cab-ab-h">Обоснование судьи</div><div class="cab-ab-why">' + br(reasoning) + '</div>'
                      : '<p class="cab-dim">Обоснования нет: уровень посчитан кодом или задание не отработало.</p>') +

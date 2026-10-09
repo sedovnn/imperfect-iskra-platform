@@ -49,9 +49,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "ca65ff6cd677",
+  "sha": "14b38d9939b0",
   "keys": {
-   "administrator.html": 59
+   "administrator.html": 60
   }
  },
  "js/case-ref.js": {
@@ -169,9 +169,9 @@
   }
  },
  "js/report.js": {
-  "sha": "3cee78e5f671",
+  "sha": "adc70260d8dc",
   "keys": {
-   "report-example.html": 7
+   "report-example.html": 8
   }
  },
  "js/scenes.js": {
@@ -200,9 +200,9 @@
   }
  },
  "js/vedushchiy.js": {
-  "sha": "83b5775b1303",
+  "sha": "5bdd88aad8b7",
   "keys": {
-   "vedushchiy.html": 4
+   "vedushchiy.html": 5
   }
  }
 }

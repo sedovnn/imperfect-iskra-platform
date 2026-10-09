@@ -210,6 +210,21 @@
     var T = window.IMP_REPORT_TEXTS;
     if (!T) throw new Error('Не загружены тексты отчёта (js/report-texts.js)');
     var sd = skillData(p);
+    // ⚠ ОТЧЁТ НЕ СОБИРАЕТСЯ ПО НЕПОЛНОМУ НАБОРУ (рубрика m-imp-k1.0, запрос 04→05 от 09.10). У способности, которая ждёт
+    // ручной проверки, уровня нет — есть только варианты для оценщика. Ноль или пропуск дали бы итог, навык, профиль и
+    // сравнение с ИИ, похожие на балл, но им не являющиеся. Предварительные уровни участнику не показываются никогда.
+    var missing = [];
+    RESUME_ORDER.forEach(function (key) {
+      var ks = abilityKeys(key), ab = (T.skills[key] || {}).abilities || {};
+      [['a1', ks[0]], ['a2', ks[1]]].forEach(function (x) {
+        var v = sd[key][x[0]];
+        if (!(typeof v === 'number' && v >= 1 && v <= 5 && Math.round(v) === v)) missing.push((ab[x[1]] && ab[x[1]].code) || (key + ' ' + x[0]));
+      });
+    });
+    if (missing.length) {
+      throw new Error('нет подтверждённого уровня у способностей ' + missing.join(', ') +
+        ' (ждут ручной проверки или не оценены) — отчёт собирается, когда оценены все десять');
+    }
 
     var rows = RESUME_ORDER.map(function (key) {
       var skill = T.skills[key], ks = abilityKeys(key), d = sd[key];
