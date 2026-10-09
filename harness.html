@@ -197,12 +197,12 @@
 <script src="js/api.js?v=7"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/backlog.js?v=9"></script>
-<script src="js/scenes.js?v=203"></script>
+<script src="js/scenes.js?v=204"></script>
 <script src="js/mechanics.js?v=100"></script>
 <script src="js/mech-fields.js?v=54"></script>
 <script src="js/case-text.js?v=2"></script>
 <script src="js/case-ref.js?v=14"></script>
-<script src="js/harness-core.js?v=4"></script>
+<script src="js/harness-core.js?v=5"></script>
 <script>
 /* Пароль на служебную страницу. Пароля в клиенте нет: проверяет бэкенд
    (action verifyPassword), тот же путь, что у витрины и кабинета. */
@@ -294,7 +294,8 @@
   el('hsStudy').textContent = 'Заполните то, что видно в интерфейсе модели; чего не видно — оставьте «неизвестно». ' +
     'Сам харнесс этого не видит: ' + H.UNKNOWN.join('; ') + '. ' +
     'Уточняющие вопросы: людям нельзя (' + H.STUDY.clarify.source + '), модели тоже. ' +
-    'Поиск и инструменты: ' + H.STUDY.search.source + ' — запишите, как было у модели. ' +
+    'Поиск в интернете: людям нельзя (' + H.STUDY.search.source + '). Инструменты: ' + H.STUDY.tools.source + '. ' +
+    'Выключите поиск и инструменты в интерфейсе модели и запишите это в условиях. ' +
     'Не перегенерируйте ответы и не правьте их: каждый полученный ответ — попытка, и она идёт в журнал.';
   el('hsFailWhy').innerHTML = Object.keys(H.FAILURES).map(function (k) {
     return '<option value="' + k + '">' + esc(H.FAILURES[k]) + '</option>';

@@ -122,9 +122,9 @@
   }
  },
  "js/harness-core.js": {
-  "sha": "1d1bf19af7f7",
+  "sha": "bf49d48ac8ae",
   "keys": {
-   "harness.html": 4
+   "harness.html": 5
   }
  },
  "js/main.js": {
@@ -175,14 +175,14 @@
   }
  },
  "js/scenes.js": {
-  "sha": "9f88d0bc0be3",
+  "sha": "2fa778c287c2",
   "keys": {
-   "administrator.html": 203,
-   "assessment.html": 203,
-   "harness.html": 203,
-   "intro.html": 203,
-   "role.html": 203,
-   "vedushchiy.html": 203
+   "administrator.html": 204,
+   "assessment.html": 204,
+   "harness.html": 204,
+   "intro.html": 204,
+   "role.html": 204,
+   "vedushchiy.html": 204
   }
  },
  "js/typo.js": {
