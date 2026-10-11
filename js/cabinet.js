@@ -439,6 +439,18 @@
     if (!Array.isArray(q.failed)) return q.error || 0;
     return q.failed.filter(function (f) { return !f.retired; }).length;
   }
+  // ⚠ ОЦЕНКА НЕ ЗАВЕРШЕНА (запрос 04→03 от 07.10, «делай» владельца 11.10). Задания с ошибкой есть, в работе — нет:
+  // уровни в строке остались от прошлой оценки или неполные, и показывать человека «оценённым» нельзя (06.10 EF6F2A
+  // показывался оценённым со старыми уровнями, пока его задания лежали с ошибкой «credit balance is too low»).
+  function unfinished(p) { return !p.noScore && !busy(p) && liveErrors(p.queue) > 0; }
+  function unfinishedWhy(p) {
+    var f = ((p.queue && p.queue.failed) || []).filter(function (x) { return !x.retired; });
+    return f.map(function (x) { return x.taskId + (x.error ? ': ' + x.error : ''); }).join('; ');
+  }
+  function unfinishedTag(p) {
+    return '<span class="adm-wait" title="Задания судьи с ошибкой — ' + esc(unfinishedWhy(p)) +
+      '. Откройте карточку: «Пересудить упавшие» ставит заново только их">оценка не завершена</span> ';
+  }
   function attention(p) {
     if (p.noScore) return [];
     var out = [];
@@ -451,7 +463,8 @@
         'Это могут быть тёзки или один человек, записавшийся дважды. Попросите их подойти после ассессмента' });
     }
     if (p.stale) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после оценки' });
-    if (liveErrors(p.queue)) out.push({ code: 'очередь', text: 'заданий с ошибкой: ' + liveErrors(p.queue) });
+    if (liveErrors(p.queue)) out.push({ code: 'очередь', text: 'оценка не завершена — заданий с ошибкой: ' + liveErrors(p.queue) +
+      ' (' + unfinishedWhy(p) + ')' });
     if (pendingOf(p).length) out.push({ code: 'проверка', text: 'ждут ручной проверки: ' + pendingNames(pendingOf(p)) +
       ' — итог не выведен, пока оценщик их не решит' });
     if (p.flags) out.push({ code: 'флаги', text: p.flags + ' ' + plural(p.flags, 'флаг', 'флага', 'флагов') + ' — перечитать ответ' });
@@ -479,24 +492,35 @@
   function skillsCell(p) {
     if (p.noScore) return '<span class="cab-dim">не оценивается</span>';
     if (busy(p)) return '<span class="adm-wait is-run">оценивается (' + p.queue.done + ' из ' + p.queue.total + ')</span>';
+    if (unfinished(p) && !p.skills) return unfinishedTag(p);
     if (!p.skills) {
       if (needsJudge(p)) return '<span class="adm-wait">ждёт оценки</span>';
       if (p.judged) return '<span class="cab-dim">оценено ' + p.judged + ' из 10</span>';
       return '<span class="cab-dim">—</span>';
     }
-    return Object.keys(SKILL_NAMES).map(function (k) {
+    return (unfinished(p) ? unfinishedTag(p) : '') + Object.keys(SKILL_NAMES).map(function (k) {
       var v = p.skills[k];
       return '<span class="cab-skill" title="' + SKILL_NAMES[k] + ' — сумма двух способностей, от 2 до 10">' +
         SKILL_NAMES[k] + '<b>' + (v === null || v === undefined ? '—' : v) + '</b></span>';
     }).join('');
   }
-  // Итог — сумма десяти способностей, до 50; показываем, только когда оценены все десять.
+  // Предварительный итог (решение владельца 09.10): диапазон, пока способности ждут ручной проверки. Прежний бэкенд поля
+  // не отдаёт — тогда как раньше: «на проверке» и сумма оценённых.
+  function prelimText(pt) {
+    if (!pt || pt.min === null || pt.min === undefined) return '';
+    return pt.min === pt.max ? String(pt.min) : pt.min + '–' + pt.max;
+  }
+  // Итог — сумма десяти способностей, до 50; окончательный — когда оценены все, пока ждут проверки — предварительный.
   function totalCell(p) {
     if (!scored(p) || p.noScore) return '<span class="cab-dim">—</span>';
+    // Итог при упавших заданиях — не итог этой оценки: пишем словами, цифру не показываем.
+    if (unfinished(p)) return unfinishedTag(p);
     if (pendingOf(p).length) {
-      return '<span class="adm-wait" title="Ждут ручной проверки: ' + esc(pendingNames(pendingOf(p))) +
-        '. Итог не выводится, пока оценщик их не решит">на проверке · ' + pendingOf(p).length + '</span>' +
-        (p.confirmedSum !== null && p.confirmedSum !== undefined
+      var pr = prelimText(p.prelimTotal);
+      return (pr ? '<b class="cab-total">' + pr + '</b><span class="cab-dim"> из 50 · предварительно</span> ' : '') +
+        '<span class="adm-wait" title="Ждут ручной проверки: ' + esc(pendingNames(pendingOf(p))) +
+        '. Итог станет окончательным, когда оценщик их решит">на проверке · ' + pendingOf(p).length + '</span>' +
+        (!pr && p.confirmedSum !== null && p.confirmedSum !== undefined
           ? '<span class="cab-dim"> · оценено ' + p.confirmedSum + ', не итог</span>' : '');
     }
     return '<b class="cab-total">' + p.total + '</b><span class="cab-dim"> из 50</span>' +
@@ -666,6 +690,14 @@
   // в очередь кабинета, кнопка сразу говорит «в очереди» / «оценивается», и оценки идут одна
   // за другой. Очередь живёт в этой вкладке: закрыли страницу — недоставленные не начнутся.
   var rowQueue = [], rowActive = null;
+  // ⚠ ЗАКРЫТИЕ ВКЛАДКИ С НЕПУСТОЙ ОЧЕРЕДЬЮ (запрос 04→03 от 07.10, «делай» владельца 11.10). Очередь живёт только
+  // здесь: закрыли страницу — оставшиеся оценки не начнутся (пересуд Y4RUUC 06.10 так и не дошёл до сервера).
+  // Браузер покажет свой вопрос «Покинуть сайт?»; текст свой задать нельзя.
+  window.addEventListener('beforeunload', function (e) {
+    if (!rowActive && !rowQueue.length) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
   function rowState(bib) {
     if (rowActive && bk(rowActive) === bk(bib)) return 'оценивается…';
     return rowQueue.some(function (x) { return bk(x.bib) === bk(bib); }) ? 'в очереди' : '';
@@ -1476,7 +1508,8 @@
         '<i>' + (lab || '—') + (gap >= 2 ? ' · разрыв ' + gap : '') + '</i></div>';
     }).join('') + '<div class="cab-skill-box is-total" title="Сумма всех десяти способностей' +
       '">' +
-      '<span>Итог</span><b>' + (s.total === null ? '—' : s.total) + '</b><i>/50' +
+      '<span>Итог</span><b>' + (s.total !== null ? s.total : (prelimText(s.prelimTotal) || '—')) + '</b><i>/50' +
+      (s.total === null && prelimText(s.prelimTotal) ? ' · предварительно' : '') +
       // ⚠ ИНДЕКС УБРАН ИЗ КАРТОЧКИ (решение владельца 11.09): надстройка над итогом,
       // та же величина в другой шкале. Итог и ярлык профиля остаются.
 
@@ -1484,9 +1517,11 @@
 
     var pend = Array.isArray(s.pending) ? s.pending : [];
     if (s.total === null && pend.length) {
-      inner += '<p class="cab-note">Итог не выведен: ждут ручной проверки — ' + esc(pendingNames(pend)) + '. ' +
-        (s.confirmedSum !== null && s.confirmedSum !== undefined ? 'Сумма оценённых способностей — ' + s.confirmedSum + ', это не итог. ' : '') +
-        'Поставьте уровень сами (с причиной) — итог появится.</p>';
+      var prc = prelimText(s.prelimTotal);
+      inner += '<p class="cab-note">' + (prc ? 'Итог предварительный — ' + prc + ' из 50' : 'Итог не выведен') +
+        ': ждут ручной проверки — ' + esc(pendingNames(pend)) + '. ' +
+        (s.confirmedSum !== null && s.confirmedSum !== undefined ? 'Сумма оценённых способностей — ' + s.confirmedSum + '. ' : '') +
+        'Поставьте уровень сами (с причиной) — итог станет окончательным.</p>';
     } else if (s.total === null) {
       inner += '<p class="cab-note">Итог не показан: оценено ' + s.judged + ' способностей из десяти. Сумма по неполному набору выглядит как балл, но им не является.</p>';
     }

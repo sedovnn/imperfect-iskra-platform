@@ -49,9 +49,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "14b38d9939b0",
+  "sha": "2a6528c0f065",
   "keys": {
-   "administrator.html": 60
+   "administrator.html": 62
   }
  },
  "js/case-ref.js": {
@@ -148,11 +148,11 @@
   }
  },
  "js/mechanics.js": {
-  "sha": "5445df1496c8",
+  "sha": "660715f709b5",
   "keys": {
-   "administrator.html": 100,
-   "assessment.html": 100,
-   "harness.html": 100
+   "administrator.html": 101,
+   "assessment.html": 101,
+   "harness.html": 101
   }
  },
  "js/qr.js": {
@@ -175,14 +175,14 @@
   }
  },
  "js/scenes.js": {
-  "sha": "2fa778c287c2",
+  "sha": "57c34f518cb6",
   "keys": {
-   "administrator.html": 204,
-   "assessment.html": 204,
-   "harness.html": 204,
-   "intro.html": 204,
-   "role.html": 204,
-   "vedushchiy.html": 204
+   "administrator.html": 205,
+   "assessment.html": 205,
+   "harness.html": 205,
+   "intro.html": 205,
+   "role.html": 205,
+   "vedushchiy.html": 205
   }
  },
  "js/typo.js": {
@@ -200,9 +200,9 @@
   }
  },
  "js/vedushchiy.js": {
-  "sha": "5bdd88aad8b7",
+  "sha": "4783b9ddf21a",
   "keys": {
-   "vedushchiy.html": 5
+   "vedushchiy.html": 6
   }
  }
 }

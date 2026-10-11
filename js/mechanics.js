@@ -1593,8 +1593,9 @@
     var h = '<p style="margin:0 0 8px;">' + t.people + ' человек из ' + ctx.LIM.people + ' · ' +
       ctx.num(t.money) + ' млрд из ' + ctx.LIM.money + (t.over ? ' — вне бюджета' : ' — в бюджете') + '</p>';
     h += p('Берём (' + t.take + ')', '') + li(by('take'), true);
-    h += p('Не делаем (' + t.never + ')', '') + li(by('never'), false);
+    // Порядок стопок — как в разборе и в записи: Берём · Не сейчас · Не делаем (владелец 11.10).
     h += p('Не сейчас (' + t.later + ')', '') + li(by('later'), false);
+    h += p('Не делаем (' + t.never + ')', '') + li(by('never'), false);
     if (String(m.criteria).trim()) h += p('Почему именно так', ctx.br(m.criteria));
     return h;
   };
