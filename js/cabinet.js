@@ -1301,8 +1301,10 @@
          : kst ? '<p class="cab-dim">Ни одна граница не выполнена: признаков в ответе нет — первый уровень.</p>'
          : '<p class="cab-dim">Ни одного гейта с дословной цитатой: по протоколу это первый уровень.</p>');
     if (unp) {
+      // С компактной выдачи (12.10) следующая граница бывает и неоднозначной, и невалидной — тогда её статус словами.
+      var unpSt = unp['статус'] && unp['статус'] !== 'not_passed' ? (unp['статус_ru'] || unp['статус']) : 'не пройден';
       h += '<p class="cab-evid-un"><b>' + esc(unp['гейт']) + '</b> <span class="cab-dim">' +
-           bndWord(unp['гейт']) + '</span> не пройден' +
+           bndWord(unp['гейт']) + '</span> ' + esc(unpSt) +
            (unp['чего_не_хватило'] ? ': ' + esc(unp['чего_не_хватило']) : '') + '</p>';
     } else if (out['уровень'] === 5) {
       h += '<p class="cab-dim">Выше границ нет: взят верхний уровень.</p>';
@@ -1380,6 +1382,143 @@
     return h;
   }
 
+  // ── КОМПАКТНЫЙ РЕЗУЛЬТАТ (рубрика m-imp-k1.3, задача владельца 12.10) ──────────
+  // Запись компактной выдачи (в форме выдачи есть поле «причина») карточка показывает итогом, а не разметкой судьи.
+  // Обычный результат — уровень или статус, последний непрерывно пройденный гейт, короткая причина, особое правило или флаг.
+  // Спорный — только проблема, нужные свидетельства этой границы и отсылка к ответу участника, который уже стоит ниже в этой
+  // же карточке («Ответ, по которому это сказано»): ответы в карточку не копируются, отдельных окон, вкладок и таблиц по
+  // гейтам нет. Записи прежних рубрик (без «причины») рисует kStatusHtml и evidHtml — как раньше.
+  // Ключи границ из схемы судьи в его свободном тексте (g2…g5) — словами платформы: g4 → 3→4 (проба Б 12.10: «g4 и g5 не
+  // выполнены» рядом с «G3 (граница 2→3)»). Диапазон «g2-g5» — «1→2…4→5»; «g3 (2→3)» — без повтора; ключ части («g5.conditionB»,
+  // «g5:conditionB») и ключ внутри слова или после точки не трогаются. Запись судьи остаётся как есть.
+  function kBounds(t) {
+    var bn = function (k) { return (k - 1) + '→' + k; };
+    var free = function (str, at) { return !/[A-Za-z\u0400-\u04FF.]/.test(str.charAt(at - 1) || ''); };
+    return String(t || '')
+      .replace(/\bg([2-5])\s*[-–—]\s*g([2-5])\b/g, function (m, a, b, at, str) { return free(str, at) ? bn(+a) + '…' + bn(+b) : m; })
+      .replace(/\bg([2-5])\b(?![.:][A-Za-z])(\s*\((\d)→(\d)\))?/g, function (m, k, par, a, b, at, str) {
+        if (!free(str, at)) return m;
+        return bn(+k) + (par && !(+a === k - 1 && +b === +k) ? par : '');
+      });
+  }
+  function kIsCompact(out) { return !!(out && out['статус_результата'] && out['причина'] !== undefined); }
+  function kCut(s, n) { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+  // noHead — внутри доп. оценки: у неё своя строка уровня.
+  function kCompactHtml(out, isOv, ab, noHead) {
+    var st = out['статус_результата'];
+    var h = noHead ? '' : '<div class="cab-ab-h">Результат <span class="cab-dim">— методология ' + esc(out['версия_методологии'] || '') + '</span></div>';
+    if (!noHead || st === 'needs_review' || st === 'not_observed') {
+      h += '<p>' + (st === 'needs_review' && isOv ? 'судья оставил на ручную проверку — уровень поставил человек'
+           : st === 'needs_review' ? '<b class="cab-jitter">' + esc(out['статус_ru'] || 'нужна ручная проверка') + '</b> — уровень не выставлен'
+           : st === 'not_observed' ? 'не наблюдалось — ответа для этой способности нет'
+           : esc(out['статус_ru'] || st) + (out['уровень'] ? ' · L' + esc(out['уровень']) : '')) + '</p>';
+    }
+    if (st === 'not_observed') return h;
+    // Последний непрерывно пройденный гейт и следующая граница — по статусам границ, а не по уровню (платформа, 12.10).
+    var lg = out['последний_пройденный_гейт'], unp = out['непройденный_гейт'];
+    var split = (out['причины_проверки'] || []).some(function (x) { return x['код'] === 'этапы_расходятся'; });
+    var miss = unp && unp['чего_не_хватило'] ? ': ' + esc(kBounds(unp['чего_не_хватило'])) : '';
+    // Ни одна граница не пройдена — граница 1→2 называется один раз, без «дальше граница 1→2» (проба Б 12.10).
+    h += '<p class="cab-dim">Последний непрерывно пройденный: ' +
+         (lg ? '<b>' + esc(lg) + '</b> (' + bndWord(lg) + ')' +
+               (unp ? ' · дальше ' + bndWord(unp['гейт']) + ' — ' + esc(unp['статус_ru'] || unp['статус'] || '') + miss : '')
+             : unp ? 'нет — ' + bndWord(unp['гейт']) + ' ' + esc(unp['статус_ru'] || unp['статус'] || '') + miss
+             : split ? '— этапы разошлись'
+             // Оценено на нескольких этапах с разным верхом непрерывной цепочки (например, один этап — L5 в обход 3→4).
+             : (out['этапы'] || []).length > 1 ? '— у этапов разный верх цепочки' : '— решения по границам нет') + '</p>';
+    if (out['причина']) h += '<p><span class="cab-dim">Причина:</span> ' + esc(kBounds(out['причина'])) + '</p>';
+    var sp = out['особые_правила'] || [];
+    if (sp.length) h += '<p class="cab-dim">Особое правило методологии: ' + sp.map(esc).join('; ') + '</p>';
+    // Граница, снятая при коррекции после ошибки цитаты, — видна при любом статусе: человек отличает обоснованную смену статуса
+    // от снятия из-за отсутствующей цитаты (задача владельца 12.10).
+    (out['этапы'] || []).forEach(function (e) {
+      (e['границы'] || []).forEach(function (b) {
+        if (b['снята_при_коррекции']) h += '<p class="cab-dim">Граница ' + esc(b['граница']) + ' снята при коррекции' +
+          ((out['этапы'] || []).length > 1 ? ' (' + esc(e['этап']) + ')' : '') + ': ' + esc(kBounds(b['снята_при_коррекции'])) + '</p>';
+      });
+    });
+    // Флаги методологии (уровень с флагом, ручная проверка, зелёный) — название места и короткое свидетельство.
+    // Свидетельство флага (цитата участника) — только у спорного результата: обычному хватает названия места.
+    var fl = (out['флаги'] || []).filter(function (f) { return f && typeof f === 'object' && /^(методология|зелёный)/.test(f['тип'] || ''); });
+    if (fl.length) {
+      h += '<ul class="cab-flags">' + fl.map(function (f) {
+        return '<li><b>' + esc(f['тип']) + '</b>' + (f['правило'] ? ' · ' + esc(f['правило']) : '') +
+               (st === 'needs_review' && f['цитата'] ? ' — «' + esc(kCut(f['цитата'], 160)) + '»' +
+                 ((f['поле'] || f['этап']) ? ' <span class="cab-dim">' + esc(f['поле'] || f['этап']) + '</span>' : '') : '') + '</li>';
+      }).join('') + '</ul>';
+    }
+    if (st !== 'needs_review') return h;
+    // Спорный результат: проблема → варианты → свидетельства спорных границ → ответ участника ниже.
+    var why = out['причины_проверки'] || [];
+    if (why.length) {
+      h += '<p class="cab-dim">Почему нужна проверка:</p><ul class="cab-flags">' + why.map(function (x) {
+        return '<li><b>' + esc(K_REASON[x['код']] || x['код']) + '</b>' + (x['граница'] ? ' · граница ' + esc(x['граница']) : '') +
+               (x['пояснение'] ? ' — ' + esc(x['пояснение']) : '') + '</li>';
+      }).join('') + '</ul>';
+    }
+    var pre = out['предварительные_уровни'] || [];
+    if (pre.length) {
+      h += '<p class="cab-dim">Предварительные уровни — варианты для оценщика, не балл:</p><ul class="cab-flags">' + pre.map(function (x) {
+        return '<li><b>L' + esc(x['уровень']) + '</b> — ' + esc(x['условие'] || '') + (x['источник'] ? ' <i>(' + esc(x['источник']) + ')</i>' : '') + '</li>';
+      }).join('') + '</ul>';
+    }
+    // Спорные границы этапа: неоднозначные, невалидные, с нехваткой входа и выполненные выше невыполненной (обход нижней
+    // границы) — то, о чём причины проверки, даже если причина границу не называет (обход, расхождение этапов).
+    var DISPUTED = { ambiguous: 1, invalid_output: 1, insufficient_input: 1 };
+    var named = {};
+    why.forEach(function (x) { if (x['граница']) named[x['граница']] = true; });
+    var stages = out['этапы'] || [];
+    var ev = [];
+    stages.forEach(function (e) {
+      var gap = '', disputed = {};
+      (e['границы'] || []).forEach(function (b) {
+        if (DISPUTED[b['статус']] || (stages.length === 1 && named[b['граница']])) disputed[b['граница']] = true;
+        if (gap && b['статус'] === 'passed') { disputed[b['граница']] = true; disputed[gap] = true; }
+        if (b['статус'] !== 'passed' && !gap) gap = b['граница'];
+      });
+      // Этапы разошлись — по строке на этап: что дал каждый (без разметки границ).
+      if (stages.length > 1) {
+        ev.push('<li><b>' + esc(e['этап']) + '</b> — ' + esc(e['статус_ru'] || e['статус'] || '') +
+                (e['уровень'] !== null && e['уровень'] !== undefined ? ' · L' + esc(e['уровень']) : '') + '</li>');
+      }
+      (e['границы'] || []).forEach(function (b) {
+        if (!disputed[b['граница']]) return;
+        var d = b['сомнение'], bits = [];
+        if (d && d['вид']) {
+          bits.push('сомнение (' + esc(d['вид_ru'] || d['вид']) + ')' + (d['пояснение'] ? ': ' + esc(kBounds(d['пояснение'])) : '') +
+                    (d['фрагмент'] ? ' — «' + esc(kCut(d['фрагмент'], 200)) + '»' : '') +
+                    ((d['нормы'] || []).length ? '<br><span class="cab-dim">нормы: ' + d['нормы'].map(function (n) { return esc(kCut(n, 220)); }).join(' / ') + '</span>' : ''));
+        }
+        (b['дефекты_выдачи'] || []).forEach(function (t) { bits.push('ошибка выдачи судьи: ' + esc(kCut(t, 220))); });
+        // Основание отказа (ловушка, дисквалификатор) — только то, на котором держался отказ при цитатах на все части («решало»):
+        // принятое — какое место сняло границу, не принятое — почему. Названное судьёй, но ничего не решавшее, в карточку не идёт:
+        // граница не выполнена и без него (проба Б 12.10). Запись без «решало» (до 12.10) показывается по-прежнему.
+        (b['основание_отказа'] || []).forEach(function (t) {
+          if (t['решало'] !== undefined && !t['решало']) return;
+          bits.push((t['принято'] ? esc(t['вид'] || 'основание') + ' сняла границу' : 'основание отказа не принято: ' + esc(t['почему_не_принято'] || '')) +
+                    ' — «' + esc(kCut(t['место'], 200)) + '»' + (t['как_применено'] ? ' <span class="cab-dim">' + esc(kCut(kBounds(t['как_применено']), 200)) + '</span>' : ''));
+        });
+        (b['цитаты'] || []).forEach(function (q) {
+          bits.push('«' + esc(kCut(q['цитата'], 200)) + '» <span class="cab-dim">' + esc(q['поле'] || q['этап'] || '') + '</span>');
+        });
+        if (b['домены']) bits.push('внешних доменов с цитатой — ' + esc(b['домены']['внешних']) + ' при пороге ' + esc(b['домены']['нужно']) +
+                                   (b['домены']['названо'] > b['домены']['внешних'] ? ', названо всего ' + esc(b['домены']['названо']) : ''));
+        if (bits.length) ev.push('<li>' + (stages.length > 1 ? esc(e['этап']) + ' · ' : '') + 'граница ' + esc(b['граница']) + ' — ' +
+                                 esc(K_BOUND[b['статус']] || b['статус']) + '<br>' + bits.join('<br>') + '</li>');
+      });
+    });
+    // Место с флагом, влияющее на результат, не подтвердилось: что оно меняет и какую цитату назвал судья (её нет в ответе).
+    (out['места_не_подтверждены'] || []).forEach(function (m) {
+      ev.push('<li>место «' + esc(m['место']) + '» — ' + esc(m['что_меняет']) + '<br>цитата судьи не подтверждена' +
+              (m['почему'] ? ' (' + esc(m['почему']) + ')' : '') + (m['цитата_судьи'] ? ': «' + esc(kCut(m['цитата_судьи'], 200)) + '»' : '') + '</li>');
+    });
+    if (ev.length) h += '<div class="cab-ab-h">Что проверить</div><ul class="cab-evid">' + ev.join('') + '</ul>';
+    h += '<p class="cab-dim">Ответ участника — ниже в этой карточке: <a href="#" class="cab-goto-ans" data-ab="' + esc(ab || '') +
+         '">«Ответ, по которому это сказано»</a>.</p>';
+    return h;
+  }
+  // ── /КОМПАКТНЫЙ РЕЗУЛЬТАТ ──────────────────────────────────────────────────────
+
   // Контроль рядом с той способностью, которую он пере-судит, а не отдельным списком
   // в конце карточки: расхождение читается только в паре с основной оценкой.
   // Откуда читает контроль — подпись для человека. Способности, которой здесь нет,
@@ -1418,8 +1557,10 @@
       '<p>' + (xl === null ? 'не удалось оценить' : 'L' + xl) + ' против основной ' +
         ((lv === null || lv === undefined) ? '—' : 'L' + lv) +
         (d2 !== null && d2 !== 0 ? ' <b class="cab-jitter">' + (d2 > 0 ? 'выше' : 'ниже') + ' на ' + Math.abs(d2) + '</b>' : '') + '</p>' +
-      evidHtml(x.out || null) +
-      (x.verdict && x.verdict.reasoning ? '<div class="cab-ab-why">' + br(x.verdict.reasoning) + '</div>' : '') +
+      // Доп. оценка компактной выдачи (12.10) — тем же итогом, что основная: без копий ответа участника.
+      (kIsCompact(x.out) ? kCompactHtml(x.out, false, a, true)
+        : evidHtml(x.out || null) +
+          (x.verdict && x.verdict.reasoning ? '<div class="cab-ab-why">' + br(x.verdict.reasoning) + '</div>' : '')) +
       accept + '</div>';
   }
   function rejudgeHtml(a, hasCtrl, hasExtra) {
@@ -1550,6 +1691,9 @@
       // Граница — из слов судьи, если он их сказал; иначе прежняя догадка по булевым.
       var bnd = (unp && bndOfGate(unp['гейт'])) || blockingOf(v, a);
       var missing = unp ? String(unp['чего_не_хватило'] || '').trim() : '';
+      // Компактная запись (12.10): следующая граница бывает не только «не выполнена» — неоднозначна, невалидна. Тогда участник
+      // на ней не «остановился»: граница спорная — её статус словами.
+      var unpOpen = !!(unp && unp['статус'] && unp['статус'] !== 'not_passed');
       var reasoning = v.verdict && v.verdict.reasoning ? v.verdict.reasoning : '';
       var o = ovs[a];
       var isOv = !!(o && o.overrideLevel !== null && o.overrideLevel !== undefined && o.overrideLevel !== '');
@@ -1563,11 +1707,17 @@
           (kSt === 'needs_review' ? ' · нужна ручная проверка' : kSt === 'scored_with_review_flag' ? ' · оценено с флагом' : '') +
           // Немонотонные случаи v10: верх бывает пройден в обход границы 3→4, и писать
           // «все границы пройдены» тогда неправда.
+          // Компактная запись (12.10): следующая граница — над непрерывной цепочкой, и при уровне по особому правилу она
+          // бывает ниже уровня (АК-1 L4 по двум доменам — 2→3): тогда уровень получен в обход неё, а не «остановился».
           (bnd
-            ? (lv === 5 ? ' · верх пройден в обход ' + BOUNDARY_NAMES[bnd]
-                        : ' · остановился на ' + BOUNDARY_NAMES[bnd] +
-                          (missing ? ': ' + esc(missing) : ''))
-            : (lv === 5 ? ' · все границы пройдены' : ''));
+            ? (unpOpen
+                ? ' · граница ' + bnd.replace('to', '→') + ' — ' + esc(unp['статус_ru'] || unp['статус'])
+                : (lv === 5 || (lv && unp && Number(String(unp['гейт']).slice(1)) <= lv))
+                ? ' · ' + (lv === 5 ? 'верх' : 'L' + lv) + ' пройден в обход границы ' + bnd.replace('to', '→')
+                : ' · остановился на ' + BOUNDARY_NAMES[bnd] +
+                  (missing ? ': ' + esc(kBounds(missing)) : ''))
+            // Компактная запись: «все границы пройдены» — только при непрерывной цепочке до G5 (L5 в обход 3→4 — не все).
+            : (lv === 5 && (!out || !kIsCompact(out) || out['последний_пройденный_гейт'] === 'G5') ? ' · все границы пройдены' : ''));
           // «Граница дрожит» снята 11.10 (владелец «делай 8-11»): мерила разброс чтений прежней v8, а горела при любом
           // сомнении. По тексту Кати неоднозначность — статус способности («нужна ручная проверка», «оценено с флагом»).
 
@@ -1680,15 +1830,16 @@
             '<ul class="cab-flags cab-dim">' + quiet.map(function (x) {
               return '<li><b>' + esc(x.code) + '</b> — ' + esc(x.text) + (x.why ? ' <i>(' + esc(x.why) + ')</i>' : '') + '</li>';
             }).join('') + '</ul>' : '') +
-          kStatusHtml(out, isOv) +
-          evidHtml(out) +
-          (reasoning ? '<div class="cab-ab-h">Обоснование судьи</div><div class="cab-ab-why">' + br(reasoning) + '</div>'
-                     : '<p class="cab-dim">Обоснования нет: уровень посчитан кодом или задание не отработало.</p>') +
+          (kIsCompact(out) ? kCompactHtml(out, isOv, a)
+            : kStatusHtml(out, isOv) +
+              evidHtml(out) +
+              (reasoning ? '<div class="cab-ab-h">Обоснование судьи</div><div class="cab-ab-why">' + br(reasoning) + '</div>'
+                         : '<p class="cab-dim">Обоснования нет: уровень посчитан кодом или задание не отработало.</p>')) +
           ctrlLine +
           (a === 'pr2' ? pressureHtml(v) : '') +
           extraHtml(s, a, lv, isOv) +
           rejudgeHtml(a, ctrlLv !== null || !!CTRL_TASK_OF[a], !!(s.extra && s.extra[a])) +
-          (stepsHtml ? '<div class="cab-ab-h">Ответ, по которому это сказано</div>' + scopeNote + stepsHtml : '') +
+          (stepsHtml ? '<div class="cab-ab-h cab-ans-anchor">Ответ, по которому это сказано</div>' + scopeNote + stepsHtml : '') +
           ctrlHtml +
           ctl +
         '</div></details>';
@@ -1786,6 +1937,62 @@
   // открываются с первого раза»). Кабинет ждёт ответа 30 с; первый вызов после паузы у Apps
   // Script бывает долгим. На пустой ответ — один повтор сам, потом кнопка «Повторить».
   // cardSeq: если человек успел открыть другую карточку, поздний ответ прежней её не затрёт.
+  // ── Отчёт участника (14.10) ──────────────────────────────────────────────────────────────
+  // Состояние приходит в карточке (v2Detail → report): нет отчёта, собирается, готов, ошибка. Блоки, которые модель не
+  // написала или которые не прошли проверку платформы, в отчёт не идут — их число показано рядом, и повторное
+  // «Проверено» собирает отчёт заново. Без пропусков повторное нажатие ничего не оплачивает (бэкенд отдаёт готовый).
+  var REPORT_ERR = {
+    no_scores: 'оценки нет', no_answers: 'ответов нет', not_ready: 'оценка не завершена',
+    record_checks_failed: 'запись оценки не прошла проверку', old_rubric: 'оценка по прежней редакции методологии — сначала пересуд',
+    report_in_progress: 'отчёт уже собирается', report_busy: 'сервер занят — попробуйте через минуту', report_failed: 'сбой сборки'
+  };
+  function reportStateText(r) {
+    if (!r || !r.state) return '';
+    if (r.state === 'generating') return 'отчёт собирается…';
+    if (r.state === 'error') return 'отчёт не собран: ' + (r.error || 'ошибка');
+    var holes = (r.aiReview || 0) + (r.aiMissing || 0);
+    return 'отчёт готов' + (r.builtAt ? ' · ' + dt(r.builtAt) : '') +
+      (holes ? ' · без текста модели блоков: ' + holes + ' — «Проверено» ещё раз соберёт заново' : '');
+  }
+  function reportButtonsHtml(r) {
+    var ready = r && r.state === 'ready';
+    return '<button type="button" class="btn btn-ghost btn-sm" id="cabReportCheck" ' +
+        'title="Оценка просмотрена: собрать отчёт участника и тексты модели (платно, 1–3 минуты)">Проверено</button>' +
+      (ready ? '<button type="button" class="btn btn-ghost btn-sm" id="cabReportOpen" title="Отчёт так, как его увидит участник">Открыть отчёт</button>' : '') +
+      '<span class="cab-dim" id="cabReportState">' + esc(reportStateText(r)) + '</span>';
+  }
+  function wireReport(p, r) {
+    var checkBtn = document.getElementById('cabReportCheck');
+    var openBtn = document.getElementById('cabReportOpen');
+    var state = document.getElementById('cabReportState');
+    if (openBtn) {
+      openBtn.addEventListener('click', function () {
+        // Окно открывается сразу, в обработчике нажатия: открытое после ответа сервера браузер заблокировал бы.
+        var w = window.open('', '_blank');
+        window.imp.callApi('reportGet', { bib: p.bib }).then(function (res) {
+          if (!w) return;
+          if (res && res.ok && res.html) { w.document.open(); w.document.write(res.html); w.document.close(); }
+          else { w.close(); window.imp.alert('Отчёт не открылся: ' + ((res && res.error) || 'сервер не ответил') + '.'); }
+        });
+      });
+    }
+    if (!checkBtn) return;
+    checkBtn.addEventListener('click', function () {
+      window.imp.confirm('Оценка проверена? Платформа соберёт отчёт и напишет тексты (платный вызов модели, 1–3 минуты). ' +
+        'Участник увидит отчёт по своему номеру на странице отчёта.', { confirmLabel: 'Проверено' }).then(function (yes) {
+        if (!yes) return;
+        checkBtn.disabled = true;
+        state.textContent = 'отчёт собирается… это 1–3 минуты, окно можно не закрывать';
+        window.imp.callApi('reportCheck', { password: pw, bib: p.bib }).then(function (res) {
+          checkBtn.disabled = false;
+          if (res && res.ok) { openCard(p); return; }
+          state.textContent = res === null ? 'сервер не ответил — откройте карточку заново: отчёт мог собраться'
+            : 'отчёт не собран: ' + (REPORT_ERR[res.error] || res.error || 'ошибка') + (res.detail ? ' (' + res.detail + ')' : '');
+        });
+      });
+    });
+  }
+
   var cardSeq = 0;
   function openCard(p) {
     var seq = ++cardSeq;
@@ -1842,9 +2049,10 @@
           (failedIds.length && !qLeft ? '<button type="button" class="btn btn-ghost btn-sm" id="cabJudgeFailed" ' +
             'title="Поставить заново только задания в ошибке: ' + esc(failedIds.join(', ')) + '. Остальные оценки не трогаются">' +
             'Пересудить упавшие (' + failedIds.length + ')</button>' : '') +
-          // ⚠ ЗАГЛУШКА (решение владельца 03.10): кнопка видна, но не работает — генератор
-          // отчёта ещё не подключён к оценкам (см. стрим 05). Показывает, где будет отчёт.
-          '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: генератор отчёта ещё не подключён к оценкам">Отчёт участника · скоро</button>' +
+          // Отчёт участника (решение владельца 14.10): «Проверено» — оценка просмотрена командой; кнопка собирает
+          // отчёт и пишет тексты модели (платно, 1–3 минуты). Отдельной выдачи нет: участникам сообщает HR, и они
+          // открывают отчёт по своему номеру на странице otchet.html. Нажимает только администратор.
+          (isFull() ? reportButtonsHtml(d.report) : '') +
           '<span class="cab-dim" id="cabJudgeState">' +
             (qLeft ? 'в очереди: ' + qLeft + ' из ' + q.total
               : failedIds.length ? 'заданий с ошибкой: ' + failedIds.length : '') + '</span>' +
@@ -1873,6 +2081,7 @@
         });
       }
       judgeBtn.addEventListener('click', function () { judge(p.bib, btns); });
+      wireReport(p, d.report);
       if (resumeBtn) {
         resumeBtn.addEventListener('click', function () {
           drainQueue(p.bib, btns, document.getElementById('cabJudgeState'));
@@ -1888,6 +2097,15 @@
             : 'Пересудить только это задание? Остальные оценки не трогаются; один платный вызов судьи.';
           window.imp.confirm(msg,
             { confirmLabel: 'Пересудить' }).then(function (yes) { if (yes) judge(p.bib, btns, t); });
+        });
+      });
+      // Отсылка спорного результата к ответу участника — к блоку «Ответ, по которому это сказано» той же способности.
+      detailBody.querySelectorAll('.cab-goto-ans').forEach(function (lnk) {
+        lnk.addEventListener('click', function (e) {
+          e.preventDefault();
+          var box = lnk.closest('.cab-ab');
+          var t = box && box.querySelector('.cab-ans-anchor');
+          if (t && t.scrollIntoView) t.scrollIntoView({ block: 'start', behavior: 'smooth' });
         });
       });
       wireOverrides(p.bib);
