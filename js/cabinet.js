@@ -1054,7 +1054,7 @@
       });
     });
     el('admPDel').addEventListener('click', function () {
-      window.imp.confirm('Удалить номер ' + bib6(p.bib) + ' вместе с ответами и оценками? Отменить нельзя.',
+      window.imp.confirm('Удалить номер ' + bib6(p.bib) + ' вместе с ответами, оценками и отчётом? Отменить нельзя.',
         { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
         if (yes) call('deleteParticipant', { bib: p.bib }).then(function (r) {
           if (r && r.ok) { closeCard(true); return after(r, 'номер удалён'); }
@@ -1944,7 +1944,8 @@
   var REPORT_ERR = {
     no_scores: 'оценки нет', no_answers: 'ответов нет', not_ready: 'оценка не завершена',
     record_checks_failed: 'запись оценки не прошла проверку', old_rubric: 'оценка по прежней редакции методологии — сначала пересуд',
-    report_in_progress: 'отчёт уже собирается', report_busy: 'сервер занят — попробуйте через минуту', report_failed: 'сбой сборки'
+    report_in_progress: 'отчёт уже собирается', report_busy: 'сервер занят — попробуйте через минуту', report_failed: 'сбой сборки',
+    participant_deleted: 'номер удалили, пока собирался отчёт — отчёт не записан'
   };
   function reportStateText(r) {
     if (!r || !r.state) return '';
