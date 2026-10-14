@@ -1951,7 +1951,11 @@
     if (r.state === 'generating') return 'отчёт собирается…';
     if (r.state === 'error') return 'отчёт не собран: ' + (r.error || 'ошибка');
     var holes = (r.aiReview || 0) + (r.aiMissing || 0);
+    // Предварительная оценка и способности без оценки (решение владельца 14.10): отчёт выдан с пометкой; после правки уровня
+    // в карточке «Проверено» соберёт его заново с «проверено человеком». Прежний бэкенд полей не отдаёт — пусто.
     return 'отчёт готов' + (r.builtAt ? ' · ' + dt(r.builtAt) : '') +
+      (r.preliminary ? ' · предварительно: ' + r.preliminary : '') + (r.noLevel ? ' · без оценки: ' + r.noLevel : '') +
+      (r.preliminary || r.noLevel ? ' — после вашей правки уровня «Проверено» соберёт заново' : '') +
       (holes ? ' · без текста модели блоков: ' + holes + ' — «Проверено» ещё раз соберёт заново' : '');
   }
   function reportButtonsHtml(r) {
@@ -1979,7 +1983,9 @@
     list.forEach(function (p) {
       if (!(p.judged > 0 || (p.pending || []).length)) return;
       ev++;
-      if (p.report === 'ready') ok++;
+      // Проверен — отчёт собран по нынешней оценке и способностей на ручной проверке нет: с 14.10 «Проверено» собирает отчёт и
+      // при предварительной оценке (решение владельца), а окончательный отчёт по потоку — только когда решено всё.
+      if (p.report === 'ready' && !(p.pending || []).length) ok++;
     });
     return { evaluated: ev, checked: ok };
   }
@@ -2002,7 +2008,7 @@
     el('admTeamFin') && el('admTeamFin').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'final' }, why); });
   }
 
-  function wireReport(p, r) {
+  function wireReport(p, r, sc) {
     var checkBtn = document.getElementById('cabReportCheck');
     var openBtn = document.getElementById('cabReportOpen');
     var state = document.getElementById('cabReportState');
@@ -2012,9 +2018,14 @@
       });
     }
     if (!checkBtn) return;
+    // Способности, ждущие проверки, отчёт не останавливают (владелец 14.10): участник увидит их предварительную оценку с пометкой.
+    var waiting = ((sc && sc.pending) || []).concat((sc && sc.notSeen) || []);
     checkBtn.addEventListener('click', function () {
       window.imp.confirm('Оценка проверена? Платформа соберёт отчёт и напишет тексты (платный вызов модели, 1–3 минуты). ' +
-        'Участник увидит отчёт по своему номеру на странице отчёта.', { confirmLabel: 'Проверено' }).then(function (yes) {
+        'Участник увидит отчёт по своему номеру на странице отчёта.' +
+        (waiting.length ? ' Без окончательного уровня: ' + pendingNames(waiting) + ' — в отчёте они будут с пометкой «предварительная оценка» ' +
+          'или «нет оценки» и с тем, что проверяется; после вашей правки уровня нажмите «Проверено» ещё раз.' : ''),
+        { confirmLabel: 'Проверено' }).then(function (yes) {
         if (!yes) return;
         checkBtn.disabled = true;
         state.textContent = 'отчёт собирается… это 1–3 минуты, окно можно не закрывать';
@@ -2116,7 +2127,7 @@
         });
       }
       judgeBtn.addEventListener('click', function () { judge(p.bib, btns); });
-      wireReport(p, d.report);
+      wireReport(p, d.report, d.scores);
       if (resumeBtn) {
         resumeBtn.addEventListener('click', function () {
           drainQueue(p.bib, btns, document.getElementById('cabJudgeState'));

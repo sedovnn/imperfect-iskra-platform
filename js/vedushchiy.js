@@ -250,7 +250,8 @@
       var p = x.p;
       if (!p || !(p.judged > 0 || p.pendingCount)) return;
       ev++;
-      if (p.report === 'ready') ok++;
+      // Проверен — отчёт собран и способностей на ручной проверке нет (14.10: «Проверено» собирает и предварительный отчёт).
+      if (p.report === 'ready' && !p.pendingCount) ok++;
     });
     var fin = ev > 0 && ok === ev;
     return '<button type="button" class="btn btn-ghost btn-sm" id="vedRepAll"' + (ok ? '' : ' disabled') +
