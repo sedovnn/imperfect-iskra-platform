@@ -784,10 +784,9 @@
       body = list.length
         ? '<div class="adm-bar"><span class="ved-dim">Нажмите на строку — откроется карточка участника.</span>' +
             '<span class="adm-bar-acts">' +
-            // ⚠ ЗАГЛУШКИ (решение владельца 03.10): видны, но не работают — генератор отчёта
-            // ещё не подключён к оценкам (стрим 05). Показывают, где будут отчёты потока.
-            '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: отчёты всех участников потока одним архивом">Отчёты участников · скоро</button>' +
-            '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: сводный отчёт по потоку">Отчёт по потоку · скоро</button>' +
+            // Отчёты потока (решения владельца 03.10 и 14.10): все проверенные отчёты одной страницей и отчёт по потоку —
+            // предварительный по нынешним оценкам и окончательный, когда проверены все оценённые.
+            (none ? '' : teamButtonsHtml(list)) +
             (waiting.length || judging ? '<button type="button" class="btn btn-primary btn-sm" id="admJudgeAll"' + (judging ? ' disabled' : '') + '>' +
               (judging ? 'Оцениваю…' : 'Оценить закончивших (' + waiting.length + ')') + '</button>' : '') + '</span></div>' +
           peopleTable(list)
@@ -808,6 +807,7 @@
     if (tab === 'people') {
       wireRows();
       el('admJudgeAll') && el('admJudgeAll').addEventListener('click', function () { judgeMany(waiting); });
+      if (!none) wireTeamButtons(w);
     } else wireSettings(w);
   }
 
@@ -1961,19 +1961,54 @@
       (ready ? '<button type="button" class="btn btn-ghost btn-sm" id="cabReportOpen" title="Отчёт так, как его увидит участник">Открыть отчёт</button>' : '') +
       '<span class="cab-dim" id="cabReportState">' + esc(reportStateText(r)) + '</span>';
   }
+  // Готовый HTML — в новое окно: окно открывается сразу в обработчике нажатия (открытое после ответа сервера браузер
+  // заблокировал бы), содержимое приходит потом.
+  function openHtml(action, payload, fail) {
+    var w = window.open('', '_blank');
+    window.imp.callApi(action, Object.assign({ password: pw }, payload)).then(function (res) {
+      if (!w) return;
+      if (res && res.ok && res.html) { w.document.open(); w.document.write(res.html); w.document.close(); return; }
+      w.close();
+      window.imp.alert(fail(res));
+    });
+  }
+  // Отчёты потока. Оценённый — у кого есть оценка (полная или с ручной проверкой); проверенный — «Проверено» по нынешней
+  // оценке (report === 'ready' в списке). Окончательный открыт, когда проверены все оценённые; запрет держит сервер.
+  function teamCounts(list) {
+    var ev = 0, ok = 0;
+    list.forEach(function (p) {
+      if (!(p.judged > 0 || (p.pending || []).length)) return;
+      ev++;
+      if (p.report === 'ready') ok++;
+    });
+    return { evaluated: ev, checked: ok };
+  }
+  function teamButtonsHtml(list) {
+    var c = teamCounts(list), fin = c.evaluated > 0 && c.checked === c.evaluated;
+    return '<button type="button" class="btn btn-ghost btn-sm" id="admRepAll"' + (c.checked ? '' : ' disabled') +
+        ' title="' + (c.checked ? 'Проверенные отчёты участников потока одной страницей' : 'Проверенных отчётов пока нет: «Проверено» — в карточке участника') + '">' +
+        'Отчёты участников (' + c.checked + ')</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="admTeamPre"' + (c.evaluated ? '' : ' disabled') +
+        ' title="По нынешним оценкам; проверены ' + c.checked + ' из ' + c.evaluated + '">Отчёт по потоку · предварительный</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="admTeamFin"' + (fin ? '' : ' disabled') +
+        ' title="' + (fin ? 'Все оценённые проверены' : 'Откроется, когда проверены все оценённые: ' + c.checked + ' из ' + c.evaluated) + '">Отчёт по потоку · окончательный</button>';
+  }
+  var TEAM_ERR = { not_all_checked: 'проверены не все оценённые', no_ready_reports: 'проверенных отчётов нет', wave_not_found: 'поток не найден',
+                   forbidden_wave: 'это не ваш поток' };
+  function wireTeamButtons(w) {
+    var why = function (res) { return 'Отчёт не открылся: ' + (res ? (TEAM_ERR[res.error] || res.error || 'ошибка') : 'сервер не ответил') + '.'; };
+    el('admRepAll') && el('admRepAll').addEventListener('click', function () { openHtml('teamReportsAll', { wave: w.id }, why); });
+    el('admTeamPre') && el('admTeamPre').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'prelim' }, why); });
+    el('admTeamFin') && el('admTeamFin').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'final' }, why); });
+  }
+
   function wireReport(p, r) {
     var checkBtn = document.getElementById('cabReportCheck');
     var openBtn = document.getElementById('cabReportOpen');
     var state = document.getElementById('cabReportState');
     if (openBtn) {
       openBtn.addEventListener('click', function () {
-        // Окно открывается сразу, в обработчике нажатия: открытое после ответа сервера браузер заблокировал бы.
-        var w = window.open('', '_blank');
-        window.imp.callApi('reportGet', { bib: p.bib }).then(function (res) {
-          if (!w) return;
-          if (res && res.ok && res.html) { w.document.open(); w.document.write(res.html); w.document.close(); }
-          else { w.close(); window.imp.alert('Отчёт не открылся: ' + ((res && res.error) || 'сервер не ответил') + '.'); }
-        });
+        openHtml('reportGet', { bib: p.bib }, function (res) { return 'Отчёт не открылся: ' + ((res && res.error) || 'сервер не ответил') + '.'; });
       });
     }
     if (!checkBtn) return;

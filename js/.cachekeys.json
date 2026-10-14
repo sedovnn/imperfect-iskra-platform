@@ -51,9 +51,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "626842d08cff",
+  "sha": "d66944f46bc8",
   "keys": {
-   "administrator.html": 69
+   "administrator.html": 70
   }
  },
  "js/case-ref.js": {
@@ -202,9 +202,9 @@
   }
  },
  "js/vedushchiy.js": {
-  "sha": "4783b9ddf21a",
+  "sha": "536789aea523",
   "keys": {
-   "vedushchiy.html": 6
+   "vedushchiy.html": 8
   }
  }
 }

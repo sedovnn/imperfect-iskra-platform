@@ -229,6 +229,38 @@
     if (a > 10 && a < 20) return many; if (b > 1 && b < 5) return few; if (b === 1) return one; return many;
   }
 
+  // ── Отчёты потока (14.10) ──
+  // Готовый HTML — в новое окно: окно открывается сразу в обработчике нажатия, содержимое приходит потом.
+  function openHtml(action, payload, fail) {
+    var win = window.open('', '_blank');
+    api(action, payload).then(function (res) {
+      if (!win) return;
+      if (res && res.ok && res.html) { win.document.open(); win.document.write(res.html); win.document.close(); return; }
+      win.close();
+      window.imp.alert(fail(res));
+    });
+  }
+  var TEAM_ERR = { not_all_checked: 'проверены не все оценённые', no_ready_reports: 'проверенных отчётов нет', wave_not_found: 'поток не найден',
+                   forbidden_wave: 'это не ваш поток', report_not_found: 'отчёт ещё не проверен' };
+  // Оценённый — у кого есть оценка; проверенный — «Проверено» по нынешней оценке. Окончательный — когда проверены все
+  // оценённые (запрет держит сервер).
+  function teamButtonsHtml(rows) {
+    var ev = 0, ok = 0;
+    rows.forEach(function (x) {
+      var p = x.p;
+      if (!p || !(p.judged > 0 || p.pendingCount)) return;
+      ev++;
+      if (p.report === 'ready') ok++;
+    });
+    var fin = ev > 0 && ok === ev;
+    return '<button type="button" class="btn btn-ghost btn-sm" id="vedRepAll"' + (ok ? '' : ' disabled') +
+        ' title="' + (ok ? 'Проверенные отчёты участников потока одной страницей' : 'Проверенных отчётов пока нет') + '">Отчёты участников (' + ok + ')</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="vedTeamPre"' + (ev ? '' : ' disabled') +
+        ' title="По нынешним оценкам; проверены ' + ok + ' из ' + ev + '">Отчёт по потоку · предварительный</button>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="vedTeamFin"' + (fin ? '' : ' disabled') +
+        ' title="' + (fin ? 'Все оценённые проверены' : 'Откроется, когда проверены все оценённые: ' + ok + ' из ' + ev) + '">Отчёт по потоку · окончательный</button>';
+  }
+
   var tab = 'run';
   function renderWave(w, quiet) {
     if (!w) return;
@@ -243,10 +275,9 @@
     var body;
     if (tab === 'run') {
       body = rows.length
-        // ⚠ КНОПКИ ОТЧЁТА — ЗАГЛУШКИ (решение владельца 03.10): видны, но не работают, пока
-        // генератор отчёта не подключён к оценкам (стрим 05). Отчёт откроется и ведущему.
-        ? '<div class="ved-bar"><button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: отчёты всех участников потока">Отчёты участников · скоро</button>' +
-            '<button type="button" class="btn btn-ghost btn-sm adm-soon" disabled title="Скоро: сводный отчёт по потоку">Отчёт по потоку · скоро</button></div>' +
+        // Отчёты потока ведущему (решение владельца 03.10: отчёт доступен и ведущему по его потокам; 14.10 — отчёт по
+        // потоку, предварительный и окончательный). «Проверено» ведущему не дано — только администратору (14.10).
+        ? '<div class="ved-bar">' + teamButtonsHtml(rows) + '</div>' +
           '<table class="ved-table"><thead><tr><th>Участник</th><th>Где сейчас</th><th>Осталось</th><th>Вошёл</th><th>Оценка</th><th></th></tr></thead><tbody>' +
           rows.map(function (x) {
             var where = whereOf(x.p), bib = String(x.r.bib);
@@ -255,7 +286,9 @@
               '<td><span class="ved-st ' + where.cls + '">' + esc(where.text) + '</span></td>' +
               '<td>' + esc(leftOf(x.p)) + '</td><td>' + esc(hhmm(x.r.registeredAt)) + '</td>' +
               '<td>' + scoreOf(x.p) + '</td>' +
-              '<td class="ved-acts"><button type="button" class="btn btn-ghost btn-xs adm-soon" disabled title="Скоро: отчёт откроется, когда участник оценён">Отчёт</button></td></tr>';
+              '<td class="ved-acts"><button type="button" class="btn btn-ghost btn-xs ved-rep" data-bib="' + esc(bib) + '"' +
+                (x.p && x.p.report === 'ready' ? ' title="Отчёт участника — так, как его увидит участник">'
+                  : ' disabled title="Отчёт откроется, когда администратор проверит оценку («Проверено»)">') + 'Отчёт</button></td></tr>';
           }).join('') + '</tbody></table>' +
           '<p class="ved-dim">Нажмите на имя — покажется номер участника (нужен, если человек входит с другого компьютера).</p>'
         : '<p class="ved-empty">Пока никого. Участники появятся здесь сами, как только зарегистрируются по ссылке.</p>';
@@ -280,6 +313,13 @@
     [].forEach.call(main.querySelectorAll('.ved-tabs button'), function (b) {
       b.addEventListener('click', function () { tab = b.getAttribute('data-t'); renderWave(w); });
     });
+    var why = function (res) { return 'Отчёт не открылся: ' + (res ? (TEAM_ERR[res.error] || res.error || 'ошибка') : 'сервер не ответил') + '.'; };
+    [].forEach.call(main.querySelectorAll('.ved-rep'), function (b) {
+      b.addEventListener('click', function () { openHtml('reportGet', { bib: b.getAttribute('data-bib') }, why); });
+    });
+    el('vedRepAll') && el('vedRepAll').addEventListener('click', function () { openHtml('teamReportsAll', { wave: w.id }, why); });
+    el('vedTeamPre') && el('vedTeamPre').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'prelim' }, why); });
+    el('vedTeamFin') && el('vedTeamFin').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'final' }, why); });
     [].forEach.call(main.querySelectorAll('.ved-name'), function (b) {
       b.addEventListener('click', function () { var k = b.getAttribute('data-bib'); openBib[k] = !openBib[k]; renderWave(w); });
     });
