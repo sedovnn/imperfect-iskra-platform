@@ -1402,6 +1402,9 @@
       });
   }
   function kIsCompact(out) { return !!(out && out['статус_результата'] && out['причина'] !== undefined); }
+  // Сведение окон ответа по правилам владельца 14.10 (out['сведение']): какое правило сработало — словами.
+  var K_CONS_RULE = { 'больший уровень окон': 'взят больший уровень окон', 'нижний уровень при сомнении': 'при сомнении — нижний из возможных уровней',
+                      'окна совпали': 'окна совпали', 'одно окно': '' };
   function kCut(s, n) { s = String(s == null ? '' : s); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
   // noHead — внутри доп. оценки: у неё своя строка уровня.
   function kCompactHtml(out, isOv, ab, noHead) {
@@ -1414,6 +1417,16 @@
            : esc(out['статус_ru'] || st) + (out['уровень'] ? ' · L' + esc(out['уровень']) : '')) + '</p>';
     }
     if (st === 'not_observed') return h;
+    // Сведение окон (решение владельца 14.10): что дало каждое окно и какое правило выбрало уровень. Флаг сомнения уровень не
+    // снимает: «оценено с флагом» — уровень выставлен, место для проверки — ниже, в «Что проверить».
+    var cons = out['сведение'] || null, consFlags = (cons && cons['флаги']) || [];
+    var flagged = st === 'scored_with_review_flag' && consFlags.length > 0;
+    var wins = (cons && cons['окна']) || [];
+    if (wins.length > 1 || (cons && st === 'needs_review' && wins.length)) {
+      var rule = cons['правило'] || '';
+      h += '<p class="cab-dim">Окна ответа: ' + wins.map(function (w) { return esc(w['этап']) + ' — ' + esc(w['результат']); }).join('; ') +
+           (K_CONS_RULE[rule] ? ' · ' + esc(K_CONS_RULE[rule]) : rule && K_CONS_RULE[rule] === undefined ? ' · общий уровень не выведен: ' + esc(rule) : '') + '</p>';
+    }
     // Последний непрерывно пройденный гейт и следующая граница — по статусам границ, а не по уровню (платформа, 12.10).
     var lg = out['последний_пройденный_гейт'], unp = out['непройденный_гейт'];
     var split = (out['причины_проверки'] || []).some(function (x) { return x['код'] === 'этапы_расходятся'; });
@@ -1447,37 +1460,57 @@
                  ((f['поле'] || f['этап']) ? ' <span class="cab-dim">' + esc(f['поле'] || f['этап']) + '</span>' : '') : '') + '</li>';
       }).join('') + '</ul>';
     }
-    if (st !== 'needs_review') return h;
-    // Спорный результат: проблема → варианты → свидетельства спорных границ → ответ участника ниже.
-    var why = out['причины_проверки'] || [];
-    if (why.length) {
-      h += '<p class="cab-dim">Почему нужна проверка:</p><ul class="cab-flags">' + why.map(function (x) {
-        return '<li><b>' + esc(K_REASON[x['код']] || x['код']) + '</b>' + (x['граница'] ? ' · граница ' + esc(x['граница']) : '') +
-               (x['пояснение'] ? ' — ' + esc(x['пояснение']) : '') + '</li>';
+    if (st !== 'needs_review' && !flagged) return h;
+    var stages = out['этапы'] || [];
+    var many = stages.length > 1;
+    var named = {}, flagSt = {};
+    if (flagged) {
+      // Уровень с флагом сомнения (решение владельца 14.10): почему флаг → возможные уровни окна (выставлен нижний) → свидетельства
+      // спорных границ окон с флагом → ответ участника ниже. Окна, давшие меньше и не способные дать больше, флага не несут.
+      h += '<p class="cab-dim">Почему флаг — уровень выставлен, место отмечено для проверки:</p><ul class="cab-flags">' + consFlags.map(function (f) {
+        if (f['граница']) named[(many ? f['этап'] + '|' : '') + f['граница']] = true;
+        flagSt[f['этап']] = true;
+        return '<li><b>' + esc(f['вид'] || 'флаг') + '</b>' + (f['граница'] ? ' · граница ' + esc(f['граница']) : '') +
+               (many && f['этап'] ? ' · ' + esc(f['этап']) : '') + (f['причина'] ? ' — ' + esc(kBounds(f['причина'])) : '') + '</li>';
       }).join('') + '</ul>';
-    }
-    var pre = out['предварительные_уровни'] || [];
-    if (pre.length) {
-      h += '<p class="cab-dim">Предварительные уровни — варианты для оценщика, не балл:</p><ul class="cab-flags">' + pre.map(function (x) {
-        return '<li><b>L' + esc(x['уровень']) + '</b> — ' + esc(x['условие'] || '') + (x['источник'] ? ' <i>(' + esc(x['источник']) + ')</i>' : '') + '</li>';
-      }).join('') + '</ul>';
+      stages.forEach(function (e) {
+        var vs = flagSt[e['этап']] ? (e['предварительные_уровни'] || []) : [];
+        if (!vs.length) return;
+        h += '<p class="cab-dim">Возможные уровни окна' + (many ? ' «' + esc(e['этап']) + '»' : '') + ' — выставлен нижний:</p><ul class="cab-flags">' + vs.map(function (x) {
+          return '<li><b>L' + esc(x['уровень']) + '</b> — ' + esc(x['условие'] || '') + (x['источник'] ? ' <i>(' + esc(x['источник']) + ')</i>' : '') + '</li>';
+        }).join('') + '</ul>';
+      });
+    } else {
+      // Спорный результат: проблема → варианты → свидетельства спорных границ → ответ участника ниже.
+      var why = out['причины_проверки'] || [];
+      if (why.length) {
+        h += '<p class="cab-dim">Почему нужна проверка:</p><ul class="cab-flags">' + why.map(function (x) {
+          return '<li><b>' + esc(K_REASON[x['код']] || x['код']) + '</b>' + (x['граница'] ? ' · граница ' + esc(x['граница']) : '') +
+                 (x['пояснение'] ? ' — ' + esc(x['пояснение']) : '') + '</li>';
+        }).join('') + '</ul>';
+      }
+      var pre = out['предварительные_уровни'] || [];
+      if (pre.length) {
+        h += '<p class="cab-dim">Предварительные уровни — варианты для оценщика, не балл:</p><ul class="cab-flags">' + pre.map(function (x) {
+          return '<li><b>L' + esc(x['уровень']) + '</b> — ' + esc(x['условие'] || '') + (x['источник'] ? ' <i>(' + esc(x['источник']) + ')</i>' : '') + '</li>';
+        }).join('') + '</ul>';
+      }
+      why.forEach(function (x) { if (x['граница']) named[x['граница']] = true; });
     }
     // Спорные границы этапа: неоднозначные, невалидные, с нехваткой входа и выполненные выше невыполненной (обход нижней
     // границы) — то, о чём причины проверки, даже если причина границу не называет (обход, расхождение этапов).
     var DISPUTED = { ambiguous: 1, invalid_output: 1, insufficient_input: 1 };
-    var named = {};
-    why.forEach(function (x) { if (x['граница']) named[x['граница']] = true; });
-    var stages = out['этапы'] || [];
     var ev = [];
     stages.forEach(function (e) {
+      if (flagged && !flagSt[e['этап']]) return;
       var gap = '', disputed = {};
       (e['границы'] || []).forEach(function (b) {
-        if (DISPUTED[b['статус']] || (stages.length === 1 && named[b['граница']])) disputed[b['граница']] = true;
+        if (DISPUTED[b['статус']] || (stages.length === 1 && named[b['граница']]) || named[e['этап'] + '|' + b['граница']]) disputed[b['граница']] = true;
         if (gap && b['статус'] === 'passed') { disputed[b['граница']] = true; disputed[gap] = true; }
         if (b['статус'] !== 'passed' && !gap) gap = b['граница'];
       });
-      // Этапы разошлись — по строке на этап: что дал каждый (без разметки границ).
-      if (stages.length > 1) {
+      // Этапы разошлись — по строке на этап: что дал каждый (без разметки границ). У сведённого результата — строка «Окна ответа».
+      if (stages.length > 1 && !(cons && wins.length)) {
         ev.push('<li><b>' + esc(e['этап']) + '</b> — ' + esc(e['статус_ru'] || e['статус'] || '') +
                 (e['уровень'] !== null && e['уровень'] !== undefined ? ' · L' + esc(e['уровень']) : '') + '</li>');
       }
@@ -1506,6 +1539,11 @@
         if (bits.length) ev.push('<li>' + (stages.length > 1 ? esc(e['этап']) + ' · ' : '') + 'граница ' + esc(b['граница']) + ' — ' +
                                  esc(K_BOUND[b['статус']] || b['статус']) + '<br>' + bits.join('<br>') + '</li>');
       });
+    });
+    // Место ручной проверки без границы (место методологии, обход, окно без данных) — его фрагмент, если он есть.
+    if (flagged) consFlags.forEach(function (f) {
+      if (!f['граница'] && f['фрагмент']) ev.push('<li>' + (many ? esc(f['этап']) + ' · ' : '') + esc(f['вид']) + ' — ' + esc(f['причина'] || '') +
+                                                   '<br>«' + esc(kCut(f['фрагмент'], 200)) + '»</li>');
     });
     // Место с флагом, влияющее на результат, не подтвердилось: что оно меняет и какую цитату назвал судья (её нет в ответе).
     (out['места_не_подтверждены'] || []).forEach(function (m) {
@@ -1806,7 +1844,9 @@
         : ctrlPara(CTRL_TITLE[a] || 'Контрольное чтение по другому ответу', ctrlLv, lv, ctrlWhy);
 
       var review = !isOv && kSt === 'needs_review';
-      return '<details class="cab-ab' + (isOv ? ' is-overridden' : '') + (mine.length || review ? ' has-flag' : '') + '">' +
+      // Уровень с флагом сомнения (решение владельца 14.10): уровень выставлен, место отмечено — тоже зовёт человека.
+      var consFlag = !isOv && kSt === 'scored_with_review_flag' && !!(out && out['сведение'] && (out['сведение']['флаги'] || []).length);
+      return '<details class="cab-ab' + (isOv ? ' is-overridden' : '') + (mine.length || review || consFlag ? ' has-flag' : '') + '">' +
         '<summary>' +
           '<span class="cab-ab-name">' + esc(ABILITY_NAMES[a]) + '</span>' +
           // Пустой ответ судья не оценивает (уровня нет); называем это словами (решение
@@ -1815,7 +1855,7 @@
             ? (review ? 'проверка' : (out && out['статус_результата'] === 'not_observed') ? 'не наблюдалось'
                : (v.empty || (v.verdict && v.verdict.empty) || v.source === 'deterministic') ? 'не удалось оценить' : '—')
             : 'L' + lv) + '</span>' +
-          (mine.length || review ? '<span class="cab-ab-flag">нужен человек</span>' : '') +
+          (mine.length || review || consFlag ? '<span class="cab-ab-flag">нужен человек</span>' : '') +
           '<span class="cab-ab-line">' + line + '</span>' +
         '</summary>' +
         '<div class="cab-ab-body">' +
