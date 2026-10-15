@@ -3313,7 +3313,29 @@
     clearTimeout(syncTimer);
     var btn = el('finishBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Отправляю…'; }
-    sync().then(showFinish, showFinish);
+    sync().then(showLetterOrFinish, showLetterOrFinish);
+  }
+
+  // ⚠ ОТВЕТНОЕ ПИСЬМО АГЕЕВА (решение владельца 15.10). Если в настройках потока письмо включено, после отправки — белый лист,
+  // как «Введение в роль», с текстом из настроек (он берётся сейчас, так что его можно вписать и во время потока); кнопка —
+  // к финальному экрану. Нет письма, нет сети или демо — сразу финальный экран, как раньше. Лист показывается один раз:
+  // после перезагрузки законченного прогона — финальный экран.
+  function showLetterOrFinish() {
+    if (isDemo || !session || !session.bib || !window.imp.callApi) { showFinish(); return; }
+    window.imp.callApi('waveLetter', { bib: session.bib }).then(function (res) {
+      var text = res && res.ok && res.on ? String(res.text || '').trim() : '';
+      var sheet = el('letterSheet'), shell = document.querySelector('.station-shell'), body = el('letterSheetBody');
+      if (!text || !sheet || !shell || !body) { showFinish(); return; }
+      body.innerHTML = '<div class="read-role">' + text.split(/\n\s*\n/).map(function (p) { return '<p>' + br(subst(p.trim())) + '</p>'; }).join('') + '</div>';
+      if (window.imp && window.imp.typoDom) window.imp.typoDom(sheet);
+      sheet.style.display = '';
+      shell.classList.add('is-role');
+      el('letterSheetGo').onclick = function () {
+        sheet.style.display = 'none';
+        shell.classList.remove('is-role');
+        showFinish();
+      };
+    }, showFinish);
   }
 
   // ---------- старт без своего экрана ----------

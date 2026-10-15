@@ -51,6 +51,7 @@
     var T = window.imp.mechTitles || {};
     return S.windows().map(function (w) {
       return { key: w.save, mech: w.mech, conditional: w.conditional,
+               when: (w.act && w.act.when) || '', unless: (w.act && w.act.unless) || '',
                label: w.mech ? (T[w.mech] || w.mech) : (w.label || w.save),
                scene: (w.scene && w.scene.name) ? w.scene.name : '',
                sceneId: (w.scene && w.scene.id) || '' };
@@ -139,22 +140,23 @@
     return Array.isArray(s) ? s : (s.later || []).concat(s.never || []);
   }
 
-  function conditionalAsked(key, lf) {
-    if (!lf) return null;
-    if (key === 'overspend') return lf.fitsFrame === false;
-    // ⚠ ОБМЕН СТАЛ УСЛОВНЫМ (правка 5.1). Без этой строки шаг попадал бы в «остальное»,
-    // то есть считался безусловным, и непрозвучавший вопрос показывался фасилитатору как
-    // «не дошёл» — а пустой ответ рисовался бы словом «промолчали» (см. 6.7). Правило то
-    // же, что в движке: есть хотя бы один отказ.
-    if (key === 'forced') return refusedAllOf(lf).length > 0;
-    if (key === 'severova') {
-      // Правило одно на всех — js/backlog.js. С 14.08 встреча срабатывает на ЛЮБОЙ
-      // отказ, а не только на заявку №6. С правки 13.1 из кандидатов исключена заявка,
-      // на которой настояло правление, — поэтому условие спрашивается тем же вызовом,
-      // что в движке, а не через выбор собеседника.
-      return window.imp.refusedTalkIds(setsOf(lf), sumsOf(lf), limsOf(lf)).length > 0;
-    }
+  // ⚠ УСЛОВИЕ ШАГА — ИЗ САМОГО ШАГА МАРШРУТА (when / unless, как в движке engine.js applies), А НЕ ПО ИМЕНИ ШАГА (владелец
+  // 15.10, «делай»). Прежде условие подбиралось по ключу шага: второй вопрос разговора на выходе («Что должно измениться»)
+  // не находил своего и показывался «не дошёл» у тех, кому разговор не выпал, а «Что если» проверял только отказ без
+  // «unless: перебор» — у вышедших за рамку тоже «не дошёл». Теперь оба — «не спрашивали».
+  function condMet(name, lf) {
+    if (name === 'overspend') return lf.fitsFrame === false;
+    // Правило то же, что в движке: есть хотя бы один отказ (правка 5.1).
+    if (name === 'refused') return refusedAllOf(lf).length > 0;
+    // Правило одно на всех — js/backlog.js: встреча на выходе — на любой отказ, кроме заявки, на которой настояло
+    // правление (правка 13.1), — тем же вызовом, что в движке.
+    if (name === 'severova') return window.imp.refusedTalkIds(setsOf(lf), sumsOf(lf), limsOf(lf)).length > 0;
     return true;
+  }
+  function conditionalAsked(step, lf) {
+    if (!lf) return null;
+    if (step.unless && condMet(step.unless, lf) === true) return false;
+    return condMet(step.when, lf);
   }
 
   // Состояние шага. Четыре, и «не спрашивали» отличается от «не дошёл» намеренно:
@@ -163,7 +165,7 @@
   function stepState(step, at, lf) {
     if (at && at[step.key] !== undefined) return { state: 'done', at: at[step.key] };
     if (step.conditional) {
-      var asked = conditionalAsked(step.key, lf);
+      var asked = conditionalAsked(step, lf);
       if (asked === false) return { state: 'skipped', at: '' };
       if (asked === null) return { state: 'wait', at: '' };
     }
@@ -410,7 +412,8 @@
     return people().filter(function (p) { return w === 'none' ? orphan(p) : String(p.waveId) === String(w.id); })
       .sort(function (a, b) { return String(a.registeredAt || a.startedAt || '').localeCompare(String(b.registeredAt || b.startedAt || '')); });
   }
-  function busy(p) { return !!(p.queue && (p.queue.queued || p.queue.running)); }
+  // Доп. оценка в работе — тоже «занят» (её строки с 15.10 считаются отдельно, queue.extra).
+  function busy(p) { var q = p.queue, x = q && q.extra; return !!(q && (q.queued || q.running || (x && (x.queued || x.running)))); }
   // Судейство закрыто версией маршрута. Решает сервер (scenesJudgeable: нынешняя или
   // равнозначная версия, 06.10): строгое сравнение здесь прятало пересуд у прогонов .87,
   // которые судейство принимает. Старый сервер поля не шлёт — тогда прежнее сравнение.
@@ -437,14 +440,14 @@
   function liveErrors(q) {
     if (!q) return 0;
     if (!Array.isArray(q.failed)) return q.error || 0;
-    return q.failed.filter(function (f) { return !f.retired; }).length;
+    return q.failed.filter(function (f) { return !f.retired && !f.extra; }).length;
   }
   // ⚠ ОЦЕНКА НЕ ЗАВЕРШЕНА (запрос 04→03 от 07.10, «делай» владельца 11.10). Задания с ошибкой есть, в работе — нет:
   // уровни в строке остались от прошлой оценки или неполные, и показывать человека «оценённым» нельзя (06.10 EF6F2A
   // показывался оценённым со старыми уровнями, пока его задания лежали с ошибкой «credit balance is too low»).
   function unfinished(p) { return !p.noScore && !busy(p) && liveErrors(p.queue) > 0; }
   function unfinishedWhy(p) {
-    var f = ((p.queue && p.queue.failed) || []).filter(function (x) { return !x.retired; });
+    var f = ((p.queue && p.queue.failed) || []).filter(function (x) { return !x.retired && !x.extra; });
     return f.map(function (x) { return x.taskId + (x.error ? ': ' + x.error : ''); }).join('; ');
   }
   function unfinishedTag(p) {
@@ -821,6 +824,12 @@
       '<label class="ved-f"><span>Ведёт</span><select id="admSetOwner">' + ownerOptions(w.owner || '') + '</select></label>' +
       '<label class="ved-check"><input type="checkbox" id="admSetOpen"' + (w.selfEnroll ? ' checked' : '') + ' /> Вход по ссылке открыт</label>' +
       '<label class="ved-check"><input type="checkbox" id="admSetAi"' + (w.isAi ? ' checked' : '') + ' /> Прогон модели</label>' +
+      // Ответное письмо Агеева после ассессмента (решение владельца 15.10).
+      '<label class="ved-check"><input type="checkbox" id="admSetLetter"' + (w.letterOn ? ' checked' : '') + ' /> Показать участникам ответное письмо Агеева после ассессмента</label>' +
+        '<label class="ved-f" id="admSetLetterBox"' + (w.letterOn ? '' : ' style="display:none;"') + '><span>Текст письма Агеева</span>' +
+          '<textarea id="admSetLetterText" rows="8" maxlength="4000" style="width:100%;box-sizing:border-box;font:inherit;">' + esc(w.letterText || '') + '</textarea>' +
+          '<em>Участник увидит письмо после «Закончить ассессмент» — белым листом, как «Введение в роль». Абзацы — через пустую строку. ' +
+          '{name} в тексте заменится именем участника. Можно вписать и во время потока: текст берётся в момент окончания.</em></label>' +
       '<div class="ved-row"><button type="button" class="btn btn-primary" id="admSetSave">Сохранить</button></div>' +
     '</div>' +
     // Ручная выдача — запасной путь: участники записываются сами по ссылке (решение владельца 03.10).
@@ -836,16 +845,19 @@
     '</div>';
   }
   function wireSettings(w) {
+    el('admSetLetter').addEventListener('change', function () { el('admSetLetterBox').style.display = this.checked ? '' : 'none'; });
     el('admSetSave').addEventListener('click', function () {
       var b = this; b.disabled = true; b.textContent = 'Сохраняю…';
       var nm = (el('admSetName').value || '').trim(), tm = Number(el('admSetTime').value) || 0;
       var own = el('admSetOwner').value, open = el('admSetOpen').checked, ai = el('admSetAi').checked;
-      var p = { id: w.id, name: nm, timerMin: tm ? String(tm) : '', selfEnroll: open ? '1' : '', isAi: ai ? '1' : '' };
+      var lOn = el('admSetLetter').checked, lText = el('admSetLetterText').value || '';
+      var p = { id: w.id, name: nm, timerMin: tm ? String(tm) : '', selfEnroll: open ? '1' : '', isAi: ai ? '1' : '',
+                letterOn: lOn ? '1' : '', letterText: lText };
       if (own !== (w.owner || '')) p.owner = own;
       call('setWaveMeta', p).then(function (res) {
         b.disabled = false; b.textContent = 'Сохранить';
         if (!res || !res.ok) { window.imp.alert('Не сохранилось: ' + ((res && (res.message || res.error)) || 'сервер не ответил') + '.'); return; }
-        w.name = nm; w.timerMin = tm; w.owner = own; w.selfEnroll = open; w.isAi = ai;
+        w.name = nm; w.timerMin = tm; w.owner = own; w.selfEnroll = open; w.isAi = ai; w.letterOn = lOn; w.letterText = lText.trim();
         b.textContent = 'Сохранено ✓'; setTimeout(function () { b.textContent = 'Сохранить'; }, 1600);
         say('настройки потока сохранены');
       });
@@ -1026,7 +1038,18 @@
       '<div class="ved-row" style="margin-top:14px">' +
         '<button type="button" class="btn btn-ghost btn-sm" id="admPReset"' + (p.registeredOnly ? ' disabled title="Ассессмент не начат — сбрасывать нечего"' : '') + '>Сбросить ассессмент</button>' +
         '<button type="button" class="btn btn-ghost btn-sm" id="admPDel">Удалить номер</button>' +
-      '</div></section>';
+      '</div>' + moveWaveHtml(p) + '</section>';
+  }
+  // Перенос номера в другой поток (владелец 15.10): меняется только поток — ответы, оценки и отчёт остаются за номером.
+  function moveWaveHtml(p) {
+    var to = waves.filter(function (w) { return !w.archived && String(w.id) !== String(p.waveId || ''); });
+    if (!to.length) return '';
+    return '<div class="ved-row" style="margin-top:14px">' +
+      '<label class="ved-f"><span>Перенести в поток</span><select id="admPWave">' +
+        to.map(function (w) { return '<option value="' + esc(w.id) + '">' + esc(w.name || w.num) + (w.isAi ? ' · ИИ' : '') + '</option>'; }).join('') +
+      '</select></label>' +
+      '<button type="button" class="btn btn-ghost btn-sm" id="admPMove">Перенести</button>' +
+    '</div>';
   }
   function wireNumberActions(p) {
     var nm = el('admPName');
@@ -1050,6 +1073,18 @@
             return refresh(true);
           }
           return after(r, 'ассессмент стёрт');
+        });
+      });
+    });
+    var mv = el('admPMove');
+    if (mv) mv.addEventListener('click', function () {
+      var to = waveById(el('admPWave').value);
+      if (!to) return;
+      window.imp.confirm('Перенести ' + bib6(p.bib) + ' в поток «' + (to.name || to.num) + '»? Ответы, оценки и отчёт останутся за номером.',
+        { confirmLabel: 'Перенести' }).then(function (yes) {
+        if (yes) call('setParticipantWave', { bib: p.bib, wave: to.id }).then(function (r) {
+          if (r && r.ok) closeCard(true);
+          return after(r, 'номер перенесён в поток «' + (to.name || to.num) + '»');
         });
       });
     });
@@ -1662,29 +1697,15 @@
     // фасилитатору не то. Сколько заданий поставилось, кабинет и так скажет по факту:
     // строка состояния под кнопкой считает обработанные.
     if (!s) return block('Оценка', '<p class="section-lead">Ещё не судили. Кнопка «Оценить» вверху карточки ставит в очередь все задания судьи.</p>');
-    // ⚠ ЯРЛЫК, ИНДЕКС И АСИММЕТРИЯ (правка 31.08). Бэкенд считал их с ревизии судейства,
-    // а кабинет показывал только числа: методология требует рядом с баллом ярлык (§9.4),
-    // а разрыв внутри пары — отдельным показателем (§9.5), «в справке и в отчёте называются
-    // ведущая и отстающая способности; рекомендация адресуется отстающей». Числа приходят
-    // из бэкенда (s.labels, s.asym, s.index, s.profileLabel); кто в паре ведущий, кабинет
-    // берёт из тех же уровней — это не второе правило, а подпись к присланному разрыву.
-    var pairOf = function (k) {
-      var ab = Object.keys(ABILITY_NAMES).filter(function (a) { return a.indexOf(k) === 0; });
-      return ab.sort(function (x, y) { return (s.levels[y] || 0) - (s.levels[x] || 0); });
-    };
+    // Рядом с итогом — уровень профиля по шкале итога Кати (s.profileLabel); ярлык у суммы навыка и разрыв внутри пары
+    // (v8 §9.4–9.5) сняты 15.10 — у Кати их нет.
     var inner = '<div class="cab-skills-row">' + Object.keys(SKILL_NAMES).map(function (k) {
       var v = s.skills[k];
-      var lab = (s.labels || {})[k];
-      var gap = (s.asym || {})[k];
-      var pair = pairOf(k), tip = SKILL_NAMES[k] + ' — сумма двух способностей, от 2 до 10';
-      if (gap >= 2 && pair.length === 2) {
-        tip += '. Развит неровно: разрыв ' + gap + '. Ведущая — ' + ABILITY_NAMES[pair[0]] +
-               ' (L' + s.levels[pair[0]] + '), отстающая — ' + ABILITY_NAMES[pair[1]] +
-               ' (L' + s.levels[pair[1]] + '). Рекомендация адресуется отстающей';
-      }
-      return '<div class="cab-skill-box' + (gap >= 2 ? ' is-asym' : '') + '" title="' + esc(tip) + '">' +
+      // Ярлык уровня у суммы навыка и «развит неровно» сняты 15.10 (v8 §9.4–9.5, у Кати их нет — решение владельца).
+      var tip = SKILL_NAMES[k] + ' — сумма двух способностей, от 2 до 10';
+      return '<div class="cab-skill-box" title="' + esc(tip) + '">' +
         '<span>' + SKILL_NAMES[k] + '</span><b>' + (v === null ? '—' : v) + '</b>' +
-        '<i>' + (lab || '—') + (gap >= 2 ? ' · разрыв ' + gap : '') + '</i></div>';
+        '<i>из 10</i></div>';
     }).join('') + '<div class="cab-skill-box is-total" title="Сумма всех десяти способностей' +
       '">' +
       '<span>Итог</span><b>' + (s.total !== null ? s.total : (prelimText(s.prelimTotal) || '—')) + '</b><i>/50' +
@@ -1738,6 +1759,8 @@
       // Решение человека и мнение судьи стоят рядом, а не вместо друг друга:
       // §8 методологии требует, чтобы расхождение разбирал человек, и оригинал
       // судьи должен остаться видимым, иначе правка перестаёт быть проверяемой.
+      // Слова о границах — про основное чтение: у взятого контроля (владелец 15.10) уровень основного стоит в controlTaken.
+      var lvB = (s.controlTaken && s.controlTaken[a]) ? s.controlTaken[a].main : lv;
       var line = isOv
         ? 'уровень поставил человек' + (jl[a] === null || jl[a] === undefined ? '' : ' · судья давал L' + jl[a]) +
           (o.by ? ' · ' + esc(o.by) : '') + (o.at ? ' · ' + dt(o.at) : '')
@@ -1750,14 +1773,17 @@
           (bnd
             ? (unpOpen
                 ? ' · граница ' + bnd.replace('to', '→') + ' — ' + esc(unp['статус_ru'] || unp['статус'])
-                : (lv === 5 || (lv && unp && Number(String(unp['гейт']).slice(1)) <= lv))
-                ? ' · ' + (lv === 5 ? 'верх' : 'L' + lv) + ' пройден в обход границы ' + bnd.replace('to', '→')
+                : (lvB === 5 || (lvB && unp && Number(String(unp['гейт']).slice(1)) <= lvB))
+                ? ' · ' + (lvB === 5 ? 'верх' : 'L' + lvB) + ' пройден в обход границы ' + bnd.replace('to', '→')
                 : ' · остановился на ' + BOUNDARY_NAMES[bnd] +
                   (missing ? ': ' + esc(kBounds(missing)) : ''))
             // Компактная запись: «все границы пройдены» — только при непрерывной цепочке до G5 (L5 в обход 3→4 — не все).
-            : (lv === 5 && (!out || !kIsCompact(out) || out['последний_пройденный_гейт'] === 'G5') ? ' · все границы пройдены' : ''));
+            : (lvB === 5 && (!out || !kIsCompact(out) || out['последний_пройденный_гейт'] === 'G5') ? ' · все границы пройдены' : ''));
           // «Граница дрожит» снята 11.10 (владелец «делай 8-11»): мерила разброс чтений прежней v8, а горела при любом
           // сомнении. По тексту Кати неоднозначность — статус способности («нужна ручная проверка», «оценено с флагом»).
+      // Контроль выше основного — взят высший (владелец 15.10, «пока до 30 участников»): уровень судьи — контрольный, основное рядом.
+      var ctk = s.controlTaken && s.controlTaken[a];
+      if (ctk && !isOv) line += ' · взят контрольный L' + ctk.control + ' (основное чтение L' + ctk.main + '): контроль выше — берётся высший';
 
       var ctl = '';
       if (canOverride[a]) {
@@ -1908,6 +1934,32 @@
     return block('Оценка', inner);
   }
 
+  // ⚠ ЖУРНАЛ ПРОГОНА МОДЕЛИ — СЛОВАМИ, А НЕ СЫРОЙ ЗАПИСЬЮ (владелец 15.10, «делай»). Прежде строка печатала JSON журнала
+  // харнесса целиком (1,4–1,7 тыс. знаков). Сводка — та же, что показывает страница прогона (harness.html, renderJournal);
+  // подписи заявленного — из harness-core.js (DECLARED), здесь копией: кабинет харнесс не загружает. Запись без журнала
+  // (до 01.09) — метка и время.
+  var RUNNER_DECLARED = [['provider', 'Провайдер'], ['model', 'Модель'], ['modelId', 'Идентификатор модели'], ['iface', 'Интерфейс'],
+    ['reasoning', 'Режим рассуждения'], ['search', 'Поиск в интернете'], ['tools', 'Файлы и инструменты'],
+    ['memory', 'Память и персонализация'], ['regen', 'Перегенерация ответов'], ['params', 'Параметры генерации'], ['context', 'Окно контекста']];
+  function runnerHtml(r) {
+    var j = r && r.journal, out = [];
+    out.push((r.tag ? esc(r.tag) : 'без метки') + (r.at ? ' · ' + dt(r.at) : '') + (j && j.test ? ' · тестовая запись' : ''));
+    if (j) {
+      var o = j.observed || {};
+      out.push('Сопоставим с прохождениями людей: <b>' + (j.comparable ? 'да' : 'нет') + '</b>' +
+        ((j.notComparable || []).length ? ' — ' + j.notComparable.map(esc).join('; ') : ''));
+      if ((j.flags || []).length) out.push('Отметки: ' + j.flags.map(esc).join('; '));
+      out.push('Наблюдаемое: сообщений модели ' + (o.messages || 0) + ' · ответов вставлено ' + (o.answers || 0) + ' · сбоев ' + (o.failures || 0) +
+        ((o.retried || []).length ? ' · шагов с несколькими попытками ' + o.retried.length : ''));
+      if (j.instruction) out.push('Инструкция: маршрут ' + esc(j.instruction.scenesVersion || '—') + ', общая с человеческой: ' + (j.instruction.common ? 'да' : 'нет'));
+      var dec = j.declared || {};
+      var said = RUNNER_DECLARED.filter(function (x) { return dec[x[0]] !== undefined && dec[x[0]] !== ''; })
+        .map(function (x) { return x[1] + ': ' + esc(dec[x[0]]); });
+      if (said.length) out.push('Заявлено оператором: ' + said.join(' · '));
+    }
+    return '<div class="cab-k">Прогон модели:</div><p>' + out.join('<br>') + '</p>';
+  }
+
   function flagsBlock(d, bare) {
     var f = (d.scores && d.scores.flags) || [];
     var body = f.length
@@ -1932,7 +1984,7 @@
         ' (макс. вставка ' + t.maxPasteChars + '), нажатий ' + t.keystrokes + ', активно ' +
         Math.round((t.activeMs || 0) / 60000) + ' мин, уходов со вкладки ' + t.tabBlur + '</p>';
     }
-    if (p.runner) inner += '<p><span class="cab-k">Прогон модели:</span> ' + esc(JSON.stringify(p.runner)) + '</p>';
+    if (p.runner) inner += runnerHtml(p.runner);
     inner += '<p><span class="cab-k">Начал:</span> ' + dt(p.startedAt) + ' · <span class="cab-k">закончил:</span> ' + (dt(p.finishedAt) || '—') + '</p>';
     // Таймер (03.10): время потока и этапы, закрытые по времени.
     if (p.timing && p.timing.totalMin) {
@@ -2008,13 +2060,22 @@
   }
   // Готовый HTML — в новое окно: окно открывается сразу в обработчике нажатия (открытое после ответа сервера браузер
   // заблокировал бы), содержимое приходит потом.
+  // Пока сервер собирает или читает отчёт (до минуты), новая вкладка не пустая: в ней сказано, что идёт загрузка; ошибка —
+  // там же, словами (15.10: вкладка висела пустой, и было непонятно, что происходит).
+  function waitPage(text, isError) {
+    return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<title>' + (isError ? 'Отчёт не открылся' : 'Отчёт загружается…') + '</title></head>' +
+      '<body style="margin:0;font-family:Georgia,serif;background:#fff;color:#181818;display:flex;min-height:100vh;align-items:center;justify-content:center">' +
+      '<p style="max-width:32em;padding:24px;font-size:18px;line-height:1.5">' + String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p></body></html>';
+  }
+  function writeWin(w, html) { try { w.document.open(); w.document.write(html); w.document.close(); } catch (e) { /* вкладку закрыли */ } }
   function openHtml(action, payload, fail) {
     var w = window.open('', '_blank');
+    if (w) writeWin(w, waitPage('Отчёт загружается — обычно это занимает до минуты.'));
     window.imp.callApi(action, Object.assign({ password: pw }, payload)).then(function (res) {
-      if (!w) return;
-      if (res && res.ok && res.html) { w.document.open(); w.document.write(res.html); w.document.close(); return; }
-      w.close();
-      window.imp.alert(fail(res));
+      if (!w) { window.imp.alert(res && res.ok ? 'Браузер не дал открыть вкладку — разрешите всплывающие окна для этой страницы.' : fail(res)); return; }
+      if (res && res.ok && res.html) { writeWin(w, res.html); return; }
+      writeWin(w, waitPage(fail(res), true));
     });
   }
   // Отчёты потока. Оценённый — у кого есть оценка (полная или с ручной проверкой); проверенный — «Проверено» по нынешней
@@ -2117,7 +2178,8 @@
       // кнопка не ставит ничего заново, а доедает оставшееся (решение владельца 03.10).
       // Без неё единственным способом дооценить человека было заплатить за весь набор
       // ещё раз (033011, 20.09: доехали 2 из 13).
-      var qLeft = (q.queued || 0) + (q.running || 0);
+      var qx = q.extra || {};
+      var qLeft = (q.queued || 0) + (q.running || 0) + (qx.queued || 0) + (qx.running || 0);
       // Упавшие задания (запрос 04→03, список — бэкенд @318): имена без повторов, снятые
       // задания (retired, например прежний контроль ПП-1) не пересуживаются — их в списке
       // судьи больше нет, judgeAnswers ничего бы не поставил.
@@ -2141,7 +2203,7 @@
           // открывают отчёт по своему номеру на странице otchet.html. Нажимает только администратор.
           (isFull() ? reportButtonsHtml(d.report) : '') +
           '<span class="cab-dim" id="cabJudgeState">' +
-            (qLeft ? 'в очереди: ' + qLeft + ' из ' + q.total
+            (qLeft ? 'в очереди: ' + qLeft + ' из ' + ((q.total || 0) + (qx.total || 0))
               : failedIds.length ? 'заданий с ошибкой: ' + failedIds.length : '') + '</span>' +
         '</div>' +
         // ⚠ ПОРЯДОК: ОЦЕНКА ПЕРВОЙ (решение владельца 12.08). Главное, с чем работает
@@ -2322,7 +2384,8 @@
           return window.imp.callApi('v2Detail', { password: pw, bib: bib }).then(function (d) {
             var q = d && d.queue;
             if (!q) { state.textContent = 'бэкенд не ответил — нажмите «Продолжить оценку»'; lock(false); return; }
-            var left = (q.queued || 0) + (q.running || 0);
+            var qe = q.extra || {};
+            var left = (q.queued || 0) + (q.running || 0) + (qe.queued || 0) + (qe.running || 0);
             if (left <= 0) {
               lock(false);
               state.textContent = 'готово: заданий сделано ' + (q.done || 0) +

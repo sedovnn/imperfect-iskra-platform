@@ -50,15 +50,19 @@
   function waveById(id) { return data.waves.filter(function (w) { return String(w.id) === String(id); })[0]; }
 
   // ---------- вход ----------
+  // ⚠ ВХОД — ЛЁГКОЙ ПРОВЕРКОЙ КЛЮЧА, КАК У АДМИНИСТРАТОРА (решение владельца 15.10). Прежде ключ проверялся загрузкой всего
+  // списка участников (v2List, до 30 с): человек ждал на экране входа, пока сервер читал все листы. Теперь сначала
+  // verifyPassword (роль), потом страница и «Загружаю…», а список приходит следом.
   function login(key, silent) {
     var btn = el('vedKeyBtn'), err = el('vedKeyErr');
     if (!silent) { btn.disabled = true; btn.textContent = 'Проверяю…'; }
-    return window.imp.callApi('v2List', { password: key }).then(function (res) {
+    return window.imp.callApi('verifyPassword', { password: key }).then(function (res) {
       btn.disabled = false; btn.textContent = 'Войти →';
       if (!res || !res.ok) {
         err.textContent = !res ? 'Сервер не ответил. Нажмите «Войти» ещё раз.'
           : (res.error === 'unauthorized' ? 'Ключ не подошёл.' : 'Сервер ответил ошибкой: ' + String(res.error || ''));
         err.style.display = '';
+        if (res && res.error === 'unauthorized') { try { sessionStorage.removeItem(PW_KEY); } catch (e) {} }
         return;
       }
       // Администратор — на свою страницу (решение владельца 03.10: две страницы).
@@ -67,9 +71,19 @@
       try { sessionStorage.setItem(PW_KEY, key); } catch (e) {}
       el('vedGate').style.display = 'none';
       el('vedApp').style.display = '';
-      absorb(res);
-      render();
-      startPoll();
+      el('vedWho').textContent = 'Ведущий';
+      loadFirst(0);
+    });
+  }
+  // Первая загрузка списка — после входа; сервер после паузы отвечает долго, поэтому два повтора, затем — просьба обновить.
+  function loadFirst(n) {
+    var main = el('vedMain');
+    if (main && !data.waves.length) main.innerHTML = '<p class="ved-dim">Загружаю потоки и участников…</p>';
+    return window.imp.callApi('v2List', { password: pw }).then(function (res) {
+      if (res && res.ok) { absorb(res); render(); startPoll(); return; }
+      if (n < 2) return loadFirst(n + 1);
+      if (main) main.innerHTML = '<p class="ved-dim">Не удалось загрузить список' + (res && res.error ? ': ' + String(res.error) : ': сервер не ответил') +
+        '. Обновите страницу.</p>';
     });
   }
   function absorb(res) {
@@ -231,13 +245,22 @@
 
   // ── Отчёты потока (14.10) ──
   // Готовый HTML — в новое окно: окно открывается сразу в обработчике нажатия, содержимое приходит потом.
+  // Пока сервер собирает или читает отчёт (до минуты), новая вкладка не пустая: в ней сказано, что идёт загрузка; ошибка —
+  // там же, словами (15.10: вкладка висела пустой, и было непонятно, что происходит).
+  function waitPage(text, isError) {
+    return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
+      '<title>' + (isError ? 'Отчёт не открылся' : 'Отчёт загружается…') + '</title></head>' +
+      '<body style="margin:0;font-family:Georgia,serif;background:#fff;color:#181818;display:flex;min-height:100vh;align-items:center;justify-content:center">' +
+      '<p style="max-width:32em;padding:24px;font-size:18px;line-height:1.5">' + String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p></body></html>';
+  }
+  function writeWin(w, html) { try { w.document.open(); w.document.write(html); w.document.close(); } catch (e) { /* вкладку закрыли */ } }
   function openHtml(action, payload, fail) {
     var win = window.open('', '_blank');
+    if (win) writeWin(win, waitPage('Отчёт загружается — обычно это занимает до минуты.'));
     api(action, payload).then(function (res) {
-      if (!win) return;
-      if (res && res.ok && res.html) { win.document.open(); win.document.write(res.html); win.document.close(); return; }
-      win.close();
-      window.imp.alert(fail(res));
+      if (!win) { window.imp.alert(res && res.ok ? 'Браузер не дал открыть вкладку — разрешите всплывающие окна для этой страницы.' : fail(res)); return; }
+      if (res && res.ok && res.html) { writeWin(win, res.html); return; }
+      writeWin(win, waitPage(fail(res), true));
     });
   }
   var TEAM_ERR = { not_all_checked: 'проверены не все оценённые', no_ready_reports: 'проверенных отчётов нет', wave_not_found: 'поток не найден',
@@ -300,6 +323,12 @@
           TIMES.map(function (t) { return '<option value="' + t[0] + '"' + ((Number(w.timerMin) || 0) === t[0] ? ' selected' : '') + '>' + t[1] + '</option>'; }).join('') +
         '</select><em>Меняется только у тех, кто ещё не вошёл: вошедшим время пришло при входе.</em></label>' +
         '<label class="ved-check"><input type="checkbox" id="vedSetOpen"' + (w.selfEnroll !== false ? ' checked' : '') + ' /> Вход по ссылке открыт</label>' +
+        // Ответное письмо Агеева после ассессмента (решение владельца 15.10).
+        '<label class="ved-check"><input type="checkbox" id="vedSetLetter"' + (w.letterOn ? ' checked' : '') + ' /> Показать участникам ответное письмо Агеева после ассессмента</label>' +
+        '<label class="ved-f" id="vedSetLetterBox"' + (w.letterOn ? '' : ' style="display:none;"') + '><span>Текст письма Агеева</span>' +
+          '<textarea id="vedSetLetterText" rows="8" maxlength="4000" style="width:100%;box-sizing:border-box;font:inherit;">' + esc(w.letterText || '') + '</textarea>' +
+          '<em>Участник увидит письмо после «Закончить ассессмент» — белым листом, как «Введение в роль». Абзацы — через пустую строку. ' +
+          '{name} в тексте заменится именем участника. Можно вписать и во время потока: текст берётся в момент окончания.</em></label>' +
         '<div class="ved-row"><button type="button" class="btn btn-primary" id="vedSetSave">Сохранить</button>' +
         '<button type="button" class="btn btn-ghost" id="vedSetArch">Убрать поток в архив</button></div></div>';
     }
@@ -325,13 +354,16 @@
       b.addEventListener('click', function () { var k = b.getAttribute('data-bib'); openBib[k] = !openBib[k]; renderWave(w); });
     });
     if (tab === 'set') {
+      el('vedSetLetter').addEventListener('change', function () { el('vedSetLetterBox').style.display = this.checked ? '' : 'none'; });
       el('vedSetSave').addEventListener('click', function () {
         var b = this; b.disabled = true; b.textContent = 'Сохраняю…';
         var open = el('vedSetOpen').checked, tm = Number(el('vedSetTime').value) || 0, nm = (el('vedSetName').value || '').trim();
-        api('setWaveMeta', { id: w.id, name: nm, timerMin: tm ? String(tm) : '', selfEnroll: open ? '1' : '' }).then(function (res) {
+        var lOn = el('vedSetLetter').checked, lText = el('vedSetLetterText').value || '';
+        api('setWaveMeta', { id: w.id, name: nm, timerMin: tm ? String(tm) : '', selfEnroll: open ? '1' : '',
+                             letterOn: lOn ? '1' : '', letterText: lText }).then(function (res) {
           b.disabled = false; b.textContent = 'Сохранить';
           if (!res || !res.ok) { window.imp.alert('Не сохранилось: ' + ((res && (res.message || res.error)) || 'сервер не ответил') + '.'); return; }
-          w.name = nm; w.timerMin = tm; w.selfEnroll = open;
+          w.name = nm; w.timerMin = tm; w.selfEnroll = open; w.letterOn = lOn; w.letterText = lText.trim();
           b.textContent = 'Сохранено ✓'; setTimeout(function () { b.textContent = 'Сохранить'; }, 1600);
         });
       });

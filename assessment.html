@@ -134,6 +134,19 @@
         </div>
       </div>
     </div>
+    <!-- ОТВЕТНОЕ ПИСЬМО АГЕЕВА ПОСЛЕ АССЕССМЕНТА (решение владельца 15.10). Тот же белый лист, что «Введение в роль»: после
+         «Закончить ассессмент», если в настройках потока письмо включено. Текст — из настроек потока (waveLetter), ни одной
+         строки текста в этом файле, кроме заголовка и кнопки. -->
+    <div class="role-sheet" id="letterSheet" style="display:none;">
+      <div class="role-sheet-in">
+        <h2 class="role-sheet-t">Ответ <span style="color:#ff4800;">Агеева</span></h2>
+        <div class="role-sheet-body" id="letterSheetBody"></div>
+        <div class="role-sheet-foot">
+          <p class="role-sheet-note"></p>
+          <button type="button" class="btn btn-primary" id="letterSheetGo">Завершить →</button>
+        </div>
+      </div>
+    </div>
 
     <div class="day-grid" id="dayGrid">
 
@@ -292,10 +305,10 @@
 <script src="js/main.js?v=12"></script>
 <script src="js/typo.js?v=2"></script>
 <script src="js/dialog.js?v=1"></script>
-<script src="js/api.js?v=8"></script>
+<script src="js/api.js?v=9"></script>
 <script src="js/edits.js?v=1"></script>
 <script src="js/backlog.js?v=9"></script>
-<script src="js/scenes.js?v=205"></script>
+<script src="js/scenes.js?v=206"></script>
 <!-- case-ref.js ДО engine.js: он определяет window.imp.loadCaseHtml и справочник,
      которыми движок наполняет опору. Обратный порядок оставлял пустой экран без
      единой ошибки в консоли. -->
@@ -311,6 +324,6 @@
      насмерть: TypeError на чтении subFacts, а дальше — пустая колонка без поля ответа
      и без кнопки. Ловится проверкой eval/lint_wiring.js. -->
 <script src="js/mech-fields.js?v=54"></script>
-<script src="js/engine.js?v=149"></script>
+<script src="js/engine.js?v=150"></script>
 </body>
 </html>

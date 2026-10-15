@@ -88,8 +88,8 @@
     // шесть минут плюс запас; остальным остаются тридцать секунд, ради которых предел и
     // заводили: сорванный снимок ответа должен быстро уйти в очередь повтора.
     // «Проверено» (14.10) — сборка отчёта и тексты модели, 1–3 минуты: тот же предел, что у судейства.
-    var LONG = { runJudgeQueue: 1, judgeAnswers: 1, judgeCalib: 1, judgeStation1: 1,
-                 judgeStation2: 1, judgeRoomFuture: 1, judgeRoomAlternatives: 1, judgeRoomPath: 1, reportCheck: 1 };
+    // Судейские действия прежнего маршрута (этапы, комнаты, калибровка) сняты 15.10 вместе с ним.
+    var LONG = { runJudgeQueue: 1, judgeAnswers: 1, reportCheck: 1 };
     var waitMs = LONG[action] ? 400000 : 30000;
     var ctl = (typeof AbortController === 'function') ? new AbortController() : null;
     var timer = ctl ? setTimeout(function () { ctl.abort(); }, waitMs) : null;
@@ -151,7 +151,7 @@
     if (readQueue().length) { e.preventDefault(); e.returnValue = ''; return ''; }
   });
 
-  // action: строка ('register' | 'recover' | 'saveStation1' | ...), payload: обычный объект.
+  // action: строка ('saveAnswers' | 'loadAnswers' | 'v2List' | ...), payload: обычный объект.
   // Возвращает Promise<object|null> — null при любой сетевой/конфигурационной
   // проблеме (вызывающий код не ломается). Сохранения при сбое уходят в очередь.
   //
