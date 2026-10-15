@@ -55,32 +55,18 @@
   <div class="ved-qrfull-in"><div id="vedQrFullImg"></div><p id="vedQrFullLink"></p><p class="ved-dim">Нажмите, чтобы закрыть</p></div>
 </div>
 
-<div id="cabDetail" class="dossier-overlay" style="display:none;" aria-hidden="true">
-  <div class="gate-card dossier-card cab-card" role="dialog" aria-modal="true" aria-label="Карточка участника">
-    <div class="dossier-card-header">
-      <div>
-        <p class="kicker">Карточка участника</p>
-        <h2 style="margin:0;" id="cabDetailTitle">—</h2>
-      </div>
-      <button type="button" class="btn btn-ghost btn-xs" id="cabDetailClose">Закрыть ✕</button>
-    </div>
-    <div class="fac-detail-body" id="cabDetailBody"></div>
-  </div>
-</div>
+<!-- Карточка участника — отдельная страница kartochka.html (решение владельца 15.10); всплывающей карточки здесь больше нет. -->
 
 <script src="js/main.js?v=12"></script>
 <script src="js/typo.js?v=2"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/api.js?v=9"></script>
-<!-- МАРШРУТ И МЕХАНИКИ ГРУЗЯТСЯ ЗДЕСЬ РОВНО ТЕМИ ЖЕ ФАЙЛАМИ, что на экране
-     участника. Кабинет берёт из них названия и порядок шагов (scenes.js →
-     S.windows()) и читаемый вид верстаков (mechanics.js → answerHtml): своего
-     списка шагов и своего уплощателя у него нет, иначе один и тот же ответ
-     назывался бы и выглядел бы в двух местах по-разному. -->
-<script src="js/backlog.js?v=9"></script>
+<!-- МАРШРУТ ГРУЗИТСЯ ЗДЕСЬ ТЕМ ЖЕ ФАЙЛОМ, что на экране участника: список потока
+     берёт из scenes.js этап, на котором участник сейчас, — своего списка этапов у
+     кабинета нет. Ответы и механики (backlog.js, mechanics.js, mech-fields.js) читает
+     карточка участника — kartochka.html, с 15.10. -->
 <script src="js/scenes.js?v=206"></script>
-<script src="js/mechanics.js?v=101"></script>
 <script src="js/qr.js?v=1"></script>
-<script src="js/cabinet.js?v=76"></script>
+<script src="js/cabinet.js?v=77"></script>
 </body>
 </html>

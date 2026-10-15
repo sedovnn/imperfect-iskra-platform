@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Карточка участника — i(m)perfect</title>
+<meta name="description" content="Карточка участника: ответы по порядку ассессмента и оценка поднавыков рядом с ними." />
+<meta name="robots" content="noindex" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<!-- Шрифт неблокирующе, как в кабинете (administrator.html): медленный ответ шрифтового CSS не держит скрипты. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<link rel="stylesheet" href="css/styles.css?v=265" />
+<!-- ⚠ КАРТОЧКА УЧАСТНИКА ОТДЕЛЬНЫМ ОКНОМ (решение владельца 15.10, макет согласован 15.10). Открывается из кабинета
+     администратора по строке участника: kartochka.html#<номер>. Стили карточки — здесь, под префиксом kc-: они нужны
+     только этой странице, а общий styles.css поднимал бы ключ кэша у семи страниц. Сетка — кегли 11/13/15/20/24,
+     все кнопки и поля 36 px, колонка оценок фиксированной ширины: на экране ничего не перескакивает. -->
+<style>
+.kc{--ink:#181818;--g1:#6b6e73;--g2:#9a9da2;--line:#e7e7e7;--line2:#f0f0f0;--ctl:#d9dbde;--soft:#f4f5f6;--v:#ff4800;--vt:#fff0e9;--vi:#c23a00;--band:#eaf3fb;--bandl:#bcd9f2;--jb:#2f6bb0;
+  background:#fff;color:var(--ink);font-family:'Inter Tight',system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+.kc *{box-sizing:border-box}
+.kc p{margin:0}
+.kc h1,.kc h2{margin:0;letter-spacing:normal;text-transform:none}
+.kc a{color:var(--jb);text-decoration:none}.kc a:hover{color:var(--ink)}
+.kc button,.kc input,.kc select{font-family:inherit;line-height:1.2}
+.kc-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--g1);line-height:16px}
+.kc-s{font-size:13px;line-height:20px;color:var(--g1)}
+.kc-one{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kc-btn{height:36px;padding:0 14px;border-radius:4px;border:1px solid var(--ctl);background:#fff;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.kc-btn:hover{border-color:var(--ink)}
+.kc-btn-p{background:var(--v);border-color:var(--v);color:#fff}.kc-btn-p:hover{background:#e84100;border-color:#e84100}
+.kc-btn-d{background:var(--ink);border-color:var(--ink);color:#fff}
+.kc-btn[disabled]{opacity:.4;cursor:default}.kc-btn[disabled]:hover{border-color:var(--ctl)}
+.kc-link{background:none;border:0;padding:0;height:36px;color:var(--jb);font-size:13px;font-weight:600;cursor:pointer}
+.kc-link:hover{color:var(--ink)}.kc-link[disabled]{color:var(--g2);cursor:default}
+.kc-lv{width:28px;height:28px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;background:var(--band);color:var(--jb);flex:none;border:1px solid var(--band)}
+.kc-lv-sm{width:24px;height:24px;font-size:13px}
+.kc-lv-flag{background:var(--vt);color:var(--vi);border-color:var(--v)}
+.kc-lv-human{background:var(--ink);color:#fff;border-color:var(--ink)}
+.kc-lv-ctl{background:#fff;color:var(--g1);border-color:var(--ctl)}
+.kc-lv-none{background:#fff;color:var(--g2);border-color:var(--line)}
+.kc-dot{width:6px;height:6px;border-radius:50%;background:var(--v);flex:none;display:inline-block}
+
+.kc-top{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line)}
+.kc-top-in{max-width:1440px;margin:0 auto;padding:0 32px;min-height:64px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px}
+.kc-who{display:flex;align-items:center;gap:16px;min-width:0;flex:1 1 auto}
+.kc-back{font-size:13px;font-weight:600;white-space:nowrap}
+.kc-sep{width:1px;height:24px;background:var(--line);flex:none}
+.kc-name{font-size:15px;font-weight:700;min-width:0}
+.kc-name span{font-weight:400;color:var(--g1)}
+.kc-attn{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:4px;background:var(--vt);color:var(--vi);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;border:0}
+.kc-attn:hover{color:var(--ink)}
+.kc-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.kc-state{font-size:13px;color:var(--g1);max-width:320px}
+.kc-total{display:flex;align-items:baseline;gap:4px;margin:0 8px 0 4px;white-space:nowrap}
+.kc-total b{font-size:24px;font-weight:700;line-height:28px}
+.kc-total i{font-style:normal;font-size:13px;color:var(--g1)}
+.kc-w-check{min-width:124px}
+.kc-menuwrap{position:relative}
+.kc-menu{position:absolute;right:0;top:44px;width:300px;background:#fff;border:1px solid var(--ctl);border-radius:4px;padding:4px 0;z-index:40}
+.kc-mi{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--ink)}
+.kc-mi b{display:block;font-size:13px;font-weight:600;line-height:20px}
+.kc-mi span{display:block;font-size:13px;line-height:20px;color:var(--g1)}
+.kc-mi:hover{background:var(--soft)}
+.kc-mi[disabled]{cursor:default}.kc-mi[disabled] b{color:var(--g2)}.kc-mi[disabled]:hover{background:none}
+.kc-msep{height:1px;background:var(--line);margin:4px 0}
+.kc-warn{max-width:1440px;margin:0 auto;padding:8px 32px;font-size:13px;color:var(--vi);background:var(--vt)}
+
+.kc-app{max-width:1440px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:248px minmax(0,1fr);gap:48px}
+.kc-side{position:sticky;top:64px;align-self:start;max-height:calc(100vh - 64px);overflow:auto;padding:24px 0 32px;display:flex;flex-direction:column;gap:24px}
+.kc-sk{display:flex;flex-direction:column}
+.kc-sk-h{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:28px;font-size:13px;font-weight:700;line-height:18px}
+.kc-sk-h i{font-style:normal;font-weight:400;color:var(--g1)}
+.kc-sk-h span:last-child{white-space:nowrap}
+.kc a.kc-ab{display:flex;align-items:center;gap:8px;height:32px;color:var(--ink);font-size:13px;border-top:1px solid var(--line2)}
+.kc a.kc-ab:hover{color:var(--ink)}.kc-ab:hover .kc-ab-n{text-decoration:underline;text-underline-offset:3px}
+.kc-ab-n{flex:1;min-width:0}
+.kc-nav{display:flex;flex-direction:column}
+.kc a.kc-nv{display:flex;align-items:center;gap:10px;height:32px;font-size:13px;color:var(--ink);border-top:1px solid var(--line2)}
+.kc a.kc-nv:hover{color:var(--jb)}
+.kc-nv .kc-n{width:16px;color:var(--g2);font-weight:600}
+.kc-nv .kc-nm{flex:1;min-width:0}
+
+.kc-main{min-width:0;padding-bottom:64px}
+.kc-stage{padding:40px 0;border-bottom:1px solid var(--line);scroll-margin-top:64px}
+.kc-st-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:24px}
+.kc-st-h .kc-n{font-size:20px;font-weight:700;color:var(--g2);line-height:28px}
+.kc-st-h h2{font-size:20px;font-weight:700;line-height:28px}
+.kc-tag-v{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--vi);background:var(--vt);border-radius:3px;padding:2px 6px;line-height:16px}
+.kc-grid{display:grid;grid-template-columns:minmax(0,1fr) 352px;gap:40px;align-items:start}
+.kc-answers{display:flex;flex-direction:column;gap:32px;min-width:0;max-width:640px}
+.kc-step{display:flex;flex-direction:column;gap:4px;scroll-margin-top:96px}
+.kc-q{margin-bottom:6px}
+.kc-q summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;line-height:20px;color:var(--g1);min-width:0}
+.kc-q summary::-webkit-details-marker{display:none}
+.kc-q summary:hover{color:var(--ink)}
+.kc-q .kc-chev{flex:none;transition:transform .15s}
+.kc-q[open] .kc-chev{transform:rotate(90deg)}
+.kc-q-full{margin:8px 0 4px 4px;padding-left:14px;border-left:1px solid var(--ctl);display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:20px;color:#3c3f44}
+.kc-ans{font-size:15px;line-height:24px;overflow-wrap:anywhere}
+.kc-ans p{margin:0 0 8px}.kc-ans p:last-child{margin-bottom:0}
+.kc-ans b{font-weight:600}
+.kc-ans i{color:var(--g1)}
+.kc-ans ul.recap-list{list-style:none;margin:4px 0 12px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:18px}
+.kc-ans .bl-num{color:var(--g2);font-weight:600;margin-right:4px}
+.kc-ans .recap-cost{color:var(--g1);margin-left:6px;white-space:nowrap}
+.kc-ans blockquote.letter{margin:0;padding:0;border:0;background:none;font-style:normal}
+.kc-ans mark.kc-hl{background:var(--band);color:inherit;border-radius:2px}
+.kc-ans mark.kc-hl-f{background:var(--bandl)}
+.kc-none{font-size:13px;line-height:20px;color:var(--g1)}
+.kc-none b{font-weight:600;color:#3c3f44}
+.kc-box{border:1px solid var(--line);border-radius:4px;padding:12px 16px;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.kc-box-t{font-size:15px;font-weight:600;line-height:22px}
+
+.kc-rail{display:flex;flex-direction:column;min-width:0}
+.kc-rail>.kc-lbl{margin-bottom:8px}
+.kc-row{border-top:1px solid var(--line)}
+.kc-row-end{border-bottom:1px solid var(--line)}
+.kc-rh{width:100%;min-height:56px;display:flex;align-items:center;gap:12px;padding:8px 0;background:none;border:0;cursor:pointer;text-align:left;color:var(--ink)}
+.kc-rh:hover .kc-rn{text-decoration:underline;text-underline-offset:3px}
+.kc-rt{flex:1;min-width:0}
+.kc-rn{display:block;font-size:15px;font-weight:600;line-height:20px}
+.kc-rs{display:block;font-size:13px;line-height:20px;color:var(--g1)}
+.kc-rs-v{color:var(--vi);font-weight:600}
+.kc-rh .kc-chev{flex:none;color:var(--g2);transition:transform .15s}
+.kc-row-open .kc-rh .kc-chev{transform:rotate(180deg)}
+.kc-row-ctl .kc-rh{min-height:44px}
+.kc-row-ctl .kc-rn{font-size:13px;font-weight:500;color:#3c3f44}
+.kc-panel{padding:0 0 16px 40px;display:flex;flex-direction:column;gap:12px}
+.kc-why{font-size:13px;line-height:20px;color:#3c3f44}
+.kc-flag{background:var(--vt);border-radius:4px;padding:8px 12px;font-size:13px;line-height:20px;color:#3c3f44}
+.kc-flag b{color:var(--vi);font-weight:600}
+.kc-bds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.kc-bd{display:grid;grid-template-columns:20px 28px minmax(0,1fr);gap:0 6px;align-items:start;padding:6px 0;border-top:1px solid var(--line2);font-size:13px;line-height:20px}
+.kc-bd:first-child{border-top:0}
+.kc-ic{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.kc-bd-ok .kc-ic{background:var(--band);color:var(--jb)}
+.kc-bd-no .kc-ic{background:var(--soft);color:var(--g1)}
+.kc-bd-amb .kc-ic{background:var(--v);color:#fff}
+.kc-bk{font-weight:600;color:#3c3f44;cursor:help}
+.kc-bt{min-width:0;color:#3c3f44;overflow-wrap:anywhere}
+.kc-bt b{font-weight:600}
+.kc-bd-amb .kc-bt b{color:var(--vi)}
+.kc a.kc-qt{display:block;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+.kc a.kc-qt:hover{color:var(--jb)}
+.kc-fix{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
+.kc-segs{display:flex;gap:4px}
+.kc-sg{width:36px;height:36px;border:1px solid var(--ctl);background:#fff;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink);padding:0}
+.kc-sg:hover{border-color:var(--ink)}
+.kc-sg-j{border-color:var(--jb);color:var(--jb)}
+.kc-sg-on{background:var(--ink);border-color:var(--ink);color:#fff}
+.kc-inp{height:36px;border:1px solid var(--ctl);border-radius:4px;padding:0 10px;font-size:13px;background:#fff;color:var(--ink);width:100%;min-width:0;margin:0}
+.kc-inp:focus{outline:2px solid var(--jb);outline-offset:-1px}
+.kc-fix-row{display:flex;gap:8px;align-items:center}
+.kc-ovl{display:flex;gap:10px;align-items:center;font-size:13px;line-height:20px}
+.kc-acts{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center}
+.kc-q-on{font-size:13px;color:var(--jb);font-weight:600}
+.kc-whole{display:grid;grid-template-columns:minmax(0,640px);gap:16px}
+.kc-whole .kc-panel{padding:0}
+.kc-wh-h{display:flex;align-items:center;gap:12px}
+
+.kc-svc{padding:32px 0}
+.kc-svc summary{list-style:none;cursor:pointer}
+.kc-svc summary::-webkit-details-marker{display:none}
+.kc-svc-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;margin-top:20px}
+.kc-kv{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:8px 0 0;font-size:13px;line-height:20px}
+.kc-kv dt{color:var(--g1)}.kc-kv dd{margin:0;overflow-wrap:anywhere}
+.kc-fm{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.kc-chk{display:flex;gap:8px;align-items:center;font-size:13px;min-height:36px}
+.kc-msg{max-width:640px;margin:80px auto;padding:0 16px;font-size:15px;line-height:24px}
+
+@media (max-width:1180px){
+.kc-app{grid-template-columns:minmax(0,1fr);gap:0}
+.kc-side{position:static;max-height:none;overflow:visible;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px 24px;border-bottom:1px solid var(--line)}
+.kc-nav{display:none}
+}
+@media (max-width:900px){
+.kc-grid{grid-template-columns:minmax(0,1fr)}
+.kc-top-in,.kc-app,.kc-warn{padding-left:16px;padding-right:16px}
+.kc-svc-g{grid-template-columns:minmax(0,1fr)}
+.kc-sep{display:none}
+.kc-top{position:static}
+.kc-top-in{padding-top:8px;padding-bottom:8px}
+.kc-state{order:9;flex-basis:100%}
+.kc-menu{right:auto;left:0}
+}
+</style>
+</head>
+<body data-page="kartochka">
+
+<div id="kcGate" class="gate" style="display:none;">
+  <div class="gate-card">
+    <p class="kicker">Кабинет</p>
+    <h2>Карточка участника</h2>
+    <div class="field">
+      <label for="kcPass">Пароль администратора</label>
+      <input type="password" id="kcPass" autocomplete="current-password" />
+    </div>
+    <p class="field-err" id="kcPassErr" style="display:none;">Неверный пароль.</p>
+    <button class="btn btn-primary btn-block" id="kcPassBtn" style="margin-top:14px;">Войти →</button>
+  </div>
+</div>
+
+<div id="kcRoot" class="kc"><p class="kc-msg">Загружаю карточку…</p></div>
+
+<script src="js/main.js?v=12"></script>
+<script src="js/typo.js?v=2"></script>
+<script src="js/dialog.js?v=1"></script>
+<script src="js/api.js?v=9"></script>
+<!-- Маршрут и механики — теми же файлами, что на экране участника: этапы, шаги, реплики (scenes.js), подстановки в
+     репликах (mech-fields.js, backlog.js) и читаемый вид верстаков (mechanics.js → answerHtml). -->
+<script src="js/backlog.js?v=9"></script>
+<script src="js/scenes.js?v=206"></script>
+<script src="js/mechanics.js?v=101"></script>
+<!-- mech-fields.js — после mechanics.js: читает его подписи (window.imp.mechCopy). -->
+<script src="js/mech-fields.js?v=54"></script>
+<script src="js/kartochka.js?v=1"></script>
+</body>
+</html>

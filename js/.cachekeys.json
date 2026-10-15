@@ -17,6 +17,7 @@
    "harness.html": 265,
    "index.html": 265,
    "intro.html": 265,
+   "kartochka.html": 265,
    "otchet.html": 265,
    "role.html": 265,
    "soglashenie.html": 265,
@@ -31,6 +32,7 @@
    "assessment.html": 9,
    "harness.html": 9,
    "index.html": 9,
+   "kartochka.html": 9,
    "otchet.html": 9,
    "vedushchiy.html": 9,
    "vitrina.html": 9
@@ -39,9 +41,9 @@
  "js/backlog.js": {
   "sha": "254ccdd5bcd5",
   "keys": {
-   "administrator.html": 9,
    "assessment.html": 9,
-   "harness.html": 9
+   "harness.html": 9,
+   "kartochka.html": 9
   }
  },
  "js/boot-loading.js": {
@@ -51,9 +53,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "275a6c2cc13f",
+  "sha": "b5f27b7c72c1",
   "keys": {
-   "administrator.html": 76
+   "administrator.html": 77
   }
  },
  "js/case-ref.js": {
@@ -75,6 +77,7 @@
    "administrator.html": 1,
    "assessment.html": 1,
    "harness.html": 1,
+   "kartochka.html": 1,
    "vedushchiy.html": 1
   }
  },
@@ -129,6 +132,12 @@
    "harness.html": 6
   }
  },
+ "js/kartochka.js": {
+  "sha": "a56cfe63a2a0",
+  "keys": {
+   "kartochka.html": 1
+  }
+ },
  "js/main.js": {
   "sha": "0964606665b9",
   "keys": {
@@ -137,6 +146,7 @@
    "harness.html": 12,
    "index.html": 12,
    "intro.html": 12,
+   "kartochka.html": 12,
    "role.html": 12,
    "vedushchiy.html": 12,
    "vitrina.html": 12
@@ -146,15 +156,16 @@
   "sha": "47ab31276576",
   "keys": {
    "assessment.html": 54,
-   "harness.html": 54
+   "harness.html": 54,
+   "kartochka.html": 54
   }
  },
  "js/mechanics.js": {
   "sha": "660715f709b5",
   "keys": {
-   "administrator.html": 101,
    "assessment.html": 101,
-   "harness.html": 101
+   "harness.html": 101,
+   "kartochka.html": 101
   }
  },
  "js/qr.js": {
@@ -183,6 +194,7 @@
    "assessment.html": 206,
    "harness.html": 206,
    "intro.html": 206,
+   "kartochka.html": 206,
    "role.html": 206,
    "vedushchiy.html": 206
   }
@@ -196,6 +208,7 @@
    "expert.html": 2,
    "index.html": 2,
    "intro.html": 2,
+   "kartochka.html": 2,
    "role.html": 2,
    "vedushchiy.html": 2,
    "vitrina.html": 2
