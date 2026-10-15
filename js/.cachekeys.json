@@ -85,9 +85,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "f8177bbca83d",
+  "sha": "0c2caff7e6bd",
   "keys": {
-   "assessment.html": 150
+   "assessment.html": 151
   }
  },
  "js/expert-api.js": {
@@ -124,9 +124,9 @@
   }
  },
  "js/harness-core.js": {
-  "sha": "bf49d48ac8ae",
+  "sha": "d0410935e15a",
   "keys": {
-   "harness.html": 5
+   "harness.html": 6
   }
  },
  "js/main.js": {

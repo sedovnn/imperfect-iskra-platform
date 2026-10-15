@@ -1093,8 +1093,18 @@
       startedAt: run.startedAt, finishedAt: new Date().toISOString(),
       // Сводка журнала едет в колонку runnerJson: судье она не уходит (buildJudgeInput_
       // собирает вход из ответов, — проверяет lint_harness.js), кабинет читает из неё метку.
-      runner: { harness: 'harness.html', tag: run.tag, at: new Date().toISOString(), journal: summary() }
+      runner: { harness: 'harness.html', tag: run.tag, at: new Date().toISOString(), journal: summary() },
+      // Заявка разговора у выхода — как в движке участника (exitTalkNow, решение владельца 15.10).
+      exitTalk: exitTalkOf()
     };
+  }
+  function exitTalkOf() {
+    if (!String((run.answers || {}).severova || '').trim()) return null;
+    var r = refusedPick();
+    if (!r) return null;
+    return { id: r.id, title: r.title || '', who: r.who || '', argument: r.argument || '',
+             people: Number(r.people) || 0, money: Number(r.money) || 0,
+             later: !!window.imp.refusedOwnerIsLater(refusedSets(), listSumsOf(), LIM) };
   }
 
   window.imp.harnessCore = {

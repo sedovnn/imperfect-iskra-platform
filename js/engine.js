@@ -219,8 +219,20 @@
       finishedAt: state.finishedAt,
       // Отметки таймера: время потока, старт и конец каждого этапа, закрыт ли по времени.
       // Без таймера — null. Судье не уходит; кабинет показывает «закрыт по времени».
-      timing: state.timing || null
+      timing: state.timing || null,
+      // Заявка разговора у выхода — та, что на карточке участника (решение владельца 15.10: в кофейне одна
+      // заявка). Судья кофейни читает её вместо всего разбора. Пока ответа на выходе нет — null, бэкенд
+      // держит прежнее значение.
+      exitTalk: exitTalkNow()
     };
+  }
+  function exitTalkNow() {
+    if (!String((state.answers || {}).severova || '').trim()) return null;
+    var r = refusedPick();
+    if (!r) return null;
+    return { id: r.id, title: r.title || '', who: r.who || '', argument: r.argument || '',
+             people: Number(r.people) || 0, money: Number(r.money) || 0,
+             later: !!window.imp.refusedOwnerIsLater(refusedSets(), listSums() || totals(), LIM) };
   }
 
   function sync() {
