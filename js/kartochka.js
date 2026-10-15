@@ -627,6 +627,7 @@
     if (!fl.length && !(w && w['вид'] === 'doubt')) return '';
     var why = fl.map(function (x) { return (x['граница'] ? 'граница ' + x['граница'] + ': ' : '') + kb(x['причина'] || x['вид'] || ''); }).join(' ');
     var vars = w && (w['варианты'] || []).length > 1 ? ' Возможные уровни: ' + w['варианты'].join(', ') + ' — поставлен нижний.' : '';
+    if (why && vars) { why = why.replace(/[\s;:,]+$/, ''); if (!/[.!?…]$/.test(why)) why += '.'; }
     return (why + vars).trim();
   }
   function boundsHtml(r, key, withWhere) {
