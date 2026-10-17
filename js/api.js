@@ -65,6 +65,15 @@
     q.push({ action: action, payload: payload, at: Date.now() });
     writeQueue(q);
   }
+  // Новый снимок того же действия и участника записан — снимок в очереди устарел (долг ревизии 17.10). Прежде он оставался
+  // в очереди: при следующем повторе бэкенд принимал его и затирал более новые ответы старыми, а при отказе статус
+  // «не сохранено» висел до конца дня, хотя актуальный снимок уже лежал в листе.
+  function dropSuperseded(action, payload) {
+    var bib = payload && payload.bib;
+    var q = readQueue();
+    var rest = q.filter(function (it) { return !(it.action === action && it.payload && it.payload.bib === bib); });
+    if (rest.length !== q.length) writeQueue(rest);
+  }
 
   function post(action, payload) {
     var body = Object.assign({ action: action }, payload || {});
@@ -107,34 +116,43 @@
   }
 
   var flushing = false;
+  // ⚠ ОТКАЗ ОДНОГО СНИМКА НЕ ДЕРЖИТ ОСТАЛЬНЫЕ (долг ревизии 17.10). Прежде отказ бэкенда по первому снимку останавливал
+  // разбор: он стоял в голове очереди навсегда, и снимки за ним (другое действие, другой участник на том же устройстве) не
+  // уходили. Теперь за один проход каждый снимок пробуется по разу: подтверждённый вынимается, отказанный остаётся и
+  // повторится через 20 секунд. Обрыв связи останавливает проход — без сети пробовать остальные незачем.
   function flushQueue() {
     if (flushing || !API_URL) return Promise.resolve();
-    var q = readQueue();
-    if (!q.length) return Promise.resolve();
+    var batch = readQueue();
+    if (!batch.length) return Promise.resolve();
     flushing = true;
-    var item = q[0];
-    return post(item.action, item.payload)
-      .then(function (json) {
-        // Как и в sendSave: из очереди вынимаем только подтверждённое. Отказ
-        // бэкенда оставляет снимок в очереди — иначе неотправленный ответ
-        // исчезал бы из очереди и из статуса одновременно.
-        if (!(json && json.ok)) { flushing = false; notify(); return; }
-        var rest = readQueue().filter(function (it) {
-          return !(it.action === item.action && it.at === item.at);
+    var i = 0;
+    var same = function (a) { return function (it) { return it.action === a.action && it.at === a.at; }; };
+    function next() {
+      if (i >= batch.length) { flushing = false; notify(); return Promise.resolve(); }
+      var item = batch[i++];
+      if (!readQueue().some(same(item))) return next();   // уже вынут: заменён новым снимком или записан напрямую
+      return post(item.action, item.payload)
+        .then(function (json) {
+          // Как и в sendSave: из очереди вынимаем только подтверждённое.
+          if (json && json.ok) {
+            writeQueue(readQueue().filter(function (it) { return !same(item)(it); }));
+            state.lastOkAt = Date.now();
+            state.offline = false;
+            notify();
+          }
+          return next();
+        })
+        .catch(function () {
+          state.offline = true;
+          notify();
+          flushing = false;
         });
-        writeQueue(rest);
-        state.lastOkAt = Date.now();
-        state.offline = false;
-        notify();
-        flushing = false;
-        return flushQueue(); // следующий из очереди
-      })
-      .catch(function () {
-        state.offline = true;
-        notify();
-        flushing = false;
-      });
+    }
+    return next();
   }
+
+  // Для проверки (scripts/checks/v2_levels.test.js): тот же разбор очереди, что по таймеру.
+  window.imp.flushQueueForTest = flushQueue;
 
   // повторяем: при возврате связи, при возврате на вкладку и раз в 20 секунд
   window.addEventListener('online', flushQueue);
@@ -180,6 +198,7 @@
           notify();
           return json;
         }
+        dropSuperseded(action, payload);
         state.lastOkAt = Date.now();
         state.offline = false;
         notify();

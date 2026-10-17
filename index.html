@@ -175,7 +175,7 @@
 
 <script src="js/main.js?v=13"></script>
 <script src="js/typo.js?v=2"></script>
-<script src="js/api.js?v=10"></script>
+<script src="js/api.js?v=11"></script>
 <script>
 /* Окно входа. ⚠ Настоящая аутентификация по номеру+паролю — это ещё не
    построенный access-бэкенд (выдача 6-значного кода + пароля в кабинете).
@@ -339,9 +339,9 @@
         selfBtn.disabled = false;
         selfBtn.textContent = st;
         var er = res && res.error;
-        selfErrEl.textContent = er === 'self_enroll_closed' ? 'Эта поток закрыта для самозаписи.'
-          : er === 'wave_not_found' ? 'Поток с таким номером не найдена.'
-          : er === 'wave_full' ? 'В этой потоке больше нет свободных номеров.'
+        selfErrEl.textContent = er === 'self_enroll_closed' ? 'Запись в этот поток закрыта.'
+          : er === 'wave_not_found' ? 'Поток с таким номером не найден.'
+          : er === 'wave_full' ? 'В этом потоке больше нет свободных номеров.'
           : 'Не удалось начать. Проверьте связь и попробуйте ещё раз.';
         selfErrEl.classList.add('show');
       });

@@ -26,16 +26,16 @@
   }
  },
  "js/api.js": {
-  "sha": "444fd0a1141c",
+  "sha": "01bbcff4d6cc",
   "keys": {
-   "administrator.html": 10,
-   "assessment.html": 10,
-   "harness.html": 10,
-   "index.html": 10,
-   "kartochka.html": 10,
-   "otchet.html": 10,
-   "vedushchiy.html": 10,
-   "vitrina.html": 10
+   "administrator.html": 11,
+   "assessment.html": 11,
+   "harness.html": 11,
+   "index.html": 11,
+   "kartochka.html": 11,
+   "otchet.html": 11,
+   "vedushchiy.html": 11,
+   "vitrina.html": 11
   }
  },
  "js/backlog.js": {
@@ -47,9 +47,9 @@
   }
  },
  "js/boot-loading.js": {
-  "sha": "a50df4129c90",
+  "sha": "e9f9a9679cc5",
   "keys": {
-   "assessment.html": 6
+   "assessment.html": 8
   }
  },
  "js/cabinet.js": {
