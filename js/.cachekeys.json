@@ -53,9 +53,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "b5f27b7c72c1",
+  "sha": "eca58e54b811",
   "keys": {
-   "administrator.html": 77
+   "administrator.html": 78
   }
  },
  "js/case-ref.js": {
@@ -133,9 +133,9 @@
   }
  },
  "js/kartochka.js": {
-  "sha": "f1a3cbdf0106",
+  "sha": "23f46304338a",
   "keys": {
-   "kartochka.html": 3
+   "kartochka.html": 4
   }
  },
  "js/main.js": {
@@ -215,9 +215,9 @@
   }
  },
  "js/vedushchiy.js": {
-  "sha": "96cb0adcd624",
+  "sha": "21faccd20ec2",
   "keys": {
-   "vedushchiy.html": 10
+   "vedushchiy.html": 11
   }
  }
 }

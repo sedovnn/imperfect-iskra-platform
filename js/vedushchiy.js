@@ -263,7 +263,7 @@
       writeWin(win, waitPage(fail(res), true));
     });
   }
-  var TEAM_ERR = { not_all_checked: 'проверены не все оценённые', no_ready_reports: 'проверенных отчётов нет', wave_not_found: 'поток не найден',
+  var TEAM_ERR = { not_all_checked: 'проверены не все оценённые', wave_not_found: 'поток не найден',
                    forbidden_wave: 'это не ваш поток', report_not_found: 'отчёт ещё не проверен' };
   // Оценённый — у кого есть оценка; проверенный — «Проверено» по нынешней оценке. Окончательный — когда проверены все
   // оценённые (запрет держит сервер).
@@ -277,9 +277,8 @@
       if (p.report === 'ready' && !p.pendingCount) ok++;
     });
     var fin = ev > 0 && ok === ev;
-    return '<button type="button" class="btn btn-ghost btn-sm" id="vedRepAll"' + (ok ? '' : ' disabled') +
-        ' title="' + (ok ? 'Проверенные отчёты участников потока одной страницей' : 'Проверенных отчётов пока нет') + '">Отчёты участников (' + ok + ')</button>' +
-      '<button type="button" class="btn btn-ghost btn-sm" id="vedTeamPre"' + (ev ? '' : ' disabled') +
+    // «Отчёты участников» одной страницей сняты 17.10 (владелец); выгрузка результатов — только администратору.
+    return '<button type="button" class="btn btn-ghost btn-sm" id="vedTeamPre"' + (ev ? '' : ' disabled') +
         ' title="По нынешним оценкам; проверены ' + ok + ' из ' + ev + '">Отчёт по потоку · предварительный</button>' +
       '<button type="button" class="btn btn-ghost btn-sm" id="vedTeamFin"' + (fin ? '' : ' disabled') +
         ' title="' + (fin ? 'Все оценённые проверены' : 'Откроется, когда проверены все оценённые: ' + ok + ' из ' + ev) + '">Отчёт по потоку · окончательный</button>';
@@ -347,7 +346,6 @@
     [].forEach.call(main.querySelectorAll('.ved-rep'), function (b) {
       b.addEventListener('click', function () { openHtml('reportGet', { bib: b.getAttribute('data-bib') }, why); });
     });
-    el('vedRepAll') && el('vedRepAll').addEventListener('click', function () { openHtml('teamReportsAll', { wave: w.id }, why); });
     el('vedTeamPre') && el('vedTeamPre').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'prelim' }, why); });
     el('vedTeamFin') && el('vedTeamFin').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'final' }, why); });
     [].forEach.call(main.querySelectorAll('.ved-name'), function (b) {

@@ -44,7 +44,10 @@
   // Доп. оценка по всему ответу (решение владельца 04.10): у каждой способности, кроме ГА-1 — она и так читает весь ответ.
   var EXTRA_OF = { ak1: 1, ak2: 1, pr1: 1, pr2: 1, mk1: 1, mk2: 1, pp1: 1, pp2: 1, ga2: 1 };
   var REPORT_ERR = { record_checks_failed: 'оценка неполная — сначала пересудите упавшие задания', not_judged: 'участника ещё не оценили',
-                     no_answers: 'ответов нет', judge_failed: 'модель не ответила — нажмите ещё раз' };
+                     no_answers: 'ответов нет', judge_failed: 'модель не ответила — нажмите ещё раз',
+                     report_not_ready: 'отчёт ещё не собран', report_stale: 'отчёт собран по прежней оценке — сначала соберите заново',
+                     report_in_progress: 'отчёт уже собирается', report_busy: 'таблица занята — попробуйте через минуту',
+                     bad_fields: 'заполните все поля', bad_block: 'такого блока в отчёте нет' };
 
   // ── состояние ──────────────────────────────────────────────────────────────
   var pw = '';
@@ -56,7 +59,9 @@
   var d = null;          // ответ doV2Detail
   var person = null;     // строка участника из v2List (имя, поток, «не оценивать»)
   var waves = [];
-  var ui = { open: null, focus: null, drafts: {}, menu: false, busy: false, stateText: '', svc: false, qOpen: {} };
+  var ui = { open: null, focus: null, drafts: {}, menu: false, busy: false, stateText: '', svc: false, qOpen: {},
+             // Панель правки текстов отчёта (владелец 17.10): перечень блоков грузится по кнопке, правки — по блоку.
+             rep: { open: false, loading: false, blocks: null, dropped: [], err: '', openKeys: {}, busy: {} } };
 
   // ── мелочи ─────────────────────────────────────────────────────────────────
   function esc(s) { var x = document.createElement('div'); x.textContent = s == null ? '' : String(s); return x.innerHTML; }
@@ -333,7 +338,7 @@
     var flagged = ABS.filter(function (a) { return finalOf(a).flagged; });
     var html = headerHtml(flagged) + warnHtml() +
       '<div class="kc-app"><aside class="kc-side" aria-label="Профиль и этапы">' + profileHtml() + navHtml() + '</aside>' +
-      '<main class="kc-main">' + SCENES.map(stageHtml).join('') + wholeHtml() + svcHtml() + '</main></div>';
+      '<main class="kc-main">' + SCENES.map(stageHtml).join('') + wholeHtml() + editsHtml() + svcHtml() + '</main></div>';
     root.innerHTML = html;
     document.title = bib6(bib) + (personName() ? ' · ' + personName() : '') + ' — карточка участника';
     if (window.imp.typoDom) window.imp.typoDom(root);
@@ -347,7 +352,7 @@
     var failed = failedIds();
     var pt = s && s.prelimTotal;
     var total = !s ? '—' : has(s.total) ? s.total : (pt && has(pt.min) ? (pt.min === pt.max ? String(pt.min) : pt.min + '–' + pt.max) : '—');
-    var rep = d && d.report, checked = reportFresh();
+    var rep = d && d.report, checked = reportFresh(), published = !!(rep && rep.publishedAt);
     var back = person && person.waveId ? 'administrator.html#w=' + encodeURIComponent(person.waveId) : 'administrator.html';
     var waveName = person ? (waveNameOf(person.waveId) || '') : '';
     return '<header class="kc-top"><div class="kc-top-in">' +
@@ -360,9 +365,15 @@
       '<div class="kc-tools">' +
         (ui.stateText ? '<span class="kc-state" id="kcState">' + esc(ui.stateText) + '</span>' : '<span class="kc-state" id="kcState"></span>') +
         '<div class="kc-total" title="' + esc(s && s.profileLabel ? 'Уровень профиля: ' + s.profileLabel : 'Сумма десяти поднавыков') + '"><b>' + esc(total) + '</b><i>из 50</i></div>' +
-        (s ? '<button type="button" class="kc-btn kc-w-check ' + (checked ? '' : 'kc-btn-p') + '" data-act="check"' + (ui.busy ? ' disabled' : '') +
-          ' title="' + esc(reportTip()) + '">' + (checked ? 'Проверено ✓' : 'Проверено') + '</button>' : '') +
+        // Отчёт — три шага (владелец 17.10): собрать (платно), посмотреть и поправить тексты, выдать участнику.
+        (s ? '<button type="button" class="kc-btn kc-w-check ' + (checked || published ? '' : 'kc-btn-p') + '" data-act="check"' + (ui.busy ? ' disabled' : '') +
+          ' title="' + esc(reportTip()) + '">' + (checked ? 'Отчёт собран ✓' : (rep && rep.state === 'ready' ? 'Собрать отчёт заново' : 'Сгенерировать отчёт')) + '</button>' : '') +
         (s ? '<button type="button" class="kc-btn" data-act="report"' + (rep && rep.state === 'ready' ? '' : ' disabled') + ' title="Отчёт так, как его увидит участник">Отчёт</button>' : '') +
+        (s ? '<button type="button" class="kc-btn" data-act="edits"' + (checked ? '' : ' disabled') +
+          ' title="' + (checked ? 'Тексты модели в отчёте — посмотреть и поправить' : 'Сначала соберите отчёт по нынешней оценке') + '">Править тексты' +
+          (rep && rep.edits ? ' · ' + rep.edits : '') + '</button>' : '') +
+        (s ? '<button type="button" class="kc-btn ' + (checked && !published ? 'kc-btn-p' : '') + '" data-act="publish"' + (ui.busy || (!checked && !published) ? ' disabled' : '') +
+          ' title="' + esc(publishTip()) + '">' + (published ? (checked ? 'Выдан участнику ✓' : 'Выдан · устарел') : 'Выдать участнику') + '</button>' : '') +
         '<div class="kc-menuwrap"><button type="button" class="kc-btn" data-act="menu" aria-expanded="' + (ui.menu ? 'true' : 'false') + '">Ещё ' +
           '<svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 4.5l3 3 3-3"></path></svg></button>' +
         (ui.menu ? '<div class="kc-menu">' +
@@ -389,21 +400,30 @@
   function reportFresh() {
     var r = d && d.report, s = sc();
     if (!r || r.state !== 'ready' || !s) return false;
+    if (r.stale) return false;                 // бэкенд сверил отпечаток данных (17.10): правки уровня и пересуд
     if (r.judgedAt && s.judgedAt && String(r.judgedAt) !== String(s.judgedAt)) return false;
     var built = Date.parse(r.builtAt || '');
     return !ABS.some(function (a) { var o = ovOf(a); return o && o.at && !isNaN(built) && Date.parse(o.at) > built; });
   }
   function reportTip() {
     var r = d && d.report;
-    if (!r || !r.state) return 'Оценка просмотрена: собрать отчёт участника (платно, 1–3 минуты)';
+    if (!r || !r.state) return 'Собрать отчёт участника и тексты модели (платно, 1–3 минуты). Участник его не увидит до «Выдать участнику»';
     if (r.state === 'generating') return 'Отчёт собирается…';
     if (r.state === 'error') return 'Отчёт не собран: ' + (r.error || 'ошибка');
-    return reportFresh() ? 'Отчёт собран ' + dt(r.builtAt) + ' по нынешней оценке. Нажать ещё раз — собрать заново'
+    return reportFresh() ? 'Отчёт собран ' + dt(r.builtAt) + ' по нынешней оценке. Нажать ещё раз — собрать заново (выдача участнику снимется)'
       : 'Отчёт собран ' + dt(r.builtAt) + ' по прежней оценке — нажмите, чтобы собрать по нынешней';
+  }
+  function publishTip() {
+    var r = d && d.report;
+    if (r && r.publishedAt) return reportFresh() ? 'Выдан участнику ' + dt(r.publishedAt) + ': открывается по номеру на странице отчёта. Нажать — закрыть'
+      : 'Выдан ' + dt(r.publishedAt) + ', но собран по прежней оценке — участнику сейчас не показывается. Соберите заново и выдайте; нажать — закрыть выдачу';
+    return reportFresh() ? 'Открыть участнику отчёт по его номеру на странице отчёта' : 'Сначала соберите отчёт по нынешней оценке';
   }
   function warnHtml() {
     var s = sc(), w = [];
     if (d && d.stale) w.push('Оценка вынесена по другому тексту ответа: участник менял ответы после судейства — пересудите.');
+    var rp = d && d.report;
+    if (rp && rp.publishedAt && rp.state === 'ready' && !reportFresh()) w.push('Отчёт был выдан участнику, но собран по прежней оценке — участнику он сейчас не показывается. Соберите заново и выдайте.');
     var rubNow = d && d.versions && d.versions.expectRubric;
     if (s && rubNow && s.rubricVersion && s.rubricVersion !== rubNow) w.push('Оценка по прежним правилам (' + s.rubricVersion + '): с новыми оценками не сравнивать.');
     if (!s) w.push('Ещё не судили: «Ещё» → «Оценить».');
@@ -896,6 +916,10 @@
     if (act === 'judgeFailed') return judgeFailed();
     if (act === 'check') return reportCheck();
     if (act === 'report') return openReport();
+    if (act === 'edits') return openEdits();
+    if (act === 'publish') return publishToggle();
+    if (act === 'edSave') return editSave(t.getAttribute('data-blk'));
+    if (act === 'edClear') return editClear(t.getAttribute('data-blk'));
     if (act === 'move') return moveWave();
     if (act === 'reset') return resetNumber();
     if (act === 'del') return deleteNumber();
@@ -915,6 +939,8 @@
   root.addEventListener('toggle', function (ev) {
     var k = ev.target.getAttribute && ev.target.getAttribute('data-q');
     if (k) ui.qOpen[k] = ev.target.open;
+    var bk = ev.target.getAttribute && ev.target.getAttribute('data-blk');
+    if (bk) ui.rep.openKeys[bk] = ev.target.open;
     if (ev.target.id === 'kc-svc') ui.svc = ev.target.open;
   }, true);
   root.addEventListener('change', function (ev) {
@@ -1053,23 +1079,166 @@
     });
   }
   function reportCheck() {
-    var s = sc() || {};
+    var s = sc() || {}, rp = d && d.report;
     var waiting = (s.pending || []).concat(s.notSeen || []);
-    window.imp.confirm('Оценка проверена? Платформа соберёт отчёт и напишет тексты (платный вызов модели, 1–3 минуты). ' +
-      'Участник увидит отчёт по своему номеру на странице отчёта.' +
+    window.imp.confirm('Собрать отчёт участника? Платформа соберёт отчёт и напишет тексты (платный вызов модели, 1–3 минуты). ' +
+      'Участник его не увидит, пока вы не нажмёте «Выдать участнику».' +
+      (rp && rp.publishedAt ? ' Нынешняя выдача участнику снимется до новой.' : '') +
+      (rp && rp.edits ? ' Ваши правки текстов переносятся, если уровни поднавыков не изменились.' : '') +
       (waiting.length ? ' Без окончательного уровня: ' + waiting.map(function (a) { return AB[a] || a; }).join(', ') +
-        ' — в отчёте они будут с пометкой «предварительная оценка» или «нет оценки».' : ''), { confirmLabel: 'Проверено' }).then(function (yes) {
+        ' — в отчёте они будут предварительной оценкой или без оценки.' : ''), { confirmLabel: 'Собрать' }).then(function (yes) {
       if (!yes) return;
       ui.busy = true; render();
       setState('отчёт собирается… это 1–3 минуты, окно можно не закрывать');
       call('reportCheck', { bib: bib }).then(function (res) {
         ui.busy = false;
-        if (res && res.ok) { setState('отчёт собран'); return reload(); }
+        if (res && res.ok) {
+          ui.rep.blocks = null;
+          var dropped = (res.editsDropped || []).length;
+          setState('отчёт собран' + (dropped ? ' · сброшено правок: ' + dropped + ' (уровень изменился)' : '') + ' — проверьте и нажмите «Выдать участнику»');
+          return reload();
+        }
         setState(res === null ? 'сервер не ответил — обновите страницу: отчёт мог собраться'
           : 'отчёт не собран: ' + (REPORT_ERR[res.error] || res.error || 'ошибка') + (res.detail ? ' (' + res.detail + ')' : ''));
         render();
       });
     });
+  }
+  // ── выдача участнику и правка текстов отчёта (владелец 17.10) ─────────────────
+  function publishToggle() {
+    var rp = d && d.report;
+    if (!rp || rp.state !== 'ready') return;
+    var on = !rp.publishedAt;
+    var q = on ? 'Выдать отчёт участнику? Он откроется по номеру ' + bib6(bib) + ' на странице отчёта' +
+        (rp.edits ? ' — с вашими правками текстов (' + rp.edits + ')' : '') + '.'
+      : 'Закрыть отчёт от участника? По номеру он перестанет открываться, пока вы не выдадите его снова.';
+    window.imp.confirm(q, { confirmLabel: on ? 'Выдать' : 'Закрыть' }).then(function (yes) {
+      if (!yes) return;
+      ui.busy = true; render();
+      call('reportPublish', { bib: bib, on: on ? '1' : '' }).then(function (res) {
+        ui.busy = false;
+        if (res && res.ok) { setState(on ? 'отчёт выдан участнику' : 'отчёт закрыт от участника'); return reload(); }
+        setState('не вышло: ' + (res ? (REPORT_ERR[res.error] || res.error || 'ошибка') : 'сервер не ответил'));
+        render();
+      });
+    });
+  }
+  function openEdits() {
+    ui.rep.open = true;
+    if (!ui.rep.blocks && !ui.rep.loading) loadBlocks();
+    render();
+    var sec = el('kc-edits');
+    if (sec && sec.scrollIntoView) sec.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  function loadBlocks() {
+    ui.rep.loading = true; ui.rep.err = '';
+    call('reportBlocks', { bib: bib }).then(function (res) {
+      ui.rep.loading = false;
+      if (res && res.ok) { ui.rep.blocks = res.blocks || []; ui.rep.dropped = res.dropped || []; }
+      else ui.rep.err = res ? (REPORT_ERR[res.error] || res.error || 'ошибка') : 'сервер не ответил';
+      render();
+    });
+  }
+  function blockByKey(key) { return (ui.rep.blocks || []).filter(function (b) { return b.key === key; })[0] || null; }
+  // Поля блока из формы: у списков «рядом с ИИ» — строка на навык.
+  function editFields(key) {
+    var b = blockByKey(key), box = root.querySelector('[data-blk="' + key + '"]');
+    if (!b || !box) return null;
+    if (b.list) {
+      var items = [];
+      [].forEach.call(box.querySelectorAll('textarea[data-item]'), function (ta) {
+        if (String(ta.value || '').trim()) items.push({ 'навык': ta.getAttribute('data-item'), 'текст': ta.value });
+      });
+      return { items: items };
+    }
+    var f = {};
+    b.fields.forEach(function (fd) { var ta = box.querySelector('textarea[data-f="' + fd[0] + '"]'); f[fd[0]] = ta ? ta.value : ''; });
+    return f;
+  }
+  function afterEdit(key, res, okMsg) {
+    ui.rep.busy[key] = false;
+    if (res && res.ok) {
+      if (res.block) ui.rep.blocks = (ui.rep.blocks || []).map(function (b) { return b.key === key ? res.block : b; });
+      if (res.report && d) d.report = res.report;
+      setState(okMsg + (res.block && res.block.check && res.block.check.length ? ' · есть замечания проверки' : ''));
+      render();
+      return;
+    }
+    setState('не вышло: ' + (res ? (REPORT_ERR[res.error] || res.error || 'ошибка') + (res.detail ? ' (' + res.detail + ')' : '') : 'сервер не ответил'));
+    render();
+  }
+  function editSave(key) {
+    var f = editFields(key);
+    if (!f) return;
+    ui.rep.busy[key] = true; render();
+    setState('сохраняю правку и пересобираю отчёт…');
+    call('reportEdit', { bib: bib, block: key, fields: JSON.stringify(f) }).then(function (res) { afterEdit(key, res, 'правка сохранена, отчёт пересобран'); });
+  }
+  function editClear(key) {
+    window.imp.confirm('Вернуть в этот блок текст модели? Ваша правка будет стёрта.', { confirmLabel: 'Вернуть' }).then(function (yes) {
+      if (!yes) return;
+      ui.rep.busy[key] = true; render();
+      call('reportEdit', { bib: bib, block: key, clear: '1' }).then(function (res) { afterEdit(key, res, 'текст модели возвращён'); });
+    });
+  }
+  function fieldText(b, name) {
+    var src = b.edit && b.edit.fields ? b.edit.fields : (b.model || {});
+    return String(src[name] == null ? '' : src[name]);
+  }
+  function editBlockHtml(b) {
+    var k = b.key, open = !!ui.rep.openKeys[k], busy = !!ui.rep.busy[k];
+    var chips = (b.edit ? '<span class="kc-chip kc-chip-h">правлено' + (b.edit.at ? ' ' + dt(b.edit.at) : '') + '</span>' : '') +
+      (b.check && b.check.length ? '<span class="kc-chip kc-chip-v">замечания: ' + b.check.length + '</span>' : '') +
+      (!b.model && !b.edit ? '<span class="kc-chip">' + (b.modelState === 'rejected' ? 'текст модели не прошёл проверку — блока нет в отчёте'
+        : b.modelState === 'missing' ? 'текст не сгенерирован — блока нет в отчёте' : 'текста нет') + '</span>' : '');
+    var who = b.abilityName ? esc(b.abilityName) + (b.level ? ' · уровень ' + b.level : '') : (b.skills ? 'навыки: ' + esc(b.skills.join(', ')) : '');
+    var form;
+    if (b.list) {
+      var items = (b.edit && b.edit.fields && b.edit.fields.items) || (b.model && b.model.items) || [];
+      var names = b.skills || [];
+      items.forEach(function (it) { if (names.indexOf(it['навык']) < 0) names.push(it['навык']); });
+      form = names.map(function (n) {
+        var it = items.filter(function (x) { return x['навык'] === n; })[0];
+        return '<label class="kc-ed-f"><span class="kc-lbl">' + esc(n) + '</span><textarea class="kc-ta" data-item="' + esc(n) + '" rows="3">' + esc(it ? it['текст'] : '') + '</textarea></label>';
+      }).join('');
+    } else {
+      form = b.fields.map(function (fd) {
+        return '<label class="kc-ed-f"><span class="kc-lbl">' + esc(fd[1]) + '</span><textarea class="kc-ta" data-f="' + esc(fd[0]) + '" rows="' + (fd[0] === 'текст' ? 4 : 3) + '">' + esc(fieldText(b, fd[0])) + '</textarea></label>';
+      }).join('');
+    }
+    var modelNote = b.edit && b.model ? '<div class="kc-ed-cur"><span class="kc-lbl">Текст модели</span>' +
+      (b.list ? (b.model.items || []).map(function (x) { return '<p><b>' + esc(x['навык']) + '.</b> ' + esc(x['текст']) + '</p>'; }).join('')
+        : b.fields.map(function (fd) { return '<p>' + (b.fields.length > 1 ? '<b>' + esc(fd[1]) + '.</b> ' : '') + esc(String(b.model[fd[0]] == null ? '' : b.model[fd[0]])) + '</p>'; }).join('')) + '</div>' : '';
+    var check = b.check && b.check.length ? '<div class="kc-flag"><b>Проверка платформы:</b> ' + b.check.map(esc).join('; ') + '. Правка в отчёте остаётся — решать вам.</div>' : '';
+    return '<details class="kc-q kc-eb" data-blk="' + esc(k) + '"' + (open ? ' open' : '') + '><summary>' + CHEV_R + '<span class="kc-eb-t">' + esc(b.label) + '</span>' +
+        (who ? '<span class="kc-eb-w">' + who + '</span>' : '') + chips + '</summary>' +
+      '<div class="kc-ed-body">' + modelNote + form + check +
+        '<div class="kc-fix-row"><button type="button" class="kc-btn kc-btn-p" data-act="edSave" data-blk="' + esc(k) + '"' + (busy ? ' disabled' : '') + '>' + (busy ? 'Сохраняю…' : 'Сохранить') + '</button>' +
+          (b.edit ? '<button type="button" class="kc-btn" data-act="edClear" data-blk="' + esc(k) + '"' + (busy ? ' disabled' : '') + '>Вернуть текст модели</button>' : '') + '</div>' +
+      '</div></details>';
+  }
+  function editsHtml() {
+    if (!ui.rep.open) return '';
+    var body;
+    if (ui.rep.loading) body = '<p class="kc-s">Загружаю тексты отчёта…</p>';
+    else if (ui.rep.err) body = '<p class="kc-s">Тексты не загрузились: ' + esc(ui.rep.err) + '.</p>';
+    else if (!ui.rep.blocks || !ui.rep.blocks.length) body = '<p class="kc-s">Блоков модели в этом отчёте нет.</p>';
+    else {
+      var groups = [], byName = {};
+      ui.rep.blocks.forEach(function (b) {
+        var g = b.skill || 'Рядом с ИИ';
+        if (!byName[g]) { byName[g] = []; groups.push(g); }
+        byName[g].push(b);
+      });
+      body = groups.map(function (g) {
+        return '<div class="kc-ed-g"><div class="kc-lbl">' + esc(g) + '</div>' + byName[g].map(editBlockHtml).join('') + '</div>';
+      }).join('');
+    }
+    var dropped = ui.rep.dropped && ui.rep.dropped.length ? '<div class="kc-flag"><b>Сброшены при последней сборке:</b> ' +
+      ui.rep.dropped.map(function (x) { var b = blockByKey(x.block); return esc((b ? b.label + (b.abilityName ? ' (' + b.abilityName + ')' : '') : x.block) + ' — ' + x.why); }).join('; ') + '.</div>' : '';
+    return '<section class="kc-stage" id="kc-edits"><div class="kc-st-h"><span class="kc-n">✎</span><h2>Тексты отчёта</h2>' +
+      '<span class="kc-s">правка заменяет текст модели в отчёте; проверка платформы только предупреждает. Тексты Кати и уровни здесь не правятся</span></div>' +
+      dropped + body + '</section>';
   }
   function moveWave() {
     var sel = el('kcWave'), to = sel && waves.filter(function (w) { return String(w.id) === String(sel.value); })[0];

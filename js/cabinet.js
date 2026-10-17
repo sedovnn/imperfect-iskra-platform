@@ -450,12 +450,15 @@
         '<button class="btn btn-primary" type="submit" id="admNewBtn">Создать поток →</button>' +
       '</form>') +
       (list.length
-        ? '<div class="adm-cols adm-cols-hd"><span>Поток</span><span>Ведёт</span><span>Участники</span><span>Закончили</span><span>Ждут оценки</span><span>Время</span></div>' +
+        ? (arch ? '' : '<div class="adm-bar"><span class="ved-dim">Результаты всех потоков, включая архивные, — одним файлом.</span>' +
+            '<span class="adm-bar-acts">' + exportControlHtml('all') + '</span></div>') +
+          '<div class="adm-cols adm-cols-hd"><span>Поток</span><span>Ведёт</span><span>Участники</span><span>Закончили</span><span>Ждут оценки</span><span>Время</span></div>' +
           '<div class="ved-list adm-list">' + list.map(function (w) { return waveLine(w); }).join('') +
             (!arch && orphans.length ? waveLine('none') : '') + '</div>'
         : '<p class="ved-empty">' + (arch ? 'В архиве пусто.' : 'Ни одного потока. Создайте первый — получите ссылку и QR для участников.') + '</p>') +
       '<p class="ved-dim">' + (arch ? '<a href="#">← все потоки</a>'
         : (nArch ? '<a href="#arch">Показать архивные (' + nArch + ')</a>' : '')) + '</p>';
+    wireExport('');
     var form = el('admNew');
     if (form) form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -647,7 +650,7 @@
       body = list.length
         ? '<div class="adm-bar"><span class="ved-dim">Нажмите на строку — откроется карточка участника.</span>' +
             '<span class="adm-bar-acts">' +
-            // Отчёты потока (решения владельца 03.10 и 14.10): все проверенные отчёты одной страницей и отчёт по потоку —
+            // Выгрузка результатов потока (владелец 17.10, вместо всех отчётов одной страницей) и отчёт по потоку (03.10, 14.10) —
             // предварительный по нынешним оценкам и окончательный, когда проверены все оценённые.
             (none ? '' : teamButtonsHtml(list)) +
             (waiting.length || judging ? '<button type="button" class="btn btn-primary btn-sm" id="admJudgeAll"' + (judging ? ' disabled' : '') + '>' +
@@ -670,7 +673,7 @@
     if (tab === 'people') {
       wireRows();
       el('admJudgeAll') && el('admJudgeAll').addEventListener('click', function () { judgeMany(waiting); });
-      if (!none) wireTeamButtons(w);
+      if (!none) { wireTeamButtons(w); wireExport(w.id); }
     } else wireSettings(w);
   }
 
@@ -923,21 +926,56 @@
     });
     return { evaluated: ev, checked: ok };
   }
+  // Выгрузка результатов (решение владельца 17.10) заменила «Отчёты участников» — все отчёты потока одной страницей
+  // («открываются одним полотном, и в этом нет смысла»): формат — выпадающим выбором, файл сохраняется на диск.
+  function exportControlHtml(scope) {
+    return '<select class="btn btn-ghost btn-sm adm-exp-fmt" data-exp-fmt="' + scope + '" aria-label="Формат выгрузки" title="Формат файла">' +
+        '<option value="csv">CSV</option><option value="json">JSON</option></select>' +
+      '<button type="button" class="btn btn-ghost btn-sm" data-exp="' + scope + '" title="' +
+        (scope === 'all' ? 'Все потоки одним файлом: ответы по окнам маршрута, уровни и статусы поднавыков, итог' : 'Участники потока: ответы по окнам маршрута, уровни и статусы поднавыков, итог') + '">' +
+        'Выгрузить результаты' + (scope === 'all' ? ' · все потоки' : '') + '</button>';
+  }
+  var EXPORT_ERR = { wave_not_found: 'поток не найден', forbidden_for_session_role: 'выгрузка доступна только администратору' };
+  function saveFile(name, text, mime) {
+    var blob = new Blob([text], { type: mime });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+  function wireExport(waveId) {
+    [].forEach.call(main.querySelectorAll('[data-exp]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var scope = btn.getAttribute('data-exp');
+        var wave = scope === 'all' ? 'all' : waveId;
+        var sel = main.querySelector('[data-exp-fmt="' + scope + '"]');
+        var fmt = sel ? sel.value : 'csv';
+        var was = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Собираю…';
+        call('exportResults', { wave: wave, format: fmt }).then(function (res) {
+          btn.disabled = false; btn.textContent = was;
+          if (!res || !res.ok || typeof res.text !== 'string') {
+            window.imp.alert('Выгрузка не собралась: ' + (res ? (EXPORT_ERR[res.error] || res.message || res.error || 'ошибка') : 'сервер не ответил') + '.');
+            return;
+          }
+          saveFile(res.filename || ('imperfect-результаты.' + fmt), res.text, fmt === 'json' ? 'application/json;charset=utf-8' : 'text/csv;charset=utf-8');
+        });
+      });
+    });
+  }
   function teamButtonsHtml(list) {
     var c = teamCounts(list), fin = c.evaluated > 0 && c.checked === c.evaluated;
-    return '<button type="button" class="btn btn-ghost btn-sm" id="admRepAll"' + (c.checked ? '' : ' disabled') +
-        ' title="' + (c.checked ? 'Проверенные отчёты участников потока одной страницей' : 'Проверенных отчётов пока нет: «Проверено» — в карточке участника') + '">' +
-        'Отчёты участников (' + c.checked + ')</button>' +
+    return exportControlHtml('wave') +
       '<button type="button" class="btn btn-ghost btn-sm" id="admTeamPre"' + (c.evaluated ? '' : ' disabled') +
         ' title="По нынешним оценкам; проверены ' + c.checked + ' из ' + c.evaluated + '">Отчёт по потоку · предварительный</button>' +
       '<button type="button" class="btn btn-ghost btn-sm" id="admTeamFin"' + (fin ? '' : ' disabled') +
         ' title="' + (fin ? 'Все оценённые проверены' : 'Откроется, когда проверены все оценённые: ' + c.checked + ' из ' + c.evaluated) + '">Отчёт по потоку · окончательный</button>';
   }
-  var TEAM_ERR = { not_all_checked: 'проверены не все оценённые', no_ready_reports: 'проверенных отчётов нет', wave_not_found: 'поток не найден',
+  var TEAM_ERR = { not_all_checked: 'проверены не все оценённые', wave_not_found: 'поток не найден',
                    forbidden_wave: 'это не ваш поток' };
   function wireTeamButtons(w) {
     var why = function (res) { return 'Отчёт не открылся: ' + (res ? (TEAM_ERR[res.error] || res.error || 'ошибка') : 'сервер не ответил') + '.'; };
-    el('admRepAll') && el('admRepAll').addEventListener('click', function () { openHtml('teamReportsAll', { wave: w.id }, why); });
     el('admTeamPre') && el('admTeamPre').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'prelim' }, why); });
     el('admTeamFin') && el('admTeamFin').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'final' }, why); });
   }

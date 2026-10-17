@@ -170,6 +170,21 @@
 .kc-kv dt{color:var(--g1)}.kc-kv dd{margin:0;overflow-wrap:anywhere}
 .kc-fm{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .kc-chk{display:flex;gap:8px;align-items:center;font-size:13px;min-height:36px}
+/* Панель правки текстов отчёта (владелец 17.10) */
+.kc-eb{border-top:1px solid var(--line);margin:0;padding:8px 0}
+.kc-eb summary{min-height:36px;flex-wrap:wrap;color:var(--ink)}
+.kc-eb-t{font-size:15px;font-weight:600;line-height:20px}
+.kc-eb-w{font-size:13px;color:var(--g1)}
+.kc-chip{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--ctl);border-radius:3px;padding:1px 6px;color:var(--g1);line-height:16px}
+.kc-chip-h{border-color:var(--jb);color:var(--jb)}
+.kc-chip-v{border-color:var(--vi);color:var(--vi)}
+.kc-ed-g{margin-bottom:24px}
+.kc-ed-g>.kc-lbl{margin-bottom:8px}
+.kc-ed-body{display:flex;flex-direction:column;gap:12px;padding:8px 0 8px 16px;max-width:720px}
+.kc-ed-f{display:flex;flex-direction:column;gap:4px}
+.kc-ta{border:1px solid var(--ctl);border-radius:4px;padding:8px 10px;font-size:15px;line-height:22px;background:#fff;color:var(--ink);width:100%;resize:vertical;font-family:inherit}
+.kc-ta:focus{outline:2px solid var(--jb);outline-offset:-1px}
+.kc-ed-cur{font-size:13px;line-height:20px;color:#3c3f44;padding:8px 12px;background:var(--soft);border-radius:4px;display:flex;flex-direction:column;gap:4px}
 .kc-msg{max-width:640px;margin:80px auto;padding:0 16px;font-size:15px;line-height:24px}
 
 @media (max-width:1180px){
@@ -217,6 +232,6 @@
 <script src="js/mechanics.js?v=102"></script>
 <!-- mech-fields.js — после mechanics.js: читает его подписи (window.imp.mechCopy). -->
 <script src="js/mech-fields.js?v=55"></script>
-<script src="js/kartochka.js?v=3"></script>
+<script src="js/kartochka.js?v=4"></script>
 </body>
 </html>
