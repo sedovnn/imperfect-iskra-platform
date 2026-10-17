@@ -42,9 +42,6 @@
     listeners.push(fn);
     notify();
   };
-  window.imp.syncStatus = function () {
-    return { pending: state.pending, failed: state.failed, lastOkAt: state.lastOkAt, offline: state.offline };
-  };
 
   function readQueue() {
     try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch (e) { return []; }
@@ -138,7 +135,6 @@
         flushing = false;
       });
   }
-  window.imp.flushSyncQueue = flushQueue;
 
   // повторяем: при возврате связи, при возврате на вкладку и раз в 20 секунд
   window.addEventListener('online', flushQueue);

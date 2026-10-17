@@ -181,7 +181,4 @@
       dirty = false;
     } catch (e) {}
   });
-
-  // для отладки и для будущего анализа из консоли
-  window.imp.editsSnapshot = snapshot;
 })();
