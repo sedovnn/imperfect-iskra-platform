@@ -13,30 +13,30 @@
 <!-- Шрифт неблокирующе, как в кабинете (administrator.html): медленный ответ шрифтового CSS не держит скрипты. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=266" />
+<link rel="stylesheet" href="css/styles.css?v=269" />
 <!-- ⚠ КАРТОЧКА УЧАСТНИКА ОТДЕЛЬНЫМ ОКНОМ (решение владельца 15.10, макет согласован 15.10). Открывается из кабинета
      администратора по строке участника: kartochka.html#<номер>. Стили карточки — здесь, под префиксом kc-: они нужны
      только этой странице, а общий styles.css поднимал бы ключ кэша у семи страниц. Сетка — кегли 11/13/15/20/24,
      все кнопки и поля 36 px, колонка оценок фиксированной ширины: на экране ничего не перескакивает. -->
 <style>
 .kc{--ink:#181818;--g1:#6b6e73;--g2:#9a9da2;--line:#e7e7e7;--line2:#f0f0f0;--ctl:#d9dbde;--soft:#f4f5f6;--v:#ff4800;--vt:#fff0e9;--vi:#c23a00;--band:#eaf3fb;--bandl:#bcd9f2;--jb:#2f6bb0;
-  background:#fff;color:var(--ink);font-family:'Inter Tight',system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
+  background:#fff;color:var(--ink);font-family:'Inter Tight',system-ui,sans-serif;font-size:15px;line-height:1.2;-webkit-font-smoothing:antialiased;min-height:100vh}
 .kc *{box-sizing:border-box}
 .kc p{margin:0}
 .kc h1,.kc h2{margin:0;letter-spacing:normal;text-transform:none}
 .kc a{color:var(--jb);text-decoration:none}.kc a:hover{color:var(--ink)}
 .kc button,.kc input,.kc select{font-family:inherit;line-height:1.2}
-.kc-lbl{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--g1);line-height:16px}
+.kc-lbl{font-size:11px;font-weight:500;color:var(--g1);line-height:16px}
 .kc-s{font-size:13px;line-height:20px;color:var(--g1)}
 .kc-one{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kc-btn{height:36px;padding:0 14px;border-radius:4px;border:1px solid var(--ctl);background:#fff;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+.kc-btn{height:36px;padding:0 14px;border-radius:4px;border:1px solid var(--ctl);background:#fff;color:var(--ink);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 .kc-btn:hover{border-color:var(--ink)}
 .kc-btn-p{background:var(--v);border-color:var(--v);color:#fff}.kc-btn-p:hover{background:#e84100;border-color:#e84100}
 .kc-btn-d{background:var(--ink);border-color:var(--ink);color:#fff}
 .kc-btn[disabled]{opacity:.4;cursor:default}.kc-btn[disabled]:hover{border-color:var(--ctl)}
-.kc-link{background:none;border:0;padding:0;height:36px;color:var(--jb);font-size:13px;font-weight:600;cursor:pointer}
+.kc-link{background:none;border:0;padding:0;height:36px;color:var(--jb);font-size:13px;font-weight:500;cursor:pointer}
 .kc-link:hover{color:var(--ink)}.kc-link[disabled]{color:var(--g2);cursor:default}
-.kc-lv{width:28px;height:28px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;background:var(--band);color:var(--jb);flex:none;border:1px solid var(--band)}
+.kc-lv{width:28px;height:28px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-weight:500;font-size:15px;background:var(--band);color:var(--jb);flex:none;border:1px solid var(--band)}
 .kc-lv-sm{width:24px;height:24px;font-size:13px}
 .kc-lv-flag{background:var(--vt);color:var(--vi);border-color:var(--v)}
 .kc-lv-human{background:var(--ink);color:#fff;border-color:var(--ink)}
@@ -47,22 +47,22 @@
 .kc-top{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line)}
 .kc-top-in{max-width:1440px;margin:0 auto;padding:0 32px;min-height:64px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px}
 .kc-who{display:flex;align-items:center;gap:16px;min-width:0;flex:1 1 auto}
-.kc-back{font-size:13px;font-weight:600;white-space:nowrap}
+.kc-back{font-size:13px;font-weight:500;white-space:nowrap}
 .kc-sep{width:1px;height:24px;background:var(--line);flex:none}
-.kc-name{font-size:15px;font-weight:700;min-width:0}
+.kc-name{font-size:15px;font-weight:500;min-width:0}
 .kc-name span{font-weight:400;color:var(--g1)}
-.kc-attn{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:4px;background:var(--vt);color:var(--vi);font-size:13px;font-weight:600;white-space:nowrap;cursor:pointer;border:0}
+.kc-attn{display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px;border-radius:4px;background:var(--vt);color:var(--vi);font-size:13px;font-weight:500;white-space:nowrap;cursor:pointer;border:0}
 .kc-attn:hover{color:var(--ink)}
 .kc-tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .kc-state{font-size:13px;color:var(--g1);max-width:320px}
 .kc-total{display:flex;align-items:baseline;gap:4px;margin:0 8px 0 4px;white-space:nowrap}
-.kc-total b{font-size:24px;font-weight:700;line-height:28px}
+.kc-total b{font-size:24px;font-weight:500;line-height:28px}
 .kc-total i{font-style:normal;font-size:13px;color:var(--g1)}
 .kc-w-check{min-width:124px}
 .kc-menuwrap{position:relative}
 .kc-menu{position:absolute;right:0;top:44px;width:300px;background:#fff;border:1px solid var(--ctl);border-radius:4px;padding:4px 0;z-index:40}
 .kc-mi{display:block;width:100%;text-align:left;background:none;border:0;padding:8px 14px;cursor:pointer;color:var(--ink)}
-.kc-mi b{display:block;font-size:13px;font-weight:600;line-height:20px}
+.kc-mi b{display:block;font-size:13px;font-weight:500;line-height:20px}
 .kc-mi span{display:block;font-size:13px;line-height:20px;color:var(--g1)}
 .kc-mi:hover{background:var(--soft)}
 .kc-mi[disabled]{cursor:default}.kc-mi[disabled] b{color:var(--g2)}.kc-mi[disabled]:hover{background:none}
@@ -72,7 +72,7 @@
 .kc-app{max-width:1440px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:248px minmax(0,1fr);gap:48px}
 .kc-side{position:sticky;top:64px;align-self:start;max-height:calc(100vh - 64px);overflow:auto;padding:24px 0 32px;display:flex;flex-direction:column;gap:24px}
 .kc-sk{display:flex;flex-direction:column}
-.kc-sk-h{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:28px;font-size:13px;font-weight:700;line-height:18px}
+.kc-sk-h{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:28px;font-size:13px;font-weight:500;line-height:18px}
 .kc-sk-h i{font-style:normal;font-weight:400;color:var(--g1)}
 .kc-sk-h span:last-child{white-space:nowrap}
 .kc a.kc-ab{display:flex;align-items:center;gap:8px;height:32px;color:var(--ink);font-size:13px;border-top:1px solid var(--line2)}
@@ -81,15 +81,15 @@
 .kc-nav{display:flex;flex-direction:column}
 .kc a.kc-nv{display:flex;align-items:center;gap:10px;height:32px;font-size:13px;color:var(--ink);border-top:1px solid var(--line2)}
 .kc a.kc-nv:hover{color:var(--jb)}
-.kc-nv .kc-n{width:16px;color:var(--g2);font-weight:600}
+.kc-nv .kc-n{width:16px;color:var(--g2);font-weight:500}
 .kc-nv .kc-nm{flex:1;min-width:0}
 
 .kc-main{min-width:0;padding-bottom:64px}
 .kc-stage{padding:40px 0;border-bottom:1px solid var(--line);scroll-margin-top:64px}
 .kc-st-h{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin-bottom:24px}
-.kc-st-h .kc-n{font-size:20px;font-weight:700;color:var(--g2);line-height:28px}
-.kc-st-h h2{font-size:20px;font-weight:700;line-height:28px}
-.kc-tag-v{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--vi);background:var(--vt);border-radius:3px;padding:2px 6px;line-height:16px}
+.kc-st-h .kc-n{font-size:20px;font-weight:500;color:var(--g2);line-height:28px}
+.kc-st-h h2{font-size:20px;font-weight:500;line-height:28px}
+.kc-tag-v{font-size:11px;font-weight:500;color:var(--vi);background:var(--vt);border-radius:3px;padding:2px 6px;line-height:16px}
 .kc-grid{display:grid;grid-template-columns:minmax(0,1fr) 352px;gap:40px;align-items:start}
 .kc-answers{display:flex;flex-direction:column;gap:32px;min-width:0;max-width:640px}
 .kc-step{display:flex;flex-direction:column;gap:4px;scroll-margin-top:96px}
@@ -102,18 +102,18 @@
 .kc-q-full{margin:8px 0 4px 4px;padding-left:14px;border-left:1px solid var(--ctl);display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:20px;color:#3c3f44}
 .kc-ans{font-size:15px;line-height:24px;overflow-wrap:anywhere}
 .kc-ans p{margin:0 0 8px}.kc-ans p:last-child{margin-bottom:0}
-.kc-ans b{font-weight:600}
+.kc-ans b{font-weight:500}
 .kc-ans i{color:var(--g1)}
 .kc-ans ul.recap-list{list-style:none;margin:4px 0 12px;padding:0;display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:18px}
-.kc-ans .bl-num{color:var(--g2);font-weight:600;margin-right:4px}
+.kc-ans .bl-num{color:var(--g2);font-weight:500;margin-right:4px}
 .kc-ans .recap-cost{color:var(--g1);margin-left:6px;white-space:nowrap}
 .kc-ans blockquote.letter{margin:0;padding:0;border:0;background:none;font-style:normal}
 .kc-ans mark.kc-hl{background:var(--band);color:inherit;border-radius:2px}
 .kc-ans mark.kc-hl-f{background:var(--bandl)}
 .kc-none{font-size:13px;line-height:20px;color:var(--g1)}
-.kc-none b{font-weight:600;color:#3c3f44}
+.kc-none b{font-weight:500;color:#3c3f44}
 .kc-box{border:1px solid var(--line);border-radius:4px;padding:12px 16px;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
-.kc-box-t{font-size:15px;font-weight:600;line-height:22px}
+.kc-box-t{font-size:15px;font-weight:500;line-height:22px}
 
 .kc-rail{display:flex;flex-direction:column;min-width:0}
 .kc-rail>.kc-lbl{margin-bottom:8px}
@@ -122,9 +122,9 @@
 .kc-rh{width:100%;min-height:56px;display:flex;align-items:center;gap:12px;padding:8px 0;background:none;border:0;cursor:pointer;text-align:left;color:var(--ink)}
 .kc-rh:hover .kc-rn{text-decoration:underline;text-underline-offset:3px}
 .kc-rt{flex:1;min-width:0}
-.kc-rn{display:block;font-size:15px;font-weight:600;line-height:20px}
+.kc-rn{display:block;font-size:15px;font-weight:500;line-height:20px}
 .kc-rs{display:block;font-size:13px;line-height:20px;color:var(--g1)}
-.kc-rs-v{color:var(--vi);font-weight:600}
+.kc-rs-v{color:var(--vi);font-weight:500}
 .kc-rh .kc-chev{flex:none;color:var(--g2);transition:transform .15s}
 .kc-row-open .kc-rh .kc-chev{transform:rotate(180deg)}
 .kc-row-ctl .kc-rh{min-height:44px}
@@ -132,23 +132,23 @@
 .kc-panel{padding:0 0 16px 40px;display:flex;flex-direction:column;gap:12px}
 .kc-why{font-size:13px;line-height:20px;color:#3c3f44}
 .kc-flag{background:var(--vt);border-radius:4px;padding:8px 12px;font-size:13px;line-height:20px;color:#3c3f44}
-.kc-flag b{color:var(--vi);font-weight:600}
+.kc-flag b{color:var(--vi);font-weight:500}
 .kc-bds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .kc-bd{display:grid;grid-template-columns:20px 28px minmax(0,1fr);gap:0 6px;align-items:start;padding:6px 0;border-top:1px solid var(--line2);font-size:13px;line-height:20px}
 .kc-bd:first-child{border-top:0}
-.kc-ic{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.kc-ic{width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:500}
 .kc-bd-ok .kc-ic{background:var(--band);color:var(--jb)}
 .kc-bd-no .kc-ic{background:var(--soft);color:var(--g1)}
 .kc-bd-amb .kc-ic{background:var(--v);color:#fff}
-.kc-bk{font-weight:600;color:#3c3f44;cursor:help}
+.kc-bk{font-weight:500;color:#3c3f44;cursor:help}
 .kc-bt{min-width:0;color:#3c3f44;overflow-wrap:anywhere}
-.kc-bt b{font-weight:600}
+.kc-bt b{font-weight:500}
 .kc-bd-amb .kc-bt b{color:var(--vi)}
 .kc a.kc-qt{display:block;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 .kc a.kc-qt:hover{color:var(--jb)}
 .kc-fix{display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--line)}
 .kc-segs{display:flex;gap:4px}
-.kc-sg{width:36px;height:36px;border:1px solid var(--ctl);background:#fff;border-radius:4px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink);padding:0}
+.kc-sg{width:36px;height:36px;border:1px solid var(--ctl);background:#fff;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;color:var(--ink);padding:0}
 .kc-sg:hover{border-color:var(--ink)}
 .kc-sg-j{border-color:var(--jb);color:var(--jb)}
 .kc-sg-on{background:var(--ink);border-color:var(--ink);color:#fff}
@@ -157,7 +157,7 @@
 .kc-fix-row{display:flex;gap:8px;align-items:center}
 .kc-ovl{display:flex;gap:10px;align-items:center;font-size:13px;line-height:20px}
 .kc-acts{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center}
-.kc-q-on{font-size:13px;color:var(--jb);font-weight:600}
+.kc-q-on{font-size:13px;color:var(--jb);font-weight:500}
 .kc-whole{display:grid;grid-template-columns:minmax(0,640px);gap:16px}
 .kc-whole .kc-panel{padding:0}
 .kc-wh-h{display:flex;align-items:center;gap:12px}
@@ -173,9 +173,9 @@
 /* Панель правки текстов отчёта (владелец 17.10) */
 .kc-eb{border-top:1px solid var(--line);margin:0;padding:8px 0}
 .kc-eb summary{min-height:36px;flex-wrap:wrap;color:var(--ink)}
-.kc-eb-t{font-size:15px;font-weight:600;line-height:20px}
+.kc-eb-t{font-size:15px;font-weight:500;line-height:20px}
 .kc-eb-w{font-size:13px;color:var(--g1)}
-.kc-chip{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--ctl);border-radius:3px;padding:1px 6px;color:var(--g1);line-height:16px}
+.kc-chip{font-size:11px;font-weight:500;border:1px solid var(--ctl);border-radius:3px;padding:1px 6px;color:var(--g1);line-height:16px}
 .kc-chip-h{border-color:var(--jb);color:var(--jb)}
 .kc-chip-v{border-color:var(--vi);color:var(--vi)}
 .kc-ed-g{margin-bottom:24px}
@@ -222,7 +222,7 @@
 <div id="kcRoot" class="kc"><p class="kc-msg">Загружаю карточку…</p></div>
 
 <script src="js/main.js?v=13"></script>
-<script src="js/typo.js?v=2"></script>
+<script src="js/typo.js?v=3"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/api.js?v=11"></script>
 <!-- Маршрут и механики — теми же файлами, что на экране участника: этапы, шаги, реплики (scenes.js), подстановки в

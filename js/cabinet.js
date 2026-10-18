@@ -527,7 +527,7 @@
     });
   }
   function renderShare(w) {
-    main.innerHTML = '<p class="ved-k">Поток создан</p><h1 class="ved-h1">' + esc(w.name || w.num) + '</h1>' + shareHtml(w, true);
+    main.innerHTML = '<p class="ved-k">Поток создан</p><h1 class="ved-h1 no-lc">' + esc(w.name || w.num) + '</h1>' + shareHtml(w, true);
     wireShare(w);
   }
 
@@ -635,7 +635,7 @@
       '<p class="ved-k">' + (none ? 'Номера без потока'
         : 'Поток · ' + timeWord(w.timerMin) + ' · ' + (w.owner ? 'ведёт ' + esc(facName(w.owner)) : 'ведёте вы') +
           (w.isAi ? ' · прогон модели' : '') + (w.archived ? ' · в архиве' : '')) + '</p>' +
-      '<h1 class="ved-h1">' + (none ? 'Без потока' : esc(w.name || w.num)) + '</h1>' +
+      '<h1 class="ved-h1' + (none ? '' : ' no-lc') + '">' + (none ? 'Без потока' : esc(w.name || w.num)) + '</h1>' +
       '<div class="ved-meta"><span class="ved-live">обновляется само</span>' +
         '<span>' + c.joined + ' вошли · ' + c.run + ' ' + plural(c.run, 'проходит', 'проходят', 'проходят') + ' · ' + c.done + ' закончили' +
           (c.wait ? ' · ' + c.wait + ' ' + plural(c.wait, 'ждёт', 'ждут', 'ждут') + ' оценки' : '') +
@@ -774,7 +774,7 @@
     var list = people().filter(function (p) {
       return (String(p.bib) + ' ' + (p.fio || '') + ' ' + (p.firstName || '')).toLowerCase().indexOf(q) >= 0;
     });
-    main.innerHTML = '<p class="ved-k">Поиск</p><h1 class="ved-h1">«' + esc(findEl.value.trim()) + '»</h1>' +
+    main.innerHTML = '<p class="ved-k">Поиск</p><h1 class="ved-h1 no-lc">«' + esc(findEl.value.trim()) + '»</h1>' +
       (list.length ? peopleTable(list, true)
                    : '<p class="ved-empty">Никого не нашлось. Ищется номер, имя и фамилия во всех потоках, включая архивные.</p>');
     wireRows();

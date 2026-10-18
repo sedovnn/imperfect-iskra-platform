@@ -2785,11 +2785,18 @@
     el('interludeBridge').innerHTML = (bridge.lead || []).map(function (p) {
       return '<p class="interlude-bridge-p">' + br(p) + '</p>';
     }).join('');
-    // Порядок блока — правка владельца 07.08: «Следующий этап N из 7:», под ним
-    // место, под ним день и время. Скрытый этап (Коридор) в счёт не входит — его
-    // проходят не все, и держать его в знаменателе значило бы обещать восемь.
+    // Порядок блока — правка владельца 07.08: номер этапа, под ним место, под ним день и время.
+    // С 18.10 (владелец, бренд-бук — крупные цифры «01/06») номер стоит крупной цифрой «04/07»
+    // вместо строки «Следующий этап 4 из 7:»; полная фраза осталась для скринридера.
+    // Скрытый этап (Коридор) в счёт не входит — его проходят не все, и держать его
+    // в знаменателе значило бы обещать восемь.
     var nx = el('interludeNext');
-    if (nx) nx.textContent = 'Следующий этап ' + S.stageNo(step.sceneIx) + ' из ' + S.stageCount() + ':';
+    if (nx) {
+      var stNo = S.stageNo(step.sceneIx), stOf = S.stageCount();
+      var two = function (n) { return (n < 10 ? '0' : '') + n; };
+      nx.innerHTML = '<span class="interlude-num" aria-hidden="true">' + two(stNo) + '<span>/' + two(stOf) + '</span></span>' +
+        '<span class="sr-only">Следующий этап ' + stNo + ' из ' + stOf + '</span>';
+    }
     el('interludeWhere').textContent = step.scene.name;
     el('interludeWhen').textContent = step.scene.where;
     // Время на этап: доля плюс то, что осталось от прошлого (решение владельца 03.10).

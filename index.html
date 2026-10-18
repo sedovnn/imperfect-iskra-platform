@@ -17,35 +17,35 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=266" />
+<link rel="stylesheet" href="css/styles.css?v=269" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
   .entry { min-height: 100vh; display: flex; flex-direction: column; }
   .entry-wrap { max-width: var(--maxw); width: 100%; margin: 0 auto; padding: 0 clamp(20px, 4vw, 56px); flex: 1; display: flex; flex-direction: column; }
   .entry-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
-  .entry-sec { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-soft); }
+  .entry-sec { font-size: 11px; font-weight: 500; color: var(--muted-soft); }
   .entry-main { flex: 1; display: flex; align-items: center; justify-content: center; padding: clamp(40px, 7vh, 96px) 0; }
   .entry-col { max-width: 460px; }
-  .entry-col h1 { font-family: var(--ff-display); font-weight: 800; font-size: clamp(38px, 6vw, 60px); line-height: 1.0; letter-spacing: -.015em; text-transform: uppercase; margin: 20px 0 0; }
+  .entry-col h1 { font-family: var(--ff-display); font-weight: 500; font-size: clamp(38px, 6vw, 60px); line-height: .95; letter-spacing: -.015em; margin: 20px 0 0; }
   .entry-col h1 .hl { color: var(--accent); }
-  .entry-lead { font-size: 16px; line-height: 1.55; color: var(--muted); margin-top: 18px; max-width: 42ch; }
+  .entry-lead { font-size: 16px; line-height: 1.2; color: var(--muted); margin-top: 18px; max-width: 42ch; }
   .entry-form { margin-top: 34px; }
   .entry-form .field { margin-bottom: 20px; }
-  .code-input { width: 100%; height: 56px; padding: 0 16px; font-family: inherit; font-weight: 700; font-size: 24px; letter-spacing: .3em; color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius); outline: none; background: var(--paper); }
+  .code-input { width: 100%; height: 56px; padding: 0 16px; font-family: inherit; font-weight: 500; font-size: 24px; letter-spacing: .3em; color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius); outline: none; background: var(--paper); }
   .code-input::placeholder { letter-spacing: .3em; color: var(--muted-soft); font-weight: 500; }
   .code-input:focus, .pass-input:focus { border-color: var(--ink); }
   .pass-input { width: 100%; height: 52px; padding: 0 14px; font-family: inherit; font-size: 16px; color: var(--ink); border: 1px solid var(--hairline); border-radius: var(--radius); outline: none; }
   .entry-hint { font-size: 13px; color: var(--muted-soft); margin-top: 14px; }
   /* Согласие стоит ПОД кнопкой и НАД подсказкой: по правилам click-wrap человек должен
      увидеть его до действия, а не найти потом. Цвет темнее подсказки — это не сноска. */
-  .entry-consent { font-size: 13px; line-height: 1.5; color: var(--muted); margin-top: 12px; }
+  .entry-consent { font-size: 13px; line-height: 1.2; color: var(--muted); margin-top: 12px; }
   .entry-consent a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
-  .entry-err { display: none; margin-top: 14px; font-size: 13px; color: #c4362b; }
+  .entry-err { display: none; margin-top: 14px; font-size: 13px; color: #cc3700; }
   .entry-err.show { display: block; }
   /* продолжение живой сессии — над формой, тихим блоком с отбивкой */
   .entry-resume { margin-top: 30px; padding: 18px 0 20px; border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline); }
-  .entry-resume-msg { font-size: 15px; line-height: 1.5; color: var(--ink); margin: 0 0 14px; }
+  .entry-resume-msg { font-size: 15px; line-height: 1.2; color: var(--ink); margin: 0 0 14px; }
   .entry-resume-alt { font-size: 13px; color: var(--muted-soft); margin: 14px 0 0; }
   /* футер + скрытое тех-меню */
   .entry-foot { border-top: 1px solid var(--hairline); padding: 16px 0 26px; display: flex; align-items: center; justify-content: space-between; }
@@ -53,7 +53,7 @@
   .dotmenu { position: relative; }
   /* ⚠ ТРЕУГОЛЬНИКИ — БРЕНД-SVG, НЕ ЮНИКОД (правка владельца 12.08). Символ ▸ рисует
      шрифт: своя пропорция, скруглённая вершина, — и рядом со стрелкой futureproof в
-     шапке читался как другая форма. Path тот же, что в логотипе; серый приходит через
+     шапке читался как другая форма. Path — прежнего треугольника логотипа; серый приходит через
      currentColor, поэтому :hover остаётся одним свойством. */
   .dotmenu-trigger { cursor: pointer; color: var(--gray-3, #c9ccd0); user-select: none; padding: 6px 4px; background: none; border: none; display: inline-flex; align-items: center; gap: 5px; }
   .dm-tri { display: inline-block; width: 7px; height: 7px; }
@@ -63,7 +63,7 @@
   .dotmenu-list.open { display: block; }
   .dotmenu-list a { display: block; padding: 10px 12px; font-size: 13px; color: var(--ink); text-decoration: none; border-radius: var(--radius); }
   .dotmenu-list a:hover { background: var(--soft); }
-  .dotmenu-label { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted-soft); padding: 8px 12px 4px; }
+  .dotmenu-label { font-size: 10px; font-weight: 500; color: var(--muted-soft); padding: 8px 12px 4px; }
 </style>
 </head>
 <body>
@@ -71,7 +71,7 @@
   <div class="entry-wrap">
 
     <header class="entry-head">
-      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 59.29 57.69" xmlns="http://www.w3.org/2000/svg"><path d="M9.94 27.73C8.41 22.99 -0.94 4.76 0.08 1.75C0.36 0.92 0.89 0.48 1.98 0.02C8.65 -0.71 50.12 15.72 57.23 19.99C58.2 20.58 59.21 22.02 59.28 22.79C59.37 23.68 58.95 25.38 58.27 26C52.27 31.12 10.29 57.55 4.26 57.69C3.07 57.32 2.44 56.88 2.02 56.05C0.43 52.9 8.89 32.86 9.94 27.73Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
       <div class="entry-sec">Ассессмент</div>
     </header>
 
@@ -174,7 +174,7 @@
 </div>
 
 <script src="js/main.js?v=13"></script>
-<script src="js/typo.js?v=2"></script>
+<script src="js/typo.js?v=3"></script>
 <script src="js/api.js?v=11"></script>
 <script>
 /* Окно входа. ⚠ Настоящая аутентификация по номеру+паролю — это ещё не

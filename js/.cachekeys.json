@@ -1,28 +1,28 @@
 {
  "css/expert.css": {
-  "sha": "b93b0b0599cb",
+  "sha": "495ae12d2bfe",
   "keys": {
-   "expert-report.html": 12,
-   "expert.html": 12
+   "expert-report.html": 13,
+   "expert.html": 13
   }
  },
  "css/styles.css": {
-  "sha": "a2b1c8991946",
+  "sha": "85b4e736e97c",
   "keys": {
-   "administrator.html": 266,
-   "assessment.html": 266,
-   "case-v8.html": 266,
-   "expert-report.html": 266,
-   "expert.html": 266,
-   "harness.html": 266,
-   "index.html": 266,
-   "intro.html": 266,
-   "kartochka.html": 266,
-   "otchet.html": 266,
-   "role.html": 266,
-   "soglashenie.html": 266,
-   "vedushchiy.html": 266,
-   "vitrina.html": 266
+   "administrator.html": 269,
+   "assessment.html": 269,
+   "case-v8.html": 269,
+   "expert-report.html": 269,
+   "expert.html": 269,
+   "harness.html": 269,
+   "index.html": 269,
+   "intro.html": 269,
+   "kartochka.html": 269,
+   "otchet.html": 269,
+   "role.html": 269,
+   "soglashenie.html": 269,
+   "vedushchiy.html": 269,
+   "vitrina.html": 269
   }
  },
  "js/api.js": {
@@ -47,15 +47,15 @@
   }
  },
  "js/boot-loading.js": {
-  "sha": "e9f9a9679cc5",
+  "sha": "7ae33d84d4fa",
   "keys": {
-   "assessment.html": 8
+   "assessment.html": 9
   }
  },
  "js/cabinet.js": {
-  "sha": "eca58e54b811",
+  "sha": "bcfdab036599",
   "keys": {
-   "administrator.html": 78
+   "administrator.html": 79
   }
  },
  "js/case-ref.js": {
@@ -88,9 +88,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "a5908cb9bc4c",
+  "sha": "bfbef72d5578",
   "keys": {
-   "assessment.html": 152
+   "assessment.html": 153
   }
  },
  "js/expert-api.js": {
@@ -182,9 +182,9 @@
   }
  },
  "js/report.js": {
-  "sha": "adc70260d8dc",
+  "sha": "2501877392d4",
   "keys": {
-   "report-example.html": 8
+   "report-example.html": 9
   }
  },
  "js/scenes.js": {
@@ -200,24 +200,25 @@
   }
  },
  "js/typo.js": {
-  "sha": "b22a347795f1",
+  "sha": "ff3b49c5011e",
   "keys": {
-   "administrator.html": 2,
-   "assessment.html": 2,
-   "expert-report.html": 2,
-   "expert.html": 2,
-   "index.html": 2,
-   "intro.html": 2,
-   "kartochka.html": 2,
-   "role.html": 2,
-   "vedushchiy.html": 2,
-   "vitrina.html": 2
+   "administrator.html": 3,
+   "assessment.html": 3,
+   "expert-report.html": 3,
+   "expert.html": 3,
+   "index.html": 3,
+   "intro.html": 3,
+   "kartochka.html": 3,
+   "otchet.html": 3,
+   "role.html": 3,
+   "vedushchiy.html": 3,
+   "vitrina.html": 3
   }
  },
  "js/vedushchiy.js": {
-  "sha": "21faccd20ec2",
+  "sha": "8aa295015302",
   "keys": {
-   "vedushchiy.html": 11
+   "vedushchiy.html": 12
   }
  }
 }

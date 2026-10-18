@@ -97,8 +97,8 @@
       '#bootLoading .boot-spin{width:34px;height:34px;margin:0 auto 14px;border-radius:50%;' +
         'border:3px solid var(--accent-line,#ffd7c7);border-top-color:var(--accent,#ff4800);' +
         'animation:bootSpin .8s linear infinite;}' +
-      '#bootLoading .boot-text{font-size:var(--label-size,11px);font-weight:600;' +
-        'text-transform:uppercase;letter-spacing:.12em;}' +
+      // строчными и Medium, без разрядки — бренд-бук (18.10)
+      '#bootLoading .boot-text{font-size:var(--label-size,11px);font-weight:500;}' +
       '#bootLoading .boot-crash{max-width:440px;margin:0 16px;text-align:left;}' +
       '@keyframes bootSpin{to{transform:rotate(360deg)}}' +
       '@media (prefers-reduced-motion: reduce){#bootLoading .boot-spin{animation:none;}}';

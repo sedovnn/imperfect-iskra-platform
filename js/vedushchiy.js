@@ -173,7 +173,7 @@
   }
 
   function renderShare(w) {
-    main.innerHTML = '<p class="ved-k">Поток создан</p><h1 class="ved-h1">' + esc(w.name || w.num) + '</h1>' + shareHtml(w);
+    main.innerHTML = '<p class="ved-k">Поток создан</p><h1 class="ved-h1 no-lc">' + esc(w.name || w.num) + '</h1>' + shareHtml(w);
     wireShare(w);
   }
 
@@ -288,7 +288,7 @@
   function renderWave(w, quiet) {
     if (!w) return;
     var c = counts(w), rows = rowsOf(w);
-    var head = '<p class="ved-k">Поток · ' + timeWord(w.timerMin) + '</p><h1 class="ved-h1">' + esc(w.name || w.num) + '</h1>' +
+    var head = '<p class="ved-k">Поток · ' + timeWord(w.timerMin) + '</p><h1 class="ved-h1 no-lc">' + esc(w.name || w.num) + '</h1>' +
       '<div class="ved-meta"><span class="ved-live">обновляется само</span>' +
         '<span>' + c.joined + ' вошли · ' + c.run + ' проходят · ' + c.done + ' закончили</span>' +
         '<a href="#" id="vedShowShare">ссылка и QR</a><a href="#" id="vedHome">все потоки</a></div>' +

@@ -16,41 +16,41 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=266" />
+<link rel="stylesheet" href="css/styles.css?v=269" />
 <style>
   .vit { max-width: 1000px; margin: 0 auto; padding: 0 clamp(18px, 4vw, 48px); }
   .vit-head { display: flex; align-items: baseline; justify-content: space-between; padding: 22px 0 18px; border-bottom: 1px solid var(--hairline); }
   /* верхняя/нижняя служебные метки — фирменный голубой: сигнал «это служебная страница» */
-  .vit-sec { font-size: 11px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--jb-ink); }
+  .vit-sec { font-size: 11px; font-weight: 500; color: var(--jb-ink); }
   .vit-hero { padding: 48px 0 8px; }
-  .vit-hero h1 { font-size: clamp(36px, 6vw, 68px); font-weight: 800; text-transform: uppercase; letter-spacing: -.02em; line-height: .98; margin: 18px 0 0; }
+  .vit-hero h1 { font-size: clamp(36px, 6vw, 68px); font-weight: 500; letter-spacing: -.02em; line-height: .95; margin: 18px 0 0; }
   .vit-hero h1 .hl { color: var(--accent); }
-  .vit-sub { font-size: 18px; line-height: 1.55; color: var(--muted); max-width: 60ch; margin-top: 20px; }
+  .vit-sub { font-size: 18px; line-height: 1.2; color: var(--muted); max-width: 60ch; margin-top: 20px; }
   .vit-sub b { color: var(--ink); }
   .vit-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); border-radius: var(--radius); overflow: hidden; margin: 44px 0 0; }
   .vit-cell { background: var(--paper); padding: 22px 24px; }
-  .vit-cell .n { font-size: 30px; font-weight: 800; letter-spacing: -.01em; }
+  .vit-cell .n { font-size: 30px; font-weight: 500; letter-spacing: -.01em; }
   .vit-cell .l { font-size: 13px; color: var(--muted); margin-top: 6px; }
-  .vit-sec-h { font-size: 11px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; color: var(--muted-soft); padding-top: 26px; border-top: 1px solid var(--hairline); margin: 48px 0 18px; }
+  .vit-sec-h { font-size: 11px; font-weight: 500; color: var(--muted-soft); padding-top: 26px; border-top: 1px solid var(--hairline); margin: 48px 0 18px; }
   .vit-day { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
   .vit-step { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 18px 20px; }
-  .vit-step .sn { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
-  .vit-step h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .vit-step .sn { font-size: 11px; font-weight: 500; color: var(--accent); margin-bottom: 8px; }
+  .vit-step h3 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
   .vit-step p { font-size: 13.5px; color: var(--muted); }
   /* демо-запуск */
   /* демо-запуск — главное действие витрины: вермилион, чтобы не терялся среди служебных блоков */
   .vit-demo { border: 1px solid var(--accent-line); background: var(--accent-tint); border-radius: var(--radius); padding: 24px 26px; margin: 44px 0 0; }
-  .vit-demo h3 { font-size: 18px; font-weight: 700; margin-bottom: 6px; color: var(--accent); }
+  .vit-demo h3 { font-size: 18px; font-weight: 500; margin-bottom: 6px; color: var(--accent); }
   .vit-demo p { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
   .vit-profiles { display: flex; gap: 12px; flex-wrap: wrap; }
   .vit-prof { flex: 1; min-width: 180px; text-align: left; background: var(--paper); border: 1px solid var(--hairline); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; font-family: inherit; }
   .vit-prof:hover { border-color: var(--accent); }
-  .vit-prof .pt { font-size: 14px; font-weight: 700; color: var(--ink); }
-  .vit-prof .pd { font-size: 12.5px; color: var(--muted-soft); margin-top: 4px; line-height: 1.4; }
+  .vit-prof .pt { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .vit-prof .pd { font-size: 12.5px; color: var(--muted-soft); margin-top: 4px; line-height: 1.2; }
   .vit-demo-note { font-size: 12px; color: var(--muted-soft); margin-top: 14px; }
   /* диапазон ИИ мини */
   .vit-win { border: 1px solid var(--hairline); border-radius: var(--radius); padding: 24px 26px; margin: 44px 0 0; }
-  .vit-win h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .vit-win h3 { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
   .vit-win p { font-size: 14px; color: var(--muted); margin-bottom: 18px; }
   .vit-mini { position: relative; height: 22px; }
   .vit-mini .base { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: var(--hairline); transform: translateY(-50%); }
@@ -59,14 +59,14 @@
   .vit-mini .top { position: absolute; top: 50%; left: 82%; transform: translate(-50%, -50%); width: 13px; height: 13px; border-radius: 50%; background: var(--jb); border: 2px solid var(--jb-ink); z-index: 2; }
   .vit-mini .you { position: absolute; top: 50%; left: 62%; transform: translate(-50%, -50%); width: 15px; height: 15px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--ink); z-index: 3; }
   .vit-mini-leg { display: flex; gap: 22px; margin-top: 12px; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
-  .vit-mini-leg .d { color: var(--accent); font-weight: 700; }
-  .vit-mini-leg .td { color: var(--jb-ink); font-weight: 700; }
+  .vit-mini-leg .d { color: var(--accent); font-weight: 500; }
+  .vit-mini-leg .td { color: var(--jb-ink); font-weight: 500; }
   .vit-mini-leg .sw { display: inline-block; width: 16px; height: 10px; border-radius: 3px; background: #eaf3fb; border: 1px solid #bcd9f2; vertical-align: -1px; margin-right: 5px; }
   .vit-example { margin-top: 18px; font-size: 13px; }
-  .vit-example a { color: var(--jb-ink); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--band-line); }
+  .vit-example a { color: var(--jb-ink); font-weight: 500; text-decoration: none; border-bottom: 1px solid var(--band-line); }
   .vit-example a:hover { border-bottom-color: var(--jb-ink); }
   .vit-foot { border-top: 1px solid var(--hairline); margin-top: 52px; padding: 20px 0 40px; display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: var(--muted); }
-  .vit-foot a { color: var(--ink); text-decoration: none; font-weight: 600; }
+  .vit-foot a { color: var(--ink); text-decoration: none; font-weight: 500; }
 </style>
 </head>
 <body>
@@ -89,7 +89,7 @@
   <div class="vit">
 
     <header class="vit-head">
-      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 14 14" xmlns="http://www.w3.org/2000/svg"><path d="M0 1 L13 7 L0 13 Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
+      <a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 59.29 57.69" xmlns="http://www.w3.org/2000/svg"><path d="M9.94 27.73C8.41 22.99 -0.94 4.76 0.08 1.75C0.36 0.92 0.89 0.48 1.98 0.02C8.65 -0.71 50.12 15.72 57.23 19.99C58.2 20.58 59.21 22.02 59.28 22.79C59.37 23.68 58.95 25.38 58.27 26C52.27 31.12 10.29 57.55 4.26 57.69C3.07 57.32 2.44 56.88 2.02 56.05C0.43 52.9 8.89 32.86 9.94 27.73Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a>
       <div class="vit-sec">Демо</div>
     </header>
 
@@ -155,7 +155,7 @@
 </div>
 
 <script src="js/main.js?v=13"></script>
-<script src="js/typo.js?v=2"></script>
+<script src="js/typo.js?v=3"></script>
 <script src="js/api.js?v=11"></script>
 <script>
 /* Витрина под паролем (как кабинет): пароль проверяется на бэкенде

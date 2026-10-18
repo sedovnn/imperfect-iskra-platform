@@ -9,6 +9,8 @@
 //   window.imp.typoDom(root)  — по готовой разметке; без аргумента прогоняется сам
 //                               на загрузке (легенды, экраны финиша, карта, лендинг).
 // Обе идемпотентны: повторный прогон по уже обработанному тексту ничего не меняет.
+// Ещё одна работа — строчная в начале заголовков и меток (бренд-бук, 18.10): typoDom
+// ставит её вместе с пробелами, а наблюдатель — на всё, что экран дорисовывает потом.
 //
 // Чего НЕ трогаем: поля ввода, таблицы и текст кейса. В кейсе много чисел и
 // сокращений, а узкие колонки приложений от неразрывных пробелов ломают перенос;
@@ -70,12 +72,55 @@
       }
       el.setAttribute('data-typo', '1');
     }
+    lower(scope);
   }
   window.imp.typoDom = run;
 
+  // ---- строчная в начале заголовков и меток (бренд-бук, решение владельца 18.10) ----
+  // Гайд пишет заголовки и метки строчными. Прописные раньше ставил CSS (text-transform), а тексты
+  // остались в обычном регистре — так их читают модели, кабинеты и выгрузки, и так они остаются.
+  // Строчную в начале ставим при показе и только если за первой буквой идёт строчная: «ИИ», «HR»,
+  // «№ 000900» не трогаются (::first-letter так не умеет). Имена, которые вводят люди (названия
+  // потоков), помечены .no-lc; документы сюжета — материалы кейса и письмо — со своим регистром.
+  var LC = 'h1, h2, h3, .interlude-where, .kicker, .interlude-next, .scr-k, .ved-k, .eyebrow, .tag, th, ' +
+           '.field label, .card label, .kick, .lab, .hdr-num, .toc-title, .who-h, .recap-step, .adm-cols-hd';
+  var LC_SKIP = '.no-lc, #caseContent, #caseRefContent, .case-content, .appx-doc, .letter';
+  var LEAD = /^(\s*)([А-ЯЁA-Z])(?=[а-яёa-z])/;
+
+  function lowerOne(el) {
+    if (el.closest(LC_SKIP)) return;
+    var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null), n;
+    while ((n = walker.nextNode())) { if (n.nodeValue.trim()) break; }
+    if (n && LEAD.test(n.nodeValue)) {
+      n.nodeValue = n.nodeValue.replace(LEAD, function (m, sp, c) { return sp + c.toLowerCase(); });
+    }
+  }
+  function lower(root) {
+    var scope = root || document;
+    if (scope.nodeType === 1 && scope.matches(LC)) lowerOne(scope);
+    var list = scope.querySelectorAll(LC);
+    for (var i = 0; i < list.length; i++) lowerOne(list[i]);
+  }
+
+  // Экраны дня, кабинеты и экспертные страницы собирают разметку на ходу и typoDom зовут не везде,
+  // поэтому строчную ставит и наблюдатель — на каждый добавленный узел. Свою правку он не видит:
+  // меняется текст узла (characterData), а наблюдаем только состав (childList).
+  function watch() {
+    if (typeof MutationObserver !== 'function' || !document.body) return;
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var host = muts[i].target.closest ? muts[i].target.closest(LC) : null;
+        if (host) lowerOne(host);   // el.textContent = '…' меняет детей самого заголовка
+        var added = muts[i].addedNodes;
+        for (var j = 0; j < added.length; j++) if (added[j].nodeType === 1) lower(added[j]);
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { run(); });
+    document.addEventListener('DOMContentLoaded', function () { run(); watch(); });
   } else {
     run();
+    watch();
   }
 })();
