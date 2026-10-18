@@ -200,19 +200,19 @@
   }
  },
  "js/typo.js": {
-  "sha": "ff3b49c5011e",
+  "sha": "5b6d02cd0b4a",
   "keys": {
-   "administrator.html": 3,
-   "assessment.html": 3,
-   "expert-report.html": 3,
-   "expert.html": 3,
-   "index.html": 3,
-   "intro.html": 3,
-   "kartochka.html": 3,
-   "otchet.html": 3,
-   "role.html": 3,
-   "vedushchiy.html": 3,
-   "vitrina.html": 3
+   "administrator.html": 4,
+   "assessment.html": 4,
+   "expert-report.html": 4,
+   "expert.html": 4,
+   "index.html": 4,
+   "intro.html": 4,
+   "kartochka.html": 4,
+   "otchet.html": 4,
+   "role.html": 4,
+   "vedushchiy.html": 4,
+   "vitrina.html": 4
   }
  },
  "js/vedushchiy.js": {

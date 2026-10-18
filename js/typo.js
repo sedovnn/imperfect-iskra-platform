@@ -82,10 +82,18 @@
   // Строчную в начале ставим при показе и только если за первой буквой идёт строчная: «ИИ», «HR»,
   // «№ 000900» не трогаются (::first-letter так не умеет). Имена, которые вводят люди (названия
   // потоков), помечены .no-lc; документы сюжета — материалы кейса и письмо — со своим регистром.
-  var LC = 'h1, h2, h3, .interlude-where, .kicker, .interlude-next, .scr-k, .ved-k, .eyebrow, .tag, th, ' +
-           '.field label, .card label, .kick, .lab, .hdr-num, .toc-title, .who-h, .recap-step, .adm-cols-hd';
+  // Второй проход 18.10 (владелец «давай второй проход по текстам»): к меткам макета добавлены остальные, что до 18.10
+  // шли прописными через CSS, — подписи зон, меток кабинета и карточки, витрины, входа. Не трогаем имена собеседника
+  // (.chat-name), подписи этапов на полосе (.tmr-now-t: «Агеев», «Лемех»), вопросы (.mx-title, .recap-q) — это фразы,
+  // а не метки, — и документы сюжета.
+  var LC = 'h1, h2, h3, .interlude-where, .kicker, .interlude-next, .interlude-mark, .scr-k, .ved-k, .eyebrow, .tag, th, ' +
+           '.field label, .card label, .kick, .lab, .hdr-num, .toc-title, .who-h, .recap-step, .adm-cols-hd, ' +
+           '.win-label-past, .bl-over-tag, .dayside-kicker, .toc-group, .bl-zone-h, .talk-folded-t, .case-nav-title, .sc-head-name, ' +
+           '.mx-flag, .tmr-k, .cab-ai, .cab-stale, .cab-ovmark, .cheat-h, .demo-tag, .xpick-step, ' +
+           '.entry-sec, .dotmenu-label, .vit-sec, .vit-sec-h, .vit-step .sn, .kc-lbl, .kc-chip, .kc-tag-v';
   var LC_SKIP = '.no-lc, #caseContent, #caseRefContent, .case-content, .appx-doc, .letter';
-  var LEAD = /^(\s*)([А-ЯЁA-Z])(?=[а-яёa-z])/;
+  // В начале метки может стоять знак — «✓ Ассессмент закончен», «· Бренд»: его пропускаем, «№ 000900» не меняется.
+  var LEAD = /^(\s*(?:[✓✔·•—–]\s*)?)([А-ЯЁA-Z])(?=[а-яёa-z])/;
 
   function lowerOne(el) {
     if (el.closest(LC_SKIP)) return;
