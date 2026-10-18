@@ -45,6 +45,8 @@
   --muted-soft: #73736c; /* ≈4,8:1 на белом (WCAG 1.4.3): читаемый текст/плейсхолдеры/хинты */
   --hairline: #dbdbd9;
   --soft: #f6f6f5;
+  --hairline-soft: #ededec; /* серый 4 гайда — линии внутри карточек, таблиц и колонок кейса (18.10, вместо холодного #ececec) */
+  --ctl-line: #cacac5;      /* серый 2 гайда — рамки полей в кабинетах (18.10, вместо холодного #cfd1d4) */
   --frame: 0px;
   /* ⚠ 8px, а не 4 (решение владельца 07.08). DESIGN.md стр. 128 задаёт sm 4px, но
      один и тот же радиус на маленьком пузыре читается скруглением, а на большом поле
@@ -405,7 +407,7 @@ h1 {
 /* ---------- section shell ---------- */
 
 section { padding: 72px 0; }
-section + section { border-top: 1px solid #ececec; }
+section + section { border-top: 1px solid var(--hairline-soft); }
 .kicker {
   margin: 0 0 10px;
 }
@@ -434,8 +436,8 @@ h2 {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
-  background: #ececec;
-  border: 1px solid #ececec;
+  background: var(--hairline-soft);
+  border: 1px solid var(--hairline-soft);
   border-radius: var(--radius);
   overflow: hidden;
 }
@@ -475,7 +477,7 @@ h2 {
 .skill.score2 { background: var(--ink); color: var(--paper); }
 .skill.score2 .num { color: var(--lime); -webkit-text-stroke: 0; }
 .skill.score2 h3 { color: var(--paper); }
-.skill.score2 p { color: #b9bbbe; }
+.skill.score2 p { color: #a6a69f; }
 .case-body p.quote {
   font-family: var(--ff-display);
   font-weight: 500;
@@ -514,7 +516,7 @@ h2 {
 }
 
 .step {
-  border: 1px solid #ececec;
+  border: 1px solid var(--hairline-soft);
   border-radius: var(--radius);
   padding: 26px 24px;
   position: relative;
@@ -546,12 +548,6 @@ h2 {
   color: var(--muted);
   margin: 0;
 }
-.final-cta .btn-primary {
-  background: var(--lime);
-  color: var(--ink);
-  border-color: var(--lime);
-}
-.final-cta .btn-primary:hover { box-shadow: 6px 6px 0 var(--paper); }
 
 /* ---------- footer ---------- */
 
@@ -596,7 +592,7 @@ footer {
   font-family: var(--ff-body);
   font-size: var(--fs-op-h);
   padding: 14px 16px;
-  border: 1.5px solid #d8dadd;
+  border: 1.5px solid var(--hairline);
   border-radius: 10px;
   background: var(--paper);
   color: var(--ink);
@@ -625,11 +621,10 @@ footer {
    шапке она служебная и мелкая. Правило было заскоплено только на .station-header,
    поэтому на своём ряду экрана сборки Р6 номер вылезал во всю величину. */
 .station-header .bib, .finalize-top .bib { font-size: var(--fs-dense); padding: 6px 12px; }
-/* --- опасное действие: удаление (семантический красный, не бренд-акцент) --- */
-.btn-danger { background: var(--ink); color: #ff7a6b; border-color: var(--ink); }
-.btn-danger:hover { box-shadow: 6px 6px 0 #ff7a6b, 6px 6px 0 1px var(--ink); }
-.imp-toast.is-in { opacity: 1; transform: translate(-50%, 0); }
-.imp-toast.is-error { color: #ff8a7d; box-shadow: 6px 6px 0 #ff7a6b; }
+/* --- опасное действие: удаление. Вермилион 400 гайда на чернилах (6,4:1), при наведении — заливка им, без
+   сдвинутой тени (решение владельца 18.10; был коралловый вне палитры). Отличается от главной кнопки заливкой. --- */
+.btn-danger { background: var(--ink); color: #ff6f33; border-color: var(--ink); }
+.btn-danger:hover { background: #ff6f33; color: var(--ink); }
 
 /* --- внутрисистемный диалог подтверждения (вместо native confirm) --- */
 .imp-confirm {
@@ -673,7 +668,7 @@ footer {
   margin-bottom: 26px;
 }
 .s2-act {
-  border: 1px solid #d6d8d2;
+  border: 1px solid var(--hairline);
   background: transparent;
   border-radius: 7px;
   font-size: var(--fs-util);
@@ -971,10 +966,10 @@ body.imp-drawer-open .dock-rail { display: none; }
   letter-spacing: var(--label-track); color: #fff; background: #ff4800;
   border-radius: 3px; padding: 2px 7px;
 }
-.demo-step { font-size: var(--fs-read); font-weight: 500; color: #c73500; }
+.demo-step { font-size: var(--fs-read); font-weight: 500; color: #cc3700; }
 .demo-where { color: #a3705c; }
 .demo-p { margin: 0 0 5px; max-width: 92ch; font-size: var(--fs-dense); line-height: 1.2; color: #7a3a22; }
-.demo-p b { color: #c73500; font-weight: 500; }
+.demo-p b { color: #cc3700; font-weight: 500; }
 .demo-p-dim { color: #96604a; margin-bottom: 0; }
 @media (max-width: 720px) { .demo-bar { max-height: 50vh; } }
 
@@ -1136,14 +1131,14 @@ body.imp-drawer-open .dock-rail { display: none; }
   font-weight: 500;
   padding: 4px 9px;
   border-radius: 999px;
-  border: 1px solid #d8dadd;
+  border: 1px solid var(--hairline);
   color: var(--muted-soft);
   white-space: nowrap;
 }
 
 .tag.tag-key { border-color: var(--hairline); background: var(--soft); color: var(--ink); }
 .tag.tag-moves { border-color: #d8d2f5; background: #f5f2ff; color: #6247aa; }
-.tag.tag-none { border-color: #e5e5e5; background: #fafafa; color: var(--muted-soft); }
+.tag.tag-none { border-color: var(--hairline); background: var(--soft); color: var(--muted-soft); }
 .role {
   background: var(--paper);
   padding: 22px 18px;
@@ -1418,7 +1413,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   .station-body { grid-template-columns: calc(196px + var(--frame-pad)) minmax(0, 1.6fr) minmax(0, 1fr); }
 }
 .case-nav {
-  border-right: 1px solid #ececec;
+  border-right: 1px solid var(--hairline-soft);
   /* левый отступ = var(--frame-pad), тот же, что у шапки: иначе «Материалы» стоят
      левее лого над ними. Ширина самой колонки увеличена на ту же величину
      (см. .station-body), поэтому полезная ширина ссылок не теряется. */
@@ -1468,7 +1463,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   font-size: var(--fs-op);
 }
 
-.case-nav-link:hover { background: #f5f5f5; color: var(--ink); }
+.case-nav-link:hover { background: var(--soft); color: var(--ink); }
 
 .case-nav-link.is-partial {
   color: var(--ink);
@@ -1500,7 +1495,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-right: 1px solid #ececec;
+  border-right: 1px solid var(--hairline-soft);
 }
 .case-tab.is-active {
   color: var(--ink);
@@ -1534,7 +1529,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 blockquote.letter, blockquote.dialogue {
   margin: 0 0 14px;
   padding: 18px 22px;
-  background: #fafafa;
+  background: var(--soft);
   border: 1px solid var(--hairline);
   border-radius: 12px;
 }
@@ -1600,7 +1595,7 @@ blockquote.letter p:last-child, blockquote.dialogue p:last-child { margin-bottom
   display: flex;
   align-items: center;
   gap: 12px;
-  border-bottom: 1px solid #ececec;
+  border-bottom: 1px solid var(--hairline-soft);
   font-family: var(--ff-display);
   font-weight: 500;
   font-size: var(--fs-read);
@@ -1629,7 +1624,7 @@ table {
 }
 
 table th, table td {
-  border: 1px solid #ececec;
+  border: 1px solid var(--hairline-soft);
   padding: 8px 10px;
   text-align: right;
   white-space: nowrap;
@@ -1642,7 +1637,7 @@ table th:first-child, table td:first-child {
   color: var(--ink);
 }
 
-table th { background: #fafafa; font-weight: 500; }
+table th { background: var(--soft); font-weight: 500; }
 
 /* ---------- отметка в кейсе ↔ цитата в карточке: один объект, один материал ----------
    Связь несёт КРАСКА: бледная заливка плюс вермилионовый штрих под словами. Это
@@ -1722,7 +1717,7 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
   font-family: var(--ff-body);
   font-size: var(--fs-dense);
   padding: 10px 12px;
-  border: 1.5px solid #d8dadd;
+  border: 1.5px solid var(--hairline);
   border-radius: 10px;
   background: var(--paper);
   color: var(--ink);
@@ -1734,7 +1729,7 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
   border-color: var(--ink);
 }
 .card {
-  border: 1px solid #ececec;
+  border: 1px solid var(--hairline-soft);
   border-radius: 14px;
   padding: 16px;
   display: flex;
@@ -1790,7 +1785,7 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
   color: var(--muted-soft);
   margin-bottom: 5px;
 }
-.card.is-locked textarea, .card.is-locked input, .card.is-locked select { background: #fafafa; pointer-events: none; }
+.card.is-locked textarea, .card.is-locked input, .card.is-locked select { background: var(--soft); pointer-events: none; }
 .sel-toolbar.show { display: flex; }
 .hl-popover.show { display: block; }
 .card input[data-field="anchor"].is-drop-target {
@@ -1834,8 +1829,8 @@ mark.hl.flash, .problem-card.flash .problem-quote .quote-ink {
      до min-content навигации (391px в окне 375) и колонка вылезала за экран —
      station-body прятал это во внутренний горизонтальный скролл. */
   .station-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr 1fr; overflow-y: auto; }
-  .case-nav { border-right: none; border-bottom: 1px solid #ececec; }
-  .case-content { border-right: none; border-bottom: 1px solid #ececec; }
+  .case-nav { border-right: none; border-bottom: 1px solid var(--hairline-soft); }
+  .case-content { border-right: none; border-bottom: 1px solid var(--hairline-soft); }
 }
 
 @media (max-width: 600px) {
@@ -2272,7 +2267,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
    сработал, пустой клеткой читался бы как пропуск, и его пошли бы искать. */
 .cab-step.is-skipped {
   width: 8px; height: 1px; border: 0; border-radius: 0;
-  background: #d8dadd; position: relative; top: -1px;
+  background: var(--hairline); position: relative; top: -1px;
 }
 
 /* «Нужен человек»: причина словом, а не значком. Значок сообщал, что что-то есть,
@@ -3828,7 +3823,7 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .ved-f { display: flex; flex-direction: column; gap: 6px; flex: 1 1 220px; font-size: 14px; }
 .ved-f > span { color: var(--muted); font-size: 13px; }
 .ved-f input, .ved-f select {
-  font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid #cfd1d4;
+  font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--ctl-line);
   border-radius: var(--radius); background: var(--paper); color: var(--ink);
 }
 .ved-f input:focus, .ved-f select:focus { outline: 2px solid var(--jb); outline-offset: 0; border-color: var(--jb-ink); }
@@ -3878,7 +3873,7 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .ved-table td:nth-child(3), .ved-table td:nth-child(4) { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ved-name {
   font: inherit; font-weight: 500; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer;
-  text-decoration: underline dotted #b8babd; text-underline-offset: 4px;
+  text-decoration: underline dotted #a6a69f; text-underline-offset: 4px;
 }
 .ved-name:hover { text-decoration-color: var(--ink); }
 .ved-num {
@@ -3914,7 +3909,7 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .adm-nav a.is-on { color: var(--ink); border-bottom-color: var(--ink); }
 .adm-hd .cab-status { max-width: 320px; text-align: right; }
 .adm-find {
-  font: inherit; font-size: 14px; padding: 8px 12px; border: 1px solid #cfd1d4; border-radius: var(--radius);
+  font: inherit; font-size: 14px; padding: 8px 12px; border: 1px solid var(--ctl-line); border-radius: var(--radius);
   width: 260px; background: var(--paper); color: var(--ink);
 }
 .adm-find:focus { outline: 2px solid var(--jb); outline-offset: 0; border-color: var(--jb-ink); }
@@ -3932,7 +3927,7 @@ details.talk-folded[open] + .talk-kept { display: none; }
 .adm-list a { align-items: center; }
 .adm-list a span { font-size: 15px; }
 .adm-ai {
-  margin-left: 8px; padding: 1px 6px; border: 1px solid #cfd1d4; border-radius: 4px;
+  margin-left: 8px; padding: 1px 6px; border: 1px solid var(--ctl-line); border-radius: 4px;
   font-size: 11px; font-weight: 500; color: var(--muted); vertical-align: 2px;
 }
 .adm-wait {

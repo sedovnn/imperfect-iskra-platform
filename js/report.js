@@ -398,7 +398,7 @@ deep +
   }
 
   var REPORT_CSS = [
-    ":root{--lime:#ff4800;--lime-tint:#fff2ec;--lime-line:#ffd7c7;--accent:#ff4800;--ink:#181818;--paper:#fff;--muted:#6b6e73;--muted-soft:#9a9da2;--hair:#e7e7e7;--bandbg:#eaf3fb;--bandln:#bcd9f2;--jb:#89bbf1;--jb-ink:#2f6bb0;--radius:6px;--ff-d:'Inter Tight',sans-serif;--ff-b:'Inter Tight',sans-serif;}",
+    ":root{--lime:#ff4800;--lime-tint:#fff2ec;--lime-line:#ffd7c7;--accent:#ff4800;--ink:#181818;--paper:#fff;--muted:#6a6a63;--muted-soft:#9c9c95;--hair:#dbdbd9;--bandbg:#eaf3fb;--bandln:#bcd9f2;--jb:#89bbf1;--jb-ink:#2f6bb0;--radius:6px;--ff-d:'Inter Tight',sans-serif;--ff-b:'Inter Tight',sans-serif;}",
     "*{box-sizing:border-box;}",
     "body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--ff-b);line-height:1.55;-webkit-font-smoothing:antialiased;}",
     ".frame{padding:clamp(10px,2vw,22px);}",

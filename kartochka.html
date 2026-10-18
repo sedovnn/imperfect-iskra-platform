@@ -13,13 +13,13 @@
 <!-- Шрифт неблокирующе, как в кабинете (administrator.html): медленный ответ шрифтового CSS не держит скрипты. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=269" />
+<link rel="stylesheet" href="css/styles.css?v=270" />
 <!-- ⚠ КАРТОЧКА УЧАСТНИКА ОТДЕЛЬНЫМ ОКНОМ (решение владельца 15.10, макет согласован 15.10). Открывается из кабинета
      администратора по строке участника: kartochka.html#<номер>. Стили карточки — здесь, под префиксом kc-: они нужны
      только этой странице, а общий styles.css поднимал бы ключ кэша у семи страниц. Сетка — кегли 11/13/15/20/24,
      все кнопки и поля 36 px, колонка оценок фиксированной ширины: на экране ничего не перескакивает. -->
 <style>
-.kc{--ink:#181818;--g1:#6b6e73;--g2:#9a9da2;--line:#e7e7e7;--line2:#f0f0f0;--ctl:#d9dbde;--soft:#f4f5f6;--v:#ff4800;--vt:#fff0e9;--vi:#c23a00;--band:#eaf3fb;--bandl:#bcd9f2;--jb:#2f6bb0;
+.kc{--ink:#181818;--g1:#6a6a63;--g2:#9c9c95;--line:#dbdbd9;--line2:#ededec;--ctl:#dbdbd9;--soft:#f6f6f5;--v:#ff4800;--vt:#fff0e9;--vi:#cc3700;--band:#eaf3fb;--bandl:#bcd9f2;--jb:#2f6bb0;
   background:#fff;color:var(--ink);font-family:'Inter Tight',system-ui,sans-serif;font-size:15px;line-height:1.2;-webkit-font-smoothing:antialiased;min-height:100vh}
 .kc *{box-sizing:border-box}
 .kc p{margin:0}
@@ -31,7 +31,7 @@
 .kc-one{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kc-btn{height:36px;padding:0 14px;border-radius:4px;border:1px solid var(--ctl);background:#fff;color:var(--ink);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
 .kc-btn:hover{border-color:var(--ink)}
-.kc-btn-p{background:var(--v);border-color:var(--v);color:#fff}.kc-btn-p:hover{background:#e84100;border-color:#e84100}
+.kc-btn-p{background:var(--v);border-color:var(--v);color:#fff}.kc-btn-p:hover{background:#e63f00;border-color:#e63f00}
 .kc-btn-d{background:var(--ink);border-color:var(--ink);color:#fff}
 .kc-btn[disabled]{opacity:.4;cursor:default}.kc-btn[disabled]:hover{border-color:var(--ctl)}
 .kc-link{background:none;border:0;padding:0;height:36px;color:var(--jb);font-size:13px;font-weight:500;cursor:pointer}
@@ -99,7 +99,7 @@
 .kc-q summary:hover{color:var(--ink)}
 .kc-q .kc-chev{flex:none;transition:transform .15s}
 .kc-q[open] .kc-chev{transform:rotate(90deg)}
-.kc-q-full{margin:8px 0 4px 4px;padding-left:14px;border-left:1px solid var(--ctl);display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:20px;color:#3c3f44}
+.kc-q-full{margin:8px 0 4px 4px;padding-left:14px;border-left:1px solid var(--ctl);display:flex;flex-direction:column;gap:4px;font-size:13px;line-height:20px;color:var(--ink)}
 .kc-ans{font-size:15px;line-height:24px;overflow-wrap:anywhere}
 .kc-ans p{margin:0 0 8px}.kc-ans p:last-child{margin-bottom:0}
 .kc-ans b{font-weight:500}
@@ -111,7 +111,7 @@
 .kc-ans mark.kc-hl{background:var(--band);color:inherit;border-radius:2px}
 .kc-ans mark.kc-hl-f{background:var(--bandl)}
 .kc-none{font-size:13px;line-height:20px;color:var(--g1)}
-.kc-none b{font-weight:500;color:#3c3f44}
+.kc-none b{font-weight:500;color:var(--ink)}
 .kc-box{border:1px solid var(--line);border-radius:4px;padding:12px 16px;display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
 .kc-box-t{font-size:15px;font-weight:500;line-height:22px}
 
@@ -128,10 +128,10 @@
 .kc-rh .kc-chev{flex:none;color:var(--g2);transition:transform .15s}
 .kc-row-open .kc-rh .kc-chev{transform:rotate(180deg)}
 .kc-row-ctl .kc-rh{min-height:44px}
-.kc-row-ctl .kc-rn{font-size:13px;font-weight:500;color:#3c3f44}
+.kc-row-ctl .kc-rn{font-size:13px;font-weight:500;color:var(--ink)}
 .kc-panel{padding:0 0 16px 40px;display:flex;flex-direction:column;gap:12px}
-.kc-why{font-size:13px;line-height:20px;color:#3c3f44}
-.kc-flag{background:var(--vt);border-radius:4px;padding:8px 12px;font-size:13px;line-height:20px;color:#3c3f44}
+.kc-why{font-size:13px;line-height:20px;color:var(--ink)}
+.kc-flag{background:var(--vt);border-radius:4px;padding:8px 12px;font-size:13px;line-height:20px;color:var(--ink)}
 .kc-flag b{color:var(--vi);font-weight:500}
 .kc-bds{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .kc-bd{display:grid;grid-template-columns:20px 28px minmax(0,1fr);gap:0 6px;align-items:start;padding:6px 0;border-top:1px solid var(--line2);font-size:13px;line-height:20px}
@@ -140,8 +140,8 @@
 .kc-bd-ok .kc-ic{background:var(--band);color:var(--jb)}
 .kc-bd-no .kc-ic{background:var(--soft);color:var(--g1)}
 .kc-bd-amb .kc-ic{background:var(--v);color:#fff}
-.kc-bk{font-weight:500;color:#3c3f44;cursor:help}
-.kc-bt{min-width:0;color:#3c3f44;overflow-wrap:anywhere}
+.kc-bk{font-weight:500;color:var(--ink);cursor:help}
+.kc-bt{min-width:0;color:var(--ink);overflow-wrap:anywhere}
 .kc-bt b{font-weight:500}
 .kc-bd-amb .kc-bt b{color:var(--vi)}
 .kc a.kc-qt{display:block;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
@@ -184,7 +184,7 @@
 .kc-ed-f{display:flex;flex-direction:column;gap:4px}
 .kc-ta{border:1px solid var(--ctl);border-radius:4px;padding:8px 10px;font-size:15px;line-height:22px;background:#fff;color:var(--ink);width:100%;resize:vertical;font-family:inherit}
 .kc-ta:focus{outline:2px solid var(--jb);outline-offset:-1px}
-.kc-ed-cur{font-size:13px;line-height:20px;color:#3c3f44;padding:8px 12px;background:var(--soft);border-radius:4px;display:flex;flex-direction:column;gap:4px}
+.kc-ed-cur{font-size:13px;line-height:20px;color:var(--ink);padding:8px 12px;background:var(--soft);border-radius:4px;display:flex;flex-direction:column;gap:4px}
 .kc-msg{max-width:640px;margin:80px auto;padding:0 16px;font-size:15px;line-height:24px}
 
 @media (max-width:1180px){
