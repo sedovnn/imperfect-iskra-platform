@@ -23,9 +23,12 @@
   var root = el('kcRoot');
 
   var ABS = ['ak1', 'ak2', 'pr1', 'pr2', 'mk1', 'mk2', 'pp1', 'pp2', 'ga1', 'ga2'];
-  var AB = { ak1: 'Широта охвата среды', ak2: 'Глубина взаимосвязей', pr1: 'Выделение важного', pr2: 'Обоснование выбора',
-             mk1: 'Горизонт', mk2: 'Развилки будущего', pp1: 'Декомпозиция пути', pp2: 'Барьеры и ресурсы',
-             ga1: 'Генерация альтернатив', ga2: 'Источники идей' };
+  // Названия способностей — как в методологии (methodology/methodology_for_imp_v8.md, заголовки разделов; владелец 19.10:
+  // «приводи»). До 19.10 здесь стояли короткие и прежние названия: «Горизонт», «Развилки будущего», «Выделение важного»…
+  var AB = { ak1: 'Широта охвата факторов среды', ak2: 'Глубина анализа взаимосвязей', pr1: 'Выбор инициатив', pr2: 'Основание выбора',
+             mk1: 'Амбициозность цели', mk2: 'Множественность образов будущего', pp1: 'Декомпозиция цели и выстраивание маршрута',
+             pp2: 'Работа с ресурсами и ограничениями на пути к цели', ga1: 'Самостоятельная генерация альтернатив',
+             ga2: 'Привлечение идей из разных областей' };
   var CODE = { ak1: 'АК-1', ak2: 'АК-2', pr1: 'ПР-1', pr2: 'ПР-2', mk1: 'МК-1', mk2: 'МК-2', pp1: 'ПП-1', pp2: 'ПП-2', ga1: 'ГА-1', ga2: 'ГА-2' };
   var OF_CODE = {};
   ABS.forEach(function (a) { OF_CODE[CODE[a]] = a; });
@@ -353,10 +356,8 @@
     var pt = s && s.prelimTotal;
     var total = !s ? '—' : has(s.total) ? s.total : (pt && has(pt.min) ? (pt.min === pt.max ? String(pt.min) : pt.min + '–' + pt.max) : '—');
     var rep = d && d.report, checked = reportFresh(), published = !!(rep && rep.publishedAt);
-    var back = person && person.waveId ? 'administrator.html#w=' + encodeURIComponent(person.waveId) : 'administrator.html';
-    var waveName = person ? (waveNameOf(person.waveId) || '') : '';
     return '<header class="kc-top"><div class="kc-top-in">' +
-      '<div class="kc-who"><a class="kc-back" href="' + esc(back) + '">← ' + esc(waveName || 'Кабинет') + '</a><span class="kc-sep"></span>' +
+      '<div class="kc-who">' + backLink() + '<span class="kc-sep"></span>' +
         '<div class="kc-name kc-one">' + esc(bib6(bib)) + (personName() ? ' <span>· ' + esc(personName()) + '</span>' : '') +
           (person && person.noScore ? ' <span>· не оценивать</span>' : '') + '</div>' +
         (flagged.length ? '<button type="button" class="kc-attn" data-act="attn"><span class="kc-dot"></span>' +
@@ -383,9 +384,39 @@
           '<div class="kc-msep"></div>' +
           '<button type="button" class="kc-mi" data-act="svc"><b>Номер участника</b><span>имя, перенос в поток, сброс, удаление</span></button>' +
           '<button type="button" class="kc-mi" data-act="svc"><b>Служебное</b><span>версии, время по этапам</span></button>' +
+          // Удаление — прямо из меню (замечание владельца 19.10): раньше оно было только внизу карточки, за «Номер участника».
+          '<div class="kc-msep"></div>' +
+          '<button type="button" class="kc-mi kc-mi-del" data-act="del"><b>Удалить номер</b><span>вместе с ответами, оценками и отчётом</span></button>' +
         '</div>' : '') +
         '</div>' +
       '</div></div></header>';
+  }
+  // ⚠ ВОЗВРАТ В КАБИНЕТ — В ТУ ЖЕ ВКЛАДКУ КАБИНЕТА (замечание владельца 19.10). Карточку открывает кабинет отдельным окном
+  // (cabinet.js, openCard). Раньше «← поток» и «← В кабинет» после удаления открывали кабинет заново прямо в окне карточки:
+  // получался второй кабинет, и пока он входил по сохранённому паролю, на экране стояла форма входа. Теперь окно карточки
+  // переключает свой кабинет на нужный список, говорит ему, что случилось, и закрывается. Кабинета-родителя нет (карточку
+  // открыли по ссылке, кабинет закрыли) или браузер не дал закрыть окно — обычный переход по адресу.
+  // Номер без потока возвращается в список «Без потока», а не на «Все потоки».
+  function cabHash() {
+    if (!person) return '';
+    return !person.waveId || !waveNameOf(person.waveId) ? '#w=none' : '#w=' + encodeURIComponent(person.waveId);
+  }
+  function backLink() {
+    var h = cabHash(), name = h === '#w=none' ? 'Без потока' : (person ? waveNameOf(person.waveId) : '');
+    return '<a class="kc-back" href="administrator.html' + esc(h) + '" data-hash="' + esc(h) + '">← ' + esc(name || 'Кабинет') + '</a>';
+  }
+  function toCabinet(hash, note) {
+    var op = null;
+    try { if (window.opener && !window.opener.closed && /administrator\.html$/.test(window.opener.location.pathname)) op = window.opener; } catch (e) {}
+    if (op) {
+      try {
+        if ((op.location.hash || '') !== hash) op.location.hash = hash;
+        op.postMessage({ imp: 'kartochka', note: note || '' }, location.origin);
+        op.focus();
+      } catch (e) {}
+      window.close();
+    }
+    setTimeout(function () { location.href = 'administrator.html' + hash; }, op ? 400 : 0);
   }
   function waveNameOf(id) {
     var w = waves.filter(function (x) { return String(x.id) === String(id); })[0];
@@ -442,7 +473,7 @@
           var f = finalOf(a), sceneId = f.scene || (a === 'ga1' ? 'all' : '');
           var tip = f.ov ? 'поставили вы' : f.flagged ? 'отмечено для проверки' : (sceneId ? 'итог взят: ' + sceneTitle(sceneId) : '');
           return '<a class="kc-ab" href="#' + esc(sceneId ? 'kc-' + sceneId : '') + '" data-act="go" data-ab="' + a + '" title="' + esc(tip) + '">' +
-            '<span class="kc-ab-n kc-one">' + esc(AB[a]) + '</span><span class="' + lvCls(f.lv, f, true) + '">' + (f.lv === null ? '—' : f.lv) + '</span></a>';
+            '<span class="kc-ab-n">' + esc(AB[a]) + '</span><span class="' + lvCls(f.lv, f, true) + '">' + (f.lv === null ? '—' : f.lv) + '</span></a>';
         }).join('') + '</div>';
     }).join('');
   }
@@ -872,6 +903,8 @@
   function setState(t) { ui.stateText = t; var x = el('kcState'); if (x) x.textContent = t; }
 
   root.addEventListener('click', function (ev) {
+    var bl = ev.target.closest('a.kc-back');
+    if (bl && !(ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey)) { ev.preventDefault(); toCabinet(bl.getAttribute('data-hash') || '', ''); return; }
     var t = ev.target.closest('[data-act]');
     if (!t || t.disabled) return;
     var act = t.getAttribute('data-act'), a = t.getAttribute('data-ab');
@@ -1246,29 +1279,39 @@
     window.imp.confirm('Перенести ' + bib6(bib) + ' в поток «' + (to.name || to.num) + '»? Ответы, оценки и отчёт останутся за номером.', { confirmLabel: 'Перенести' })
       .then(function (yes) { if (yes) call('setParticipantWave', { bib: bib, wave: to.id }).then(function (r) { after(r, 'номер перенесён в «' + (to.name || to.num) + '»'); }); });
   }
-  function gone(text) {
-    root.innerHTML = '<div class="kc-msg"><p>' + esc(text) + '</p><p style="margin-top:12px"><a href="administrator.html">← В кабинет</a></p></div>';
+  // Исход действия с номером неясен (сервер не ответил): сказать, что известно, и дать обновить карточку или вернуться.
+  function notice(text) {
+    root.innerHTML = '<div class="kc-msg"><p>' + esc(text) + '</p><p style="margin-top:12px;display:flex;gap:14px;align-items:center">' +
+      '<button type="button" class="kc-btn" id="kcRetry">Обновить карточку</button>' + backLink() + '</p></div>';
+    el('kcRetry').addEventListener('click', function () { root.innerHTML = '<p class="kc-msg">Загружаю карточку…</p>'; reload(); });
   }
   function resetNumber() {
     window.imp.confirm('Стереть ассессмент у ' + bib6(bib) + '? Ответы, оценки и ручные правки уровней по этому номеру исчезнут. Отменить это нельзя.',
       { confirmLabel: 'Стереть', danger: true }).then(function (yes) {
       if (!yes) return;
       call('resetProgress', { bib: bib, confirm: 'RESET' }).then(function (r) {
-        if (r && r.ok) return gone('Ассессмент у ' + bib6(bib) + ' стёрт. Номер остался за участником.');
-        if (r === null) return gone('Сервер отвечает долго — сброс, скорее всего, прошёл. Проверьте строку в кабинете через минуту.');
+        // Номер остался — карточка остаётся открытой и показывает его без ассессмента (раньше — тупиковый экран, 19.10).
+        if (r && r.ok) { ui.note = 'Ассессмент у ' + bib6(bib) + ' стёрт. Номер остался за участником.'; return reload(); }
+        if (r === null) return notice('Сервер отвечает долго — сброс, скорее всего, прошёл. Обновите карточку через минуту.');
         return after(r);
       });
     });
+  }
+  // Номера больше нет — карточке нечего показывать: возвращаемся в кабинет, к списку, где он был, с отметкой об удалении.
+  function removed() {
+    var h = cabHash(), note = 'номер ' + bib6(bib) + ' удалён';
+    root.innerHTML = '<div class="kc-msg"><p>Номер ' + esc(bib6(bib)) + ' удалён. Возвращаю в кабинет…</p><p style="margin-top:12px">' + backLink() + '</p></div>';
+    toCabinet(h, note);
   }
   function deleteNumber() {
     window.imp.confirm('Удалить номер ' + bib6(bib) + ' вместе с ответами, оценками и отчётом? Отменить нельзя.', { confirmLabel: 'Удалить', danger: true }).then(function (yes) {
       if (!yes) return;
       call('deleteParticipant', { bib: bib }).then(function (r) {
-        if (r && r.ok) return gone('Номер ' + bib6(bib) + ' удалён.');
+        if (r && r.ok) return removed();
         // Нет ответа ≠ не удалено (06.10): удаление идёт после того, как браузер перестал ждать. Сверяем список.
         if (r === null) return call('v2List', {}).then(function (lst) {
           var still = lst && lst.ok && (lst.participants || []).concat(lst.roster || []).some(function (p) { return bk(p.bib) === bk(bib); });
-          gone(still ? 'Сервер не ответил, номер в списке ещё есть — попробуйте ещё раз из кабинета.' : 'Номер ' + bib6(bib) + ' удалён.');
+          if (still) notice('Сервер не ответил, номер в списке ещё есть — попробуйте удалить ещё раз.'); else removed();
         });
         return after(r);
       });
@@ -1308,8 +1351,11 @@
   // Номер есть, ассессмента нет: карточка из одних действий с номером.
   function renderNotFound() {
     ui.svc = true;
+    var note = ui.note || ''; ui.note = '';
     root.innerHTML = '<div class="kc-app" style="grid-template-columns:minmax(0,1fr)"><main class="kc-main"><div class="kc-stage">' +
+      '<p style="margin:0 0 10px">' + backLink() + '</p>' +
       '<div class="kc-st-h"><h2>' + esc(bib6(bib)) + (personName() ? ' · ' + esc(personName()) : '') + '</h2></div>' +
+      (note ? '<p class="kc-s" style="color:var(--ink)">' + esc(note) + '</p>' : '') +
       '<p class="kc-s">Ассессмент по этому номеру ещё не начат.</p></div>' + svcHtml() + '</main></div>';
   }
 

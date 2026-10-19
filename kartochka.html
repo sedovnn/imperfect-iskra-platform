@@ -13,7 +13,7 @@
 <!-- Шрифт неблокирующе, как в кабинете (administrator.html): медленный ответ шрифтового CSS не держит скрипты. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=272" />
+<link rel="stylesheet" href="css/styles.css?v=273" />
 <!-- ⚠ КАРТОЧКА УЧАСТНИКА ОТДЕЛЬНЫМ ОКНОМ (решение владельца 15.10, макет согласован 15.10). Открывается из кабинета
      администратора по строке участника: kartochka.html#<номер>. Стили карточки — здесь, под префиксом kc-: они нужны
      только этой странице, а общий styles.css поднимал бы ключ кэша у семи страниц. Сетка — кегли 11/13/15/20/24,
@@ -67,6 +67,7 @@
 .kc-mi:hover{background:var(--soft)}
 .kc-mi[disabled]{cursor:default}.kc-mi[disabled] b{color:var(--g2)}.kc-mi[disabled]:hover{background:none}
 .kc-msep{height:1px;background:var(--line);margin:4px 0}
+.kc-mi-del b{color:var(--vi)}
 .kc-warn{max-width:1440px;margin:0 auto;padding:8px 32px;font-size:13px;color:var(--vi);background:var(--vt)}
 
 .kc-app{max-width:1440px;margin:0 auto;padding:0 32px;display:grid;grid-template-columns:248px minmax(0,1fr);gap:48px}
@@ -75,7 +76,9 @@
 .kc-sk-h{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:28px;font-size:13px;font-weight:500;line-height:18px}
 .kc-sk-h i{font-style:normal;font-weight:400;color:var(--g1)}
 .kc-sk-h span:last-child{white-space:nowrap}
-.kc a.kc-ab{display:flex;align-items:center;gap:8px;height:32px;color:var(--ink);font-size:13px;border-top:1px solid var(--line2)}
+/* Высота — по содержимому (19.10): названия способностей теперь полные, как в методологии, и длинное переносится на вторую
+   строку, а не обрезается многоточием. */
+.kc a.kc-ab{display:flex;align-items:center;gap:8px;min-height:32px;padding:5px 0;line-height:1.3;color:var(--ink);font-size:13px;border-top:1px solid var(--line2)}
 .kc a.kc-ab:hover{color:var(--ink)}.kc-ab:hover .kc-ab-n{text-decoration:underline;text-underline-offset:3px}
 .kc-ab-n{flex:1;min-width:0}
 .kc-nav{display:flex;flex-direction:column}
@@ -206,7 +209,10 @@
 </head>
 <body data-page="kartochka">
 
-<div id="kcGate" class="gate" style="display:none;">
+<!-- С экрана входа есть куда уйти — как у кабинетов (вариант Б, владелец 19.10: «делай»): шапка с логотипом на главную и
+     ссылки под кнопкой. Экран виден, только если карточку открыли без входа: из кабинета она входит сама. -->
+<div id="kcGate" class="gate gate-cab" style="display:none;">
+  <header class="gate-head"><a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 59.29 57.69" xmlns="http://www.w3.org/2000/svg"><path d="M9.94 27.73C8.41 22.99 -0.94 4.76 0.08 1.75C0.36 0.92 0.89 0.48 1.98 0.02C8.65 -0.71 50.12 15.72 57.23 19.99C58.2 20.58 59.21 22.02 59.28 22.79C59.37 23.68 58.95 25.38 58.27 26C52.27 31.12 10.29 57.55 4.26 57.69C3.07 57.32 2.44 56.88 2.02 56.05C0.43 52.9 8.89 32.86 9.94 27.73Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a><span class="gate-head-k">кабинет</span></header>
   <div class="gate-card">
     <p class="kicker">Кабинет</p>
     <h2>Карточка участника</h2>
@@ -216,6 +222,7 @@
     </div>
     <p class="field-err" id="kcPassErr" style="display:none;">Неверный пароль.</p>
     <button class="btn btn-primary btn-block" id="kcPassBtn" style="margin-top:14px;">Войти →</button>
+    <p class="gate-links"><a href="index.html">← на главную</a><span>·</span><a href="administrator.html">кабинет администратора</a></p>
   </div>
 </div>
 
@@ -232,6 +239,6 @@
 <script src="js/mechanics.js?v=103"></script>
 <!-- mech-fields.js — после mechanics.js: читает его подписи (window.imp.mechCopy). -->
 <script src="js/mech-fields.js?v=57"></script>
-<script src="js/kartochka.js?v=4"></script>
+<script src="js/kartochka.js?v=7"></script>
 </body>
 </html>

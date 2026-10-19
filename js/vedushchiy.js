@@ -58,6 +58,7 @@
     if (!silent) { btn.disabled = true; btn.textContent = 'Проверяю…'; }
     return window.imp.callApi('verifyPassword', { password: key }).then(function (res) {
       btn.disabled = false; btn.textContent = 'Войти →';
+      el('vedGate').classList.remove('is-auto');
       if (!res || !res.ok) {
         err.textContent = !res ? 'Сервер не ответил. Нажмите «Войти» ещё раз.'
           : (res.error === 'unauthorized' ? 'Ключ не подошёл.' : 'Сервер ответил ошибкой: ' + String(res.error || ''));
@@ -395,5 +396,6 @@
   } catch (x) {}
   var saved = '';
   try { saved = sessionStorage.getItem(PW_KEY) || ''; } catch (e) {}
-  if (saved) login(saved, true);
+  // Вход по сохранённому ключу — без формы, как у администратора (cabinet.js, 19.10).
+  if (saved) { el('vedGate').classList.add('is-auto'); login(saved, true); }
 })();

@@ -139,6 +139,7 @@
     btn.disabled = true; btn.textContent = auto ? 'Вхожу…' : 'Проверяю…';
     window.imp.callApi('verifyPassword', { password: val }).then(function (res) {
       btn.disabled = false; btn.textContent = 'Войти →';
+      gate.classList.remove('is-auto');
       if (!res || !res.ok) {
         err.textContent = !res
           ? 'Сервер не ответил. Первый вызов после паузы бывает долгим — нажмите «Войти» ещё раз.'
@@ -656,7 +657,8 @@
             (waiting.length || judging ? '<button type="button" class="btn btn-primary btn-sm" id="admJudgeAll"' + (judging ? ' disabled' : '') + '>' +
               (judging ? 'Оцениваю…' : 'Оценить закончивших (' + waiting.length + ')') + '</button>' : '') + '</span></div>' +
           peopleTable(list)
-        : '<p class="ved-empty">Пока никого. Участники появятся здесь сами, как только зарегистрируются по ссылке.</p>';
+        : (none ? '<p class="ved-empty">Номеров без потока нет. <a href="#">← все потоки</a></p>'
+                : '<p class="ved-empty">Пока никого. Участники появятся здесь сами, как только зарегистрируются по ссылке.</p>');
     } else {
       body = settingsHtml(w);
     }
@@ -1126,14 +1128,24 @@
     if (sessionStorage.getItem('imp_cab_out')) { sessionStorage.removeItem('imp_cab_out'); el('cabOutNote').style.display = ''; }
   } catch (x) {}
   el('vedQrFull').addEventListener('click', function () { el('vedQrFull').style.display = 'none'; });
-  // Вернулись из карточки (она в другой вкладке) — список догоняет то, что там поменяли: оценку, правку уровня, перенос.
-  window.addEventListener('focus', function () { if (pw && !judging && route().view === 'wave') refresh(true); });
+  // Вернулись из карточки (она в другой вкладке) — список догоняет то, что там поменяли: оценку, правку уровня, перенос,
+  // удаление. С 19.10 — в любом разделе: прежде догонял только список потока, а поиск и «Все потоки» показывали удалённый
+  // номер и старые счётчики. Карточка, закрываясь сама (удаление, «← поток»), ещё и говорит, что случилось (kartochka.js).
+  window.addEventListener('focus', function () { if (pw && !judging) refresh(true); });
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin || !e.data || e.data.imp !== 'kartochka') return;
+    if (e.data.note) say(e.data.note);
+    if (pw) refresh(true);
+  });
 
   (function auto() {
     var saved = '';
     try { saved = sessionStorage.getItem(PW_KEY) || ''; } catch (e) {}
     if (!saved) return;
     el('cabPass').value = saved;
+    // Вход по сохранённому паролю — без формы (замечание владельца 19.10): прежде форма с подставленным паролем стояла на
+    // экране, пока сервер проверял пароль, и выглядело это как «выкинуло на вход». Форма вернётся, только если пароль не подошёл.
+    gate.classList.add('is-auto');
     login(true);
   })();
 })();
