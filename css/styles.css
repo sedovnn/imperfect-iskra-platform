@@ -1232,11 +1232,6 @@ body.imp-drawer-open .dock-rail { display: none; }
 .gate-out { font-size: var(--fs-util); color: var(--muted); margin: 0 0 18px; padding: 10px 12px; background: var(--soft); border-radius: 6px; }
 .gate-links { margin: 22px 0 0; font-size: var(--fs-util); color: var(--muted-soft); display: flex; gap: 10px; flex-wrap: wrap; }
 .gate-links a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--hairline); }
-/* Вход по сохранённому паролю (19.10): пока сервер проверяет, вместо формы — строка «Вхожу в кабинет…»; форма вернётся,
-   только если пароль не подошёл (js/cabinet.js, js/vedushchiy.js). */
-.gate-auto { display: none; color: var(--muted); margin: 0; }
-.gate-cab.is-auto .gate-auto { display: block; }
-.gate-cab.is-auto .gate-card > :not(.kicker):not(h2):not(.gate-auto) { display: none; }
 
 .gate-card {
   background: var(--paper);

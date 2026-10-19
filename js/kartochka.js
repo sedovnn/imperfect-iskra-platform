@@ -391,32 +391,16 @@
         '</div>' +
       '</div></div></header>';
   }
-  // ⚠ ВОЗВРАТ В КАБИНЕТ — В ТУ ЖЕ ВКЛАДКУ КАБИНЕТА (замечание владельца 19.10). Карточку открывает кабинет отдельным окном
-  // (cabinet.js, openCard). Раньше «← поток» и «← В кабинет» после удаления открывали кабинет заново прямо в окне карточки:
-  // получался второй кабинет, и пока он входил по сохранённому паролю, на экране стояла форма входа. Теперь окно карточки
-  // переключает свой кабинет на нужный список, говорит ему, что случилось, и закрывается. Кабинета-родителя нет (карточку
-  // открыли по ссылке, кабинет закрыли) или браузер не дал закрыть окно — обычный переход по адресу.
-  // Номер без потока возвращается в список «Без потока», а не на «Все потоки».
+  // ⚠ ВОЗВРАТ — К СПИСКУ ПОТОКА В ТОЙ ЖЕ ВКЛАДКЕ (владелец 19.10: «нормальный возврат и перемещение, без лишних шагов»).
+  // С 19.10 кабинет открывает карточку в своей же вкладке (cabinet.js, openCard), и кабинет по паролю этой вкладки входит
+  // без экрана входа. «← поток» — обычная ссылка; номер без потока возвращается в «Без потока», а не на «Все потоки».
   function cabHash() {
     if (!person) return '';
     return !person.waveId || !waveNameOf(person.waveId) ? '#w=none' : '#w=' + encodeURIComponent(person.waveId);
   }
   function backLink() {
     var h = cabHash(), name = h === '#w=none' ? 'Без потока' : (person ? waveNameOf(person.waveId) : '');
-    return '<a class="kc-back" href="administrator.html' + esc(h) + '" data-hash="' + esc(h) + '">← ' + esc(name || 'Кабинет') + '</a>';
-  }
-  function toCabinet(hash, note) {
-    var op = null;
-    try { if (window.opener && !window.opener.closed && /administrator\.html$/.test(window.opener.location.pathname)) op = window.opener; } catch (e) {}
-    if (op) {
-      try {
-        if ((op.location.hash || '') !== hash) op.location.hash = hash;
-        op.postMessage({ imp: 'kartochka', note: note || '' }, location.origin);
-        op.focus();
-      } catch (e) {}
-      window.close();
-    }
-    setTimeout(function () { location.href = 'administrator.html' + hash; }, op ? 400 : 0);
+    return '<a class="kc-back" href="administrator.html' + esc(h) + '">← ' + esc(name || 'Кабинет') + '</a>';
   }
   function waveNameOf(id) {
     var w = waves.filter(function (x) { return String(x.id) === String(id); })[0];
@@ -903,8 +887,6 @@
   function setState(t) { ui.stateText = t; var x = el('kcState'); if (x) x.textContent = t; }
 
   root.addEventListener('click', function (ev) {
-    var bl = ev.target.closest('a.kc-back');
-    if (bl && !(ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey)) { ev.preventDefault(); toCabinet(bl.getAttribute('data-hash') || '', ''); return; }
     var t = ev.target.closest('[data-act]');
     if (!t || t.disabled) return;
     var act = t.getAttribute('data-act'), a = t.getAttribute('data-ab');
@@ -1297,11 +1279,11 @@
       });
     });
   }
-  // Номера больше нет — карточке нечего показывать: возвращаемся в кабинет, к списку, где он был, с отметкой об удалении.
+  // Номера больше нет — карточке нечего показывать: сразу к списку потока, где он был; строка «номер … удалён» — в статусе
+  // кабинета. replace, а не переход: «назад» не должен возвращать в карточку удалённого номера.
   function removed() {
-    var h = cabHash(), note = 'номер ' + bib6(bib) + ' удалён';
-    root.innerHTML = '<div class="kc-msg"><p>Номер ' + esc(bib6(bib)) + ' удалён. Возвращаю в кабинет…</p><p style="margin-top:12px">' + backLink() + '</p></div>';
-    toCabinet(h, note);
+    try { sessionStorage.setItem('imp_cab_note', 'номер ' + bib6(bib) + ' удалён'); } catch (e) {}
+    location.replace('administrator.html' + cabHash());
   }
   function deleteNumber() {
     window.imp.confirm('Удалить номер ' + bib6(bib) + ' вместе с ответами, оценками и отчётом? Отменить нельзя.', { confirmLabel: 'Удалить', danger: true }).then(function (yes) {

@@ -58,8 +58,8 @@
     if (!silent) { btn.disabled = true; btn.textContent = 'Проверяю…'; }
     return window.imp.callApi('verifyPassword', { password: key }).then(function (res) {
       btn.disabled = false; btn.textContent = 'Войти →';
-      el('vedGate').classList.remove('is-auto');
       if (!res || !res.ok) {
+        el('vedApp').style.display = 'none'; el('vedGate').style.display = '';
         err.textContent = !res ? 'Сервер не ответил. Нажмите «Войти» ещё раз.'
           : (res.error === 'unauthorized' ? 'Ключ не подошёл.' : 'Сервер ответил ошибкой: ' + String(res.error || ''));
         err.style.display = '';
@@ -396,6 +396,11 @@
   } catch (x) {}
   var saved = '';
   try { saved = sessionStorage.getItem(PW_KEY) || ''; } catch (e) {}
-  // Вход по сохранённому ключу — без формы, как у администратора (cabinet.js, 19.10).
-  if (saved) { el('vedGate').classList.add('is-auto'); login(saved, true); }
+  // Ключ этой вкладки уже вводили — сразу кабинет, без экрана входа, как у администратора (cabinet.js, 19.10). Сервер ключ
+  // всё равно проверяет; не подошёл — вернётся экран входа.
+  if (saved) {
+    el('vedGate').style.display = 'none'; el('vedApp').style.display = '';
+    el('vedMain').innerHTML = '<p class="ved-dim">Загружаю потоки и участников…</p>';
+    login(saved, true);
+  }
 })();
