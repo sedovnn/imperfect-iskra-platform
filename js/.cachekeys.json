@@ -153,19 +153,19 @@
   }
  },
  "js/mech-fields.js": {
-  "sha": "fbde71a137f8",
+  "sha": "9591e4b4aafc",
   "keys": {
-   "assessment.html": 55,
-   "harness.html": 55,
-   "kartochka.html": 55
+   "assessment.html": 57,
+   "harness.html": 57,
+   "kartochka.html": 57
   }
  },
  "js/mechanics.js": {
-  "sha": "d841b796e008",
+  "sha": "b479426d69a0",
   "keys": {
-   "assessment.html": 102,
-   "harness.html": 102,
-   "kartochka.html": 102
+   "assessment.html": 103,
+   "harness.html": 103,
+   "kartochka.html": 103
   }
  },
  "js/qr.js": {
@@ -188,15 +188,15 @@
   }
  },
  "js/scenes.js": {
-  "sha": "8be69246f372",
+  "sha": "f88f8f9483e5",
   "keys": {
-   "administrator.html": 206,
-   "assessment.html": 206,
-   "harness.html": 206,
-   "intro.html": 206,
-   "kartochka.html": 206,
-   "role.html": 206,
-   "vedushchiy.html": 206
+   "administrator.html": 207,
+   "assessment.html": 207,
+   "harness.html": 207,
+   "intro.html": 207,
+   "kartochka.html": 207,
+   "role.html": 207,
+   "vedushchiy.html": 207
   }
  },
  "js/typo.js": {
