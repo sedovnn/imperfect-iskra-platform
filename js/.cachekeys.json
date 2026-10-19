@@ -127,9 +127,9 @@
   }
  },
  "js/harness-core.js": {
-  "sha": "d0410935e15a",
+  "sha": "f33d9209e9a3",
   "keys": {
-   "harness.html": 6
+   "harness.html": 7
   }
  },
  "js/kartochka.js": {
@@ -153,11 +153,11 @@
   }
  },
  "js/mech-fields.js": {
-  "sha": "9591e4b4aafc",
+  "sha": "ac1c03546b88",
   "keys": {
-   "assessment.html": 57,
-   "harness.html": 57,
-   "kartochka.html": 57
+   "assessment.html": 58,
+   "harness.html": 58,
+   "kartochka.html": 58
   }
  },
  "js/mechanics.js": {

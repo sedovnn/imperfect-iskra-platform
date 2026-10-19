@@ -143,6 +143,9 @@
     if (step.mech === 'seal') {
       key = (run.sealStage === 'phrase') ? 'formPhrase' : (run.sealBack ? 'formHeld' : 'form');
     }
+    // Последний вопрос Лемеха — разговором с 19.10: поле одно, вопрос звучит репликой. Запись в реестре mechPlain без этой
+    // строки ничего не давала — харнесс спрашивал формой JSON (найдено проверкой харнесса 19.10).
+    if (step.mech === 'goal') key = 'form';
     return (key && window.imp.mechPlain.is(step.mech, key)) ? key : null;
   }
 
