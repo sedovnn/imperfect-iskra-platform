@@ -142,8 +142,10 @@
             <label for="entryCode">Номер участника — 6 знаков</label>
             <!-- ⚠ inputmode УБРАН (правка 28.09): номер теперь буквенно-цифровой, и
                  числовая клавиатура на планшете не даёт ввести буквы вовсе.
-                 autocapitalize/spellcheck выключены — иначе браузер «исправляет» номер. -->
-            <input class="code-input" id="entryCode" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="6" placeholder="HK7RQ4" />
+                 autocapitalize/spellcheck выключены — иначе браузер «исправляет» номер.
+                 maxlength снят 19.10: браузер резал вставку до очистки, и «№ 2GJEP2» из кабинета
+                 превращалось в «2GJE»; шесть знаков держит обработчик input ниже. -->
+            <input class="code-input" id="entryCode" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="HK7RQ4" />
           </div>
           <!-- ⚠ ПОЛЕ ПАРОЛЯ СНЯТО (решение владельца 29.09). Номер стал шестью
                случайными знаками, перебирать его нечего, а пароль всё равно был
@@ -371,8 +373,18 @@
     try { codeEl.focus(); } catch (e) {}
   }
 
+  // ⚠ В НОМЕРЕ ЕСТЬ БУКВЫ (правка 28.09, genBib_ в code.js: буква — в каждом номере). До 19.10 здесь
+  // стояло replace(/\D/g, ''): поле выбрасывало буквы на каждом нажатии, «2GJEP2» становилось «22», и
+  // войти по номеру, выданному после 28.09, было нельзя. Оставляем латиницу и цифры, приводим к верхнему
+  // регистру, как в проверке при отправке; курсор держим на месте — иначе правка в середине прыгает в конец.
   codeEl.addEventListener('input', function () {
-    codeEl.value = codeEl.value.replace(/\D/g, '').slice(0, 6);
+    var raw = codeEl.value;
+    var v = raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+    if (v !== raw) {
+      var at = Math.min(raw.slice(0, codeEl.selectionStart || 0).replace(/[^A-Za-z0-9]/g, '').length, v.length);
+      codeEl.value = v;
+      try { codeEl.setSelectionRange(at, at); } catch (e) {}
+    }
     errEl.classList.remove('show');
   });
 

@@ -57,7 +57,9 @@
         <form class="entry-form" id="reportForm" novalidate autocomplete="off">
           <div class="field">
             <label for="reportCode">Номер участника — 6 знаков</label>
-            <input class="code-input" id="reportCode" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" maxlength="6" placeholder="HK7RQ4" />
+            <!-- maxlength снят 19.10, как на входе (index.html): браузер резал вставку до очистки, и «№ 2GJEP2» из кабинета давало
+                 «№ 2GJE»; шесть знаков держит обработчик input в скрипте ниже. -->
+            <input class="code-input" id="reportCode" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="HK7RQ4" />
           </div>
           <button type="submit" class="btn btn-primary btn-block" id="reportGo">Открыть отчёт →</button>
           <p class="entry-err" id="reportErr" role="status"></p>
@@ -81,6 +83,18 @@
   var go = document.getElementById('reportGo');
   var err = document.getElementById('reportErr');
   var say = function (t) { err.textContent = t; err.classList.toggle('show', !!t); };
+  // Номер очищается при вводе так же, как на входе (index.html, 19.10): латиница и цифры, верхний регистр, шесть
+  // знаков; курсор остаётся на месте — иначе правка в середине прыгает в конец.
+  input.addEventListener('input', function () {
+    var raw = input.value;
+    var v = raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+    if (v !== raw) {
+      var at = Math.min(raw.slice(0, input.selectionStart || 0).replace(/[^A-Za-z0-9]/g, '').length, v.length);
+      input.value = v;
+      try { input.setSelectionRange(at, at); } catch (e) {}
+    }
+    say('');
+  });
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var bib = String(input.value || '').trim().toUpperCase();
