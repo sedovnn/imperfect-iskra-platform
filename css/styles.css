@@ -957,7 +957,7 @@ body.imp-drawer-open .dock-rail { display: none; }
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
   background: #fff2ec; border-top: 2px solid #ff4800;
   padding: 12px max(16px, calc((100vw - var(--maxw)) / 2 + var(--frame-pad)));
-  font-size: var(--fs-op-sm); line-height: 1.2; color: #7a3a22;
+  font-size: var(--fs-op-sm); line-height: 1.2; color: var(--ink);
   max-height: 42vh; overflow-y: auto;
 }
 .demo-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 0 0 7px; }
@@ -967,10 +967,10 @@ body.imp-drawer-open .dock-rail { display: none; }
   border-radius: 3px; padding: 2px 7px;
 }
 .demo-step { font-size: var(--fs-read); font-weight: 500; color: #cc3700; }
-.demo-where { color: #a3705c; }
-.demo-p { margin: 0 0 5px; max-width: 92ch; font-size: var(--fs-dense); line-height: 1.2; color: #7a3a22; }
+.demo-where { color: var(--muted); }
+.demo-p { margin: 0 0 5px; max-width: 92ch; font-size: var(--fs-dense); line-height: 1.2; color: var(--ink); }
 .demo-p b { color: #cc3700; font-weight: 500; }
-.demo-p-dim { color: #96604a; margin-bottom: 0; }
+.demo-p-dim { color: var(--muted); margin-bottom: 0; }
 @media (max-width: 720px) { .demo-bar { max-height: 50vh; } }
 
 .cheat-block > summary::-webkit-details-marker { display: none; }
@@ -1078,7 +1078,7 @@ body.imp-drawer-open .dock-rail { display: none; }
 
 .form-error {
   font-size: var(--fs-op);
-  color: #c4362b;
+  color: #cc3700; /* вермилион 700, как ошибка входа (19.10) */
   margin-top: -10px;
   margin-bottom: 16px;
   display: none;
@@ -1137,7 +1137,6 @@ body.imp-drawer-open .dock-rail { display: none; }
 }
 
 .tag.tag-key { border-color: var(--hairline); background: var(--soft); color: var(--ink); }
-.tag.tag-moves { border-color: #d8d2f5; background: #f5f2ff; color: #6247aa; }
 .tag.tag-none { border-color: var(--hairline); background: var(--soft); color: var(--muted-soft); }
 .role {
   background: var(--paper);
@@ -2197,7 +2196,7 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .tmr-now { position: relative; flex: 0 1 320px; min-width: max-content; display: inline-flex; align-items: center; gap: 8px;
   padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--band); overflow: hidden; }
 .tmr-now > i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--band-line); transition: width .8s linear; }
-.tmr-now.is-warn > i { background: #9cc2ea; }
+.tmr-now.is-warn > i { background: #9ac6f4; } /* Jordy Blue 400 гайда (19.10) */
 .tmr-now .tmr-dot { position: relative; background: var(--jb-ink); color: var(--paper); }
 .tmr-now-t { position: relative; font-size: var(--fs-util); font-weight: 500; color: var(--ink); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
