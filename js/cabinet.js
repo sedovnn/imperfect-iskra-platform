@@ -631,7 +631,9 @@
 
   function renderWave(w) {
     var none = w === 'none', c = waveStat(w), list = inWave(w);
-    var waiting = list.filter(needsJudge);
+    // Уже стоящие в очереди кабинета в счёт кнопки не входят: они у себя в строке «в очереди».
+    var waiting = list.filter(function (p) { return needsJudge(p) && !rowState(p.bib); });
+    var inRun = judging || !!rowActive || rowQueue.length > 0;
     if (none) tab = 'people';
     var head =
       '<p class="ved-k">' + (none ? 'Номера без потока'
@@ -655,8 +657,8 @@
             // Выгрузка результатов потока (владелец 17.10, вместо всех отчётов одной страницей) и отчёт по потоку (03.10, 14.10) —
             // предварительный по нынешним оценкам и окончательный, когда проверены все оценённые.
             (none ? '' : teamButtonsHtml(list)) +
-            (waiting.length || judging ? '<button type="button" class="btn btn-primary btn-sm" id="admJudgeAll"' + (judging ? ' disabled' : '') + '>' +
-              (judging ? 'Оцениваю…' : 'Оценить закончивших (' + waiting.length + ')') + '</button>' : '') + '</span></div>' +
+            (waiting.length || inRun ? '<button type="button" class="btn btn-primary btn-sm" id="admJudgeAll"' + (inRun ? ' disabled' : '') + '>' +
+              (inRun ? 'Оцениваю…' : 'Оценить закончивших (' + waiting.length + ')') + '</button>' : '') + '</span></div>' +
           peopleTable(list)
         : (none ? '<p class="ved-empty">Номеров без потока нет. <a href="#">← все потоки</a></p>'
                 : '<p class="ved-empty">Пока никого. Участники появятся здесь сами, как только зарегистрируются по ссылке.</p>');
@@ -856,39 +858,22 @@
   }
 
   // ---------- оценка закончивших ----------
-  // По одному участнику, подряд: та же постановка в очередь и тот же разбор, что у
-  // кнопки «Оценить» в карточке. Каждая оценка — платные вызовы судьи, поэтому сначала
-  // вопрос с числом. Счёт идёт в строке состояния в шапке: список под ней перерисовывается.
+  // Каждая оценка — платные вызовы судьи, поэтому сначала вопрос с числом.
+  // ⚠ ВСЕ — В ОЧЕРЕДЬ СТРОК (владелец 19.10, «делай»). У массового запуска был свой цикл: остальные участники стояли в списке
+  // с обычной кнопкой «Оценить», а уход со страницы (с 19.10 карточка открывается в той же вкладке) молча обрывал цикл без
+  // вопроса «Покинуть сайт?». 19.10 так оценился один из четырёх, у него недобранной осталась ПП-1, остальные трое не
+  // поставлены вовсе. Теперь запуск ставит всех в ту же очередь, что кнопка в строке: у каждого сразу «в очереди», и закрытие
+  // или уход со страницы спрашивает.
   function judgeMany(list) {
-    if (!list.length || judging) return;
+    list = list.filter(function (p) { return !rowState(p.bib); });
+    if (!list.length) return;
     window.imp.confirm('Оценить ' + list.length + ' ' + plural(list.length, 'участника', 'участников', 'участников') +
-      '? Оценка каждого — платные вызовы судьи. Идёт по одному; не закрывайте страницу, пока не закончится.',
+      '? Оценка каждого — платные вызовы судьи. Идёт по одному; не закрывайте страницу и не открывайте карточки, пока не закончится.',
       { confirmLabel: 'Оценить' }).then(function (yes) {
       if (!yes) return;
-      judging = true;
-      var i = 0, failed = [];
-      var next = function () {
-        if (i >= list.length) {
-          judging = false;
-          return refresh(true).then(function () {
-            say('оценено: ' + (list.length - failed.length) + ' из ' + list.length +
-              (failed.length ? ' · не удалось: ' + failed.join(', ') : ''), failed.length ? 'bad' : '');
-          });
-        }
-        var p = list[i++];
-        say('оцениваю ' + i + ' из ' + list.length + ' · ' + (p.fio || bib6(p.bib)));
-        render();
-        return window.imp.callApi('judgeAnswers', { password: pw, bib: p.bib }).then(function (res) {
-          if (!res || !res.ok) { failed.push(p.fio || bib6(p.bib)); return next(); }
-          return drainQueue(p.bib, [], statusEl, true).then(next);
-        }).catch(function (e) {
-          // Сбой на одном участнике не должен оставить judging=true навсегда (06→03, 04.10).
-          if (window.console) console.error('cabinet: оценка участника прервана', e);
-          failed.push(p.fio || bib6(p.bib));
-          return next();
-        });
-      };
-      next();
+      list.forEach(function (p) { if (!rowState(p.bib)) rowQueue.push(p); });
+      render();
+      runRowQueue();
     });
   }
 

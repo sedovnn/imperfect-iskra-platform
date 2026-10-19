@@ -215,11 +215,28 @@
       });
   }
 
+  // ⚠ ПОТЕРЯННЫЙ БОЛЬШОЙ ОТВЕТ — ПОВТОР (владелец 19.10, «делай»). Ответ Apps Script отдаётся через переадресацию на
+  // googleusercontent; у карточки участника он 0,6–0,9 МБ, и примерно каждый третий Google теряет: вторая переадресация
+  // ведёт обратно на /exec, браузер приходит туда уже GET без тела, и бэкенд отвечает «unauthorized» на верный пароль
+  // (замер на живом бэкенде 19.10: 3 из 10; проверка пароля и список потока — 16 из 16 без потерь). Карточка показывала
+  // «Карточка не загрузилась: unauthorized». Повторяем только читающие действия: повтор оценки оплатил бы её дважды.
+  var LOST_RETRY = { v2Detail: 2 };
+
   window.imp.callApi = function (action, payload) {
     if (!API_URL) return Promise.resolve(null);
 
     if (!/^save/.test(action)) {
-      return post(action, payload).catch(function (err) {
+      var tries = 0;
+      var once = function () {
+        return post(action, payload).then(function (json) {
+          if (json && json.error === 'unauthorized' && payload && payload.password && tries < (LOST_RETRY[action] || 0)) {
+            tries++;
+            return once();
+          }
+          return json;
+        });
+      };
+      return once().catch(function (err) {
         console.warn('[imp.callApi] ' + action + ' failed:', err);
         return null;
       });
