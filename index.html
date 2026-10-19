@@ -17,7 +17,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=271" />
+<link rel="stylesheet" href="css/styles.css?v=272" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -175,7 +175,7 @@
   </div>
 </div>
 
-<script src="js/main.js?v=13"></script>
+<script src="js/main.js?v=14"></script>
 <script src="js/typo.js?v=4"></script>
 <script src="js/api.js?v=11"></script>
 <script>
@@ -198,6 +198,23 @@
   // живой волне. Планшет разрешён (см. imp.isPhone: смотрим короткую сторону
   // ЭКРАНА, а не окна, иначе запрет прилетел бы человеку с узким окном браузера).
   if (window.imp.blockIfPhone('entryCol')) return;
+
+  // ⚠ ВХОД В ДЕМО — ТОЛЬКО ПО МЕТКЕ (замечание владельца 19.10). Признак демо живёт во вкладке, и
+  // страница, увидев его, всегда открывала регистрацию демо: посмотрел демо — и главная по логотипу
+  // или набранному адресу ведёт не на вход, а снова в демо. Теперь регистрацию демо открывают только
+  // три входа в демо — demo.html, кнопка профиля на витрине и возврат из дня без имени (main.js) — и
+  // все они приходят с ?demo=1. Пришли без метки — значит, на главную: демо в этой вкладке
+  // заканчивается, и служебная сессия демо (номер 900) стирается, иначе вход предложил бы
+  // «продолжить» под ней. Прогон демо не трогаем: его стирает следующий вход в демо.
+  if (!/(?:^|[?&])demo=1(?:&|$)/.test(location.search)) {
+    try {
+      if (sessionStorage.getItem('imp_demo')) {
+        sessionStorage.removeItem('imp_demo');
+        var demoSess = JSON.parse(sessionStorage.getItem('imp_current_session') || 'null');
+        if (demoSess && String(demoSess.bib) === '900') sessionStorage.removeItem('imp_current_session');
+      }
+    } catch (e) {}
+  }
 
   // Блока с требованием к устройству на этом экране больше нет (29.09) — он остался
   // на экране настройки. Строку заполнения снимаем вместе с ним, чтобы не искать

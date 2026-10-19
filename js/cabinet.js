@@ -1115,11 +1115,16 @@
     if (pw) render();
   });
   if (findEl) findEl.addEventListener('input', function () { if (pw) render(); });
+  // «Выйти» оставляет на экране входа и говорит, что выход случился (вариант Б, владелец 19.10): одноразовый
+  // признак во вкладке, его снимает первая же загрузка страницы — повторное обновление плашку не покажет.
   el('admOut').addEventListener('click', function (e) {
     e.preventDefault();
-    try { sessionStorage.removeItem(PW_KEY); } catch (x) {}
+    try { sessionStorage.removeItem(PW_KEY); sessionStorage.setItem('imp_cab_out', '1'); } catch (x) {}
     location.href = 'administrator.html';
   });
+  try {
+    if (sessionStorage.getItem('imp_cab_out')) { sessionStorage.removeItem('imp_cab_out'); el('cabOutNote').style.display = ''; }
+  } catch (x) {}
   el('vedQrFull').addEventListener('click', function () { el('vedQrFull').style.display = 'none'; });
   // Вернулись из карточки (она в другой вкладке) — список догоняет то, что там поменяли: оценку, правку уровня, перенос.
   window.addEventListener('focus', function () { if (pw && !judging && route().view === 'wave') refresh(true); });

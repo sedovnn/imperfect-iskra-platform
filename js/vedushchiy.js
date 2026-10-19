@@ -384,11 +384,15 @@
   el('vedQrFull').addEventListener('click', function () { el('vedQrFull').style.display = 'none'; });
   el('vedKeyBtn').addEventListener('click', function () { var k = (el('vedKey').value || '').trim(); if (k) login(k); });
   el('vedKey').addEventListener('keydown', function (e) { if (e.key === 'Enter') { var k = (el('vedKey').value || '').trim(); if (k) login(k); } });
+  // Как у администратора (js/cabinet.js, вариант Б, 19.10): после «выйти» экран входа говорит, что выход случился.
   el('vedOut').addEventListener('click', function (e) {
     e.preventDefault();
-    try { sessionStorage.removeItem(PW_KEY); } catch (x) {}
+    try { sessionStorage.removeItem(PW_KEY); sessionStorage.setItem('imp_cab_out', '1'); } catch (x) {}
     location.href = 'vedushchiy.html';
   });
+  try {
+    if (sessionStorage.getItem('imp_cab_out')) { sessionStorage.removeItem('imp_cab_out'); el('vedOutNote').style.display = ''; }
+  } catch (x) {}
   var saved = '';
   try { saved = sessionStorage.getItem(PW_KEY) || ''; } catch (e) {}
   if (saved) login(saved, true);

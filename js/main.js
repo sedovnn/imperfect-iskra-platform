@@ -2,9 +2,14 @@
 
 (function () {
   // плавный скролл для якорей на лендинге
+  // Голое «#» — не якорь, а кнопка-ссылка («выйти» и «Потоки» в кабинетах): querySelector('#') бросал ошибку
+  // на каждом нажатии (поймано 19.10 при выходе из кабинета администратора). Такие ссылки пропускаем.
   document.querySelectorAll('a[href^="#"]').forEach(function (link) {
     link.addEventListener('click', function (e) {
-      var target = document.querySelector(link.getAttribute('href'));
+      var href = link.getAttribute('href');
+      if (!href || href.length < 2) return;
+      var target = null;
+      try { target = document.querySelector(href); } catch (x) {}
       if (!target) return;
       e.preventDefault();
       target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -181,7 +186,8 @@
       // Считаем такое состояние непройденной регистрацией. Признак самоистечёт: новый
       // путь этого имени не ставит нигде.
       if (nm && nm !== 'Демо') return;
-      location.replace('index.html');
+      // С меткой ?demo=1: без неё главная завершает демо и показывает обычный вход (19.10, index.html).
+      location.replace('index.html?demo=1');
     } catch (e) {}
   })();
 

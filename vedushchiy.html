@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=271" />
+<link rel="stylesheet" href="css/styles.css?v=272" />
 </head>
 <!-- ⚠ КАБИНЕТ ВЕДУЩЕГО — СВОЯ СТРАНИЦА И СВОЙ СКРИПТ (решение владельца 03.10). Вход → создать
      поток → ссылка и QR → поток, где участники появляются сами по мере регистрации. Оценок,
@@ -19,10 +19,14 @@
      js/vedushchiy.js; кода администратора эта страница не грузит. -->
 <body data-page="host" class="ved">
 
-<div id="vedGate" class="gate">
+<!-- ⚠ С ЭКРАНА ВХОДА ЕСТЬ КУДА УЙТИ (вариант Б, владелец 19.10) — как у администратора (administrator.html):
+     шапка с логотипом на главную, плашка «Вы вышли из кабинета» после «выйти» (js/vedushchiy.js), ссылки под кнопкой. -->
+<div id="vedGate" class="gate gate-cab">
+  <header class="gate-head"><a class="logo" href="index.html">futureproof<span class="logo-arrow"><svg viewBox="0 0 59.29 57.69" xmlns="http://www.w3.org/2000/svg"><path d="M9.94 27.73C8.41 22.99 -0.94 4.76 0.08 1.75C0.36 0.92 0.89 0.48 1.98 0.02C8.65 -0.71 50.12 15.72 57.23 19.99C58.2 20.58 59.21 22.02 59.28 22.79C59.37 23.68 58.95 25.38 58.27 26C52.27 31.12 10.29 57.55 4.26 57.69C3.07 57.32 2.44 56.88 2.02 56.05C0.43 52.9 8.89 32.86 9.94 27.73Z" fill="#FF4800"/></svg></span><span class="logo-prod">i(m)perfect</span></a><span class="gate-head-k">кабинет</span></header>
   <div class="gate-card">
     <p class="kicker">Кабинет</p>
     <h2>Ведущий</h2>
+    <p class="gate-out" id="vedOutNote" style="display:none;">Вы вышли из кабинета.</p>
     <p class="section-lead" style="margin:0 0 20px;">Ключ ведущего вам передаст администратор.</p>
     <div class="field">
       <label for="vedKey">Ключ</label>
@@ -30,6 +34,7 @@
     </div>
     <p class="field-err" id="vedKeyErr" style="display:none;"></p>
     <button class="btn btn-primary btn-block" id="vedKeyBtn" style="margin-top:14px;">Войти →</button>
+    <p class="gate-links"><a href="index.html">← на главную</a><span>·</span><a href="administrator.html">кабинет администратора</a><span>·</span><a href="vitrina.html">демо</a></p>
   </div>
 </div>
 
@@ -45,12 +50,12 @@
   <div class="ved-qrfull-in"><div id="vedQrFullImg"></div><p id="vedQrFullLink"></p><p class="ved-dim">Нажмите, чтобы закрыть</p></div>
 </div>
 
-<script src="js/main.js?v=13"></script>
+<script src="js/main.js?v=14"></script>
 <script src="js/typo.js?v=4"></script>
 <script src="js/dialog.js?v=1"></script>
 <script src="js/api.js?v=11"></script>
 <script src="js/scenes.js?v=207"></script>
 <script src="js/qr.js?v=1"></script>
-<script src="js/vedushchiy.js?v=12"></script>
+<script src="js/vedushchiy.js?v=13"></script>
 </body>
 </html>
