@@ -781,7 +781,12 @@
       '<div><div class="kc-lbl">Время по этапам</div>' + (timeRows ? '<dl class="kc-kv">' + timeRows + '</dl>' : '<p class="kc-s" style="margin-top:8px">без таймера</p>') + '</div>' +
       '<div><div class="kc-lbl">Номер участника</div><div class="kc-fm">' +
         (person ? '<input class="kc-inp" id="kcName" type="text" aria-label="Имя" placeholder="Имя" value="' + esc(person.firstName || '') + '" />' +
-          '<label class="kc-chk"><input type="checkbox" id="kcNoScore"' + (person.noScore ? ' checked' : '') + ' /> Не оценивать этот номер</label>' : '') +
+          '<label class="kc-chk"><input type="checkbox" id="kcNoScore"' + (person.noScore ? ' checked' : '') + ' /> Не оценивать этот номер</label>' +
+          // Отзыв согласия на передачу в Anthropic (21.10): по обращению участника; пока отметка стоит, судья и тексты отчёта
+          // по номеру не вызываются (бэкенд отказывает), уже записанное остаётся.
+          '<p class="kc-s">Согласие на передачу в Anthropic: ' + (person.aiConsentAt ? 'дано ' + esc(dt(person.aiConsentAt)) : 'отметки нет') + '</p>' +
+          '<label class="kc-chk"><input type="checkbox" id="kcAiRevoked"' + (person.aiConsentRevokedAt ? ' checked' : '') + ' /> Согласие отозвано' +
+            (person.aiConsentRevokedAt ? ' · ' + esc(dt(person.aiConsentRevokedAt)) : '') + '</label>' : '') +
         (to.length ? '<div class="kc-fix-row"><select class="kc-inp" id="kcWave" aria-label="Перенести в поток">' + to.map(function (w) {
           return '<option value="' + esc(w.id) + '">Перенести в «' + esc(w.name || w.label || w.num) + '»' + (w.isAi ? ' · ИИ' : '') + '</option>';
         }).join('') + '</select><button type="button" class="kc-btn" data-act="move">Перенести</button></div>' : '') +
@@ -964,6 +969,11 @@
       var val = ev.target.value.trim();
       if (val === String(person.firstName || '')) return;
       call('setParticipantName', { bib: bib, firstName: val }).then(function (r) { after(r, 'имя сохранено'); });
+    }
+    if (ev.target.id === 'kcAiRevoked') {
+      call('setAiConsentRevoked', { bib: bib, on: ev.target.checked ? '1' : '' }).then(function (r) {
+        after(r, ev.target.checked ? 'отзыв отмечен: модель по номеру не вызывается' : 'отметка отзыва снята');
+      });
     }
     if (ev.target.id === 'kcNoScore') {
       call('setNoScore', { bib: bib, value: ev.target.checked ? '1' : '' }).then(function (r) { after(r, 'отметка сохранена'); });

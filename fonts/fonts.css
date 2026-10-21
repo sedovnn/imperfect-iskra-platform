@@ -1,4 +1,6 @@
-/* Inter Tight (SIL OFL 1.1, OFL.txt) — с собственного сервера вместо fonts.googleapis.com. */
+/* Inter Tight (SIL OFL 1.1, OFL.txt) — с собственного сервера вместо fonts.googleapis.com.
+   21.10: латинские подмножества пересобраны из InterTight[wght].ttf (google/fonts) с добавленной стрелкой U+2192 — без неё «→»
+   в отчёте и на сайте рисовал системный шрифт; ширины остальных знаков совпадают с прежними файлами до единицы. */
 @font-face {
   font-family: 'Inter Tight';
   font-style: normal;
@@ -13,7 +15,7 @@
   font-display: swap;
   font-weight: 400;
   src: url(./inter-tight-latin-400-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 @font-face {
   font-family: 'Inter Tight';
@@ -29,7 +31,7 @@
   font-display: swap;
   font-weight: 500;
   src: url(./inter-tight-latin-500-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 @font-face {
   font-family: 'Inter Tight';
@@ -45,7 +47,7 @@
   font-display: swap;
   font-weight: 600;
   src: url(./inter-tight-latin-600-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 @font-face {
   font-family: 'Inter Tight';
@@ -61,7 +63,7 @@
   font-display: swap;
   font-weight: 700;
   src: url(./inter-tight-latin-700-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 @font-face {
   font-family: 'Inter Tight';
@@ -77,5 +79,5 @@
   font-display: swap;
   font-weight: 800;
   src: url(./inter-tight-latin-800-normal.woff2) format('woff2');
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }

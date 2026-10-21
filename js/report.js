@@ -8,25 +8,22 @@
 (function () {
   'use strict';
 
-  // РЕАЛЬНЫЕ прогоны эталонных моделей (кейс «Искра», пакет v4 «равные условия»,
-  // судья @51, июль 2026): МЕДИАНА 3 прогонов, балл НАВЫКА = сумма двух способностей
-  // (шкала 2–10). Источник — _ai_dispersion_report.md, ЕДИНСТВЕННОЕ место с числами.
-  // Порядок массива = [Opus, Haiku, ChatGPT, Алиса, GigaChat]. Индекс 0 (Opus) —
-  // ПЕРЕДОВАЯ модель: в диапазон НЕ входит, показывается отдельной точкой
-  // «лучшая модель уже здесь». Полоса диапазона = размах четырёх массовых моделей.
+  // Прогоны пяти моделей, наиболее популярных и используемых в бизнесе (владелец 21.10: «убрали полностью информацию о передовой
+  // модели, а только наиболее популярные и используемые в бизнесе модели 5 штук»): кейс «Искра» v8, харнесс, поток «ИИ для отчета»,
+  // 19.10, рубрика m-imp-k1.10, уровни — по правилу потоков ИИ 21.10 (при любом сомнении нижний, СПЕК п. 161); по одному прохождению
+  // на модель, контроль — тем же правилом (выкладка @380); балл НАВЫКА = сумма двух способностей (шкала 2–10). Номера: GigaChat 77THTW, Алиса VVXA9X, DeepSeek G4XK77,
+  // ChatGPT AGYCQD, Claude Haiku N4PXPY. ЕДИНСТВЕННОЕ место с числами — генератор отчёта читает их отсюда (report-core.js).
+  // Порядок массива = [GigaChat, Алиса, DeepSeek, ChatGPT, Claude]. Диапазон — размах всех пяти; передовой модели нет.
   var AI_SKILL = {
-    ak: [9, 7, 8, 7, 8],
-    pr: [7, 6, 7, 5, 5],
-    mk: [6, 6, 6, 6, 6],
-    ga: [9, 4, 4, 3, 3],
-    pp: [10, 10, 9, 9, 9]
+    ak: [7, 8, 7, 8, 7],
+    pr: [8, 7, 7, 10, 7],
+    mk: [6, 6, 7, 8, 7],
+    ga: [6, 4, 4, 6, 4],
+    pp: [8, 6, 7, 8, 7]
   };
-  var FRONTIER = 0;            // индекс передовой модели (Opus)
-  var MASS = [1, 2, 3, 4];     // массовые бизнес-модели: окно = их размах [min,max]
   var AI_META = {
-    massN: 4, measuredAt: 'июль 2026', caseVersion: 'v2',
-    massModels: 'Haiku, ChatGPT, Алиса (YandexGPT), GigaChat',
-    frontier: 'Claude Opus 4.8', frontierShort: 'Opus'
+    massN: 5, measuredAt: '19 октября 2026', caseVersion: 'v8',
+    massModels: 'GigaChat Ultra 3.5, Алиса AI, DeepSeek, ChatGPT 5.6, Claude Haiku 5.5'
   };
 
   var RESUME_ORDER = ['ak', 'pr', 'mk', 'ga', 'pp'];       // методология
@@ -74,18 +71,15 @@
     for (var i = 0; i < n; i++) { var s = 0; RESUME_ORDER.forEach(function (k) { s += AI_SKILL[k][i]; }); sums.push(s); }
     return sums;
   }
-  // Диапазон ИИ навыка (из 10): полоса = размах МАССОВЫХ моделей [min,max]; top = балл
-  // передовой модели (Opus), выносится отдельной точкой над/в полосе.
+  // Диапазон ИИ навыка (из 10): полоса = размах пяти моделей [min,max] (передовой точки с 21.10 нет).
   function skillWindow(sk) {
-    var a = AI_SKILL[sk], lo = Infinity, hi = -Infinity;
-    MASS.forEach(function (i) { if (a[i] < lo) lo = a[i]; if (a[i] > hi) hi = a[i]; });
-    return { lo: round1(lo), hi: round1(hi), top: round1(a[FRONTIER]) };
+    var a = AI_SKILL[sk];
+    return { lo: round1(Math.min.apply(null, a)), hi: round1(Math.max.apply(null, a)) };
   }
-  // Диапазон ИИ по всему профилю (из 50): полоса = размах массовых, top = Opus.
+  // Диапазон ИИ по всему профилю (из 50): размах сумм пяти моделей.
   function overallWindow() {
-    var sums = modelTotals(), lo = Infinity, hi = -Infinity;
-    MASS.forEach(function (i) { if (sums[i] < lo) lo = sums[i]; if (sums[i] > hi) hi = sums[i]; });
-    return { lo: round1(lo), hi: round1(hi), top: round1(sums[FRONTIER]) };
+    var sums = modelTotals();
+    return { lo: round1(Math.min.apply(null, sums)), hi: round1(Math.max.apply(null, sums)) };
   }
 
   // Уровни способностей участника (целые 1–5) из facilitatorList; балл навыка = сумма двух.
@@ -149,10 +143,9 @@
       '<p class="skdesc">' + esc(r.desc) + '</p>' +
       '<div class="sbar"><span class="base"></span>' +
         '<span class="band" style="' + bandStyle + '"></span>' +
-        '<span class="ai-top" style="left:' + pctSkill(r.w.top) + '%" title="передовая модель (' + esc(AI_META.frontierShort) + '): ' + num1(r.w.top) + ' / 10"></span>' +
         '<span class="you" style="left:' + pctSkill(r.you) + '%"></span>' +
       '</div>' +
-      '<div class="srow-scale"><span class="ai-range">Диапазон ИИ: ' + num1(r.w.lo) + '–' + num1(r.w.hi) + ' / 10 · передовая ' + num1(r.w.top) + '</span>' +
+      '<div class="srow-scale"><span class="ai-range">Диапазон ИИ: ' + num1(r.w.lo) + '–' + num1(r.w.hi) + ' / 10</span>' +
         '<span class="you-val">вы: ' + r.you + ' / 10' +
         ' <span class="you-break">(' + esc(r.code1) + ' L' + r.a1 + ' + ' + esc(r.code2) + ' L' + r.a2 + ')</span></span></div>' +
       (r.pos === 'above' ? '<p class="edge up"><span class="ek">Здесь вы обходите ИИ.</span> ' + esc(SKILL_EDGE[r.key].you) + '</p>' :
@@ -260,7 +253,7 @@
     }).join('');
     var chips = [
       'кейс «Искра» · ' + AI_META.caseVersion,
-      AI_META.massN + ' массовые модели + передовая · вслепую',
+      AI_META.massN + ' моделей · вслепую',
       'замер: ' + AI_META.measuredAt
     ].map(function (c) { return '<span class="chip">' + esc(c) + '</span>'; }).join('');
 
@@ -310,15 +303,14 @@
 '<section class="page">' +
   '<div class="phead"><span class="brand">' + LOGO + '</span><span class="meta">Резюме</span></div>' +
   '<h2 class="sec-h">Ваш профиль относительно ИИ</h2>' +
-  '<p class="lede">Диапазон ИИ — от слабейшей до сильнейшей из четырёх массовых моделей автоматизации на этом кейсе. Передовая модель (' + esc(AI_META.frontierShort) + ') показана отдельной голубой точкой — «лучшая модель уже здесь». По каждому навыку видно, попадаете ли вы ниже диапазона, внутрь него наравне с ИИ или выше.</p>' +
+  '<p class="lede">Диапазон ИИ — от слабейшей до сильнейшей из пяти моделей, наиболее популярных в бизнесе, на этом кейсе. По каждому навыку видно, попадаете ли вы ниже диапазона, внутрь него наравне с ИИ или выше.</p>' +
   '<div class="overall">' +
     '<div class="ov-head">' +
       '<div class="ov-cell"><div class="ovk"><span class="d"></span>Ваш общий балл</div><div class="ovn">' + hSum + '<span class="ovs"> / 50</span></div></div>' +
       '<div class="ov-cell"><div class="ovk"><span class="band-sw"></span>Диапазон ИИ</div><div class="ovn">' + num1(oW.lo) + '–' + num1(oW.hi) + '<span class="ovs"> / 50</span></div></div>' +
-      '<div class="ov-cell"><div class="ovk"><span class="top-sw"></span>Передовая · ' + esc(AI_META.frontierShort) + '</div><div class="ovn">' + num1(oW.top) + '<span class="ovs"> / 50</span></div></div>' +
       '<div class="ov-pos ' + posClass(oPos) + '">' + posLabel(oPos) + '</div>' +
     '</div>' +
-    '<div class="ov-track"><span class="base"></span><span class="band" style="left:' + pctTotal(oW.lo) + '%; right:' + (100 - pctTotal(oW.hi)) + '%"></span><span class="ai-top" style="left:' + pctTotal(oW.top) + '%" title="передовая модель (' + esc(AI_META.frontierShort) + ')"></span><span class="you" style="left:' + pctTotal(hSum) + '%"></span></div>' +
+    '<div class="ov-track"><span class="base"></span><span class="band" style="left:' + pctTotal(oW.lo) + '%; right:' + (100 - pctTotal(oW.hi)) + '%"></span><span class="you" style="left:' + pctTotal(hSum) + '%"></span></div>' +
     '<div class="ov-ticks"><span>0</span><span>10</span><span>20</span><span>30</span><span>40</span><span>50</span></div>' +
   '</div>' +
   '<div class="hsum-row"><span class="hs-item up"><b>' + above + '</b> ' + skillWord(above) + ' выше ИИ</span>' +
@@ -326,7 +318,7 @@
     '<span class="hs-item dn"><b>' + below + '</b> ' + skillWord(below) + ' ниже ИИ</span></div>' +
   '<div class="srows">' + ordered.map(resumeRow).join('') + '</div>' +
   '<div class="axis"><div class="ticks"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span></div></div>' +
-  '<p class="caption"><b style="color:#ff4800;">●</b> — ваш балл навыка (сумма двух способностей, шкала 0–10); закрашенная полоса — диапазон ИИ, размах четырёх массовых моделей; <b style="color:#2f6bb0;">●</b> — передовая модель (' + esc(AI_META.frontierShort) + '). Каждая способность — на одном из пяти уровней; балл навыка — их сумма, поэтому 0–10, общий — сумма десяти, поэтому /50. Полный разбор — дальше в отчёте.</p>' +
+  '<p class="caption"><b style="color:#ff4800;">●</b> — ваш балл навыка (сумма двух способностей, шкала 0–10); закрашенная полоса — диапазон ИИ, размах пяти моделей. Каждая способность — на одном из пяти уровней; балл навыка — их сумма, поэтому 0–10, общий — сумма десяти, поэтому /50. Полный разбор — дальше в отчёте.</p>' +
   (miniScale ? '<div class="miniscale"><p class="k">Пять уровней каждой способности</p><p class="ms-lead">На этих пяти уровнях оценивается каждая из десяти способностей. Балл навыка — сумма двух его способностей (2–10), общий балл — сумма всех десяти (10–50).</p><div class="ms-grid">' + miniScale + '</div></div>' : '') +
 '</section>' +
 
@@ -334,17 +326,17 @@
 '<section class="page">' +
   '<div class="phead"><span class="brand">' + LOGO + '</span><span class="meta">Как читать сравнение</span></div>' +
   '<h2 class="sec-h">Что такое диапазон ИИ</h2>' +
-  '<p class="lede">Тот же кейс, те же вопросы, тот же оценщик — но проходят эталонные нейросети. Четыре массовые модели автоматизации задают диапазон (от слабейшей к сильнейшей) — внутри него сегодня живёт машинное стратегическое мышление. Отдельная голубая точка — передовая модель (' + esc(AI_META.frontierShort) + '): куда шагнул фронтир.</p>' +
+  '<p class="lede">Тот же кейс, те же вопросы, тот же оценщик — но проходят эталонные нейросети. Пять моделей, наиболее популярных в бизнесе, задают диапазон (от слабейшей к сильнейшей) — внутри него сегодня живёт машинное стратегическое мышление.</p>' +
   '<p class="lede sub">Это не соревнование и не вердикт. Диапазон отвечает на один практический вопрос: <b>где ваше мышление в одной зоне с машиной, где вы её превосходите, а где пока не дотягиваете.</b> Смысл не в том, чтобы обогнать лучшую модель, а в том, чтобы понять свою позицию рядом с инструментом.</p>' +
   '<div class="cols3">' +
-    '<div class="c3 up"><div class="c3-h">Выше диапазона</div><p>Ваш уровень выше сильнейшей из массовых моделей. На этом навыке вы делаете то, чего они не показали. Это опора профиля и аргумент вашей роли рядом с ИИ.</p></div>' +
+    '<div class="c3 up"><div class="c3-h">Выше диапазона</div><p>Ваш уровень выше сильнейшей из пяти моделей. На этом навыке вы делаете то, чего они не показали. Это опора профиля и аргумент вашей роли рядом с ИИ.</p></div>' +
     '<div class="c3 eq"><div class="c3-h">В диапазоне</div><p>Ваш уровень внутри диапазона моделей — вы в одной зоне с ИИ. Нормальная, рабочая позиция: где именно внутри диапазона, видно на шкале навыка.</p></div>' +
-    '<div class="c3 dn"><div class="c3-h">Ниже диапазона</div><p>Ваш уровень ниже даже слабейшей из массовых моделей. Не приговор, а карта: именно здесь шаг развития даёт наибольший прирост относительной ценности.</p></div>' +
+    '<div class="c3 dn"><div class="c3-h">Ниже диапазона</div><p>Ваш уровень ниже даже слабейшей из пяти моделей. Не приговор, а карта: именно здесь шаг развития даёт наибольший прирост относительной ценности.</p></div>' +
   '</div>' +
   '<div class="measure"><p class="k">Как измерен диапазон ИИ<span class="ast">*</span></p>' +
-    '<p>Эталонные модели проходят кейс тем же маршрутом, что и вы, без подсказок и без ограничения интерфейсом. Ответы оценивает тот же оценщик, что и ваши, по тем же уровням. Границы диапазона — слабейший и сильнейший результат среди четырёх массовых моделей; передовая модель (' + esc(AI_META.frontierShort) + ') вынесена отдельной точкой. Диапазон перемеряется при каждом обновлении кейса или оценщика.</p>' +
+    '<p>Эталонные модели проходят кейс тем же маршрутом, что и вы, без подсказок и без ограничения интерфейсом. Ответы оценивает тот же оценщик, что и ваши, по тем же уровням. Границы диапазона — слабейший и сильнейший результат среди пяти моделей. Диапазон перемеряется при каждом обновлении кейса или оценщика.</p>' +
     '<div class="chips">' + chips + '</div>' +
-    '<p class="foot-note"><span class="ast">*</span> Массовые модели (диапазон): ' + esc(AI_META.massModels) + '. Передовая модель (точка): ' + esc(AI_META.frontier) + '. Набор моделей уточняется по мере прогона новых.</p>' +
+    '<p class="foot-note"><span class="ast">*</span> Модели: ' + esc(AI_META.massModels) + '. Набор моделей уточняется по мере прогона новых.</p>' +
   '</div>' +
 '</section>' +
 

@@ -41,6 +41,16 @@
      увидеть его до действия, а не найти потом. Цвет темнее подсказки — это не сноска. */
   .entry-consent { font-size: 13px; line-height: 1.2; color: var(--muted); margin-top: 12px; }
   .entry-consent a { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+  /* Галочка согласия на передачу в Anthropic (21.10, юристы через владельца): отдельная отметка, не click-wrap, —
+     поэтому стоит НАД кнопкой, и кнопка неактивна, пока отметки нет. Полный текст раскрывается здесь же:
+     уход на другую страницу стёр бы введённые имя и фамилию. */
+  .entry-ai { margin: 0 0 18px; font-size: 13px; line-height: 1.3; color: var(--ink); }
+  .entry-ai label { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+  .entry-ai input { flex: none; width: 18px; height: 18px; margin: 0; accent-color: var(--ink); }
+  .entry-ai details { margin: 8px 0 0 28px; color: var(--muted); }
+  .entry-ai summary { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; color: var(--ink); }
+  .entry-ai details p { margin: 8px 0 0; }
+  .entry-form .btn:disabled { opacity: .45; cursor: default; }
   .entry-err { display: none; margin-top: 14px; font-size: 13px; color: #cc3700; }
   .entry-err.show { display: block; }
   /* продолжение живой сессии — над формой, тихим блоком с отбивкой */
@@ -121,17 +131,41 @@
             <label for="selfLast">Фамилия</label>
             <input class="pass-input" id="selfLast" type="text" autocomplete="off" maxlength="60" />
           </div>
-          <button type="submit" class="btn btn-primary btn-block">Начать ассессмент →</button>
+          <!-- ⚠ СОГЛАСИЕ НА ПЕРЕДАЧУ В ANTHROPIC — ОТДЕЛЬНОЙ ГАЛОЧКОЙ (21.10, юристы через владельца: «отдельно надо будет
+               получать, просто сделать блок с галочкой при первом указании ФИО»; владелец: без отметки начать нельзя).
+               Текст согласия — от юристов, с правками 21.10 (название продукта, адреса, срок хранения у получателя; файл с исправлениями — у владельца); версия в data-атрибуте уезжает на сервер (aiConsentVersion).
+               Блок один на страницу: при входе по заранее выданному номеру скрипт переносит его в форму номера. -->
+          <div class="entry-ai" id="aiConsent" data-ai-consent-version="anthropic-2026-10-21">
+            <label><input type="checkbox" id="aiConsentBox" />
+              <span>Даю согласие на передачу моих ответов в Anthropic (США) для автоматизированной оценки с помощью Claude.
+              Имя, фамилия и номер участника не передаются.</span></label>
+            <details>
+              <summary>Текст согласия</summary>
+              <p>Настоящим я выражаю свое согласие обществу с ограниченной ответственностью «Фьючерпруф», ОГРН: 1257700067657, ИНН: 9703204830, зарегистрированному по адресу: Россия, город Москва, Пресненская наб, д. 12, помещ. 21/66 (далее – Оператор), на передачу, включая трансграничную передачу, и поручение обработки следующих персональных данных, предоставленных мной при использовании онлайн-сервиса i(m)perfect:</p>
+              <p>– содержание ответов на задания и итогового письма; числовые результаты распределения ресурсов.</p>
+              <p>Обработка персональных данных осуществляется в целях автоматизированной оценки моих ответов с использованием сервиса Claude компании Anthropic и формирования Оператором Отчета о результатах прохождения i(m)perfect.</p>
+              <p>Получатель данных: Anthropic, PBC, 548 Market St, PMB 90375, San Francisco, CA 94104, США. Государство обработки: США.</p>
+              <p>Имя, фамилия, идентификатор участника, наименование Заказчика, пометки и показатели набора текста получателю не передаются. Формы ответов не предусматривают указания сведений обо мне.</p>
+              <p>Я даю согласие на поручение получателю автоматизированной обработки указанных данных, включая сбор, запись, систематизацию, хранение, извлечение, использование для оценки ответов, предоставление Оператору результатов, удаление и уничтожение. Настоящее Согласие не распространяется на использование моих ответов для обучения моделей искусственного интеллекта.</p>
+              <p>Срок хранения данных получателем: не более 30 дней; при срабатывании автоматических систем безопасности получателя — до 2 лет; дольше — только если этого требует закон.</p>
+              <p>Настоящее Согласие действует с момента его предоставления до достижения указанной цели, но не более 90 календарных дней с даты предоставления Отчета, либо до отзыва Согласия, в зависимости от того, что наступит раньше.</p>
+              <p>Я вправе отозвать Согласие, направив обращение Оператору на адрес электронной почты info@fproof.ru. Отзыв Согласия прекращает основанную на нем обработку и дальнейшую передачу данных. Обработка на иных законных основаниях может быть продолжена в соответствии с законодательством Российской Федерации.</p>
+              <p>Подробные условия и порядок обработки указанных в настоящем согласии персональных данных определены пп. 3.14–3.15 Политики конфиденциальности для онлайн-сервиса i(m)perfect, размещенной на сайте в сети Интернет по адресу <a href="policy.html" target="_blank" rel="noopener">https://imperfect.fproof.ru/policy</a>.</p>
+              <p>Согласие предоставляется отдельно от Пользовательского соглашения и иных документов путем проставления отдельной отметки в интерфейсе Сервиса до первой передачи данных получателю.</p>
+            </details>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" disabled>Начать ассессмент →</button>
           <!-- ⚠ СОГЛАСИЕ ПРИНИМАЕТСЯ КНОПКОЙ (решение владельца 29.09). Это click-wrap:
                текст стоит РЯДОМ с кнопкой и ВЫШЕ подсказки, то есть человек видит его
                до действия; сама ссылка открывает полный текст в новой вкладке, чтобы
                уход за ним не стирал уже введённые имя и фамилию. Версия документа
                проставлена в data-атрибуте и уезжает на сервер вместе с согласием:
                без неё в таблице будет «согласен», но неизвестно с чем. -->
-          <p class="entry-consent" id="selfConsent" data-consent-version="soglashenie-2026-09-29">
-            Нажимая «Начать ассессмент», вы подтверждаете, что ознакомились с
-            <a href="soglashenie.html" target="_blank" rel="noopener">Согласием на обработку персональных данных</a>
-            и принимаете его условия.
+          <p class="entry-consent" id="selfConsent" data-consent-version="soglashenie-2026-10-21">
+            Нажимая «Начать ассессмент», вы принимаете
+            <a href="soglashenie.html" target="_blank" rel="noopener">Пользовательское соглашение</a>
+            и подтверждаете, что ознакомились с
+            <a href="policy.html" target="_blank" rel="noopener">Политикой конфиденциальности</a>.
           </p>
           <p class="entry-err" id="selfErr">Не удалось начать.</p>
           <p class="entry-hint">Платформа выдаст вам номер участника. Запишите или сфотографируйте его: он пригодится, если прервётся связь или что-то случится с устройством, с которого вы проходите.</p>
@@ -243,6 +277,17 @@
   var codeEl = document.getElementById('entryCode');
   var errEl = document.getElementById('entryErr');
 
+  // Галочка согласия на передачу в Anthropic (21.10): кнопка неактивна, пока отметки нет. Версия — из разметки блока,
+  // как у соглашения: текст и версия живут в одном месте.
+  var aiBlock = document.getElementById('aiConsent');
+  var aiBox = document.getElementById('aiConsentBox');
+  function aiConsentVer() { return aiBox && aiBox.checked ? (aiBlock.getAttribute('data-ai-consent-version') || '') : ''; }
+  function bindAiConsent(btn, errNode) {
+    var sync = function () { btn.disabled = !(aiBox && aiBox.checked); if (errNode) errNode.classList.remove('show'); };
+    if (aiBox) aiBox.addEventListener('change', sync);
+    sync();
+  }
+
   // Живая сессия — предлагаем продолжить, а не требовать пароль заново.
   // Демо-сессию (тур) не показываем: у неё свой выход из витрины.
   var liveSession = null;
@@ -277,6 +322,7 @@
     var nameEl = document.getElementById('selfName');
     var selfErrEl = document.getElementById('selfErr');
     var selfBtn = selfForm.querySelector('button[type="submit"]');
+    bindAiConsent(selfBtn, selfErrEl);
 
     form.style.display = 'none';
     document.getElementById('entryMaintenance').style.display = 'none';
@@ -325,6 +371,11 @@
         selfErrEl.classList.add('show');
         return;
       }
+      if (!aiConsentVer()) {
+        selfErrEl.textContent = 'Отметьте согласие на передачу ответов для оценки — без него ассессмент не начать.';
+        selfErrEl.classList.add('show');
+        return;
+      }
       // ⚠ ДЕМО НЕ ХОДИТ НА СЕРВЕР. Номер служебный, записи в листе не появляется,
       // согласие не фиксируется — фиксировать нечего. Форма при этом та же самая,
       // включая строку про согласие: демо показывает путь, а не его огрызок.
@@ -343,7 +394,7 @@
       var consentEl = document.getElementById('selfConsent');
       var consentVer = consentEl ? (consentEl.getAttribute('data-consent-version') || '') : '';
       window.imp.callApi('selfEnroll', {
-        wave: waveParam, name: nm, lastName: ln, consentVersion: consentVer
+        wave: waveParam, name: nm, lastName: ln, consentVersion: consentVer, aiConsentVersion: aiConsentVer()
       }).then(function (res) {
         if (res && res.ok && res.bib) {
           // Пароль в сессию не кладём: входа по паролю больше нет (правка 29.09).
@@ -363,6 +414,7 @@
         selfErrEl.textContent = er === 'self_enroll_closed' ? 'Запись в этот поток закрыта.'
           : er === 'wave_not_found' ? 'Поток с таким номером не найден.'
           : er === 'wave_full' ? 'В этом потоке больше нет свободных номеров.'
+          : er === 'ai_consent_required' ? 'Отметьте согласие на передачу ответов для оценки — без него ассессмент не начать.'
           : 'Не удалось начать. Проверьте связь и попробуйте ещё раз.';
         selfErrEl.classList.add('show');
       });
@@ -414,8 +466,53 @@
     errEl.classList.add('show');
   }
 
+  // ⚠ ЗАРАНЕЕ ВЫДАННЫЙ НОМЕР — СОГЛАСИЕ ПРИ ПЕРВОМ ВХОДЕ (владелец 21.10; пп. 2.6 и 4.2 соглашения). Номер из кабинета
+  // заведён без участника, и сервер отвечает needsConsent, пока у номера нет соглашения и согласия на передачу. Тогда в
+  // форму номера переносятся те же строка соглашения и галочка, что у самозаписи, и вход завершается только после
+  // acceptConsent. Номер в поле при этом замораживается: согласие записывается за ним.
+  var pendingLogin = null;
+  function finishLogin(res, code) {
+    // nickname приходит с сервера: имя, названное при самозаписи, следует за
+    // участником на другое устройство, и обращаться к нему продолжают так же.
+    // Номер берём тот, что вернул сервер: под ним лежат ответы. Пароля в сессии
+    // больше нет — входа по паролю не существует (правка 29.09).
+    var session = { bib: String(res.bib || code), name: (res.nickname || '').trim(),
+                    timerMin: Number(res.timerMin) || 0 };
+    try {
+      sessionStorage.setItem('imp_current_session', JSON.stringify(session));
+      localStorage.setItem('imp_current_session', JSON.stringify(session));
+    } catch (err) {}
+    // Три экрана до первого вопроса: настройка → роль → материалы. Карты
+    // по-прежнему нет — маршрут линейный, и ветвиться участнику негде.
+    window.location.href = afterLogin(code);
+  }
+  function askConsent(res, code) {
+    pendingLogin = { res: res, code: code };
+    codeEl.readOnly = true;
+    form.insertBefore(aiBlock, submitBtn);
+    var agree = document.getElementById('selfConsent');
+    if (agree) form.insertBefore(agree, errEl);
+    submitBtn.textContent = 'Начать ассессмент →';
+    bindAiConsent(submitBtn, errEl);
+  }
+
   form.addEventListener('submit', function (e) {
     e.preventDefault();
+    if (pendingLogin) {
+      if (!aiConsentVer()) { showErr('Отметьте согласие на передачу ответов для оценки — без него ассессмент не начать.'); return; }
+      var agreeEl = document.getElementById('selfConsent');
+      var pl = pendingLogin;
+      submitBtn.disabled = true;
+      window.imp.callApi('acceptConsent', {
+        bib: String(pl.res.bib || pl.code), aiConsentVersion: aiConsentVer(),
+        consentVersion: agreeEl ? (agreeEl.getAttribute('data-consent-version') || '') : ''
+      }).then(function (r) {
+        if (r && r.ok) { finishLogin(pl.res, pl.code); return; }
+        submitBtn.disabled = false;
+        showErr('Не удалось сохранить согласие. Проверьте связь и попробуйте ещё раз.');
+      });
+      return;
+    }
     // ⚠ НОМЕР — ШЕСТЬ БУКВ И ЦИФР (правка 28.09), а не шесть цифр. Приводим к верхнему
     // регистру здесь же: номер диктуют голосом, и человек наберёт как услышит.
     // Прежние цифровые номера этой проверке тоже удовлетворяют, старые прогоны входят.
@@ -431,19 +528,12 @@
     submitBtn.textContent = 'Вхожу…';
     window.imp.callApi('participantLogin', { bib: code }).then(function (res) {
       if (res && res.ok) {
-        // nickname приходит с сервера: имя, названное при самозаписи, следует за
-        // участником на другое устройство, и обращаться к нему продолжают так же.
-        // Номер берём тот, что вернул сервер: под ним лежат ответы. Пароля в сессии
-        // больше нет — входа по паролю не существует (правка 29.09).
-        var session = { bib: String(res.bib || code), name: (res.nickname || '').trim(),
-                        timerMin: Number(res.timerMin) || 0 };
-        try {
-          sessionStorage.setItem('imp_current_session', JSON.stringify(session));
-          localStorage.setItem('imp_current_session', JSON.stringify(session));
-        } catch (err) {}
-        // Три экрана до первого вопроса: настройка → роль → материалы. Карты
-        // по-прежнему нет — маршрут линейный, и ветвиться участнику негде.
-        window.location.href = afterLogin(code);
+        if (res.needsConsent) {
+          submitBtn.textContent = t;
+          askConsent(res, code);
+          return;
+        }
+        finishLogin(res, code);
         return;
       }
       submitBtn.disabled = false;

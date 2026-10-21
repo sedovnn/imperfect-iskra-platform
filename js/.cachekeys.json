@@ -19,6 +19,7 @@
    "intro.html": 274,
    "kartochka.html": 274,
    "otchet.html": 274,
+   "policy.html": 274,
    "role.html": 274,
    "soglashenie.html": 274,
    "vedushchiy.html": 274,
@@ -81,12 +82,6 @@
    "vedushchiy.html": 1
   }
  },
- "js/edits.js": {
-  "sha": "7b057c9020cd",
-  "keys": {
-   "assessment.html": 2
-  }
- },
  "js/engine.js": {
   "sha": "bfbef72d5578",
   "keys": {
@@ -133,9 +128,9 @@
   }
  },
  "js/kartochka.js": {
-  "sha": "c4c8e8f58996",
+  "sha": "f98288a0fbc2",
   "keys": {
-   "kartochka.html": 8
+   "kartochka.html": 9
   }
  },
  "js/main.js": {
@@ -182,9 +177,9 @@
   }
  },
  "js/report.js": {
-  "sha": "4f5a34ab85a1",
+  "sha": "eddb0a13eb8f",
   "keys": {
-   "report-example.html": 10
+   "report-example.html": 12
   }
  },
  "js/scenes.js": {
