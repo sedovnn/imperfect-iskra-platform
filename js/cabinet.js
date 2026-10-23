@@ -604,7 +604,7 @@
     var who = p.fio || bib6(p.bib), again = scored(p);
     var waitN = rowQueue.length + (rowActive ? 1 : 0);
     window.imp.confirm((again ? 'Пересудить ' : 'Оценить ') + who + '? ' +
-      (again ? 'Все задания судьи будут поставлены заново и оплачены заново.' : 'Оценка — платные вызовы судьи.') +
+      (again ? 'Все задания судьи будут поставлены заново и оплачены заново; ручные правки уровней снимутся.' : 'Оценка — платные вызовы судьи.') +
       (pendingOf(p).length ? ' Способности на ручной проверке (' + pendingNames(pendingOf(p)) + ') ждут оценщика — пересуд это не заменяет.' : '') +
       (waitN ? ' Сейчас оценивается другой участник — встанет в очередь за ним.' : '') +
       ' Ход оценки — в строке вверху страницы.', { confirmLabel: again ? 'Пересудить' : 'Оценить' }).then(function (yes) {
@@ -918,7 +918,9 @@
   // («открываются одним полотном, и в этом нет смысла»): формат — выпадающим выбором, файл сохраняется на диск.
   function exportControlHtml(scope) {
     return '<select class="btn btn-ghost btn-sm adm-exp-fmt" data-exp-fmt="' + scope + '" aria-label="Формат выгрузки" title="Формат файла">' +
-        '<option value="csv">CSV</option><option value="json">JSON</option></select>' +
+        '<option value="csv">CSV</option><option value="json">JSON</option>' +
+        // Обезличенная выгрузка для лаборатории (владелец 23.10): без имён, номеров, потоков и оценок — их вырезает сервер.
+        '<option value="lab">Для лаборатории · обезличено</option></select>' +
       '<button type="button" class="btn btn-ghost btn-sm" data-exp="' + scope + '" title="' +
         (scope === 'all' ? 'Все потоки одним файлом: ответы по окнам маршрута, уровни и статусы поднавыков, итог' : 'Участники потока: ответы по окнам маршрута, уровни и статусы поднавыков, итог') + '">' +
         'Выгрузить результаты' + (scope === 'all' ? ' · все потоки' : '') + '</button>';
@@ -947,7 +949,9 @@
             window.imp.alert('Выгрузка не собралась: ' + (res ? (EXPORT_ERR[res.error] || res.message || res.error || 'ошибка') : 'сервер не ответил') + '.');
             return;
           }
-          saveFile(res.filename || ('imperfect-результаты.' + fmt), res.text, fmt === 'json' ? 'application/json;charset=utf-8' : 'text/csv;charset=utf-8');
+          saveFile(res.filename || ('imperfect-результаты.' + (fmt === 'lab' ? 'json' : fmt)), res.text, fmt === 'csv' ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8');
+          if (fmt === 'lab') window.imp.alert('Обезличенная выгрузка сохранена: участников ' + res.count + '. Имён, номеров, потоков и оценок в файле нет' +
+            (res.redacted ? '; в текстах ответов скрыто упоминаний имён и компаний — ' + res.redacted : '') + '.');
         });
       });
     });

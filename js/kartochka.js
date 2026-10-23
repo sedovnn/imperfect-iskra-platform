@@ -575,10 +575,10 @@
       var flaggedHere = r.role === 'main' && !f.ov && (stageFlags(r).length > 0 || (winOf(r.out, r.e) || {})['вид'] === 'doubt');
       var cls = 'kc-row' + (r.role === 'control' ? ' kc-row-ctl' : '') + (open ? ' kc-row-open' : '') + (i === rows.length - 1 ? ' kc-row-end' : '');
       var sub, subCls = 'kc-rs';
-      if (r.role === 'control') sub = f.ct && f.scene === scId ? 'контроль · взят в итог: выше основного' : 'контроль · в итог не идёт';
+      if (r.role === 'control') sub = f.ct && f.scene === scId ? 'контроль · взят в итог: ' + (f.ct.main === null ? 'основного ответа нет' : 'выше основного') : 'контроль · в итог не идёт';
       else if (!sc()) sub = 'ещё не судили';
       else if (!r.e) sub = 'на этом этапе не оценено' + (f.lv !== null ? ' · итог ' + f.lv : '');
-      else if (f.ov) sub = 'итог ' + f.lv + ' — поставили вы';
+      else if (f.ov) sub = f.lv === null ? 'недостаточно данных — отметили вы' : 'итог ' + f.lv + ' — поставили вы';
       else if (f.ct && f.scene === scId) sub = 'итог ' + f.lv + ' — по контрольному чтению';
       else if (f.scene === scId) { sub = flaggedHere ? 'в итоге · отмечено для проверки' : 'в итоге'; if (flaggedHere) subCls += ' kc-rs-v'; }
       else sub = 'итог ' + (f.lv === null ? '—' : f.lv) + (f.scene ? ' — ' + sceneTitle(f.scene) : '');
@@ -712,7 +712,8 @@
   function fixHtml(a, f) {
     var out = outOf(a), cons = out && out['сведение'], wins = (cons && cons['окна']) || [];
     var note = wins.length > 1 ? 'Итог — больший из этапов: ' + wins.map(function (w) { return sceneTitle(sceneOfStage(w['этап'])) + ' ' + (has(w['уровень']) ? w['уровень'] : '—'); }).join(', ') : 'Итог поднавыка';
-    if (f.ct) note += '. Взят контроль: ' + f.ct.control + ' при основном ' + f.ct.main;
+    if (f.ct) note += f.ct.main === null ? '. Основного ответа нет (этап пропущен или закрыт временем) — взят контроль: ' + f.ct.control
+      : '. Взят контроль: ' + f.ct.control + ' при основном ' + f.ct.main;
     var x = sc() && sc().extra && sc().extra[a], xl = x && has(x.level) ? Number(x.level) : null;
     var h = '<div class="kc-fix"><p class="kc-s">' + esc(note) + '</p>';
     if (xl !== null) {
@@ -720,7 +721,8 @@
         (!f.ov && f.lv !== null && xl !== f.lv ? ' · <button type="button" class="kc-link" style="height:auto" data-act="acceptExtra" data-ab="' + a + '" data-lv="' + xl + '" data-main="' + (f.judge === null ? '' : f.judge) + '">принять ' + xl + '</button>' : '') + '</p>';
     }
     if (f.ov) {
-      h += '<div class="kc-ovl"><span class="kc-lv kc-lv-sm kc-lv-human">' + f.lv + '</span><span>Поставили вы' + (f.judge !== null ? ' · судья давал ' + f.judge : '') +
+      h += '<div class="kc-ovl"><span class="kc-lv kc-lv-sm kc-lv-human">' + (f.lv === null ? '—' : f.lv) + '</span><span>' +
+        (f.ov.via === 'nodata' ? 'Недостаточно данных для оценки — отметили вы, уровня нет' : 'Поставили вы') + (f.judge !== null ? ' · судья давал ' + f.judge : '') +
         (f.ov.at ? ' · ' + esc(dt(f.ov.at)) : '') + (f.ov.reason ? '<br><span class="kc-s">«' + esc(f.ov.reason) + '»</span>' : '') + '</span></div>' +
         '<div><button type="button" class="kc-link" data-act="clearOv" data-ab="' + a + '">Вернуть уровень судьи</button></div>';
     } else if ((d.overrideAbilities || []).indexOf(a) >= 0) {
@@ -731,7 +733,10 @@
           ' title="' + (n === f.lv ? 'уровень сейчас' : 'поставить ' + n) + '">' + n + '</button>';
       }).join('') + '</div>' +
         '<div class="kc-fix-row"><input class="kc-inp" type="text" data-reason="' + a + '" aria-label="Почему свой уровень" placeholder="Почему — обязательно" value="' + esc(dr.reason || '') + '" />' +
-        '<button type="button" class="kc-btn kc-btn-d" data-act="save" data-ab="' + a + '"' + (dr.level && String(dr.reason || '').trim() ? '' : ' disabled') + '>Сохранить</button></div>';
+        '<button type="button" class="kc-btn kc-btn-d" data-act="save" data-ab="' + a + '"' + (dr.level && String(dr.reason || '').trim() ? '' : ' disabled') + '>Сохранить</button></div>' +
+        // «Недостаточно данных для оценки» после ручной проверки (решение владельца 04.10, сделано 23.10): уровня у поднавыка нет,
+        // в итог он не идёт — статус «не наблюдалось». Снимается «Вернуть уровень судьи» или пересудом.
+        '<div><button type="button" class="kc-link" data-act="nodata" data-ab="' + a + '">Недостаточно данных для оценки</button></div>';
     }
     return h + '</div>';
   }
@@ -751,7 +756,7 @@
     var key = 'all:main:' + r.a;
     return '<section class="kc-stage" id="kc-all"><div class="kc-st-h"><span class="kc-n">∑</span><h2>Весь ответ</h2>' +
       '<span class="kc-s">генерацию альтернатив судья читает по всему ассессменту</span></div>' +
-      '<div class="kc-whole"><div class="kc-wh-h"><span class="' + lvCls(f.ov ? f.lv : lv, f, false) + '">' + (f.ov ? f.lv : (lv === null ? '—' : lv)) + '</span>' +
+      '<div class="kc-whole"><div class="kc-wh-h"><span class="' + lvCls(f.ov ? f.lv : lv, f, false) + '">' + (f.ov ? (f.lv === null ? '—' : f.lv) : (lv === null ? '—' : lv)) + '</span>' +
         '<span class="kc-rt"><span class="kc-rn">' + esc(AB[r.a]) + '</span><span class="kc-rs' + (f.flagged ? ' kc-rs-v' : '') + '">' +
           esc(!sc() ? 'ещё не судили' : f.ov ? 'итог — поставили вы' : f.flagged ? 'в итоге · отмечено для проверки' : 'в итоге') + '</span></span></div>' +
       (r.e ? panelHtml(r, 'all', key) : '') + '</div></section>';
@@ -929,6 +934,7 @@
     }
     if (act === 'save') return saveOverride(a);
     if (act === 'clearOv') return clearOverride(a);
+    if (act === 'nodata') return markNoData(a);
     if (act === 'acceptCtl' || act === 'acceptExtra') return acceptOther(a, act === 'acceptCtl' ? 'control' : 'extra', t.getAttribute('data-lv'), t.getAttribute('data-main'));
     if (act === 'rejudge') return rejudge(t.getAttribute('data-task'), !!t.getAttribute('data-extra'));
     if (act === 'judgeAll') return judgeAll();
@@ -1007,6 +1013,18 @@
       call('clearScoreOverride', { bib: bib, ability: a }).then(function (r) { after(r, 'вернул уровень судьи'); });
     });
   }
+  function markNoData(a) {
+    var typed = String((ui.drafts[a] || {}).reason || '').trim();
+    window.imp.confirm('Отметить «недостаточно данных для оценки» по поднавыку «' + AB[a] + '»? Уровня у него не будет, в итог он не идёт' +
+      ' (результат — «не наблюдалось»). Вернуть — «Вернуть уровень судьи».', { confirmLabel: 'Отметить' }).then(function (yes) {
+      if (!yes) return;
+      call('setScoreOverride', { bib: bib, ability: a, level: 0, via: 'nodata',
+        reason: typed || 'недостаточно данных для оценки после ручной проверки' }).then(function (r) {
+        if (r && r.ok) delete ui.drafts[a];
+        after(r, 'отмечено: недостаточно данных');
+      });
+    });
+  }
   function acceptOther(a, via, lv, main) {
     var reason = via === 'control' ? 'принята контрольная оценка: контроль L' + lv + ', судья L' + main
       : 'принята доп. оценка по всему ответу: доп. L' + lv + ', судья L' + main;
@@ -1033,7 +1051,7 @@
         ui.busy = false;
         var e = res && res.error ? res.error : 'не удалось поставить в очередь';
         setState(e === 'scenes_version_mismatch' ? 'версия сцен в ответах не совпадает с судейской — судейство отказано (это защита, а не сбой)'
-          : e === 'no_score' ? 'участник помечен «не оценивать»' : String(e));
+          : e === 'no_score' ? 'участник помечен «не оценивать»' : (res && res.message) || String(e));
         render();
         return;
       }
@@ -1073,12 +1091,12 @@
   function rejudge(task, isExtra) {
     var msg = isExtra
       ? 'Доп. оценка по всему ответу: судья этого поднавыка читает все ответы участника. Платный вызов. В итог сама не идёт — примете, если сочтёте верной.'
-      : 'Пересудить только это задание? Остальные оценки не трогаются; платный вызов судьи.';
+      : 'Пересудить только это задание? Остальные оценки не трогаются; платный вызов судьи. Ручные правки уровней по пересуженным поднавыкам — и ваши, и принятые из контроля или доп. оценки — снимутся.';
     window.imp.confirm(msg, { confirmLabel: 'Пересудить' }).then(function (yes) { if (yes) enqueue([task]); });
   }
   function judgeAll() {
     var s = sc();
-    window.imp.confirm(s ? 'Пересудить всё? Судья заново читает все ответы — платно, за все задания. Ручные правки уровней, принятые из контроля или доп. оценки, снимутся.'
+    window.imp.confirm(s ? 'Пересудить всё? Судья заново читает все ответы — платно, за все задания. Все ручные правки уровней — и ваши, и принятые из контроля или доп. оценки, и «недостаточно данных» — снимутся.'
       : 'Оценить участника? Судья читает все ответы — платно.', { confirmLabel: s ? 'Пересудить всё' : 'Оценить' }).then(function (yes) { if (yes) enqueue([null]); });
   }
   function judgeFailed() {
