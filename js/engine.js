@@ -2146,9 +2146,28 @@
         try { (act.parts ? tas[0] : ta).focus(); } catch (e) {}
         return;
       }
+      if (!confirmSend(this, d)) return;
       go();
     });
     return d;
+  }
+
+  // ⚠ «ОТВЕТИТЬ» — В ДВА НАЖАТИЯ (владелец 26.10: «нет подтверждения перед отправкой ответа, можно ткнуть случайно»). Первое
+  // нажатие превращает кнопку в «Отправить ответ?», второе отправляет; правка ответа между ними возвращает кнопку назад.
+  // Окна нет — вариант владельца. В демо подтверждения нет: витрина должна пролистываться. true — можно отправлять.
+  function confirmSend(btn, area) {
+    if (isDemo || btn.dataset.confirm) return true;
+    btn.dataset.confirm = '1';
+    var cta = btn.textContent;
+    btn.textContent = 'Отправить ответ?';
+    var undo = function () {
+      if (!btn.dataset.confirm) return;
+      delete btn.dataset.confirm;
+      btn.textContent = cta;
+    };
+    area.addEventListener('input', undo);
+    area.addEventListener('click', function (e) { if (!btn.contains(e.target)) undo(); });
+    return false;
   }
 
   // Какие доводы авторов раскрыты кнопкой «почему». Не пишется в состояние и не
@@ -2381,6 +2400,8 @@
       // Кнопка и так выключена при незакрытом гейте — alert остаётся на случай
       // клика по включённой кнопке в момент, когда состояние успело измениться.
       if (fail) { window.imp.alert(fail); return; }
+      // Подтверждение — только у «Ответить» (26.10): «Разложил», «Утверждаю» и прочие действия верстака — не отправка ответа.
+      if (/^Ответить/.test(foot.cta || '') && !confirmSend(btn, d)) return;
       // Механика может забрать главную кнопку себе и НЕ пускать день дальше:
       // печать так делает первый шаг («Утверждаю» ещё не значит «дальше» — после
       // него появляется поле объяснения). Возврат false = «я перерисовалась сама».
@@ -3310,8 +3331,30 @@
     // 04.08): демо смотрят с витрины, и отправлять человека на страницу входа
     // участника значит показывать ему гейт, к которому у него нет номера.
     if (isDemo) {
-      var out = el('finishOverlay').querySelector('a.btn');
-      if (out) { out.setAttribute('href', 'vitrina.html'); out.textContent = 'На витрину →'; }
+      el('finishDemoOut').style.display = '';
+      el('finishLead').style.display = 'none';
+      return;
+    }
+    // Номер крупно и кнопка копирования (владелец 26.10): по номеру открывается отчёт. Отметка «день закончен» — для входа:
+    // по ней index.html не предлагает «Продолжить ассессмент» на закрытый день.
+    var bib = String((session && session.bib) || '');
+    el('finishBibN').textContent = bib;
+    el('finishBib').style.display = '';
+    try { localStorage.setItem('imp_finished_' + bib, '1'); } catch (e) {}
+    var copy = el('finishBibCopy');
+    copy.onclick = function () {
+      var done = function () { copy.textContent = 'Скопировано ✓'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(bib).then(done, function () { selectBib(); });
+      } else selectBib();
+    };
+    // Буфер недоступен (не https, запрет браузера) — выделяем номер: скопировать останется одним нажатием.
+    function selectBib() {
+      try {
+        var r = document.createRange(); r.selectNodeContents(el('finishBibN'));
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        copy.textContent = 'Номер выделен — скопируйте';
+      } catch (e) {}
     }
   }
 

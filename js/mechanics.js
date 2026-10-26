@@ -1181,6 +1181,16 @@
         var w = host.querySelector('#mxBw');
         if (w) w.addEventListener('input', function () { m.betWhy = w.value; ctx.save(); });
       };
+      // ⚠ КНОПКИ БЛОКА НЕ ЗАБИРАЮТ ФОКУС (владелец 26.10: «окно появляется, только если 2 раза кликнуть на „ещё вариант“»). При
+      // курсоре в заполненной карточке нажатие сначала снимало с неё фокус, blur выше перерисовывал блок — и кнопка под мышью
+      // исчезала до click: первый клик терялся. То же грозило «отметить» и «убрать». Без снятия фокуса blur не срабатывает,
+      // клик доходит, а обработчики ниже перерисуют сами. Один раз, снаружи draw() — как wireClick.
+      if (!host.dataset.impNoBlur) {
+        host.dataset.impNoBlur = '1';
+        host.addEventListener('mousedown', function (e) {
+          if (e.target.closest && e.target.closest('button[data-add], button[data-bet], button[data-del]')) e.preventDefault();
+        });
+      }
       wireClick(host, function (e) {
         var a = e.target.getAttribute && e.target.getAttribute('data-bet');
         if (a !== null && a !== undefined && a !== '') {

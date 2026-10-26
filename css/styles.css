@@ -1225,6 +1225,10 @@ body.imp-drawer-open .dock-rail { display: none; }
 }
 .gate-head-k { font-size: var(--fs-util); color: var(--muted-soft); }
 .gate-peter { display: block; width: 140px; height: auto; margin: 0 0 12px -8px; }
+/* Номер участника на финале (владелец 26.10): крупно — скопировать или снять экраном; по нему открывается отчёт. */
+.finish-bib { margin: 8px 0 24px; padding: 20px 24px; background: var(--soft); border-radius: var(--radius); }
+.finish-bib-k { margin: 0 0 6px; font-size: var(--fs-util); color: var(--muted); }
+.finish-bib-n { margin: 0 0 14px; font-size: var(--fs-h2); font-weight: 700; letter-spacing: 0.06em; line-height: 1.1; color: var(--ink); user-select: all; }
 /* Вход в кабинет (вариант Б, владелец 19.10): та же шапка, что у финала, плашка «Вы вышли из кабинета» после «выйти» и
    строка ссылок наружу под кнопкой. Раньше карточка пароля стояла одна, и уйти с неё можно было только кнопкой браузера.
    Отступ сверху — под шапку: на низком экране карточка иначе заезжала бы под неё. */

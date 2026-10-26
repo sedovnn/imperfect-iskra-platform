@@ -7,23 +7,23 @@
   }
  },
  "css/styles.css": {
-  "sha": "498b9fef8ad2",
+  "sha": "9e32b6406481",
   "keys": {
-   "administrator.html": 274,
-   "assessment.html": 274,
-   "case-v8.html": 274,
-   "expert-report.html": 274,
-   "expert.html": 274,
-   "harness.html": 274,
-   "index.html": 274,
-   "intro.html": 274,
-   "kartochka.html": 274,
-   "otchet.html": 274,
-   "policy.html": 274,
-   "role.html": 274,
-   "soglashenie.html": 274,
-   "vedushchiy.html": 274,
-   "vitrina.html": 274
+   "administrator.html": 275,
+   "assessment.html": 275,
+   "case-v8.html": 275,
+   "expert-report.html": 275,
+   "expert.html": 275,
+   "harness.html": 275,
+   "index.html": 275,
+   "intro.html": 275,
+   "kartochka.html": 275,
+   "otchet.html": 275,
+   "policy.html": 275,
+   "role.html": 275,
+   "soglashenie.html": 275,
+   "vedushchiy.html": 275,
+   "vitrina.html": 275
   }
  },
  "js/api.js": {
@@ -83,9 +83,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "bfbef72d5578",
+  "sha": "e09c22941d02",
   "keys": {
-   "assessment.html": 153
+   "assessment.html": 154
   }
  },
  "js/expert-api.js": {
@@ -156,11 +156,11 @@
   }
  },
  "js/mechanics.js": {
-  "sha": "b479426d69a0",
+  "sha": "eadfcb0537e0",
   "keys": {
-   "assessment.html": 103,
-   "harness.html": 103,
-   "kartochka.html": 103
+   "assessment.html": 104,
+   "harness.html": 104,
+   "kartochka.html": 104
   }
  },
  "js/qr.js": {
@@ -183,15 +183,15 @@
   }
  },
  "js/scenes.js": {
-  "sha": "f88f8f9483e5",
+  "sha": "71f7c1513e71",
   "keys": {
-   "administrator.html": 207,
-   "assessment.html": 207,
-   "harness.html": 207,
-   "intro.html": 207,
-   "kartochka.html": 207,
-   "role.html": 207,
-   "vedushchiy.html": 207
+   "administrator.html": 208,
+   "assessment.html": 208,
+   "harness.html": 208,
+   "intro.html": 208,
+   "kartochka.html": 208,
+   "role.html": 208,
+   "vedushchiy.html": 208
   }
  },
  "js/typo.js": {

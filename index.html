@@ -17,7 +17,7 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
-<link rel="stylesheet" href="css/styles.css?v=274" />
+<link rel="stylesheet" href="css/styles.css?v=275" />
 <style>
   /* Окно входа — единственный публичный экран (лендинг убран). Тихий FP-лист:
      лок сверху, слева колонка с формой входа, скрытая сноска ▸▸▸ → тех-меню. */
@@ -298,6 +298,16 @@
   if (liveSession && liveSession.bib && !MAINTENANCE) {
     document.getElementById('entryResumeBib').textContent = '№ ' + String(liveSession.bib).padStart(6, '0');
     document.getElementById('entryResume').style.display = '';
+    // День по этому номеру закончен в этом браузере (отметку ставит финальный экран, 26.10) — «Продолжить» не предлагаем:
+    // он вёл на закрытый ассессмент (владелец 26.10).
+    var finishedHere = false;
+    try { finishedHere = !!localStorage.getItem('imp_finished_' + String(liveSession.bib)); } catch (e) {}
+    if (finishedHere) {
+      document.querySelector('#entryResume .entry-resume-msg').innerHTML = 'По номеру <b>№ ' +
+        String(liveSession.bib).padStart(6, '0').replace(/[<>&"]/g, '') + '</b> ассессмент пройден. Отчёт по номеру откроется, когда будет готов.';
+      document.getElementById('entryResumeBtn').style.display = 'none';
+      liveSession = null;   // и обработчик «Продолжить» ниже не ставится
+    }
   }
 
   // ---------- самозапись по ссылке тестовой волны ----------
@@ -495,6 +505,44 @@
     submitBtn.textContent = 'Начать ассессмент →';
     bindAiConsent(submitBtn, errEl);
   }
+
+  // ⚠ «ПРОДОЛЖИТЬ АССЕССМЕНТ» ИДЁТ ЧЕРЕЗ СЕРВЕР (26.10, владелец на dev). Это была простая ссылка на сохранённый в браузере
+  // номер: она обходила и согласие (номер без отметки проходил день целиком, а судья потом отказывал — №VRYURG), и закрытый
+  // день (законченный ассессмент открывался заново и показывал закрытый экран). Теперь тот же вход, что по номеру: нет
+  // согласия — галочка; день закончен — сообщение вместо перехода. Сеть не ответила — переход, как раньше: судья всё равно
+  // проверяет отметку на сервере.
+  var resumeBtn = document.getElementById('entryResumeBtn');
+  if (resumeBtn && liveSession && liveSession.bib) resumeBtn.addEventListener('click', function (e) {
+    e.preventDefault();
+    var bib = String(liveSession.bib);
+    var href = resumeBtn.getAttribute('href');
+    resumeBtn.style.pointerEvents = 'none';
+    window.imp.callApi('participantLogin', { bib: bib }).then(function (res) {
+      resumeBtn.style.pointerEvents = '';
+      if (res && res.ok && res.needsConsent) {
+        document.getElementById('entryResume').style.display = 'none';
+        form.style.display = '';   // на странице самозаписи форма номера спрятана
+        codeEl.value = String(res.bib || bib);
+        askConsent(res, String(res.bib || bib));
+        return;
+      }
+      if (res && res.error === 'already_finished') {
+        try { localStorage.removeItem('imp_current_session'); sessionStorage.removeItem('imp_current_session'); } catch (err) {}
+        document.getElementById('entryResume').style.display = 'none';
+        form.style.display = '';
+        showErr('По этому номеру ассессмент уже пройден. Отчёт по номеру откроется, когда будет готов.');
+        return;
+      }
+      if (res && res.error === 'not_found') {
+        try { localStorage.removeItem('imp_current_session'); sessionStorage.removeItem('imp_current_session'); } catch (err) {}
+        document.getElementById('entryResume').style.display = 'none';
+        form.style.display = '';
+        showErr('Такого номера участника нет.');
+        return;
+      }
+      window.location.href = res && res.ok ? afterLogin(String(res.bib || bib)) : href;
+    }, function () { window.location.href = href; });
+  });
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
