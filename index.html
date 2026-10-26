@@ -502,7 +502,7 @@
     form.insertBefore(aiBlock, submitBtn);
     var agree = document.getElementById('selfConsent');
     if (agree) form.insertBefore(agree, errEl);
-    submitBtn.textContent = 'Начать ассессмент →';
+    submitBtn.textContent = res && res.error === 'already_finished' ? 'Сохранить согласие →' : 'Начать ассессмент →';
     bindAiConsent(submitBtn, errEl);
   }
 
@@ -519,7 +519,7 @@
     resumeBtn.style.pointerEvents = 'none';
     window.imp.callApi('participantLogin', { bib: bib }).then(function (res) {
       resumeBtn.style.pointerEvents = '';
-      if (res && res.ok && res.needsConsent) {
+      if (res && res.needsConsent && (res.ok || res.error === 'already_finished')) {
         document.getElementById('entryResume').style.display = 'none';
         form.style.display = '';   // на странице самозаписи форма номера спрятана
         codeEl.value = String(res.bib || bib);
@@ -555,6 +555,15 @@
         bib: String(pl.res.bib || pl.code), aiConsentVersion: aiConsentVer(),
         consentVersion: agreeEl ? (agreeEl.getAttribute('data-consent-version') || '') : ''
       }).then(function (r) {
+        // Законченный день (26.10): согласие записано, день не открывается — только сообщение; сервер ставит прогон на оценку.
+        if (r && r.ok && pl.res.error === 'already_finished') {
+          try { localStorage.removeItem('imp_current_session'); sessionStorage.removeItem('imp_current_session'); } catch (err) {}
+          if (aiBlock.parentNode) aiBlock.parentNode.removeChild(aiBlock);
+          submitBtn.style.display = 'none';
+          errEl.style.color = 'var(--ink)';   // не ошибка — итог
+          showErr('Согласие сохранено. Ассессмент по этому номеру уже пройден — отчёт по номеру откроется, когда будет готов.');
+          return;
+        }
         if (r && r.ok) { finishLogin(pl.res, pl.code); return; }
         submitBtn.disabled = false;
         showErr('Не удалось сохранить согласие. Проверьте связь и попробуйте ещё раз.');
@@ -587,6 +596,8 @@
       submitBtn.disabled = false;
       submitBtn.textContent = t;
       var err = res && res.error;
+      // Законченный день без отметки согласия (владелец 26.10, №VRYURG) — галочка, как у нового номера; день не открывается.
+      if (err === 'already_finished' && res.needsConsent) { askConsent(res, code); return; }
       // ⚠ ОДНОРАЗОВЫЙ НОМЕР (правка 29.09). По законченному дню вход закрыт: номера
       // раздают поштучно, и второй проход по тому же номеру сделал бы результат
       // бессмысленным. Формулировка без обвинения: человек мог просто перепутать номер.
