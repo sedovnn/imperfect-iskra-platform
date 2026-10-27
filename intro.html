@@ -17,6 +17,29 @@
      блокировку, onload возвращает стиль в дело; noscript — путь без JS. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'" />
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&display=swap" /></noscript>
+<!-- ⚠ ЭКРАН ПОКАЗЫВАЕТСЯ ГОТОВЫМ (владелец 27.10: «перерисовка и прогрузка страниц настройки рваная, я её вижу»). Без этого
+     страница появлялась черновиком — системным шрифтом, заголовки с прописной, на настройке пустой список «Как отвечать», — и через
+     доли секунды перерисовывалась: подменялся шрифт, typo.js делал заголовки строчными, скрипт дописывал пункты. Теперь страница
+     невидима, пока шрифт не загрузился и скрипты не отработали, но не дольше 0,8 с. Без JS класса нет — страница видна сразу. -->
+<style>html.imp-boot body{visibility:hidden}</style>
+<script>
+(function () {
+  var d = document.documentElement, done = false;
+  d.classList.add('imp-boot');
+  function show() { if (done) return; done = true; d.classList.remove('imp-boot'); }
+  setTimeout(show, 800);
+  var link = document.querySelector('link[rel="stylesheet"][href*="fonts"]');
+  var css = new Promise(function (ok) {
+    if (!link || link.media !== 'print' || link.sheet && link.media === 'all') return ok();
+    link.addEventListener('load', function () { ok(); }); link.addEventListener('error', function () { ok(); });
+  });
+  var dom = new Promise(function (ok) { document.addEventListener('DOMContentLoaded', function () { ok(); }); });
+  Promise.all([css, dom]).then(function () {
+    var f = document.fonts;
+    return f && f.load ? Promise.all([f.load('400 1em "Inter Tight"'), f.load('500 1em "Inter Tight"')]).then(function () { return f.ready; }) : null;
+  }).then(function () { requestAnimationFrame(show); }, show);
+})();
+</script>
 <link rel="stylesheet" href="css/styles.css?v=276" />
 <style>
   /* ЭКРАН 1 ИЗ ТРЁХ: настройка на мышление → введение в роль (role.html) →
