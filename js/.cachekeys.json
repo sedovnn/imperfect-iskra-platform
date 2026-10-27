@@ -7,23 +7,23 @@
   }
  },
  "css/styles.css": {
-  "sha": "9e32b6406481",
+  "sha": "385d0516996e",
   "keys": {
-   "administrator.html": 275,
-   "assessment.html": 275,
-   "case-v8.html": 275,
-   "expert-report.html": 275,
-   "expert.html": 275,
-   "harness.html": 275,
-   "index.html": 275,
-   "intro.html": 275,
-   "kartochka.html": 275,
-   "otchet.html": 275,
-   "policy.html": 275,
-   "role.html": 275,
-   "soglashenie.html": 275,
-   "vedushchiy.html": 275,
-   "vitrina.html": 275
+   "administrator.html": 276,
+   "assessment.html": 276,
+   "case-v8.html": 276,
+   "expert-report.html": 276,
+   "expert.html": 276,
+   "harness.html": 276,
+   "index.html": 276,
+   "intro.html": 276,
+   "kartochka.html": 276,
+   "otchet.html": 276,
+   "policy.html": 276,
+   "role.html": 276,
+   "soglashenie.html": 276,
+   "vedushchiy.html": 276,
+   "vitrina.html": 276
   }
  },
  "js/api.js": {
@@ -54,9 +54,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "109b031681a4",
+  "sha": "dd4c98f8781b",
   "keys": {
-   "administrator.html": 85
+   "administrator.html": 88
   }
  },
  "js/case-ref.js": {
@@ -83,9 +83,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "b7c890aae389",
+  "sha": "66a00f0a0b77",
   "keys": {
-   "assessment.html": 156
+   "assessment.html": 160
   }
  },
  "js/expert-api.js": {
@@ -128,23 +128,23 @@
   }
  },
  "js/kartochka.js": {
-  "sha": "88d71afd7e48",
+  "sha": "15685c784377",
   "keys": {
-   "kartochka.html": 10
+   "kartochka.html": 12
   }
  },
  "js/main.js": {
-  "sha": "837c54e85524",
+  "sha": "f543d59fb6cf",
   "keys": {
-   "administrator.html": 14,
-   "assessment.html": 14,
-   "harness.html": 14,
-   "index.html": 14,
-   "intro.html": 14,
-   "kartochka.html": 14,
-   "role.html": 14,
-   "vedushchiy.html": 14,
-   "vitrina.html": 14
+   "administrator.html": 15,
+   "assessment.html": 15,
+   "harness.html": 15,
+   "index.html": 15,
+   "intro.html": 15,
+   "kartochka.html": 15,
+   "role.html": 15,
+   "vedushchiy.html": 15,
+   "vitrina.html": 15
   }
  },
  "js/mech-fields.js": {
@@ -156,11 +156,11 @@
   }
  },
  "js/mechanics.js": {
-  "sha": "eadfcb0537e0",
+  "sha": "59ec35b5dbb3",
   "keys": {
-   "assessment.html": 104,
-   "harness.html": 104,
-   "kartochka.html": 104
+   "assessment.html": 105,
+   "harness.html": 105,
+   "kartochka.html": 105
   }
  },
  "js/qr.js": {
@@ -211,9 +211,9 @@
   }
  },
  "js/vedushchiy.js": {
-  "sha": "8f0f2381a888",
+  "sha": "4ed97016fdef",
   "keys": {
-   "vedushchiy.html": 15
+   "vedushchiy.html": 16
   }
  }
 }

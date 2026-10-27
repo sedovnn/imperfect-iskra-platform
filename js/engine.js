@@ -1469,6 +1469,9 @@
     var arts = [].slice.call(host.querySelectorAll('article[id]'));
     if (!arts.length) return;
     arts.forEach(function (art, i) {
+      // ⚠ СНОСКИ — БЕЗ СВЁРТКИ (владелец 27.10: «сноски на то и сноски»). У блока сносок нет заголовка раздела (h2), и свёртка
+      // получала подписью его идентификатор — «notes». Сноски стоят внизу обычным текстом, всегда открыты.
+      if (art.id === 'notes') return;
       var h = art.querySelector('h2, h3');
       var label = h ? h.textContent.trim() : art.id;
       var det = document.createElement('details');
@@ -1588,6 +1591,32 @@
       }
     }
 
+  }
+
+  // ⚠ ПИСЬМО АГЕЕВА ОТКРЫВАЕТСЯ САМО, КОГДА ОН ПИШЕТ (владелец 27.10, по разговору с Катей и Настей: «непонятно, где
+  // задание»). Агеев дополняет своё письмо, а само письмо — раздел 7 материалов. При входе на шаг «Ваш офис» вкладка
+  // «О компании» раскрывает и подводит к разделу 7 — тем же путём, что переход по заметке (showMarkInCase). Реплики, вопросы
+  // и сценарий не меняются. Один раз на вход в шаг; материалы грузятся асинхронно — ждём их.
+  var CASE_FOCUS = { 'sc1.mech': 'sec-7' };
+  var lastCaseFocus = null;
+  function focusCaseSection(id, tries) {
+    var host = el('supCaseText');
+    var sec = host && (host.querySelector('.case-block[id="' + id + '"]') || host.querySelector('[id="' + id + '"]'));
+    if (!sec) {
+      if ((tries || 0) < 40) setTimeout(function () { focusCaseSection(id, (tries || 0) + 1); }, 250);
+      return;
+    }
+    // Как у перехода по заметке: на широком экране кейс уже в центре — вкладку не переключаем.
+    if (!el('dayGrid').classList.contains('is-casewide')) setTab('case');
+    openCaseBlockOf(sec);
+    if (sec.tagName === 'DETAILS') sec.open = true;
+    host.scrollTop += sec.getBoundingClientRect().top - host.getBoundingClientRect().top - 10;
+    // Сборка материалов после загрузки (свёртки, ссылки на приложения) сбрасывает прокрутку панели — проверяем и доводим ещё
+    // раз, если раздел уехал из вида (до трёх раз).
+    if ((tries || 0) < 43) setTimeout(function () {
+      var off = sec.getBoundingClientRect().top - host.getBoundingClientRect().top;
+      if (off < -20 || off > 60) focusCaseSection(id, Math.max(40, (tries || 0)) + 1);
+    }, 400);
   }
 
   // Раскрыть свёртку, внутри которой лежит узел: переход по пометке или по ссылке
@@ -2148,28 +2177,9 @@
         try { (act.parts ? tas[0] : ta).focus(); } catch (e) {}
         return;
       }
-      if (!confirmSend(this, d)) return;
       go();
     });
     return d;
-  }
-
-  // ⚠ «ОТВЕТИТЬ» — В ДВА НАЖАТИЯ (владелец 26.10: «нет подтверждения перед отправкой ответа, можно ткнуть случайно»). Первое
-  // нажатие превращает кнопку в «Отправить ответ?», второе отправляет; правка ответа между ними возвращает кнопку назад.
-  // Окна нет — вариант владельца. В демо подтверждения нет: витрина должна пролистываться. true — можно отправлять.
-  function confirmSend(btn, area) {
-    if (isDemo || btn.dataset.confirm) return true;
-    btn.dataset.confirm = '1';
-    var cta = btn.textContent;
-    btn.textContent = 'Отправить ответ?';
-    var undo = function () {
-      if (!btn.dataset.confirm) return;
-      delete btn.dataset.confirm;
-      btn.textContent = cta;
-    };
-    area.addEventListener('input', undo);
-    area.addEventListener('click', function (e) { if (!btn.contains(e.target)) undo(); });
-    return false;
   }
 
   // Какие доводы авторов раскрыты кнопкой «почему». Не пишется в состояние и не
@@ -2402,8 +2412,6 @@
       // Кнопка и так выключена при незакрытом гейте — alert остаётся на случай
       // клика по включённой кнопке в момент, когда состояние успело измениться.
       if (fail) { window.imp.alert(fail); return; }
-      // Подтверждение — только у «Ответить» (26.10): «Разложил», «Утверждаю» и прочие действия верстака — не отправка ответа.
-      if (/^Ответить/.test(foot.cta || '') && !confirmSend(btn, d)) return;
       // Механика может забрать главную кнопку себе и НЕ пускать день дальше:
       // печать так делает первый шаг («Утверждаю» ещё не значит «дальше» — после
       // него появляется поле объяснения). Возврат false = «я перерисовалась сама».
@@ -2780,10 +2788,17 @@
   // Межсценовый экран: перекрывает рабочую область, оставляя кейс и оглавление на
   // месте. Строка настроя берётся из S.interlude — она ОДНА на все переходы, и
   // это не экономия: разная строка подсказывала бы предмет замера следующей сцены.
+  // ⚠ МЕЖЭТАПНЫЙ ЭКРАН УХОДИТ ДАЛЬШЕ САМ ЧЕРЕЗ 30 СЕКУНД (владелец 27.10, вариант «В»). Время на этом экране не идёт (решение
+  // 03.10: этап считается с открытия работы), и экран был бесконечной паузой — после «время вышло» ассессмент можно было
+  // растянуть сколько угодно. Только при таймере потока; отметка показа хранится в прогоне, так что перезагрузка отсчёт не
+  // сбрасывает. В демо и без таймера — как раньше, по кнопке.
+  var INTERLUDE_AUTO_SEC = 30;
+  var interludeTimer = null;
   function interludeMode(on, step) {
     var box = el('interlude');
     if (!box) return;
     box.style.display = on ? 'flex' : 'none';
+    if (interludeTimer) { clearInterval(interludeTimer); interludeTimer = null; }
     if (!on) return;
     var I = S.interlude || { cta: 'Далее →' };
     var bridge = step.scene.bridge || {};
@@ -2845,7 +2860,25 @@
 
     var cta = el('interludeCta');
     cta.textContent = I.cta || 'Далее →';
-    cta.onclick = function () { state.timeUpAt = ''; advance(); };
+    var go = function () {
+      if (interludeTimer) { clearInterval(interludeTimer); interludeTimer = null; }
+      state.timeUpAt = ''; advance();
+    };
+    cta.onclick = go;
+    if (timerOn() && !isDemo) {
+      var key = step.scene.id;
+      state.timing.inter = state.timing.inter || {};
+      if (!state.timing.inter[key]) { state.timing.inter[key] = nowIso(); saveState(); }
+      var t0 = msOf(state.timing.inter[key]);
+      var tick = function () {
+        var left = INTERLUDE_AUTO_SEC - Math.floor((Date.now() - t0) / 1000);
+        // Вне текущей перерисовки: экран мог открыться уже с истёкшим отсчётом (перезагрузка), и переход изнутри render()
+        // запустил бы вторую перерисовку посреди первой.
+        if (left <= 0) { if (interludeTimer) { clearInterval(interludeTimer); interludeTimer = null; } setTimeout(go, 0); return true; }
+        cta.textContent = (I.cta || 'Далее →') + ' · ' + left + ' с';
+      };
+      if (!tick()) interludeTimer = setInterval(tick, 1000);
+    }
     if (window.imp && window.imp.typoDom) window.imp.typoDom(box);
   }
 
@@ -3322,6 +3355,9 @@
       scroller.scrollTop += head.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 12;
     }
     if (cur && cur.scene) lastSceneId = cur.scene.id;
+    var focusId = cur && cur.act && CASE_FOCUS[cur.act.id];
+    if (focusId && lastCaseFocus !== cur.act.id) focusCaseSection(focusId);
+    lastCaseFocus = cur && cur.act ? cur.act.id : null;
     // Поля, приехавшие с сохранённым текстом, подгоняются сразу: иначе длинный
     // ответ прошлого шага показался бы в три строки со скроллом внутри.
     autoGrowAll(now);

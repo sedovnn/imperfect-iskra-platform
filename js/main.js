@@ -68,9 +68,36 @@
           if (s.maxPaste > t.maxPasteChars) t.maxPasteChars = s.maxPaste;
           t.fieldCount++;
         });
-        return { v: 1, totals: t };
+        return { v: 1, totals: withCarry(t) };
       }
     };
+
+    // ⚠ ЗАМЕР НЕ ОБНУЛЯЕТСЯ ПРИ ПЕРЕЗАГРУЗКЕ (владелец 27.10). Счётчики живут в памяти страницы, а сервер при каждом сохранении
+    // заменяет прежний замер новым (applyTelemetry) — вставки до перезагрузки пропадали, и маркер ИИ их не видел. Теперь каждая
+    // загрузка страницы оставляет свой итог в браузере по номеру участника; следующая загрузка прибавляет его к своему.
+    // Знаки уже сданных полей прошлой загрузки входят в итог как есть; поле, правленное в двух загрузках, посчитается дважды —
+    // это огрубление в сторону меньшей доли вставки, то есть против ложного флага.
+    var pageToken = String(Date.now()) + Math.random();
+    var SUM = ['pastedChars', 'finalChars', 'keystrokes', 'backspaces', 'activeMs', 'tabBlur', 'fieldCount'];
+    function withCarry(t) {
+      var bib = '';
+      try { var ss = window.imp.loadSession && window.imp.loadSession(); bib = ss && ss.bib ? String(ss.bib) : ''; } catch (_) {}
+      if (!bib) return t;
+      var key = 'imp_tel_' + bib, o = null;
+      try { o = JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { o = null; }
+      o = o || { carry: null, page: null };
+      if (o.page && o.page.token !== pageToken) o.carry = add(o.carry, o.page.t);   // прошлая загрузка — в перенос
+      o.page = { token: pageToken, t: t };
+      try { localStorage.setItem(key, JSON.stringify(o)); } catch (_) {}
+      return add(o.carry, t);
+    }
+    function add(a, b) {
+      if (!a) return b; if (!b) return a;
+      var r = {};
+      SUM.forEach(function (k) { r[k] = (Number(a[k]) || 0) + (Number(b[k]) || 0); });
+      r.maxPasteChars = Math.max(Number(a.maxPasteChars) || 0, Number(b.maxPasteChars) || 0);
+      return r;
+    }
   })();
 
   // ── ТЕЛЕФОН: вход запрещён, всегда ───────────────────────────────────────────

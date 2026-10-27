@@ -209,7 +209,7 @@
   function startPoll() {
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(function () {
-      if (document.hidden || judging) return;
+      if (document.hidden || judging || bulk) return;
       if (route().view !== 'wave' || tab !== 'people' || findQ()) return;
       refresh(true);
     }, POLL_MS);
@@ -319,6 +319,10 @@
   function attention(p) {
     if (p.noScore) return [];
     var out = [];
+    // ⚠ ПОКА ИДЁТ ОЦЕНКА — ТОЛЬКО ТО, ЧТО ВЕРНО В ЛЮБОЙ МОМЕНТ (владелец 27.10: «пока идёт оценка, куча статусов»). «Устарело»,
+    // флаги, ручная проверка и рамка относятся к незаконченной записи: этапы оценены по ответам середины дня, остальное в
+    // очереди. Их не показываем, пока у номера есть задания в очереди или в работе; тёзки, версии и упавшие задания — всегда.
+    var bz = busy(p);
     var hasWork = !!(p.answered || p.legacyAnswered);
     if (hasWork && versionsApart(p)) {
       out.push({ code: 'версии', text: 'судейство закрыто: сцены ' + p.scenesVersion + ' против судейских ' + p.expectScenes });
@@ -327,13 +331,17 @@
       out.push({ code: 'тёзки', text: 'в этом потоке есть другой номер с теми же именем и фамилией. ' +
         'Это могут быть тёзки или один человек, записавшийся дважды. Попросите их подойти после ассессмента' });
     }
-    if (p.stale) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после оценки' });
+    if (p.stale && !bz) out.push({ code: 'устарело', text: 'оценка по другому тексту: ответы менялись после оценки' });
     if (liveErrors(p.queue)) out.push({ code: 'очередь', text: 'оценка не завершена — заданий с ошибкой: ' + liveErrors(p.queue) +
       ' (' + unfinishedWhy(p) + ')' });
-    if (pendingOf(p).length) out.push({ code: 'проверка', text: 'ждут ручной проверки: ' + pendingNames(pendingOf(p)) +
+    if (pendingOf(p).length && !bz) out.push({ code: 'проверка', text: 'ждут ручной проверки: ' + pendingNames(pendingOf(p)) +
       ' — итог не выведен, пока оценщик их не решит' });
-    if (p.flags) out.push({ code: 'флаги', text: p.flags + ' ' + plural(p.flags, 'флаг', 'флага', 'флагов') + ' — перечитать ответ' });
-    if (p.listFacts && p.listFacts.fitsFrame === false) out.push({ code: 'рамка', text: 'разбор вышел за рамку года' });
+    if (p.flags && !bz) out.push({ code: 'флаги', text: p.flags + ' ' + plural(p.flags, 'флаг', 'флага', 'флагов') + ' — перечитать ответ' });
+    // Маркер помощи ИИ (27.10, владелец): по замеру ввода — вставки и скорость набора; балл не меняет, меняет чтение балла.
+    if (p.aiMarker === 'strong' || p.aiMarker === 'soft') out.push({ code: 'ИИ?', text: p.aiMarker === 'strong'
+      ? 'похоже, значительная часть ответа вставлена извне — балл читать как отбор и редактуру; подробности в карточке'
+      : 'возможны признаки помощи ИИ (вставка или скорость ввода) — подробности в карточке' });
+    if (p.listFacts && p.listFacts.fitsFrame === false && !bz) out.push({ code: 'рамка', text: 'разбор вышел за рамку года' });
     return out;
   }
   function attentionCell(p) {
@@ -376,8 +384,26 @@
     return pt.min === pt.max ? String(pt.min) : pt.min + '–' + pt.max;
   }
   // Итог — сумма десяти способностей, до 50; окончательный — когда оценены все, пока ждут проверки — предварительный.
+  // ⚠ КОЛОНКА «ОТЧЁТ» (владелец 27.10). «Проверено» = отчёт собран по нынешней оценке (решение 27.10, вариант «б»); выдача —
+  // только проверенным. Состояния: не собран / собирается / собран ✓ / выдан ✓ / устарел (оценка изменилась после сборки).
+  function reportCell(p) {
+    if (p.noScore || !(p.judged > 0 || (p.pending || []).length)) return '<span class="cab-dim">—</span>';
+    if (bulk && bulk.cur === p.bib) return '<span class="adm-wait is-run">' + (bulk.kind === 'check' ? 'собирается…' : 'выдаётся…') + '</span>';
+    if (p.report === 'generating') return '<span class="adm-wait is-run">собирается</span>';
+    if (p.report === 'error') return '<span class="cab-need" title="Сборка отчёта упала — соберите заново">ошибка</span>';
+    if (p.report === 'stale') return '<span class="cab-stale" title="Оценка изменилась после сборки — соберите заново' +
+      (p.reportPublished ? '; участнику прежний отчёт не показывается' : '') + '">' + (p.reportPublished ? 'выдан · устарел' : 'устарел') + '</span>';
+    if (p.report === 'ready') return p.reportPublished ? '<span class="ved-st is-done">выдан ✓</span>' : '<span>собран ✓</span>';
+    return '<span class="cab-dim">не собран</span>';
+  }
   function totalCell(p) {
     if (!scored(p) || p.noScore) return '<span class="cab-dim">—</span>';
+    // Пока идёт оценка — без итога (27.10): сумма незаконченной записи — не итог; ход оценки — в колонке навыков.
+    if (busy(p)) return '<span class="cab-dim">—</span>';
+    // ⚠ ДЕНЬ ЕЩЁ ИДЁТ — ИТОГА НЕТ (владелец 27.10: «странно, что 10 из 50 у всех»). По ходу дня судьи оценивают закрытые этапы,
+    // и сумма оценённого (АК 3 или 6) поднималась до нижней границы шкалы 10–50 — у всех «10 из 50». Баллы навыков по ходу
+    // дня видны в своей колонке, итог — после финиша.
+    if (!p.finished) return '<span class="cab-dim" title="День ещё идёт: итог по десяти способностям — после финиша">после финиша</span>';
     // Итог при упавших заданиях — не итог этой оценки: пишем словами, цифру не показываем.
     if (unfinished(p)) return unfinishedTag(p);
     if (pendingOf(p).length) {
@@ -537,7 +563,7 @@
 
   function peopleTable(list, withWave) {
     return '<table class="ved-table adm-table"><thead><tr><th>Участник</th>' + (withWave ? '<th>Поток</th>' : '') +
-      '<th>Где сейчас</th><th>Оценка по навыкам</th><th>Итог</th><th>Внимание</th><th></th></tr></thead><tbody>' +
+      '<th>Где сейчас</th><th>Оценка по навыкам</th><th>Итог</th><th>Отчёт</th><th>Внимание</th><th></th></tr></thead><tbody>' +
       list.map(function (p) {
         var where = whereOf(p), wv = withWave ? waveById(p.waveId) : null;
         return '<tr data-bib="' + esc(p.bib) + '" tabindex="0"' + (p.noScore ? ' class="is-off"' : '') + '>' +
@@ -545,7 +571,7 @@
             (p.isRunner ? ' <span class="adm-ai" title="Ассессмент прошла модель, а не человек">модель</span>' : '') + '</td>' +
           (withWave ? '<td>' + (wv ? esc(wv.name || wv.num) : '<span class="cab-dim">без потока</span>') + '</td>' : '') +
           '<td><span class="ved-st ' + where.cls + '">' + esc(where.text) + '</span></td>' +
-          '<td>' + skillsCell(p) + '</td><td>' + totalCell(p) + '</td><td>' + attentionCell(p) + '</td>' +
+          '<td>' + skillsCell(p) + '</td><td>' + totalCell(p) + '</td><td>' + reportCell(p) + '</td><td>' + attentionCell(p) + '</td>' +
           '<td class="ved-acts">' + rowJudgeBtn(p) + '</td></tr>';
       }).join('') + '</tbody></table>';
   }
@@ -562,7 +588,7 @@
   // здесь: закрыли страницу — оставшиеся оценки не начнутся (пересуд Y4RUUC 06.10 так и не дошёл до сервера).
   // Браузер покажет свой вопрос «Покинуть сайт?»; текст свой задать нельзя.
   window.addEventListener('beforeunload', function (e) {
-    if (!rowActive && !rowQueue.length) return;
+    if (!rowActive && !rowQueue.length && !bulk) return;
     e.preventDefault();
     e.returnValue = '';
   });
@@ -652,13 +678,16 @@
     var body;
     if (tab === 'people') {
       body = list.length
-        ? '<div class="adm-bar"><span class="ved-dim">Нажмите на строку — откроется карточка участника.</span>' +
-            '<span class="adm-bar-acts">' +
+        // ⚠ ДЕЙСТВИЯ ПОТОКА — ПОДПИСАННЫМИ ГРУППАМИ (владелец 27.10: «что за уехавший блок из кнопок, может, разделим?»).
+        // Одной строкой они уезжали за край; группы переносятся целиком, подсказка — строкой над таблицей.
+        ? '<div class="adm-groups">' +
             // Выгрузка результатов потока (владелец 17.10, вместо всех отчётов одной страницей) и отчёт по потоку (03.10, 14.10) —
             // предварительный по нынешним оценкам и окончательный, когда проверены все оценённые.
             (none ? '' : teamButtonsHtml(list)) +
-            (waiting.length || inRun ? '<button type="button" class="btn btn-primary btn-sm" id="admJudgeAll"' + (inRun ? ' disabled' : '') + '>' +
-              (inRun ? 'Оцениваю…' : 'Оценить закончивших (' + waiting.length + ')') + '</button>' : '') + '</span></div>' +
+            (waiting.length || inRun ? '<div class="adm-grp"><span class="adm-grp-k">Оценка</span><div class="adm-grp-b">' +
+              '<button type="button" class="btn btn-primary btn-sm" id="admJudgeAll"' + (inRun ? ' disabled' : '') + '>' +
+              (inRun ? 'Оцениваю…' : 'Оценить закончивших (' + waiting.length + ')') + '</button></div></div>' : '') + '</div>' +
+          '<p class="ved-dim adm-hint">Нажмите на строку — откроется карточка участника.</p>' +
           peopleTable(list)
         : (none ? '<p class="ved-empty">Номеров без потока нет. <a href="#">← все потоки</a></p>'
                 : '<p class="ved-empty">Пока никого. Участники появятся здесь сами, как только зарегистрируются по ссылке.</p>');
@@ -892,12 +921,16 @@
       '<p style="max-width:32em;padding:24px;font-size:18px;line-height:1.5">' + String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p></body></html>';
   }
   function writeWin(w, html) { try { w.document.open(); w.document.write(html); w.document.close(); } catch (e) { /* вкладку закрыли */ } }
+  // ⚠ ОТДЕЛЬНЫМ ОКНОМ, КОТОРОЕ СТАНОВИТСЯ АКТИВНЫМ (владелец 27.10: «открываются не в скрытом всплывающем окне, а в новом,
+  // которое становится активным»). Пустая вкладка без адреса часть браузеров открывала фоном, и отчёт было не найти.
+  // Теперь — окно поверх кабинета, с фокусом и при открытии, и когда пришёл отчёт.
   function openHtml(action, payload, fail) {
-    var w = window.open('', '_blank');
-    if (w) writeWin(w, waitPage('Отчёт загружается — обычно это занимает до минуты.'));
+    var W = Math.min(1100, screen.availWidth || 1100), H = Math.max(600, (screen.availHeight || 900) - 60);
+    var w = window.open('', 'impReport' + Date.now(), 'popup=yes,width=' + W + ',height=' + H + ',left=40,top=20');
+    if (w) { writeWin(w, waitPage('Отчёт загружается — обычно это занимает до минуты.')); try { w.focus(); } catch (e) {} }
     window.imp.callApi(action, Object.assign({ password: pw }, payload)).then(function (res) {
       if (!w) { window.imp.alert(res && res.ok ? 'Браузер не дал открыть вкладку — разрешите всплывающие окна для этой страницы.' : fail(res)); return; }
-      if (res && res.ok && res.html) { writeWin(w, res.html); return; }
+      if (res && res.ok && res.html) { writeWin(w, res.html); try { w.focus(); } catch (e) {} return; }
       writeWin(w, waitPage(fail(res), true));
     });
   }
@@ -956,17 +989,80 @@
       });
     });
   }
+  // ⚠ ОТЧЁТЫ ВСЕМ РАЗОМ (владелец 27.10). «Собрать» — те же вызовы, что кнопка в карточке, по одному: уже собранные по нынешней
+  // оценке сервер не пересобирает (ответ already), поэтому прерванный обход продолжается повторным нажатием и ничего не
+  // оплачивается дважды. «Выдать» — только проверенным: собран по нынешней оценке и нет ручной проверки (решение 27.10).
+  // Обход живёт в этой вкладке: уход со страницы спросит «Покинуть сайт?», как очередь оценок.
+  var bulk = null;   // { kind: 'check' | 'publish', cur: bib, done, total, errors: [] }
+  function toCheck(list) {
+    return list.filter(function (p) {
+      return !p.noScore && p.finished && (p.judged > 0 || (p.pending || []).length) && !busy(p) &&
+        p.report !== 'ready' && p.report !== 'generating';
+    });
+  }
+  function toPublish(list) {
+    return list.filter(function (p) { return !p.noScore && p.report === 'ready' && !(p.pending || []).length && !p.reportPublished; });
+  }
   function teamButtonsHtml(list) {
     var c = teamCounts(list), fin = c.evaluated > 0 && c.checked === c.evaluated;
-    return exportControlHtml('wave') +
-      '<button type="button" class="btn btn-ghost btn-sm" id="admTeamPre"' + (c.evaluated ? '' : ' disabled') +
-        ' title="По нынешним оценкам; проверены ' + c.checked + ' из ' + c.evaluated + '">Отчёт по потоку · предварительный</button>' +
-      '<button type="button" class="btn btn-ghost btn-sm" id="admTeamFin"' + (fin ? '' : ' disabled') +
-        ' title="' + (fin ? 'Все оценённые проверены' : 'Откроется, когда проверены все оценённые: ' + c.checked + ' из ' + c.evaluated) + '">Отчёт по потоку · окончательный</button>';
+    var nc = toCheck(list).length, np = toPublish(list).length;
+    var pub = list.filter(function (p) { return p.reportPublished && p.report === 'ready'; }).length;
+    var grp = function (k, body, note) {
+      return '<div class="adm-grp"><span class="adm-grp-k">' + k + (note ? ' <i>' + note + '</i>' : '') + '</span><div class="adm-grp-b">' + body + '</div></div>';
+    };
+    return grp('Результаты', exportControlHtml('wave')) +
+      grp('Отчёты участников', bulk ? '<button type="button" class="btn btn-primary btn-sm" disabled>' + (bulk.kind === 'check' ? 'Собираю' : 'Выдаю') +
+          '… (' + bulk.done + ' из ' + bulk.total + ')</button>'
+        : '<button type="button" class="btn btn-ghost btn-sm" id="admRepAll"' + (nc ? '' : ' disabled') +
+            ' title="Собрать отчёты по нынешним оценкам — платный вызов модели">Собрать' + (nc ? ' (' + nc + ')' : '') + '</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" id="admPubAll"' + (np ? '' : ' disabled') +
+            ' title="Выдаются только проверенным: отчёт собран по нынешней оценке, ручной проверки нет">Выдать проверенным' + (np ? ' (' + np + ')' : '') + '</button>',
+        'собраны ' + c.checked + ' из ' + c.evaluated + ' · выданы ' + pub) +
+      grp('Отчёт по потоку',
+        '<button type="button" class="btn btn-ghost btn-sm" id="admTeamPre"' + (c.evaluated ? '' : ' disabled') +
+          ' title="По нынешним оценкам; проверены ' + c.checked + ' из ' + c.evaluated + '">Предварительный</button>' +
+        '<button type="button" class="btn btn-ghost btn-sm" id="admTeamFin"' + (fin ? '' : ' disabled') +
+          ' title="' + (fin ? 'Все оценённые проверены' : 'Откроется, когда проверены все оценённые: ' + c.checked + ' из ' + c.evaluated) + '">Окончательный</button>');
   }
   var TEAM_ERR = { not_all_checked: 'проверены не все оценённые', wave_not_found: 'поток не найден',
                    forbidden_wave: 'это не ваш поток' };
+  var PUB_WHY = { not_ready: 'оценка не готова', report_stale: 'отчёт устарел', report_not_found: 'отчёт не собран',
+                  ai_consent_missing: 'нет согласия на передачу в Anthropic', ai_consent_revoked: 'согласие отозвано',
+                  report_in_progress: 'отчёт уже собирается', report_busy: 'сервер занят — повторите' };
+  function runBulk(kind, list) {
+    if (bulk || !list.length) return;
+    var n = list.length;
+    var text = kind === 'check'
+      ? 'Собрать отчёты: ' + n + ' ' + plural(n, 'участник', 'участника', 'участников') + '. Сборка — платный вызов модели, около $0,3–0,4 на участника; уже собранные по нынешней оценке не пересобираются. Не уходите со страницы, пока идёт сборка.'
+      : 'Выдать отчёты ' + n + ' ' + plural(n, 'проверенному участнику', 'проверенным участникам', 'проверенным участникам') + '? После выдачи отчёт открывается участнику по номеру на странице отчёта.';
+    window.imp.confirm(text, { confirmLabel: kind === 'check' ? 'Собрать' : 'Выдать' }).then(function (yes) {
+      if (!yes) return;
+      bulk = { kind: kind, cur: null, done: 0, total: n, errors: [] };
+      render();
+      var step = function (i) {
+        if (i >= n) {
+          var errs = bulk.errors; bulk = null;
+          return refresh(true).catch(function () {}).then(function () {
+            render();
+            window.imp.alert((kind === 'check' ? 'Отчёты собраны: ' : 'Выдано: ') + (n - errs.length) + ' из ' + n + '.' +
+              (errs.length ? ' Не получилось: ' + errs.map(function (x) { return x.who + ' — ' + x.why; }).join('; ') + '.' : ''));
+          });
+        }
+        var p = list[i];
+        bulk.cur = p.bib; render();
+        var req = kind === 'check' ? call('reportCheck', { bib: p.bib }) : call('reportPublish', { bib: p.bib, on: '1' });
+        return req.then(function (res) {
+          if (!res || !res.ok) bulk.errors.push({ who: p.fio || bib6(p.bib), why: res ? (PUB_WHY[res.error] || res.message || res.error || 'ошибка') : 'сервер не ответил' });
+        }, function () { bulk.errors.push({ who: p.fio || bib6(p.bib), why: 'сервер не ответил' }); })
+          .then(function () { bulk.done = i + 1; return step(i + 1); });
+      };
+      step(0);
+    });
+  }
   function wireTeamButtons(w) {
+    var list = inWave(w);
+    el('admRepAll') && el('admRepAll').addEventListener('click', function () { runBulk('check', toCheck(list)); });
+    el('admPubAll') && el('admPubAll').addEventListener('click', function () { runBulk('publish', toPublish(list)); });
     var why = function (res) { return 'Отчёт не открылся: ' + (res ? (TEAM_ERR[res.error] || res.error || 'ошибка') : 'сервер не ответил') + '.'; };
     el('admTeamPre') && el('admTeamPre').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'prelim' }, why); });
     el('admTeamFin') && el('admTeamFin').addEventListener('click', function () { openHtml('teamReport', { wave: w.id, variant: 'final' }, why); });

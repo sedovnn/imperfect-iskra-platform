@@ -355,6 +355,14 @@
     var failed = failedIds();
     var pt = s && s.prelimTotal;
     var total = !s ? '—' : has(s.total) ? s.total : (pt && has(pt.min) ? (pt.min === pt.max ? String(pt.min) : pt.min + '–' + pt.max) : '—');
+    // День ещё идёт (27.10): итога нет — сумма оценённых этапов поднималась бы до нижней границы шкалы 10–50.
+    var going = !!(s && d && d.process && !d.process.finishedAt);
+    // ⚠ ПОКА ИДЁТ ОЦЕНКА — ВИДЕН ХОД, А НЕ ИТОГ (владелец 27.10: «в карточке какой-то бред пока идёт оценка, и не видно, что она
+    // идёт»). Задания в очереди или в работе — в шапке «оценивается: сделано N из M», итога и «для проверки» нет: они от
+    // незаконченной записи. Пока очередь не пуста, карточка сама перечитывается (scheduleQueuePoll).
+    var running = qLeft > 0;
+    if (going || running) total = '—';
+    if (running) flagged = [];
     var rep = d && d.report, checked = reportFresh(), published = !!(rep && rep.publishedAt);
     return '<header class="kc-top"><div class="kc-top-in">' +
       '<div class="kc-who">' + backLink() + '<span class="kc-sep"></span>' +
@@ -364,8 +372,9 @@
           (flagged.length === 1 ? 'для проверки: ' + esc(AB[flagged[0]].toLowerCase()) : 'для проверки: ' + flagged.length) + '</button>' : '') +
       '</div>' +
       '<div class="kc-tools">' +
-        (ui.stateText ? '<span class="kc-state" id="kcState">' + esc(ui.stateText) + '</span>' : '<span class="kc-state" id="kcState"></span>') +
-        '<div class="kc-total" title="' + esc(s && s.profileLabel ? 'Уровень профиля: ' + s.profileLabel : 'Сумма десяти поднавыков') + '"><b>' + esc(total) + '</b><i>из 50</i></div>' +
+        '<span class="kc-state' + (running && !ui.stateText ? ' is-run' : '') + '" id="kcState">' + esc(ui.stateText ||
+          (running ? 'оценивается: сделано ' + ((q.done || 0) + (qx.done || 0)) + ' из ' + ((q.total || 0) + (qx.total || 0)) : '')) + '</span>' +
+        '<div class="kc-total" title="' + esc(running ? 'Идёт оценка: итог — когда отработают все задания' : going ? 'День ещё идёт: итог — после финиша' : s && s.profileLabel ? 'Уровень профиля: ' + s.profileLabel : 'Сумма десяти поднавыков') + '"><b>' + esc(total) + '</b><i>из 50</i></div>' +
         // Отчёт — три шага (владелец 17.10): собрать (платно), посмотреть и поправить тексты, выдать участнику.
         (s ? '<button type="button" class="kc-btn kc-w-check ' + (checked || published ? '' : 'kc-btn-p') + '" data-act="check"' + (ui.busy ? ' disabled' : '') +
           ' title="' + esc(reportTip()) + '">' + (checked ? 'Отчёт собран ✓' : (rep && rep.state === 'ready' ? 'Собрать отчёт заново' : 'Сгенерировать отчёт')) + '</button>' : '') +
@@ -436,7 +445,10 @@
   }
   function warnHtml() {
     var s = sc(), w = [];
-    if (d && d.stale) w.push('Оценка вынесена по другому тексту ответа: участник менял ответы после судейства — пересудите.');
+    var q = (d && d.queue) || {}, qx = q.extra || {};
+    var running = (q.queued || 0) + (q.running || 0) + (qx.queued || 0) + (qx.running || 0) > 0;
+    // Пока идёт оценка, «по другому тексту» — от незаконченной записи (этапы оценены по ответам середины дня): не пугаем.
+    if (d && d.stale && !running) w.push('Оценка вынесена по другому тексту ответа: участник менял ответы после судейства — пересудите.');
     var rp = d && d.report;
     if (rp && rp.publishedAt && rp.state === 'ready' && !reportFresh()) w.push('Отчёт был выдан участнику, но собран по прежней оценке — участнику он сейчас не показывается. Соберите заново и выдайте.');
     var rubNow = d && d.versions && d.versions.expectRubric;
@@ -762,6 +774,21 @@
       (r.e ? panelHtml(r, 'all', key) : '') + '</div></section>';
   }
 
+  // ⚠ МАРКЕР ПОМОЩИ ИИ (владелец 27.10: «Алёна явно проходила с ИИ — должна ли проверка работать? В карточке ничего нет»).
+  // Сервер считал его всегда (computeAiMarker в code.js: доля вставки, самая большая вставка, скорость набора, плотность правок),
+  // а карточка не выводила. Балл не меняет — меняет чтение балла. Пусто — замера ввода нет (прогон модели, старая запись).
+  var AI_MARK_RU = { strong: 'похоже, значительная часть вставлена извне', soft: 'возможны признаки', none: 'признаков нет' };
+  function aiMarkerRow(p) {
+    var lv = String(p.aiMarkerLevel || '');
+    if (!lv) return '<dt>Помощь ИИ</dt><dd>нет замера ввода</dd>';
+    var note = String(p.aiMarkerNote || ''), sig = null, m = note.match(/\[(\{.*\})\]\s*$/);
+    if (m) { try { sig = JSON.parse(m[1]); } catch (e) { sig = null; } }
+    var nums = sig ? 'вставлено ' + Math.round((Number(sig.pasteRatio) || 0) * 100) + '% текста, самая большая вставка — ' +
+      (Number(sig.maxPasteChars) || 0) + ' знаков, набор ' + (Number(sig.typingCpm) || 0) + ' знаков в минуту, всего ' +
+      (Number(sig.finalChars) || 0) + ' знаков' : '';
+    return '<dt>Помощь ИИ</dt><dd' + (lv === 'none' ? '' : ' style="color:#cc3700"') + '>' + esc(AI_MARK_RU[lv] || lv) +
+      (nums ? '<br><span class="kc-s">' + esc(nums) + '</span>' : '') + '</dd>';
+  }
   function svcHtml() {
     var s = sc(), v = (d && d.versions) || {}, p = (d && d.process) || {};
     var tm = p.timing && p.timing.stages ? p.timing.stages : null;
@@ -782,6 +809,7 @@
         '<dt>Судья</dt><dd>' + esc((s && s.judgeModel) || '—') + (s && s.judgedAt ? ' · ' + esc(dt(s.judgedAt)) : '') + '</dd>' +
         (p.startedAt ? '<dt>Ассессмент</dt><dd>' + esc(dt(p.startedAt)) + (p.finishedAt ? ' — ' + esc(dt(p.finishedAt)) : '') + '</dd>' : '') +
         (runner ? '<dt>Прогон модели</dt><dd>' + esc(runner.tag || runner.harness || 'да') + '</dd>' : '') +
+        aiMarkerRow(p) +
       '</dl></div>' +
       '<div><div class="kc-lbl">Время по этапам</div>' + (timeRows ? '<dl class="kc-kv">' + timeRows + '</dl>' : '<p class="kc-s" style="margin-top:8px">без таймера</p>') + '</div>' +
       '<div><div class="kc-lbl">Номер участника</div><div class="kc-fm">' +
@@ -1356,7 +1384,23 @@
       }
       d = det;
       render();
+      scheduleQueuePoll();
     });
+  }
+  // Самообновление, пока есть очередь (27.10): раз в 30 секунд, пока задания не кончатся. Ответ карточки большой (0,6–0,9 МБ),
+  // поэтому не чаще; не во время своей оценки из этой вкладки (её ход и так в шапке), не в скрытой вкладке и не пока человек
+  // печатает — перерисовка стёрла бы поле.
+  var queuePollTimer = null;
+  function scheduleQueuePoll() {
+    if (queuePollTimer) { clearTimeout(queuePollTimer); queuePollTimer = null; }
+    var q = (d && d.queue) || {}, qx = q.extra || {};
+    if (!((q.queued || 0) + (q.running || 0) + (qx.queued || 0) + (qx.running || 0))) return;
+    queuePollTimer = setTimeout(function tick() {
+      var a = document.activeElement;
+      if (ui.busy || document.hidden || (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))) { queuePollTimer = setTimeout(tick, 30000); return; }
+      queuePollTimer = null;
+      reload();
+    }, 30000);
   }
   // Номер есть, ассессмента нет: карточка из одних действий с номером.
   function renderNotFound() {

@@ -205,6 +205,8 @@
     if (p.noScore) return '<span class="ved-dim0">не оценивается</span>';
     var q = p.queue || {};
     if (q.queued || q.running) return '<span class="ved-st is-run">оценивается' + (q.total ? ' (' + (q.done || 0) + ' из ' + q.total + ')' : '') + '</span>';
+    // День ещё идёт (27.10): сумма оценённых этапов поднималась до нижней границы шкалы — «10 из 50» у всех. Итог — после финиша.
+    if (!p.finished && ((p.total !== null && p.total !== undefined) || p.pendingCount)) return '<span class="ved-dim0">итог после финиша</span>';
     if (p.total !== null && p.total !== undefined) return '<b class="ved-total">' + esc(p.total) + '</b><span class="ved-dim0"> из 50</span>';
     // Оценён, но часть способностей ждёт ручной проверки (рубрика m-imp-k1.0, 09.10): это не «ждёт оценки». Итог —
     // предварительный, диапазоном (решение владельца 09.10); прежний бэкенд его не отдаёт — тогда только пометка.
