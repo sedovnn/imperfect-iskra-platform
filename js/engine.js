@@ -3537,6 +3537,9 @@
 
   state = loadState(session.bib);
   route = S.route();
+  // Шаг, на котором участник сейчас (владелец 28.10: телеметрия ввода — и по шагам). Читает сборщик телеметрии в main.js:
+  // поле относится к шагу, на котором его впервые тронули.
+  window.imp.currentStepId = function () { var c = route && state && route[state.cursor]; return c ? c.stepId : ''; };
 
   if (blockedByVersion) { el('versionGate').style.display = 'flex'; return; }
 

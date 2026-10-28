@@ -36,7 +36,11 @@
     }
     function statFor(el) {
       var s = stats.get(el);
-      if (!s) { s = { pasted: 0, maxPaste: 0, keys: 0, back: 0, activeMs: 0, lastKey: 0, tabBlur: 0 }; stats.set(el, s); }
+      if (!s) {
+        var step = '';
+        try { step = window.imp.currentStepId ? String(window.imp.currentStepId() || '') : ''; } catch (_) {}
+        s = { pasted: 0, maxPaste: 0, keys: 0, back: 0, activeMs: 0, lastKey: 0, tabBlur: 0, step: step }; stats.set(el, s);
+      }
       return s;
     }
     document.addEventListener('paste', function (e) {
@@ -56,19 +60,25 @@
       if (document.visibilityState === 'hidden' && isTracked(document.activeElement)) statFor(document.activeElement).tabBlur++;
     }, true);
 
+    // Итог и по шагам (steps, владелец 28.10: телеметрия для лаборатории): маркер ИИ читает только totals.
+    function blank() { return { pastedChars: 0, finalChars: 0, keystrokes: 0, backspaces: 0, activeMs: 0, maxPasteChars: 0, tabBlur: 0, fieldCount: 0 }; }
     window.imp.telemetry = {
       snapshot: function () {
-        var t = { pastedChars: 0, finalChars: 0, keystrokes: 0, backspaces: 0, activeMs: 0, maxPasteChars: 0, tabBlur: 0, fieldCount: 0 };
+        var t = blank(), steps = {};
         stats.forEach(function (s, el) {
           var len = 0;
           try { len = (el.isContentEditable ? (el.textContent || '') : (el.value || '')).length; } catch (_) {}
           if (len === 0 && s.keys === 0 && s.pasted === 0) return;
-          t.finalChars += len; t.pastedChars += s.pasted; t.keystrokes += s.keys;
-          t.backspaces += s.back; t.activeMs += s.activeMs; t.tabBlur += s.tabBlur;
-          if (s.maxPaste > t.maxPasteChars) t.maxPasteChars = s.maxPaste;
-          t.fieldCount++;
+          [t, s.step ? (steps[s.step] = steps[s.step] || blank()) : null].forEach(function (x) {
+            if (!x) return;
+            x.finalChars += len; x.pastedChars += s.pasted; x.keystrokes += s.keys;
+            x.backspaces += s.back; x.activeMs += s.activeMs; x.tabBlur += s.tabBlur;
+            if (s.maxPaste > x.maxPasteChars) x.maxPasteChars = s.maxPaste;
+            x.fieldCount++;
+          });
         });
-        return { v: 1, totals: withCarry(t) };
+        var c = withCarry(t, steps);
+        return { v: 2, totals: c.t, steps: c.steps };
       }
     };
 
@@ -79,17 +89,25 @@
     // это огрубление в сторону меньшей доли вставки, то есть против ложного флага.
     var pageToken = String(Date.now()) + Math.random();
     var SUM = ['pastedChars', 'finalChars', 'keystrokes', 'backspaces', 'activeMs', 'tabBlur', 'fieldCount'];
-    function withCarry(t) {
+    function withCarry(t, steps) {
       var bib = '';
       try { var ss = window.imp.loadSession && window.imp.loadSession(); bib = ss && ss.bib ? String(ss.bib) : ''; } catch (_) {}
-      if (!bib) return t;
+      if (!bib) return { t: t, steps: steps };
       var key = 'imp_tel_' + bib, o = null;
       try { o = JSON.parse(localStorage.getItem(key) || 'null'); } catch (_) { o = null; }
       o = o || { carry: null, page: null };
-      if (o.page && o.page.token !== pageToken) o.carry = add(o.carry, o.page.t);   // прошлая загрузка — в перенос
-      o.page = { token: pageToken, t: t };
+      if (o.page && o.page.token !== pageToken) {   // прошлая загрузка — в перенос
+        o.carry = add(o.carry, o.page.t);
+        o.carrySteps = addSteps(o.carrySteps, o.page.steps);
+      }
+      o.page = { token: pageToken, t: t, steps: steps };
       try { localStorage.setItem(key, JSON.stringify(o)); } catch (_) {}
-      return add(o.carry, t);
+      return { t: add(o.carry, t), steps: addSteps(o.carrySteps, steps) };
+    }
+    function addSteps(a, b) {
+      var r = {};
+      [a, b].forEach(function (m) { if (m) Object.keys(m).forEach(function (k) { r[k] = r[k] ? add(r[k], m[k]) : m[k]; }); });
+      return r;
     }
     function add(a, b) {
       if (!a) return b; if (!b) return a;

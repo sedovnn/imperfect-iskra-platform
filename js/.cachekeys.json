@@ -27,16 +27,16 @@
   }
  },
  "js/api.js": {
-  "sha": "cdde21249f37",
+  "sha": "f92d2e359dad",
   "keys": {
-   "administrator.html": 12,
-   "assessment.html": 12,
-   "harness.html": 12,
-   "index.html": 12,
-   "kartochka.html": 12,
-   "otchet.html": 12,
-   "vedushchiy.html": 12,
-   "vitrina.html": 12
+   "administrator.html": 13,
+   "assessment.html": 13,
+   "harness.html": 13,
+   "index.html": 13,
+   "kartochka.html": 13,
+   "otchet.html": 13,
+   "vedushchiy.html": 13,
+   "vitrina.html": 13
   }
  },
  "js/backlog.js": {
@@ -54,9 +54,9 @@
   }
  },
  "js/cabinet.js": {
-  "sha": "dd4c98f8781b",
+  "sha": "fbe235887d82",
   "keys": {
-   "administrator.html": 88
+   "administrator.html": 90
   }
  },
  "js/case-ref.js": {
@@ -83,9 +83,9 @@
   }
  },
  "js/engine.js": {
-  "sha": "66a00f0a0b77",
+  "sha": "c8b53dfc0883",
   "keys": {
-   "assessment.html": 160
+   "assessment.html": 161
   }
  },
  "js/expert-api.js": {
@@ -128,23 +128,23 @@
   }
  },
  "js/kartochka.js": {
-  "sha": "3b6dad90da6e",
+  "sha": "4b3cb1554197",
   "keys": {
-   "kartochka.html": 13
+   "kartochka.html": 14
   }
  },
  "js/main.js": {
-  "sha": "f543d59fb6cf",
+  "sha": "2bb5a04cfc0b",
   "keys": {
-   "administrator.html": 15,
-   "assessment.html": 15,
-   "harness.html": 15,
-   "index.html": 15,
-   "intro.html": 15,
-   "kartochka.html": 15,
-   "role.html": 15,
-   "vedushchiy.html": 15,
-   "vitrina.html": 15
+   "administrator.html": 16,
+   "assessment.html": 16,
+   "harness.html": 16,
+   "index.html": 16,
+   "intro.html": 16,
+   "kartochka.html": 16,
+   "role.html": 16,
+   "vedushchiy.html": 16,
+   "vitrina.html": 16
   }
  },
  "js/mech-fields.js": {

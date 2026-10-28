@@ -379,6 +379,8 @@
         (s ? '<button type="button" class="kc-btn kc-w-check ' + (checked || published ? '' : 'kc-btn-p') + '" data-act="check"' + (ui.busy ? ' disabled' : '') +
           ' title="' + esc(reportTip()) + '">' + (checked ? 'Отчёт собран ✓' : (rep && rep.state === 'ready' ? 'Собрать отчёт заново' : 'Сгенерировать отчёт')) + '</button>' : '') +
         (s ? '<button type="button" class="kc-btn" data-act="report"' + (rep && rep.state === 'ready' ? '' : ' disabled') + ' title="Отчёт так, как его увидит участник">Отчёт</button>' : '') +
+        (s ? '<button type="button" class="kc-btn" data-act="download"' + (rep && rep.state === 'ready' && !ui.busy ? '' : ' disabled') +
+          ' title="Сохранить отчёт файлом HTML: открывается без интернета, PDF — через «Печать»">Скачать</button>' : '') +
         (s ? '<button type="button" class="kc-btn" data-act="edits"' + (checked ? '' : ' disabled') +
           ' title="' + (checked ? 'Тексты модели в отчёте — посмотреть и поправить' : 'Сначала соберите отчёт по нынешней оценке') + '">Править тексты' +
           (rep && rep.edits ? ' · ' + rep.edits : '') + '</button>' : '') +
@@ -980,6 +982,7 @@
     if (act === 'judgeFailed') return judgeFailed();
     if (act === 'check') return reportCheck();
     if (act === 'report') return openReport();
+    if (act === 'download') return downloadReport();
     if (act === 'edits') return openEdits();
     if (act === 'publish') return publishToggle();
     if (act === 'edSave') return editSave(t.getAttribute('data-blk'));
@@ -1157,6 +1160,18 @@
       if (!w) { window.imp.alert('Браузер не дал открыть вкладку — разрешите всплывающие окна для этой страницы.'); return; }
       if (res && res.ok && res.html) { writeWin(w, res.html); return; }
       writeWin(w, waitPage('Отчёт не открылся: ' + errText(res) + '.', true));
+    });
+  }
+  // Отчёт файлом (владелец 28.10): тот же готовый отчёт, что открывает «Отчёт», со встроенным шрифтом; модель не вызывается.
+  function downloadReport() {
+    setState('отчёт скачивается…');
+    call('reportGet', { bib: bib }).then(function (res) {
+      if (!res || !res.ok || !res.html) { setState(''); window.imp.alert('Отчёт не скачался: ' + errText(res) + '.'); return; }
+      return window.imp.reportFileHtml(res.html).then(function (html) {
+        var fio = person && person.fio ? person.fio + ' — ' : '';
+        window.imp.saveBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), window.imp.fileName(fio + String(bib).toUpperCase()) + '.html');
+        setState('');
+      });
     });
   }
   function reportCheck() {

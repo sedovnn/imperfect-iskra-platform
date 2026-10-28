@@ -286,4 +286,83 @@
       }
     });
   };
+  // ---------- отчёт участника файлом и архивом (владелец 28.10) ----------
+  // Отчёт с сервера ссылается на шрифт относительным адресом (fonts/fonts.css): с диска или из письма он не загрузится.
+  // Скачанный файл получает шрифт внутрь (data:, около 190 КБ), маскоты в отчёте уже нарисованы внутри страницы.
+  // Архив — по файлу на участника, без сжатия и без сторонних библиотек (одинаково в Google и на сервере компании).
+  var FONT_LINK = '<link rel="stylesheet" href="fonts/fonts.css">';
+  var fontCss = null;
+  function b64(buf) {
+    var u = new Uint8Array(buf), s = '';
+    for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  function inlineFontCss() {
+    if (fontCss) return fontCss;
+    var ok = function (r) { if (!r.ok) throw new Error('font ' + r.status); return r; };
+    fontCss = fetch('fonts/fonts.css').then(ok).then(function (r) { return r.text(); }).then(function (css) {
+      var names = [];
+      css.replace(/url\(\.\/([^)]+)\)/g, function (m, f) { if (names.indexOf(f) < 0) names.push(f); return m; });
+      return Promise.all(names.map(function (f) {
+        return fetch('fonts/' + f).then(ok).then(function (r) { return r.arrayBuffer(); }).then(function (b) { return [f, b64(b)]; });
+      })).then(function (list) {
+        list.forEach(function (x) { css = css.split('url(./' + x[0] + ')').join('url(data:font/woff2;base64,' + x[1] + ')'); });
+        return css;
+      });
+    }).catch(function () { fontCss = null; return ''; });
+    return fontCss;
+  }
+  // HTML отчёта → самостоятельный файл. Шрифт не загрузился — ссылка на него полным адресом сайта (нужен интернет).
+  window.imp.reportFileHtml = function (html) {
+    return inlineFontCss().then(function (css) {
+      var to = css ? '<style>' + css + '</style>' : '<link rel="stylesheet" href="' + new URL('fonts/fonts.css', location.href).href + '">';
+      return String(html).split(FONT_LINK).join(to);
+    });
+  };
+  // Имя файла без знаков, которые запрещают Windows и macOS.
+  window.imp.fileName = function (s) {
+    return String(s || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'файл';
+  };
+  var CRC = null;
+  function crc32(u) {
+    if (!CRC) {
+      CRC = new Uint32Array(256);
+      for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; }
+    }
+    var x = 0xFFFFFFFF;
+    for (var i = 0; i < u.length; i++) x = CRC[(x ^ u[i]) & 0xFF] ^ (x >>> 8);
+    return (x ^ 0xFFFFFFFF) >>> 0;
+  }
+  // files: [{ name, text }] → ZIP (хранение без сжатия, имена в UTF-8 — флаг 0x0800).
+  window.imp.zipBlob = function (files) {
+    var enc = new TextEncoder(), parts = [], central = [], off = 0, d = new Date();
+    var tm = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+    var dt = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    files.forEach(function (f) {
+      var name = enc.encode(f.name), data = enc.encode(f.text), crc = crc32(data);
+      var h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+      h.setUint16(10, tm, true); h.setUint16(12, dt, true); h.setUint32(14, crc, true);
+      h.setUint32(18, data.length, true); h.setUint32(22, data.length, true); h.setUint16(26, name.length, true);
+      parts.push(h.buffer, name, data);
+      var c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+      c.setUint16(12, tm, true); c.setUint16(14, dt, true); c.setUint32(16, crc, true);
+      c.setUint32(20, data.length, true); c.setUint32(24, data.length, true); c.setUint16(28, name.length, true);
+      c.setUint32(42, off, true);
+      central.push(c.buffer, name);
+      off += 30 + name.length + data.length;
+    });
+    var size = central.reduce(function (s, x) { return s + x.byteLength; }, 0);
+    var e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+    e.setUint32(12, size, true); e.setUint32(16, off, true);
+    return new Blob(parts.concat(central, [e.buffer]), { type: 'application/zip' });
+  };
+  window.imp.saveBlob = function (blob, name) {
+    var url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  };
 })();

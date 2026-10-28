@@ -388,7 +388,7 @@
   // только проверенным. Состояния: не собран / собирается / собран ✓ / выдан ✓ / устарел (оценка изменилась после сборки).
   function reportCell(p) {
     if (p.noScore || !(p.judged > 0 || (p.pending || []).length)) return '<span class="cab-dim">—</span>';
-    if (bulk && bulk.cur === p.bib) return '<span class="adm-wait is-run">' + (bulk.kind === 'check' ? 'собирается…' : 'выдаётся…') + '</span>';
+    if (bulk && bulk.cur === p.bib) return '<span class="adm-wait is-run">' + (bulk.kind === 'check' ? 'собирается…' : bulk.kind === 'zip' ? 'скачивается…' : 'выдаётся…') + '</span>';
     if (p.report === 'generating') return '<span class="adm-wait is-run">собирается</span>';
     if (p.report === 'error') return '<span class="cab-need" title="Сборка отчёта упала — соберите заново">ошибка</span>';
     if (p.report === 'stale') return '<span class="cab-stale" title="Оценка изменилась после сборки — соберите заново' +
@@ -952,7 +952,7 @@
   function exportControlHtml(scope) {
     return '<select class="btn btn-ghost btn-sm adm-exp-fmt" data-exp-fmt="' + scope + '" aria-label="Формат выгрузки" title="Формат файла">' +
         '<option value="csv">CSV</option><option value="json">JSON</option>' +
-        // Обезличенная выгрузка для лаборатории (владелец 23.10): без имён, номеров, потоков и оценок — их вырезает сервер.
+        // Обезличенная выгрузка для лаборатории (владелец 23.10): без имён, номеров и потоков — их вырезает сервер; с 28.10 — с оценками.
         '<option value="lab">Для лаборатории · обезличено</option></select>' +
       '<button type="button" class="btn btn-ghost btn-sm" data-exp="' + scope + '" title="' +
         (scope === 'all' ? 'Все потоки одним файлом: ответы по окнам маршрута, уровни и статусы поднавыков, итог' : 'Участники потока: ответы по окнам маршрута, уровни и статусы поднавыков, итог') + '">' +
@@ -993,30 +993,36 @@
   // оценке сервер не пересобирает (ответ already), поэтому прерванный обход продолжается повторным нажатием и ничего не
   // оплачивается дважды. «Выдать» — только проверенным: собран по нынешней оценке и нет ручной проверки (решение 27.10).
   // Обход живёт в этой вкладке: уход со страницы спросит «Покинуть сайт?», как очередь оценок.
-  var bulk = null;   // { kind: 'check' | 'publish', cur: bib, done, total, errors: [] }
+  var bulk = null;   // { kind: 'check' | 'publish' | 'zip', cur: bib, done, total, errors: [] }
   function toCheck(list) {
     return list.filter(function (p) {
       return !p.noScore && p.finished && (p.judged > 0 || (p.pending || []).length) && !busy(p) &&
         p.report !== 'ready' && p.report !== 'generating';
     });
   }
+  // Скачать архивом (владелец 28.10: «все собранные») — отчёт собран по нынешней оценке, выдан он или нет.
+  function toZip(list) {
+    return list.filter(function (p) { return p.report === 'ready'; });
+  }
   function toPublish(list) {
     return list.filter(function (p) { return !p.noScore && p.report === 'ready' && !(p.pending || []).length && !p.reportPublished; });
   }
   function teamButtonsHtml(list) {
     var c = teamCounts(list), fin = c.evaluated > 0 && c.checked === c.evaluated;
-    var nc = toCheck(list).length, np = toPublish(list).length;
+    var nc = toCheck(list).length, np = toPublish(list).length, nz = toZip(list).length;
     var pub = list.filter(function (p) { return p.reportPublished && p.report === 'ready'; }).length;
     var grp = function (k, body, note) {
       return '<div class="adm-grp"><span class="adm-grp-k">' + k + (note ? ' <i>' + note + '</i>' : '') + '</span><div class="adm-grp-b">' + body + '</div></div>';
     };
     return grp('Результаты', exportControlHtml('wave')) +
-      grp('Отчёты участников', bulk ? '<button type="button" class="btn btn-primary btn-sm" disabled>' + (bulk.kind === 'check' ? 'Собираю' : 'Выдаю') +
+      grp('Отчёты участников', bulk ? '<button type="button" class="btn btn-primary btn-sm" disabled>' + (bulk.kind === 'check' ? 'Собираю' : bulk.kind === 'zip' ? 'Скачиваю' : 'Выдаю') +
           '… (' + bulk.done + ' из ' + bulk.total + ')</button>'
         : '<button type="button" class="btn btn-ghost btn-sm" id="admRepAll"' + (nc ? '' : ' disabled') +
             ' title="Собрать отчёты по нынешним оценкам — платный вызов модели">Собрать' + (nc ? ' (' + nc + ')' : '') + '</button>' +
           '<button type="button" class="btn btn-ghost btn-sm" id="admPubAll"' + (np ? '' : ' disabled') +
-            ' title="Выдаются только проверенным: отчёт собран по нынешней оценке, ручной проверки нет">Выдать проверенным' + (np ? ' (' + np + ')' : '') + '</button>',
+            ' title="Выдаются только проверенным: отчёт собран по нынешней оценке, ручной проверки нет">Выдать проверенным' + (np ? ' (' + np + ')' : '') + '</button>' +
+          '<button type="button" class="btn btn-ghost btn-sm" id="admZipAll"' + (nz ? '' : ' disabled') +
+            ' title="Все собранные отчёты одним архивом, по файлу на участника; ничего не пересобирается">Скачать' + (nz ? ' (' + nz + ')' : '') + '</button>',
         'собраны ' + c.checked + ' из ' + c.evaluated + ' · выданы ' + pub) +
       grp('Отчёт по потоку',
         '<button type="button" class="btn btn-ghost btn-sm" id="admTeamPre"' + (c.evaluated ? '' : ' disabled') +
@@ -1059,8 +1065,50 @@
       step(0);
     });
   }
+  // ⚠ АРХИВ ОТЧЁТОВ — ПО ФАЙЛУ НА УЧАСТНИКА (владелец 28.10: «убедись, что в архиве все отчёты по отдельности»). Готовые отчёты
+  // забираются с сервера по одному (reportGet, как кнопка «Отчёт» в карточке; модель не вызывается), шрифт встраивается в
+  // каждый файл, архив собирается в браузере. Устаревшие и несобранные в архив не идут — после скачивания названы с причиной.
+  var ZIP_WHY = { stale: 'отчёт устарел — оценка изменилась после сборки', generating: 'отчёт собирается', error: 'сборка отчёта упала' };
+  function runZip(w, list) {
+    var take = toZip(list);
+    if (bulk || !take.length) return;
+    var skip = list.filter(function (p) { return p.report !== 'ready' && (p.report || p.judged > 0 || (p.pending || []).length); })
+      .map(function (p) { return { who: p.fio || bib6(p.bib), why: ZIP_WHY[p.report] || 'отчёт не собран' }; });
+    var n = take.length, files = [], used = {};
+    bulk = { kind: 'zip', cur: null, done: 0, total: n, errors: [] };
+    render();
+    var step = function (i) {
+      if (i >= n) {
+        var errs = bulk.errors;
+        bulk = null; render();
+        if (files.length) {
+          var d = new Date(), day = d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+          window.imp.saveBlob(window.imp.zipBlob(files), window.imp.fileName('Отчёты — ' + (w.name || 'поток') + ' — ' + day) + '.zip');
+        }
+        var miss = errs.concat(skip);
+        window.imp.alert((files.length ? 'В архиве ' + files.length + ' ' + plural(files.length, 'отчёт', 'отчёта', 'отчётов') + ', по файлу на участника.'
+          : 'Архив не собран: ни один отчёт не скачался.') +
+          (miss.length ? ' Нет в архиве: ' + miss.map(function (x) { return x.who + ' — ' + x.why; }).join('; ') + '.' : ''));
+        return;
+      }
+      var p = take[i];
+      bulk.cur = p.bib; render();
+      return call('reportGet', { bib: p.bib }).then(function (res) {
+        if (!res || !res.ok || !res.html) { bulk.errors.push({ who: p.fio || bib6(p.bib), why: res ? (PUB_WHY[res.error] || res.error || 'ошибка') : 'сервер не ответил' }); return; }
+        return window.imp.reportFileHtml(res.html).then(function (html) {
+          var base = window.imp.fileName((p.fio ? p.fio + ' — ' : '') + bib6(p.bib).replace('№ ', '')), name = base, k = 2;
+          while (used[name.toLowerCase()]) name = base + ' (' + (k++) + ')';
+          used[name.toLowerCase()] = 1;
+          files.push({ name: name + '.html', text: html });
+        });
+      }, function () { bulk.errors.push({ who: p.fio || bib6(p.bib), why: 'сервер не ответил' }); })
+        .then(function () { bulk.done = i + 1; return step(i + 1); });
+    };
+    step(0);
+  }
   function wireTeamButtons(w) {
     var list = inWave(w);
+    el('admZipAll') && el('admZipAll').addEventListener('click', function () { runZip(w, list); });
     el('admRepAll') && el('admRepAll').addEventListener('click', function () { runBulk('check', toCheck(list)); });
     el('admPubAll') && el('admPubAll').addEventListener('click', function () { runBulk('publish', toPublish(list)); });
     var why = function (res) { return 'Отчёт не открылся: ' + (res ? (TEAM_ERR[res.error] || res.error || 'ошибка') : 'сервер не ответил') + '.'; };
