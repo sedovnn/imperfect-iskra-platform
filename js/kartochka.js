@@ -595,12 +595,16 @@
       else if (f.scene === scId) { sub = flaggedHere ? 'в итоге · отмечено для проверки' : 'в итоге'; if (flaggedHere) subCls += ' kc-rs-v'; }
       else sub = 'итог ' + (f.lv === null ? '—' : f.lv) + (f.scene ? ' — ' + sceneTitle(f.scene) : '');
       var lc = r.role === 'control' ? 'kc-lv kc-lv-sm kc-lv-ctl' : 'kc-lv' + (lv === null ? ' kc-lv-none' : flaggedHere ? ' kc-lv-flag' : '');
+      // ⚠ СТРОКА БЕЗ ЧТЕНИЯ ТОЖЕ РАСКРЫВАЕТСЯ (владелец 28.10: «пустота у „Множественности“ — я просил оценить по всему ответу
+      // или выставить вручную, а опции нет»). Этап закрыт по времени или без ответа — чтения нет, и раньше строка была выключена:
+      // «Доп. оценка» и свой уровень жили только в панели чтения. Теперь у основной строки — панель действий (emptyPanelHtml).
+      var canOpen = !!r.e || (r.role === 'main' && !!sc());
       return '<div class="' + cls + '">' +
-        '<button type="button" class="kc-rh" data-act="row" data-key="' + esc(key) + '" aria-expanded="' + (open ? 'true' : 'false') + '"' + (r.e ? '' : ' disabled') + '>' +
+        '<button type="button" class="kc-rh" data-act="row" data-key="' + esc(key) + '" aria-expanded="' + (open ? 'true' : 'false') + '"' + (canOpen ? '' : ' disabled') + '>' +
           '<span class="' + lc + '">' + (lv === null ? '—' : lv) + '</span>' +
           '<span class="kc-rt"><span class="kc-rn kc-one">' + esc(AB[r.a]) + (r.role === 'control' ? ' · контроль' : '') + '</span><span class="' + subCls + '">' + esc(sub) + '</span></span>' +
-          (r.e ? CHEV_D : '') +
-        '</button>' + (open && r.e ? panelHtml(r, scId, key) : '') + '</div>';
+          (canOpen ? CHEV_D : '') +
+        '</button>' + (open && r.e ? panelHtml(r, scId, key) : open && canOpen ? emptyPanelHtml(r.a) : '') + '</div>';
     }).join('');
   }
 
@@ -721,6 +725,12 @@
     }
     return '<div class="kc-panel">' + h + '</div>';
   }
+  function emptyPanelHtml(a) {
+    var f = finalOf(a);
+    return '<div class="kc-panel"><p class="kc-s">Чтения на этом этапе нет: ответа не было или этап закрыт по времени. ' +
+      'Поднавык можно оценить по всему ответу участника («Доп. оценка» — платно, в итог идёт, только если принять) или поставить уровень самому.</p>' +
+      fixHtml(a, f) + actsHtml(a, f) + '</div>';
+  }
   function fixHtml(a, f) {
     var out = outOf(a), cons = out && out['сведение'], wins = (cons && cons['окна']) || [];
     var note = wins.length > 1 ? 'Итог — больший из этапов: ' + wins.map(function (w) { return sceneTitle(sceneOfStage(w['этап'])) + ' ' + (has(w['уровень']) ? w['уровень'] : '—'); }).join(', ') : 'Итог поднавыка';
@@ -730,7 +740,7 @@
     var h = '<div class="kc-fix"><p class="kc-s">' + esc(note) + '</p>';
     if (xl !== null) {
       h += '<p class="kc-s">Доп. оценка по всему ответу: ' + xl + (x.at ? ' · ' + esc(dt(x.at)) : '') +
-        (!f.ov && f.lv !== null && xl !== f.lv ? ' · <button type="button" class="kc-link" style="height:auto" data-act="acceptExtra" data-ab="' + a + '" data-lv="' + xl + '" data-main="' + (f.judge === null ? '' : f.judge) + '">принять ' + xl + '</button>' : '') + '</p>';
+        (!f.ov && (f.lv === null || xl !== f.lv) ? ' · <button type="button" class="kc-link" style="height:auto" data-act="acceptExtra" data-ab="' + a + '" data-lv="' + xl + '" data-main="' + (f.judge === null ? '' : f.judge) + '">принять ' + xl + '</button>' : '') + '</p>';
     }
     if (f.ov) {
       h += '<div class="kc-ovl"><span class="kc-lv kc-lv-sm kc-lv-human">' + (f.lv === null ? '—' : f.lv) + '</span><span>' +
@@ -1055,7 +1065,7 @@
   }
   function acceptOther(a, via, lv, main) {
     var reason = via === 'control' ? 'принята контрольная оценка: контроль L' + lv + ', судья L' + main
-      : 'принята доп. оценка по всему ответу: доп. L' + lv + ', судья L' + main;
+      : 'принята доп. оценка по всему ответу: доп. L' + lv + (main === '' || main == null ? ', уровня судьи не было' : ', судья L' + main);
     call('setScoreOverride', { bib: bib, ability: a, level: lv, via: via, reason: reason }).then(function (r) {
       after(r, via === 'control' ? 'принят контрольный уровень' : 'принята доп. оценка');
     });
