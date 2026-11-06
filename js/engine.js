@@ -517,6 +517,43 @@
     var cur = route[state.cursor];
     return cur ? S.scenes[cur.sceneIx].id : '';
   }
+  // ---------- шаги этапа (владелец 04.11: варианты C и E) ----------
+  // Шаги этапа — окна и механики сцены, которые по условиям маршрута играются (applies — то же
+  // правило, что у харнесса). Условный шаг, пока не возник, не считается: возник — счёт вырос
+  // (у Агеева «что если» и «итог», в кофейне разговор на выходе). Названий шагов здесь нет и
+  // быть не должно: показываем число и время, а не карту дня (решение владельца 06.08).
+  // done — шаги сцены позади курсора, total — все, что играются сейчас.
+  function stageSteps(sceneIx) {
+    var total = 0, done = 0;
+    for (var i = 0; i < route.length; i++) {
+      var r = route[i];
+      if (r.sceneIx !== sceneIx) continue;
+      if (r.act.kind !== 'window' && r.act.kind !== 'mechanic') continue;
+      if (!applies(r.act)) continue;
+      if (i < state.cursor) done++;
+      total++;
+    }
+    return { total: total, done: done };
+  }
+  // Ориентир минут на шаг: время этапа ПОРОВНУ между шагами, целыми минутами, остаток — первым.
+  // ⚠ ПОРОВНУ — ВРЕМЕННО. Замера по шагам нет: в выгрузках полные отметки стоят только у механик
+  // двух прогонов прежних маршрутов, по ним долю не посчитать. Доли по живым отметкам answersAt
+  // и mechAt — следующим шагом, и менять их только здесь: отсюда читают и карта этапа на
+  // межэтапном экране, и строка отставания в шапке.
+  function stepMinutes(allocSec, n) {
+    var total = Math.round(allocSec / 60), out = [];
+    if (n < 1) return out;
+    var base = Math.floor(total / n), rest = total - base * n;
+    for (var i = 0; i < n; i++) out.push(base + (i < rest ? 1 : 0));
+    return out;
+  }
+  function stepWord(n) {
+    var a = n % 100, b = n % 10;
+    if (a > 10 && a < 20) return 'шагов';
+    if (b === 1) return 'шаг';
+    if (b > 1 && b < 5) return 'шага';
+    return 'шагов';
+  }
   function fmtMin(sec) {
     var m = Math.max(0, Math.ceil(sec / 60));
     if (m < 60) return m + ' мин';
@@ -588,14 +625,24 @@
       return '<span class="tmr-now' + (warn ? ' is-warn' : '') + '"><i style="width:' + fill.toFixed(1) + '%"></i>' +
         '<span class="tmr-dot">' + (i + 1) + '</span><span class="tmr-now-t">' + txt + '</span></span>';
     }).join('<span class="tmr-ln"></span>');
-    var cap = '';
+    var cap = '', lag = false;
     if (on) {
       var A = Math.round(alloc / 60), P = Math.round(plan / 60), B = Math.floor(bonus / 60);
-      cap = B >= 1
-        ? 'На этот этап ' + A + ' ' + minWord(A) + ': ' + P + ' по плану и ' + B + ', которые вы сэкономили раньше'
-        : 'На этот этап ' + P + ' ' + minWord(P);
+      // Строка отставания (владелец 04.11, вариант E): пока участник идёт по плану, под овалом всё как
+      // было; когда времени этапа ушло больше, чем доля шагов до конца текущего (доли — stepMinutes,
+      // сейчас поровну), а впереди ещё есть шаги — вместо «На этот этап…» строка про то, сколько
+      // шагов осталось и сколько на них времени. Уровень и отсечку это не меняет.
+      var steps = stageSteps(cur.sceneIx), ahead = steps.total - steps.done - 1;
+      if (running && ahead > 0 && stageUsedSec(curId) > alloc * (steps.done + 1) / steps.total) {
+        lag = true;
+        cap = 'Впереди ещё ' + ahead + ' ' + stepWord(ahead) + (ahead === 1 ? ', на него осталось ' : ', на них осталось ') + fmtMin(left);
+      } else {
+        cap = B >= 1
+          ? 'На этот этап ' + A + ' ' + minWord(A) + ': ' + P + ' по плану и ' + B + ', которые вы сэкономили раньше'
+          : 'На этот этап ' + P + ' ' + minWord(P);
+      }
     }
-    rail.innerHTML = '<div class="tmr-steps' + (on ? '' : ' is-plain') + '">' + dots + '</div>' + (cap ? '<div class="tmr-cap">' + cap + '</div>' : '');
+    rail.innerHTML = '<div class="tmr-steps' + (on ? '' : ' is-plain') + '">' + dots + '</div>' + (cap ? '<div class="tmr-cap' + (lag ? ' is-lag' : '') + '">' + cap + '</div>' : '');
   }
   // Время этапа вышло: ответ сохраняется как есть, этап закрывается, участник идёт дальше.
   function timeUp() {
@@ -2849,6 +2896,29 @@
               '<span>Всего на этот этап</span><b class="is-sum">' + fmtMin(base + plus) + '</b>'
             : '');
       } else it.innerHTML = '';
+    }
+    // Карта этапа (владелец 04.11, вариант C): сколько шагов и ориентир минут на каждый — без
+    // названий. Полоска — доля шага от самого длинного (сейчас доли равные). У этапа из одного
+    // шага карты нет: «Время на этап» уже сказало всё. Без таймера — одна строка с числом шагов.
+    var mp = el('interludeMap');
+    if (mp) {
+      var sn = stageSteps(step.sceneIx).total, html = '';
+      if (sn > 1) {
+        var withTime = timerOn() && state.timing.plan[step.scene.id] && !tStage(step.scene.id);
+        if (withTime) {
+          var mins = stepMinutes(state.timing.plan[step.scene.id] * 60 + bonusFor(step.scene.id), sn);
+          // Полоска — по доле, а не по округлённым минутам: при равных долях «8 и 7» рисовались бы
+          // разной длины, и округление выглядело бы распределением.
+          var shares = mins.map(function () { return 1 / sn; }), mx = Math.max.apply(null, shares) || 1;
+          html = '<p class="interlude-map-k">Что внутри: ' + sn + ' ' + stepWord(sn) + ', ориентир времени на каждый</p>' +
+            mins.map(function (m, i) {
+              return '<div class="interlude-map-row"><span class="n">шаг ' + (i + 1) + '</span>' +
+                '<span class="bar"><i style="width:' + (shares[i] / mx * 100).toFixed(0) + '%"></i></span>' +
+                '<span class="m">≈ ' + m + ' мин</span></div>';
+            }).join('');
+        } else html = '<p class="interlude-map-k">Что внутри: ' + sn + ' ' + stepWord(sn) + '</p>';
+      }
+      mp.innerHTML = html;
     }
 
     // ⚠ НА ПЕРЕХОДЕ ПАНЕЛЬ ОТКРЫВАЕТСЯ НА ТОМ, ЧТО ТОЛЬКО ЧТО СКАЗАНО (правка владельца

@@ -2222,6 +2222,19 @@ textarea, input, #caseContent, #caseContent p, #caseContent li, .appx-doc p, .ap
 .interlude-time b { font-variant-numeric: tabular-nums; }
 .interlude-time .is-plus { color: var(--jb-ink); font-weight: 500; }
 .interlude-time .is-sum { font-size: var(--fs-lead); }
+/* Карта этапа на межэтапном экране (владелец 04.11, вариант C): число шагов и ориентир минут на
+   каждый, без названий; полоска — доля шага от самого длинного. */
+.interlude-map { margin: 0 0 22px; padding-top: 14px; border-top: 1px solid var(--hairline); font-size: var(--fs-dense); }
+.interlude-map:empty { display: none; }
+.interlude-map-k { margin: 0 0 8px; color: var(--muted); }
+.interlude-map-row { display: grid; grid-template-columns: 64px 1fr 72px; align-items: center; gap: 14px; margin: 0 0 8px; }
+.interlude-map-row .n { color: var(--muted); }
+.interlude-map-row .bar { height: 8px; border-radius: 4px; background: var(--band); overflow: hidden; }
+.interlude-map-row .bar i { display: block; height: 100%; border-radius: 4px; background: var(--band-line); }
+.interlude-map-row .m { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+/* Строка отставания под овалом (владелец 04.11, вариант E): появляется только когда времени этапа
+   ушло больше, чем доля пройденных шагов. */
+.tmr-cap.is-lag { color: var(--jb-ink); font-weight: 500; }
 /* ссылки на инструкцию — в конце «Справки» (03.10) */
 .ref-setup { margin: 28px 0 8px; padding-top: 14px; border-top: 1px solid var(--hairline); font-size: var(--fs-util); color: var(--muted); }
 .ref-setup a { color: var(--muted); }
